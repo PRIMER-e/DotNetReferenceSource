@@ -15,6 +15,7 @@ namespace System.Windows.Forms
     using System.Security.Permissions;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using Runtime.CompilerServices;
 
     /// <include file='doc\DataGridViewLinkCell.uex' path='docs/doc[@for="DataGridViewLinkCell"]/*' />
     public class DataGridViewLinkCell : DataGridViewCell
@@ -63,6 +64,10 @@ namespace System.Windows.Forms
                 {
                     return (Color)this.Properties.GetObject(PropLinkCellActiveLinkColor);
                 }
+                else if (SystemInformation.HighContrast && AccessibilityImprovements.Level2)
+                {
+                    return this.HighContrastLinkColor;
+                }
                 else
                 {
                     // return the default IE Color
@@ -102,6 +107,11 @@ namespace System.Windows.Forms
 
         private bool ShouldSerializeActiveLinkColor()
         {
+            if (SystemInformation.HighContrast && AccessibilityImprovements.Level2)
+            {
+                return !this.ActiveLinkColor.Equals(SystemColors.HotTrack);
+            }
+
             return !this.ActiveLinkColor.Equals(LinkUtilities.IEActiveLinkColor);
         }
 
@@ -187,6 +197,10 @@ namespace System.Windows.Forms
                 {
                     return (Color)this.Properties.GetObject(PropLinkCellLinkColor);
                 }
+                else if (SystemInformation.HighContrast && AccessibilityImprovements.Level2)
+                {
+                    return this.HighContrastLinkColor;
+                }
                 else
                 {
                     // return the default IE Color
@@ -226,6 +240,11 @@ namespace System.Windows.Forms
 
         private bool ShouldSerializeLinkColor()
         {
+            if (SystemInformation.HighContrast && AccessibilityImprovements.Level2)
+            {
+                return !this.LinkColor.Equals(SystemColors.HotTrack);
+            }
+
             return !this.LinkColor.Equals(LinkUtilities.IELinkColor);
         }
 
@@ -382,6 +401,10 @@ namespace System.Windows.Forms
                 {
                     return (Color)this.Properties.GetObject(PropLinkCellVisitedLinkColor);
                 }
+                else if (SystemInformation.HighContrast && AccessibilityImprovements.Level2)
+                {
+                    return this.Selected ? SystemColors.HighlightText : LinkUtilities.GetVisitedLinkColor();
+                }
                 else
                 {
                     // return the default IE Color
@@ -421,7 +444,23 @@ namespace System.Windows.Forms
 
         private bool ShouldSerializeVisitedLinkColor()
         {
+            if (SystemInformation.HighContrast && AccessibilityImprovements.Level2)
+            {
+                return !this.VisitedLinkColor.Equals(SystemColors.HotTrack);
+            }
+
             return !this.VisitedLinkColor.Equals(LinkUtilities.IEVisitedLinkColor);
+        }
+
+        private Color HighContrastLinkColor
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                // Selected cells have SystemColors.Highlight as a background.
+                // SystemColors.HighlightText is supposed to be in contrast with SystemColors.Highlight.
+                return this.Selected ? SystemColors.HighlightText : SystemColors.HotTrack;
+            }
         }
 
         /// <include file='doc\DataGridViewLinkCell.uex' path='docs/doc[@for="DataGridViewLinkCell.ValueType"]/*' />
@@ -450,8 +489,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 dataGridViewCell = (DataGridViewLinkCell)System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -1170,6 +1209,26 @@ namespace System.Windows.Forms
             public override int GetChildCount()
             {
                 return 0;
+            }
+
+            internal override bool IsIAccessibleExSupported()
+            {
+                if (AccessibilityImprovements.Level2)
+                {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            internal override object GetPropertyValue(int propertyID)
+            {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId)
+                {
+                    return NativeMethods.UIA_HyperlinkControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
         }
     }

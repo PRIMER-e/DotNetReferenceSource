@@ -664,6 +664,19 @@ namespace System.Windows.Controls
             return dataType;
         }
 
+        // called when a resource change affects implicit data templates
+        internal void ReevaluateTemplate()
+        {
+            // run the template algorithm again
+            if (Template != ChooseTemplate())
+            {
+                // if it chooses a different template, mark the current template
+                // as no longer current, and ask for re-measure
+                _templateIsCurrent = false;
+                InvalidateMeasure();
+            }
+        }
+
         //------------------------------------------------------
         //
         //  Private properties
@@ -827,11 +840,11 @@ namespace System.Windows.Controls
                 // normally this loop will execute exactly once.  The only exception
                 // is when setting the DataContext causes the ContentTemplate or
                 // ContentTemplateSelector to change, presumably because they are
-                // themselves data-bound (see 
-
-
-
-
+                // themselves data-bound (see bug 128119).  In that case, we need
+                // to call ChooseTemplate again, to pick up the new template.
+                // We detect this case because _templateIsCurrent is reset to false
+                // in OnContentTemplate[Selector]Changed, causing a second iteration
+                // of the loop.
                 _templateIsCurrent = true;
                 newTemplate = ChooseTemplate();
 
@@ -1024,7 +1037,7 @@ namespace System.Windows.Controls
                 CanBuildVisualTree = true;
             }
 
-            //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+            //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
             internal override bool BuildVisualTree(FrameworkElement container)
             {
                 bool tracingEnabled = EventTrace.IsEnabled(EventTrace.Keyword.KeywordGeneral, EventTrace.Level.Info);

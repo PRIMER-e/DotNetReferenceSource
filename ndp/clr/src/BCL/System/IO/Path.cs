@@ -441,8 +441,26 @@ namespace System.IO {
             if (PathInternal.IsPathTooLong(normalized) || PathInternal.AreSegmentsTooLong(normalized))
                 throw new PathTooLongException();
 
-            if (!PathInternal.IsDevice(normalized) && PathInternal.HasInvalidVolumeSeparator(path))
-                throw new ArgumentException(Environment.GetResourceString("Arg_PathIllegal"));
+            // Under old logic certain subsets of paths containing colons were rejected. Some portion of that comes
+            // indirectly from FileIOPermissions, the rest comes from the section in LegacyNormalizePath below:
+            //
+            //   // To reject strings like "C:...\foo" and "C  :\foo"
+            //   if (firstSegment && currentChar == VolumeSeparatorChar)
+            //
+            // The superset of this now is PathInternal.HasInvalidVolumeSeparator().
+            //
+            // Unfortunately a side effect of the old split logic is that some "bad" colon paths slip through when
+            // fullChecks=false. Notably this means that GetDirectoryName and GetPathRoot would allow URIs (although
+            // it would mangle them). A user could pass a "file://..." uri to GetDirectoryName(), get "file:\..." back,
+            // then pass it to Uri which fixes up the bad URI. One particular user code path for this is calling
+            // Assembly.CodePath and trying to get the directory before passing to the Uri class.
+            //
+            // To ease transitioning code forward we'll allow all "bad" colon paths through when we are doing
+            // limited checks. If we want to add this back (under a quirk perhaps), we would need to conditionalize
+            // for Device paths as follows:
+            //
+            //   if (!PathInternal.IsDevice(normalized) && PathInternal.HasInvalidVolumeSeparator(path))
+            //      throw new ArgumentException(Environment.GetResourceString("Arg_PathIllegal"));
 
             if (expandShortPaths && normalized.IndexOf('~') != -1)
             {
@@ -803,17 +821,17 @@ namespace System.IO {
                 // might be well within the MAX_PATH restriction. For ex,
                 // "c:\SomeReallyLongDirName(thinkGreaterThan_MAXPATH)\..\foo.txt" which actually requires a
                 // buffer well with in the MAX_PATH as the normalized path is just "c:\foo.txt"
-                // This buffer requirement seems wrong, it could be a 
-
-
+                // This buffer requirement seems wrong, it could be a bug or a perf optimization  
+                // like returning required buffer length quickly or avoid stratch buffer etc. 
+                // Either way we need to workaround it here...
                 
                 // Ideally we would get the required buffer length first by calling GetFullPathName
                 // once without the buffer and use that in the later call but this doesn't always work
-                // due to Win32 GetFullPathName 
-
-
-
-
+                // due to Win32 GetFullPathName bug. For instance, in Win2k, when the path we are trying to
+                // fully qualify is a single letter name (such as "a", "1", ",") GetFullPathName
+                // fails to return the right buffer size (i.e, resulting in insufficient buffer). 
+                // To workaround this bug we will start with MAX_PATH buffer and grow it once if the 
+                // return value is > MAX_PATH. 
 
                 result = newBuffer.GetFullPathName();
 
@@ -1266,13 +1284,14 @@ namespace System.IO {
             return StringBuilderCache.GetStringAndRelease(finalPath);
         }
 
-        private static String CombineNoChecks(String path1, String path2) {
+        internal static string CombineNoChecks(string path1, string path2)
+        {
             if (path2.Length == 0)
                 return path1;
 
             if (path1.Length == 0)
                 return path2;
-                
+
             if (IsPathRooted(path2))
                 return path2;
 

@@ -1128,8 +1128,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security threat, see 
-
+                // SECREVIEW : Late-binding does not represent a security threat, see bug#411899 for more info..
+                //
                 dataGridViewRow = (DataGridViewRow) System.Activator.CreateInstance(thisType);
             }
             if (dataGridViewRow != null)
@@ -1907,8 +1907,9 @@ namespace System.Windows.Forms
         ]
         protected class DataGridViewRowAccessibleObject : AccessibleObject
         {
-            DataGridViewRow owner;
-            DataGridViewSelectedRowCellsAccessibleObject selectedCellsAccessibilityObject = null;
+            private int[] runtimeId; 
+            private DataGridViewRow owner;
+            private DataGridViewSelectedRowCellsAccessibleObject selectedCellsAccessibilityObject = null;
 
             /// <include file='doc\DataGridViewRow.uex' path='docs/doc[@for="DataGridViewRowAccessibleObject.DataGridViewRowAccessibleObject1"]/*' />
             public DataGridViewRowAccessibleObject()
@@ -2037,6 +2038,22 @@ namespace System.Windows.Forms
                 get
                 {
                     return AccessibleRole.Row;
+                }
+            }
+
+            internal override int[] RuntimeId
+            {
+                get
+                {
+                    if (AccessibilityImprovements.Level3 && runtimeId == null)
+                    {
+                        runtimeId = new int[3];
+                        runtimeId[0] = RuntimeIDFirstItem; // first item is static - 0x2a
+                        runtimeId[1] = this.Parent.GetHashCode();
+                        runtimeId[2] = this.GetHashCode();
+                    }
+
+                    return runtimeId;
                 }
             }
 
@@ -2338,6 +2355,76 @@ namespace System.Windows.Forms
                     this.owner.Selected = false;
                 }
             }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction)
+            {
+                {
+                    if (Owner == null)
+                    {
+                        throw new InvalidOperationException(SR.GetString(SR.DataGridViewRowAccessibleObject_OwnerNotSet));
+                    }
+
+                    var dataGridView = this.Owner.DataGridView;
+
+                    switch (direction)
+                    {
+                        case UnsafeNativeMethods.NavigateDirection.Parent:
+                            return this.Parent;
+                        case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                            return Navigate(AccessibleNavigation.Next);
+                        case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                            return Navigate(AccessibleNavigation.Previous);
+                        case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                            return Navigate(AccessibleNavigation.FirstChild);
+                        case UnsafeNativeMethods.NavigateDirection.LastChild:
+                            return Navigate(AccessibleNavigation.LastChild);
+                        default:
+                            return null;
+                    }
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot
+            {
+                get
+                {
+                    return this.Owner.DataGridView.AccessibilityObject;
+                }
+            }
+
+            #region IRawElementProviderSimple Implementation
+
+            internal override bool IsPatternSupported(int patternId)
+            {
+                return patternId.Equals(NativeMethods.UIA_LegacyIAccessiblePatternId);
+            }
+
+            internal override object GetPropertyValue(int propertyId)
+            {
+                if (AccessibilityImprovements.Level3)
+                {
+                    switch (propertyId)
+                    {
+                        case NativeMethods.UIA_NamePropertyId:
+                            return this.Name;
+                        case NativeMethods.UIA_IsEnabledPropertyId:
+                            return Owner.DataGridView.Enabled;
+                        case NativeMethods.UIA_HelpTextPropertyId:
+                            return this.Help ?? string.Empty;
+                        case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                        case NativeMethods.UIA_HasKeyboardFocusPropertyId:
+                        case NativeMethods.UIA_IsPasswordPropertyId:
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                            return false;
+                        case NativeMethods.UIA_AccessKeyPropertyId:
+                            return string.Empty;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyId);
+            }
+
+            #endregion
         }
 
         private class DataGridViewSelectedRowCellsAccessibleObject : AccessibleObject

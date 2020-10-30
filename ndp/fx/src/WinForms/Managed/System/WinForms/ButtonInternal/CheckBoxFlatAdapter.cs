@@ -69,6 +69,7 @@ namespace System.Windows.Forms.ButtonInternal {
 
             PaintImage(e, layout);
             DrawCheckFlat(e, layout, checkColor, colors.options.highContrast ? colors.buttonFace : checkBackground, checkBorder, colors);
+            AdjustFocusRectangle(layout);
             PaintField(e, layout, colors, checkColor, true);
         }
 

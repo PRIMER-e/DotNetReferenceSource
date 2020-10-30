@@ -843,12 +843,12 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 		goto ErrorExit;
 	}
 
-	// SQL BU DT 
-
-
-
-
-
+	// SQL BU DT bug 346383/346389/325380: to lower the chance of named pipe
+	// "name squatting" by another (malicious) process running under a 
+	// different account we check the ownership of the listening named pipe 
+	// we created, and fail if it does not match that of the account we are 
+	// running under.  
+	//
 	dwError = ValidateObjectOwner( pAcc->hPipe, 
 								   SE_KERNEL_OBJECT ); 
 
@@ -1961,8 +1961,8 @@ Exit:
 	return dwError;
 }
 
-//named pipe implementation has a 
-
+//named pipe implementation has a bug where multiple async writes causes message re-ordering
+//so we need to wait for completion of previous write before posting a new one
 
 DWORD Np::WriteAsync( SNI_Packet   * pPacket, 
 					  SNI_ProvInfo * pInfo )

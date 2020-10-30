@@ -9,10 +9,10 @@
 //
 // History:
 //  01/10/03 : a-jeanp - created
-//  08/12/03:  alexsn - 
-
-
-
+//  08/12/03:  alexsn - bug fixes
+//  03/02/04:  a-davidj - added text pattern
+//
+//---------------------------------------------------------------------------
 
 using System;
 using System.Collections;
@@ -323,8 +323,8 @@ namespace MS.Internal.AutomationProxies
                 }
             }
 
-            // 
-
+            // bug# 11147, Text/edit box should not enter more characters than what is allowed through keyboard.
+            // Determine the max number of chars this editbox accepts
 
             int result = Misc.ProxySendMessageInt(_hwnd, NativeMethods.EM_GETLIMITTEXT, IntPtr.Zero, IntPtr.Zero);
             // A result of -1 means that no limit is set.

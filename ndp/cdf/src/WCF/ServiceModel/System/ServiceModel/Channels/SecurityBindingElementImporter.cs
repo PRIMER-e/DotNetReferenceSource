@@ -665,7 +665,7 @@ namespace System.ServiceModel.Channels
                 {
                     // We already have found and imported the message security binding element above. Hence this could be the dual mode security.
                     // Now let us see if there is HttpsTransportBinding assertion also below it .This is to avoid the 
-                    // warning messages while importing wsdl representing the message security over Https transport security scenario. See 
+                    // warning messages while importing wsdl representing the message security over Https transport security scenario. See Bug:136416.
 
                     SecurityBindingElement tbe = null;
                     this.TryImportTransportSecurityBindingElement(importer, policyContext, out tbe, true);

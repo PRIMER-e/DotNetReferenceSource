@@ -55,6 +55,12 @@ namespace System.Windows.Forms {
         private ContentAlignment checkAlign = ContentAlignment.MiddleLeft;
         private Appearance appearance        = System.Windows.Forms.Appearance.Normal;
 
+        private const int FlatSystemStylePaddingWidth = 24;
+        private const int FlatSystemStyleMinimumHeight = 13;
+
+        internal int flatSystemStylePaddingWidth = FlatSystemStylePaddingWidth;
+        internal int flatSystemStyleMinimumHeight = FlatSystemStyleMinimumHeight;
+
         /// <include file='doc\RadioButton.uex' path='docs/doc[@for="RadioButton.RadioButton"]/*' />
         /// <devdoc>
         ///    <para>
@@ -63,6 +69,11 @@ namespace System.Windows.Forms {
         ///    </para>
         /// </devdoc>
         public RadioButton() : base() {
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                flatSystemStylePaddingWidth = LogicalToDeviceUnits(FlatSystemStylePaddingWidth);
+                flatSystemStyleMinimumHeight = LogicalToDeviceUnits(FlatSystemStyleMinimumHeight);
+            }
+
             // Radiobuttons shouldn't respond to right clicks, so we need to do all our own click logic
             SetStyle(ControlStyles.StandardClick, false);
 
@@ -284,6 +295,24 @@ namespace System.Windows.Forms {
             }
         }
 
+        /// <summary>
+        /// When overridden in a derived class, handles rescaling of any magic numbers used in control painting.
+        /// For RadioButton controls, scale the width of the system-style padding and height of the radio button image.
+        /// Must call the base class method to get the current DPI values. This method is invoked only when 
+        /// Application opts-in into the Per-monitor V2 support, targets .NETFX 4.7 and has 
+        /// EnableDpiChangedMessageHandling and EnableDpiChangedHighDpiImprovements config switches turned on.
+        /// </summary>
+        /// <param name="deviceDpiOld">Old DPI value</param>
+        /// <param name="deviceDpiNew">New DPI value</param>
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                flatSystemStylePaddingWidth = LogicalToDeviceUnits(FlatSystemStylePaddingWidth);
+                flatSystemStyleMinimumHeight = LogicalToDeviceUnits(FlatSystemStyleMinimumHeight);
+            }
+        }
+
         internal override Size GetPreferredSizeCore(Size proposedConstraints) {
             if(FlatStyle != FlatStyle.System) {
                 return base.GetPreferredSizeCore(proposedConstraints);
@@ -291,8 +320,8 @@ namespace System.Windows.Forms {
 
             Size textSize = TextRenderer.MeasureText(this.Text, this.Font);
             Size size = SizeFromClientSize(textSize);
-            size.Width += 24;
-            size.Height += 5;
+            size.Width += flatSystemStylePaddingWidth;
+            size.Height = DpiHelper.EnableDpiChangedHighDpiImprovements ? Math.Max(size.Height + 5, flatSystemStyleMinimumHeight) : size.Height + 5; // ensure minimum height to avoid truncation of RadioButton circle or text
             return size;                
         }
 

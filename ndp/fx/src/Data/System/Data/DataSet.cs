@@ -682,7 +682,7 @@ namespace System.Data {
                             continue;
                         if ((dt.NestedParentRelations.Length == 0) ||
                             (dt.NestedParentRelations.Length == 1 && dt.NestedParentRelations[0].ChildTable == dt)) {
-                            //                            dt.SelfNestedWithOneRelation) { // this is wrong 
+                            //                            dt.SelfNestedWithOneRelation) { // this is wrong bug it was previous behavior
                             if (Tables.Contains(dt.TableName, value, false, true))
                                 throw ExceptionBuilder.DuplicateTableName2(dt.TableName, value);
                             dt.CheckCascadingNamespaceConflict(value);

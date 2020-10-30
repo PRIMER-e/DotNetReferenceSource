@@ -389,9 +389,31 @@ namespace System.Windows.Controls
                         }
                     }
 
-                    // Ask the column to build a visual tree and
+                    // Ask the column to build a visual tree
+                    FrameworkElement newContent = column.BuildVisualTree(IsEditing, RowDataItem, this);
+
+                    // Before discarding the old visual tree, disconnect all its
+                    // bindings, as in ItemContainerGenerator.UnlinkContainerFromItem.
+                    // This prevents aliasing that can arise in recycling mode (DDVSO 405066)
+                    FrameworkElement oldContent = Content as FrameworkElement;
+                    if (oldContent != null && oldContent != newContent)
+                    {
+                        ContentPresenter cp = oldContent as ContentPresenter;
+                        if (cp == null)
+                        {
+                            oldContent.SetValue(FrameworkElement.DataContextProperty, BindingExpressionBase.DisconnectedItem);
+                        }
+                        else
+                        {
+                            // for a template column, disconnect by setting the
+                            // Content, to override the binding set up in
+                            // DataGridTemplateColumn.LoadTemplateContent.
+                            cp.Content = BindingExpressionBase.DisconnectedItem;
+                        }
+                    }
+
                     // hook the visual tree up through the Content property.
-                    Content = column.BuildVisualTree(IsEditing, RowDataItem, this);
+                    Content = newContent;
                 }
             }
         }
@@ -413,9 +435,7 @@ namespace System.Windows.Controls
                 // from the binding group's collection.  This side-effect is why we
                 // loop through a copy of the original collection, and don't rely
                 // on i to be a valid index into the original collection.
-                DependencyObject targetElement = bindingExpressionsCopy[i].TargetElement;
-                if (targetElement != null &&
-                    VisualTreeHelper.IsAncestorOf(element, targetElement, typeof(DataGridCell)))
+                if (DataGridHelper.BindingExpressionBelongsToElement<DataGridCell>(bindingExpressionsCopy[i], this))
                 {
                     bindingExpressions.Remove(bindingExpressionsCopy[i]);
                 }
@@ -776,7 +796,7 @@ namespace System.Windows.Controls
             bool verticalLinesVisible = DataGridHelper.IsGridLineVisible(dataGridOwner, /*isHorizontal = */ false);
             double horizontalLineThickness = 0;
             double verticalLineThickness = 0;
-            
+
             if (horizontalLinesVisible)
             {
                 horizontalLineThickness = dataGridOwner.HorizontalGridLineThickness;
@@ -842,7 +862,7 @@ namespace System.Windows.Controls
         {
             base.OnRender(drawingContext);
             DataGrid dataGrid = DataGridOwner;
-            
+
             if (DataGridHelper.IsGridLineVisible(dataGrid, /*isHorizontal = */ false))
             {
                 double thickness = DataGridOwner.VerticalGridLineThickness;
@@ -898,9 +918,9 @@ namespace System.Windows.Controls
                     }
 
                     // Please note that unselecting rows is not really considered a
-                    // handlable operation. Please see Dev11 
-
-
+                    // handlable operation. Please see Dev11 bug#245510 about
+                    // this issue.
+                    //e.Handled = true;
                 }
             }
             else if (!focusWithin || !IsSelected || isCtrlKeyPressed)

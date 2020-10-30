@@ -346,7 +346,7 @@ HRESULT CreateModuleRefFromScope(
         // clear the error
         hr = NOERROR;
         
-        // It is a 
+        // It is a bug to create an ModuleRef to an empty name!!!
         *ptkModuleRef = mdTokenNil;
         goto ErrExit;
     }

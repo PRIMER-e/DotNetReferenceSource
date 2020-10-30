@@ -15,6 +15,7 @@ namespace System.Data.SqlClient
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Configuration;
     using System.Configuration.Assemblies;
     using System.ComponentModel;
     using System.Data;
@@ -46,7 +47,19 @@ namespace System.Data.SqlClient
     [DefaultEvent("InfoMessage")]
     public sealed partial class SqlConnection: DbConnection, ICloneable {
 
+        static SqlConnection() {
+            SqlColumnEncryptionEnclaveProviderConfigurationSection sqlColumnEncryptionEnclaveProviderConfigurationSection = null;
+            try {
+                sqlColumnEncryptionEnclaveProviderConfigurationSection = (SqlColumnEncryptionEnclaveProviderConfigurationSection)ConfigurationManager.GetSection("SqlColumnEncryptionEnclaveProviders");
+            } catch (ConfigurationErrorsException e) {
+                throw SQL.CannotGetSqlColumnEncryptionEnclaveProviderConfig(e);
+            }
+
+            sqlColumnEncryptionEnclaveProviderConfigurationManager = new SqlColumnEncryptionEnclaveProviderConfigurationManager(sqlColumnEncryptionEnclaveProviderConfigurationSection);
+        }
+
         static private readonly object EventInfoMessage = new object();
+        static internal readonly SqlColumnEncryptionEnclaveProviderConfigurationManager sqlColumnEncryptionEnclaveProviderConfigurationManager;
 
         // System column encryption key store providers are added by default
         static private readonly Dictionary<string, SqlColumnEncryptionKeyStoreProvider> _SystemColumnEncryptionKeyStoreProviders
@@ -344,6 +357,12 @@ namespace System.Data.SqlClient
             SqlConnectionString connString = ConnectionOptions as SqlConnectionString;
             if (connString != null) {
                 _connectRetryCount = connString.ConnectRetryCount;
+                // For Azure SQL connection, set _connectRetryCount to 2 instead of 1 will greatly improve recovery
+                //   success rate 
+                if (_connectRetryCount == 1 && ADP.IsAzureSqlServerEndpoint(connString.DataSource))
+                {
+                    _connectRetryCount = 2;
+                }
             }
         }
 
@@ -433,6 +452,16 @@ namespace System.Data.SqlClient
             get {
                 SqlConnectionString opt = (SqlConnectionString)ConnectionOptions;
                 return opt != null ? opt.ColumnEncryptionSetting == SqlConnectionColumnEncryptionSetting.Enabled : false;
+            }
+        }
+
+        /// <summary>
+        /// Get enclave attestation url to be used with enclave based Always Encrypted
+        /// </summary>
+        internal string EnclaveAttestationUrl {
+            get {
+                SqlConnectionString opt = (SqlConnectionString)ConnectionOptions;
+                return opt.EnclaveAttestationUrl;
             }
         }
 
@@ -1097,6 +1126,10 @@ namespace System.Data.SqlClient
                 }
                 finally {
                     SqlStatistics.StopTimer(statistics);
+                    //dispose windows identity once connection is closed.
+                    if (_lastIdentity != null) {
+                        _lastIdentity.Dispose();
+                    }
                 }
             }
             finally {
@@ -1120,10 +1153,10 @@ namespace System.Data.SqlClient
             _accessToken = null;
 
             if (!disposing) {
-                // DevDiv2 
-
-
-
+                // DevDiv2 Bug 457934:SQLConnection leaks when not disposed
+                // http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/457934
+                // For non-pooled connections we need to make sure that if the SqlConnection was not closed, then we release the GCHandle on the stateObject to allow it to be GCed
+                // For pooled connections, we will rely on the pool reclaiming the connection
                 var innerConnection = (InnerConnection as SqlInternalConnectionTds);
                 if ((innerConnection != null) && (!innerConnection.ConnectionOptions.Pooling)) {
                     var parser = innerConnection.Parser;
@@ -1493,14 +1526,16 @@ namespace System.Data.SqlClient
             }
 
            if (_impersonateIdentity != null) {
-                if (_impersonateIdentity.User == DbConnectionPoolIdentity.GetCurrentWindowsIdentity().User) {
-                    return TryOpenInner(retry);
-                }
-                else {
-                    using (WindowsImpersonationContext context = _impersonateIdentity.Impersonate()) {
-                        return TryOpenInner(retry);
-                    }                    
-                }
+               using (WindowsIdentity identity = DbConnectionPoolIdentity.GetCurrentWindowsIdentity()) {
+                   if (_impersonateIdentity.User == identity.User) {
+                       return TryOpenInner(retry);
+                   }
+                   else {
+                       using (WindowsImpersonationContext context = _impersonateIdentity.Impersonate()) {
+                           return TryOpenInner(retry);
+                       }
+                   }
+               }
             }
             else {
                 if (this.UsesIntegratedSecurity(connectionOptions) || this.UsesActiveDirectoryIntegrated(connectionOptions)) {
@@ -1694,13 +1729,13 @@ namespace System.Data.SqlClient
         internal void OnError(SqlException exception, bool breakConnection, Action<Action> wrapCloseInAction) {
             Debug.Assert(exception != null && exception.Errors.Count != 0, "SqlConnection: OnError called with null or empty exception!");
 
-            // 
-
-
-
-
-
-
+            // Bug fix - MDAC 49022 - connection open after failure...  Problem was parser was passing
+            // Open as a state - because the parser's connection to the netlib was open.  We would
+            // then set the connection state to the parser's state - which is not correct.  The only
+            // time the connection state should change to what is passed in to this function is if
+            // the parser is broken, then we should be closed.  Changed to passing in
+            // TdsParserState, not ConnectionState.
+            // fixed by Microsoft
 
             if (breakConnection && (ConnectionState.Open == State)) {
 

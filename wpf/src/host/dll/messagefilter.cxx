@@ -25,11 +25,11 @@ STDMETHODIMP_(DWORD) CMessageFilter::HandleInComingCall(__in DWORD dwCallType, _
 
 STDMETHODIMP_(DWORD) CMessageFilter::RetryRejectedCall(__in HTASK threadIDCallee, __in DWORD dwTickCount, __in DWORD dwRejectType)
 {
-    // See Dev10 
-
-
-
-
+    // See Dev10 bug 754024 - Crash hosting an XBAP inside another XBAP via a WebBrowser.Navigate
+    // During our activation sequence, the browser is making a QueryStatus call, which is input-synchronous. If at the same time,
+    // we call into the browser, an RPC_E_CALL_REJECT failure results. Therefore we use a message filter to ask the COM runtime
+    // to retry making this call (with an upper retry duration limit as specified in m_dwMaxRetryMilliseconds).
+    // Another case can be found in Dev10 bug 794667 - WebBrowser: multiple fast navigations = COM exception
     if ((dwRejectType == SERVERCALL_RETRYLATER || dwRejectType == SERVERCALL_REJECTED) && dwTickCount < m_dwMaxRetryMilliseconds)
     {
         // 100 ms is lower boundary for timed retry

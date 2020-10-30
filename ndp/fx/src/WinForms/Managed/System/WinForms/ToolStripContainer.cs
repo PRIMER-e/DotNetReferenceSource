@@ -437,6 +437,10 @@ namespace System.Windows.Forms {
             
         }
 
+        internal override bool AllowsKeyboardToolTip() {
+            return false;
+        }
+
 
         internal class ToolStripContainerTypedControlCollection : WindowsFormsUtils.ReadOnlyControlCollection {
             ToolStripContainer owner;

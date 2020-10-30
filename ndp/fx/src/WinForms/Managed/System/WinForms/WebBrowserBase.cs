@@ -576,6 +576,10 @@ namespace System.Windows.Forms {
                 base.CanSelectCore() : false;
         }
 
+        internal override bool AllowsKeyboardToolTip() {
+            return false;
+        }
+
         //
         // We have to inform the ActiveX control that an ambient property
         // has changed.

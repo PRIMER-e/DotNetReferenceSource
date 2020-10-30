@@ -4305,7 +4305,7 @@ namespace System.Windows.Documents
         }
 
         // Ensure we have a valid _flags field.
-        // See 
+        // See bug 1249258.
         private void VerifyFlags()
         {
             ElementEdge edge = (ElementEdge)(_flags & (uint)Flags.EdgeMask);

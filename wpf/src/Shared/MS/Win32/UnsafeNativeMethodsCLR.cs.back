@@ -18,10 +18,12 @@ namespace MS.Win32
     using System.Security;
     using System.Diagnostics;
     using System.ComponentModel;
+    using MS.Internal;
     using MS.Internal.Interop;
+    using MS.Utility;
 
  // DRTs cannot access MS.Internal
-#if !DRT
+#if !DRT && !UIAUTOMATIONTYPES
     using HR = MS.Internal.Interop.HRESULT;
 #endif
 
@@ -33,6 +35,8 @@ namespace MS.Win32
     using MS.Internal.PresentationCore;
 #elif PRESENTATIONFRAMEWORK
     using MS.Internal.PresentationFramework;
+#elif UIAUTOMATIONTYPES
+    using MS.Internal.UIAutomationTypes;
 #elif DRT
     using MS.Internal.Drt;
 #else
@@ -61,6 +65,22 @@ namespace MS.Win32
         [SecurityCritical]
         public static object PtrToStructure(IntPtr lparam, Type cls) {
             return Marshal.PtrToStructure(lparam, cls);
+        }
+
+        /// <summary>
+        /// Generic PtrToStructure(T) - because Marshal.PtrToStructure(T) doesn't
+        /// seem to be available in our build environment.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="lParam"></param>
+        /// <returns></returns>
+        /// <securitynote>
+        /// Critical - Marshal.PtrToStructure is Critical
+        /// </securitynote>
+        [SecurityCritical]
+        public static T PtrToStructure<T>(IntPtr lParam)
+        {
+            return (T)Marshal.PtrToStructure(lParam, typeof(T));
         }
 
         // For some reason "StructureToPtr" requires super high permission.
@@ -118,7 +138,7 @@ namespace MS.Win32
         [DllImport(ExternDll.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern IntPtr GetCurrentThread();
 
-#if !DRT
+#if !DRT && !UIAUTOMATIONTYPES
         ///<SecurityNote>
         ///     Critical - elevates via a SUC.
         ///</SecurityNote>
@@ -141,37 +161,12 @@ namespace MS.Win32
         [DllImport(ExternDll.User32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
         public static extern IntPtr GetWindow(HandleRef hWnd, int uCmd);
 
-        public enum MonitorOpts : int
-        {
-            MONITOR_DEFAULTTONULL = 0x00000000,
-            MONITOR_DEFAULTTOPRIMARY = 0x00000001,
-            MONITOR_DEFAULTTONEAREST = 0x00000002,
-        }
-
-        public enum MonitorDpiType
-        {
-            MDT_Effective_DPI = 0,
-            MDT_Angular_DPI = 1,
-            MDT_Raw_DPI = 2,
-        }
-
-        public enum ProcessDpiAwareness
-        {
-            Process_DPI_Unaware = 0,
-            Process_System_DPI_Aware = 1,
-            Process_Per_Monitor_DPI_Aware = 2
-        }
-
-        [SuppressUnmanagedCodeSecurity, SecurityCritical]
-        [DllImport(ExternDll.Shcore, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        public static extern uint GetProcessDpiAwareness(HandleRef hProcess, out IntPtr awareness);
-
         ///<SecurityNote>
         /// Critical: This code escalates to unmanaged code permission
         ///</SecurityNote>
         [SuppressUnmanagedCodeSecurity, SecurityCritical]
         [DllImport(ExternDll.Shcore, CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
-        public static extern uint GetDpiForMonitor(HandleRef hMonitor, MonitorDpiType dpiType, out uint dpiX, out uint dpiY);
+        public static extern uint GetDpiForMonitor(HandleRef hMonitor, NativeMethods.MONITOR_DPI_TYPE dpiType, out uint dpiX, out uint dpiY);
 
         [SuppressUnmanagedCodeSecurity, SecurityCritical]
         [DllImport(ExternDll.User32, EntryPoint = "IsProcessDPIAware", CharSet = CharSet.Auto, SetLastError = true)]
@@ -461,7 +456,7 @@ namespace MS.Win32
         public static extern void Keybd_event(byte vk, byte scan, int flags, IntPtr extrainfo);
 #endif
 
-#if !DRT
+#if !DRT && !UIAUTOMATIONTYPES
         /// <SecurityNote>
         ///     Critical: This code elevates to unmanaged code permission
         /// </SecurityNote>
@@ -1229,7 +1224,214 @@ namespace MS.Win32
         [DllImport(ExternDll.Kernel32, CharSet = CharSet.Unicode)]
         public static extern IntPtr LoadLibrary(string lpFileName);
 
-#if !DRT
+        [Flags]
+        internal enum LoadLibraryFlags : uint
+        {
+            None = 0x00000000,
+            /// <summary>
+            /// If this value is used, and the executable module is a DLL, the system does 
+            /// not call DllMain for process and thread initialization and termination. 
+            /// Also, the system does not load additional executable modules that are 
+            /// referenced by the specified module.
+            /// </summary>
+            /// <remarks>
+            /// Do not use this value; it is provided only for backward compatibility. 
+            /// If you are planning to access only data or resources in the DLL, use 
+            /// <see cref="LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE"/> or 
+            /// <see cref="LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE"/> or <see cref="LOAD_LIBRARY_AS_IMAGE_RESOURCE"/>
+            /// or both. Otherwise, load the library as a DLL or executable module 
+            /// using the <see cref="LoadLibrary(string)"/>function.
+            /// </remarks>
+            DONT_RESOLVE_DLL_REFERENCES = 0x00000001,
+            /// <summary>
+            /// If this value is used, the system does not check AppLocker rules or apply 
+            /// Software Restriction Policies for the DLL. This action applies only to the 
+            /// DLL being loaded and not to its dependencies. This value is recommended 
+            /// for use in setup programs that must run extracted DLLs during installation.
+            /// </summary>
+            /// <remarks>
+            /// Windows Server 2008 R2 and Windows 7:  
+            ///     On systems with KB2532445 installed, the 
+            ///     caller must be running as "LocalSystem" or "TrustedInstaller"; otherwise the 
+            ///     system ignores this flag. For more information, see "You can circumvent AppLocker 
+            ///     rules by using an Office macro on a computer that is running Windows 7 or 
+            ///     Windows Server 2008 R2" in the Help and Support Knowledge Base 
+            ///     at <see cref="http://support.microsoft.com/kb/2532445."/>
+            /// 
+            /// Windows Server 2008, Windows Vista, Windows Server 2003 and Windows XP:  
+            ///     AppLocker was introduced in Windows 7 and Windows Server 2008 R2.
+            /// </remarks>
+            LOAD_IGNORE_CODE_AUTHZ_LEVEL = 0x00000010,
+            /// <summary>
+            /// If this value is used, the system maps the file into the calling process's 
+            /// virtual address space as if it were a data file. Nothing is done to execute 
+            /// or prepare to execute the mapped file. Therefore, you cannot call functions 
+            /// like GetModuleFileName, GetModuleHandle or GetProcAddress with this DLL. 
+            /// Using this value causes writes to read-only memory to raise an access violation. 
+            /// Use this flag when you want to load a DLL only to extract messages or resources 
+            /// from it.This value can be used with <see cref="LOAD_LIBRARY_AS_IMAGE_RESOURCE"/>.
+            /// </summary>
+            LOAD_LIBRARY_AS_DATAFILE = 0x00000002,
+            /// <summary>
+            /// Similar to LOAD_LIBRARY_AS_DATAFILE, except that the DLL file is opened with 
+            /// exclusive write access for the calling process. Other processes cannot open 
+            /// the DLL file for write access while it is in use. However, the DLL can 
+            /// still be opened by other processes. This value can be used with 
+            /// <see cref="LOAD_LIBRARY_AS_IMAGE_RESOURCE"/>. 
+            /// </summary>
+            /// <remarks>
+            /// Windows Server 2003 and Windows XP:  This value is not supported until 
+            /// Windows Vista.
+            /// </remarks>
+            LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE = 0x00000040,
+            /// <summary>
+            /// If this value is used, the system maps the file into the process's virtual 
+            /// address space as an image file. However, the loader does not load the static 
+            /// imports or perform the other usual initialization steps. Use this flag when 
+            /// you want to load a DLL only to extract messages or resources from it. Unless 
+            /// the application depends on the file having the in-memory layout of an image, 
+            /// this value should be used with either <see cref="LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE "/> or 
+            /// <see cref="LOAD_LIBRARY_AS_DATAFILE"/>.
+            /// </summary>
+            /// <remarks>
+            /// Windows Server 2003 and Windows XP:  This value is not supported until Windows Vista.
+            /// </remarks>
+            LOAD_LIBRARY_AS_IMAGE_RESOURCE = 0x00000020,
+            /// <summary>
+            /// If this value is used, the application's installation directory is searched for the 
+            /// DLL and its dependencies. Directories in the standard search path are not searched. 
+            /// This value cannot be combined with <see cref="LOAD_WITH_ALTERED_SEARCH_PATH"/>.
+            /// </summary>
+            /// <remarks>
+            /// Windows 7, Windows Server 2008 R2, Windows Vista and Windows Server 2008:  
+            ///     This value requires KB2533623 to be installed.
+            /// Windows Server 2003 and Windows XP:  
+            ///     This value is not supported.
+            /// </remarks>
+            LOAD_LIBRARY_SEARCH_APPLICATION_DIR = 0x00000200,
+            /// <summary>
+            /// This value is a combination of <see cref="LOAD_LIBRARY_SEARCH_APPLICATION_DIR"/>, 
+            /// <see cref="LOAD_LIBRARY_SEARCH_SYSTEM32"/>, and <see cref="LOAD_LIBRARY_SEARCH_USER_DIRS"/>. 
+            /// Directories in the standard search path are not searched. This value cannot be combined with 
+            /// <see cref="LOAD_WITH_ALTERED_SEARCH_PATH"/>. This value represents the recommended maximum number 
+            /// of directories an application should include in its DLL search path.
+            /// </summary>
+            /// <remarks>
+            /// Windows 7, Windows Server 2008 R2, Windows Vista and Windows Server 2008:  
+            ///     This value requires KB2533623 to be installed. 
+            /// 
+            /// Windows Server 2003 and Windows XP:  
+            ///     This value is not supported.
+            /// </remarks>
+            LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000,
+            /// <summary>
+            /// If this value is used, the directory that contains the DLL is temporarily added to 
+            /// the beginning of the list of directories that are searched for the DLL's dependencies. 
+            /// Directories in the standard search path are not searched.
+            /// 
+            /// The lpFileName parameter must specify a fully qualified path. This value cannot be 
+            /// combined with <see cref="LOAD_WITH_ALTERED_SEARCH_PATH"/>. 
+            /// 
+            /// For example, if Lib2.dll is a dependency of C:\Dir1\Lib1.dll, loading Lib1.dll with 
+            /// this value causes the system to search for Lib2.dll only in C:\Dir1. To search for 
+            /// Lib2.dll in C:\Dir1 and all of the directories in the DLL search path, combine this 
+            /// value with <see cref="LOAD_LIBRARY_DEFAULT_DIRS"/>.
+            /// </summary>
+            /// <remarks>
+            /// Windows 7, Windows Server 2008 R2, Windows Vista and Windows Server 2008:  
+            ///     This value requires KB2533623 to be installed.
+            /// 
+            /// Windows Server 2003 and Windows XP:  
+            ///     This value is not supported.
+            /// </remarks>
+            LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100,
+            /// <summary>
+            /// If this value is used, %windows%\system32 is searched for the DLL and its dependencies. 
+            /// Directories in the standard search path are not searched. This value cannot be 
+            /// combined with <see cref="LOAD_WITH_ALTERED_SEARCH_PATH"/>
+            /// </summary>
+            /// <remarks>
+            /// Windows 7, Windows Server 2008 R2, Windows Vista and Windows Server 2008:  
+            ///     This value requires KB2533623 to be installed.
+            /// Windows Server 2003 and Windows XP:  
+            ///     This value is not supported.
+            /// </remarks>
+            LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800,
+            /// <summary>
+            /// If this value is used, directories added using the AddDllDirectory or the SetDllDirectory 
+            /// function are searched for the DLL and its dependencies. If more than one directory has been added, 
+            /// the order in which the directories are searched is unspecified. Directories in the 
+            /// standard search path are not searched. This value cannot be combined with 
+            /// <see cref="LOAD_WITH_ALTERED_SEARCH_PATH"/>
+            /// </summary>
+            /// <remarks>
+            /// Windows 7, Windows Server 2008 R2, Windows Vista and Windows Server 2008:  
+            ///     This value requires KB2533623 to be installed.
+            /// Windows Server 2003 and Windows XP:  
+            ///     This value is not supported.
+            /// </remarks>
+            LOAD_LIBRARY_SEARCH_USER_DIRS = 0x00000400,
+            /// <summary>
+            /// If this value is used and lpFileName specifies an absolute path, the system uses the alternate 
+            /// file search strategy discussed in the Remarks section to find associated executable modules that 
+            /// the specified module causes to be loaded. If this value is used and lpFileName specifies a 
+            /// relative path, the behavior is undefined. If this value is not used, or if lpFileName does not specify a path, 
+            /// the system uses the standard search strategy discussed in the Remarks section to find associated 
+            /// executable modules that the specified module causes to be loaded.This value cannot be combined with 
+            /// any LOAD_LIBRARY_SEARCH flag.
+            /// </summary>
+            LOAD_WITH_ALTERED_SEARCH_PATH = 0x00000008
+        }
+
+        /// <summary>
+        /// Do not use this - instead use <see cref="LoadLibraryHelper.SecureLoadLibrary"/>
+        /// </summary>
+        [SuppressUnmanagedCodeSecurity]
+        [SecurityCritical]
+        [Obsolete("Use LoadLibraryHelper.SafeLoadLibraryEx instead")]
+        [DllImport(ExternDll.Kernel32, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern IntPtr LoadLibraryEx([In][MarshalAs(UnmanagedType.LPTStr)]string lpFileName, IntPtr hFile, [In] LoadLibraryFlags dwFlags);
+
+        [Flags]
+        internal enum GetModuleHandleFlags : uint
+        {
+            None = 0x00000000,
+            /// <summary>
+            /// The lpModuleName parameter in <see cref="GetModuleHandleEx"/> is an address 
+            /// in the module.
+            /// </summary>
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS = 0x00000004,
+            /// <summary>
+            /// The module stays loaded until the process is terminated, no matter how many times 
+            /// FreeLibrary is called.
+            /// This option cannot be used with <see cref="GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT"/>.
+            /// </summary>
+            GET_MODULE_HANDLE_EX_FLAG_PIN = 0x00000001,
+            /// <summary>
+            /// The reference count for the module is not incremented. This option is equivalent to the 
+            /// behavior of GetModuleHandle. Do not pass the retrieved module handle to the FreeLibrary 
+            /// function; doing so can cause the DLL to be unmapped prematurely.
+            /// This option cannot be used with <see cref="GET_MODULE_HANDLE_EX_FLAG_PIN"/>.
+            /// </summary>
+            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT = 0x00000002
+        }
+
+        [SuppressUnmanagedCodeSecurity]
+        [SecurityCritical]
+        [DllImport(ExternDll.Kernel32, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetModuleHandleEx(
+            [In] GetModuleHandleFlags dwFlags,
+            [In][Optional][MarshalAs(UnmanagedType.LPTStr)] string lpModuleName,
+            [Out] out IntPtr hModule);
+
+        [SuppressUnmanagedCodeSecurity]
+        [SecurityCritical]
+        [DllImport(ExternDll.Kernel32, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool FreeLibrary([In] IntPtr hModule);
+
+#if !DRT && !UIAUTOMATIONTYPES
         ///<SecurityNote>
         /// Critical as this code performs an elevation.
         ///</SecurityNote>
@@ -1286,7 +1488,7 @@ namespace MS.Win32
         [DllImport(ExternDll.Kernel32, CharSet = CharSet.Auto, ExactSpelling = true)]
         public static extern bool GetSystemPowerStatus(ref NativeMethods.SYSTEM_POWER_STATUS systemPowerStatus);
 
-        ///<SecurityNote>
+                ///<SecurityNote>
         /// Critical - performs an elevation via SUC.
         ///</SecurityNote>
         [SecurityCritical]
@@ -1338,7 +1540,7 @@ namespace MS.Win32
         [DllImport(ExternDll.Ole32, ExactSpelling=true, CharSet=CharSet.Auto)]
         public static extern int RevokeDragDrop(HandleRef hwnd);
 
-#if !DRT
+#if !DRT && !UIAUTOMATIONTYPES
         /// <SecurityNote>
         ///     Critical:Elevates to Unmanaged code permission and can be used to
         ///     get information of messages in queues.
@@ -3024,8 +3226,8 @@ namespace MS.Win32
         IEnumConnectionPoints Clone();
     }
 
-#if !DRT
-     /// <SecurityNote>
+#if !DRT && !UIAUTOMATIONTYPES
+    /// <SecurityNote>
      ///     Critical:Elevates to Unmanaged code permission
      /// </SecurityNote>
     [SecurityCritical(SecurityCriticalScope.Everything)]
@@ -4020,6 +4222,139 @@ namespace MS.Win32
                                                 [In] ref NativeMethods.RID_DEVICE_INFO ridInfo,
                                                 ref uint sizeInBytes);
 
+        /// <summary>
+        /// Retrieves a handle to the menu assigned to the specified window.
+        /// </summary>
+        /// <param name="hWnd">A handle to the window whose menu handle is to be retrieved.</param>
+        /// <returns>The return value is a handle to the menu. If the specified window has no menu, the return value is NULL.
+        /// If the window is a child window, the return value is undefined.</returns>
+        /// <remarks>
+        /// GetMenu does not work on floating menu bars. Floating menu bars are custom controls that mimic
+        /// standard menus; they are not menus. To get the handle on a floating menu bar, use the Active Accessibility APIs.
+        /// </remarks>
+        [SecurityCritical]
+        [SuppressUnmanagedCodeSecurity]
+        [DllImport(ExternDll.User32, CallingConvention = CallingConvention.Winapi)]
+        internal extern static IntPtr GetMenu([In] HandleRef hWnd);
 
+#if !DRT && !UIAUTOMATIONTYPES
+
+        /// <summary>
+        /// Set the DPI awareness for the current thread to the provided value.
+        /// </summary>
+        /// <param name="dpiContext">
+        /// The new DPI_AWARENESS_CONTEXT for the current thread. This context includes the DPI_AWARENESS value.
+        /// </param>
+        /// <returns>
+        /// The old DPI_AWARENESS_CONTEXT for the thread. If the dpiContext is invalid, the thread will not
+        /// be updated and the return value will be NULL. You can use this value to restore the old DPI_AWARENESS_CONTEXT
+        /// after overriding it with a predefined value.
+        /// </returns>
+        /// <remarks>
+        /// Use this API to change the DPI_AWARENESS_CONTEXT for the thread from the default value for the app.
+        /// 
+        /// Minimum supported client: Windows 10, version 1607 (RS1)
+        /// </remarks>
+        [SuppressUnmanagedCodeSecurity]
+        [SecurityCritical]
+        [DllImport(ExternDll.User32, CallingConvention = CallingConvention.Winapi)]
+        internal static extern DpiAwarenessContextHandle SetThreadDpiAwarenessContext(DpiAwarenessContextHandle dpiContext);
+
+        /// <summary>
+        /// Gets the DPI_AWARENESS_CONTEXT for the current thread.
+        /// </summary>
+        /// <returns>The current DPI_AWARENESS_CONTEXT for the thread.</returns>
+        /// <remarks>
+        /// This method will return the latest DPI_AWARENESS_CONTEXT sent to SetThreadDpiAwarenessContext.
+        /// If SetThreadDpiAwarenessContext was never called for this thread, then the return value will equal
+        /// the default DPI_AWARENESS_CONTEXT for the process.
+        /// 
+        /// Minimum supported client: Windows 10, version 1607 (RS1)
+        /// </remarks>
+        [SuppressUnmanagedCodeSecurity]
+        [SecurityCritical]
+        [DllImport(ExternDll.User32, CallingConvention = CallingConvention.Winapi)]
+        internal static extern DpiAwarenessContextHandle GetThreadDpiAwarenessContext();
+
+#endif
+
+        /// <summary>
+        /// The EnumDisplayMonitors function enumerates display monitors (including invisible pseudo-monitors
+        /// associated with the mirroring drivers) that intersect a region formed by the intersection of a specified
+        /// clipping rectangle and the visible region of a device context. EnumDisplayMonitors calls an
+        /// application-defined MonitorEnumProc callback function once for each monitor that is enumerated.
+        /// Note that GetSystemMetrics (SM_CMONITORS) counts only the display monitors.
+        /// </summary>
+        /// <param name="hdc">
+        /// A handle to a display device context that defines the visible region of interest.
+        /// 
+        /// If this parameter is NULL, the hdcMonitor parameter passed to the callback function
+        /// will be NULL, and the visible region of interest is the virtual screen that encompasses all
+        /// the displays on the desktop.
+        /// </param>
+        /// <param name="lprcClip">
+        /// A pointer to a RECT structure that specifies a clipping rectangle. The region of interest
+        /// is the intersection of the clipping rectangle with the visible region specified by hdc.
+        /// 
+        /// If hdc is non-NULL, the coordinates of the clipping rectangle are relative to the origin
+        /// of the hdc.If hdc is NULL, the coordinates are virtual-screen coordinates.
+        /// 
+        /// This parameter can be NULL if you don't want to clip the region specified by hdc.
+        /// </param>
+        /// <param name="lpfnEnum">A pointer to a MonitorEnumProc application-defined callback function.</param>
+        /// <param name="lParam">Application-defined data that EnumDisplayMonitors passes directly to the
+        /// MonitorEnumProc function.</param>
+        /// <returns>
+        /// If the function succeeds, the return value is true, otherwise the
+        /// return value is false.
+        /// </returns>
+        /// <remarks>
+        /// There are two reasons to call the EnumDisplayMonitors function:
+        /// 
+        ///     You want to draw optimally into a device context that spans several display monitors, and the monitors have different color formats.
+        ///     You want to obtain a handle and position rectangle for one or more display monitors.
+        /// 
+        /// To determine whether all the display monitors in a system share the same color format, call GetSystemMetrics (SM_SAMEDISPLAYFORMAT).
+        /// 
+        /// You do not need to use the EnumDisplayMonitors function when a window spans display monitors that have different color formats.
+        /// You can continue to paint under the assumption that the entire screen has the color properties of the primary monitor.Your windows will
+        /// look fine.EnumDisplayMonitors just lets you make them look better.
+        /// 
+        /// Setting the hdc parameter to NULL lets you use the EnumDisplayMonitors function to obtain a handle and position rectangle for
+        /// one or more display monitors.The following table shows how the four combinations of NULL and non-NULLhdc and lprcClip values affect
+        /// the behavior of the EnumDisplayMonitors function.
+        /// 
+        /// +-----------------------------------------------------------------------------------+----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        /// |                                        hdc                                        | lprcRect |                                                                          EnumDisplayMonitors behavior                                                                          |
+        /// +-----------------------------------------------------------------------------------+----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        /// | NULL                                                                              | NULL     | Enumerates all display monitors.                                                                                                                                               |
+        /// | The callback function receives a NULL HDC.                                        |          |                                                                                                                                                                                |
+        /// | NULL                                                                              | non-NULL | Enumerates all display monitors that intersect the clipping rectangle.Use virtual screen coordinates for the clipping rectangle.                                               |
+        /// | The callback function receives a NULL HDC.                                        |          |                                                                                                                                                                                |
+        /// | non-NULL                                                                          | NULL     | Enumerates all display monitors that intersect the visible region of the device context.                                                                                       |
+        /// | The callback function receives a handle to a DC for the specific display monitor. |          |                                                                                                                                                                                |
+        /// | non-NULL                                                                          | non-NULL | Enumerates all display monitors that intersect the visible region of the device context and the clipping rectangle.Use device context coordinates for the clipping rectangle.  |
+        /// | The callback function receives a handle to a DC for the specific display monitor. |          |                                                                                                                                                                                |
+        /// +-----------------------------------------------------------------------------------+----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        /// </remarks>
+        [SuppressUnmanagedCodeSecurity]
+        [SecurityCritical]
+        [DllImport(ExternDll.User32, CallingConvention = CallingConvention.Winapi)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool EnumDisplayMonitors(
+            IntPtr hdc, 
+            IntPtr lprcClip, 
+            NativeMethods.MonitorEnumProc lpfnEnum, 
+            IntPtr lParam);
+
+        /// <summary>
+        /// Retrieves a value that describes the Device Guard policy enforcement status for .NET dynamic code.
+        /// </summary>
+        /// <param name="enabled">On success, returns true if the Device Guard policy enforces .NET Dynamic Code policy; otherwise, returns false.</param>
+        /// <returns>This method returns S_OK if successful or a failure code otherwise.</returns>
+        [SuppressUnmanagedCodeSecurity]
+        [SecurityCritical]
+        [DllImport(ExternDll.Wldp, CallingConvention = CallingConvention.Winapi, ExactSpelling = true)]
+        internal static extern int WldpIsDynamicCodePolicyEnabled([Out] out bool enabled);
     }
 }

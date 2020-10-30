@@ -17,6 +17,7 @@ namespace System.Windows.Controls
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using MS.Internal;
+    using MS.Internal.Telemetry.PresentationFramework;
     using MS.Internal.Text;
     using MS.Internal.Documents;
     using MS.Internal.PtsHost;
@@ -42,7 +43,7 @@ namespace System.Windows.Controls
 
         // Constructor.
         internal TextBoxView(ITextBoxViewHost host)
-        {
+        {            
             Invariant.Assert(host is Control);
             _host = host;
         }
@@ -292,11 +293,11 @@ namespace System.Windows.Controls
                     result = _scrollData.ExtentWidth;
                     if(UseLayoutRounding)
                     {
-                        // Dev 10 
-
-
-
-
+                        // Dev 10 bug: 827316
+                        // With layout rounding enabled DesiredSize.Width is rounded
+                        // so the computed value of _scrollData.ExtentWidth may not agree with DesiredSize.
+                        // This discrepancy causes the retry logic for auto scrollbars in ScrollViewer not to terminate.
+                        // This fix applies layout rounding to the Extent so that it matches DesiredSize
                         result = RoundLayoutValue(result, GetDpi().DpiScaleX);
                     }
                 }
@@ -319,11 +320,11 @@ namespace System.Windows.Controls
                     result = _scrollData.ExtentHeight;
                     if(UseLayoutRounding)
                     {
-                        // Dev 10 
-
-
-
-
+                        // Dev 10 bug: 827316
+                        // With layout rounding enabled DesiredSize.Width is rounded
+                        // so the computed value of _scrollData.ExtentWidth may not agree with DesiredSize.
+                        // This discrepancy causes the retry logic for auto scrollbars in ScrollViewer not to terminate
+                        // This fix applies layout rounding to the Extent so that it matches DesiredSize
                         result = RoundLayoutValue(result, GetDpi().DpiScaleY);
                     }
                 }
@@ -1213,6 +1214,24 @@ Exit:
             return index;
         }
 
+        // stop listening to TextContainer events
+        // (opposite of EnsureTextContainerListeners)
+        internal void RemoveTextContainerListeners()
+        {
+            if (!CheckFlags(Flags.TextContainerListenersInitialized))
+                return;
+
+            // if the flag got set, all the variables should be non-null
+            System.Diagnostics.Debug.Assert(_host != null && _host.TextContainer != null && _host.TextContainer.Highlights != null,
+                "TextBoxView partners should not be null");
+
+            _host.TextContainer.Changing -= new EventHandler(OnTextContainerChanging);
+            _host.TextContainer.Change -= new TextContainerChangeEventHandler(OnTextContainerChange);
+            _host.TextContainer.Highlights.Changed -= new HighlightChangedEventHandler(OnHighlightChanged);
+
+            SetFlags(false, Flags.TextContainerListenersInitialized);
+        }
+
         #endregion Internal Methods
 
         //------------------------------------------------------
@@ -1266,13 +1285,13 @@ Exit:
         }
 
         /// <summary>
-        /// <see cref="ITextView.IsValid"/>
+        /// <see cref="ITextView.RendersOwnSelection"/>
         /// </summary>
         bool ITextView.RendersOwnSelection
         {
             get
             {
-                return false;
+                return !FrameworkAppContextSwitches.UseAdornerForTextboxSelectionRendering;
             }
         }
 
@@ -1441,39 +1460,160 @@ Exit:
         // Callback from the TextContainer when a highlight changes.
         private void OnHighlightChanged(object sender, HighlightChangedEventArgs args)
         {
-            // The only supported highlight type for TextBoxView is SpellerHighlight.
-            if (args.OwnerType != typeof(SpellerHighlightLayer))
-            {
+            // TextBoxView supports SpellerHighlight
+            // DDVSO:405199
+            // Also support TextSelection owners for the TextSelectionHighlightLayer so we can use
+            // this layer to drive text selections in TextBoxLine.
+            if (args.OwnerType != typeof(SpellerHighlightLayer)
+               && (!((ITextView)this).RendersOwnSelection || args.OwnerType != typeof(TextSelection)))
+            { 
                 return;
             }
+
+            bool measureNeeded = false;
+            bool arrangeNeeded = false;
 
             if (_dirtyList == null)
             {
                 _dirtyList = new DtrList();
             }
 
-            //
-            // Add the change to our dirty list.
-            //
+            // We use a temporary dirty list in order to build dirty ranges that may not be used
+            var tempDirtyList = new DtrList();
 
+            //
+            // Add the change to our temp dirty list.
+            //
             foreach (TextSegment segment in args.Ranges)
             {
                 int positionsCovered = segment.End.Offset - segment.Start.Offset;
-                DirtyTextRange dirtyTextRange = new DirtyTextRange(segment.Start.Offset, positionsCovered, positionsCovered);
-                _dirtyList.Merge(dirtyTextRange);
+                DirtyTextRange dirtyTextRange = new DirtyTextRange(segment.Start.Offset, positionsCovered, positionsCovered, fromHighlightLayer: true);
+                tempDirtyList.Merge(dirtyTextRange);
             }
 
-            //
-            // Force a re-measure.
-            //
-            // NB: it's not currently possible to InvalidateArrange here.
-            // "Render only" changes from the highlight layer change the way we
-            // ultimately feed text to the formatter.  Introducing breaks for
-            // highlights may actually change the layout of the text as
-            // characters are interpreted in different contexts.  Dev10 Bugs
-            // 511849 has an example.
-            //
-            InvalidateMeasure();
+            DirtyTextRange highlightRange = tempDirtyList.GetMergedRange();
+
+            if (args.OwnerType == typeof(TextSelection))
+            {
+                HandleTextSelectionHighlightChange(highlightRange, ref arrangeNeeded, ref measureNeeded);
+            }
+            else if (args.OwnerType == typeof(SpellerHighlightLayer))
+            {
+                _dirtyList.Merge(highlightRange);
+                measureNeeded = true;
+            }
+
+            if (measureNeeded)
+            {
+                //
+                // Force a re-measure.
+                //
+                // NB: it's not currently possible to InvalidateArrange here.
+                // "Render only" changes from the highlight layer change the way we
+                // ultimately feed text to the formatter.  Introducing breaks for
+                // highlights may actually change the layout of the text as
+                // characters are interpreted in different contexts.  Dev10 Bugs
+                // 511849 has an example.
+                //
+                // DDVSO:405199
+                // The above comment does not apply to TextSelection highlights as
+                // we take these possible changes into account.
+                InvalidateMeasure();
+            }
+            else if(arrangeNeeded)
+            {
+                InvalidateArrange();
+            }
+        }
+
+        /// <summary>
+        /// Process a change to the text selection highlight.
+        /// </summary>
+        /// <param name="currentSelectionRange">The range encompassing the text selection</param>
+        /// <param name="arrangeNeeded">Set to true if we need to call arrange, false otherwise</param>
+        /// <param name="measureNeeded">Set to true if we need to call measure, false otherwise</param>
+        private void HandleTextSelectionHighlightChange(DirtyTextRange currentSelectionRange, ref bool arrangeNeeded, ref bool measureNeeded)
+        {
+            if(_lineMetrics.Count == 0)
+            {
+                measureNeeded = true;
+                return;
+            }
+
+            // If there is already a change waiting in the dirty list that covers our highlight change
+            // then we do not need to evaluate selection ranges, just merge with the current range as
+            // there will be changes within the text range anyway.
+            if (_dirtyList.Length > 0
+                && _dirtyList.DtrsFromRange(currentSelectionRange.StartIndex, currentSelectionRange.PositionsAdded) != null)
+            {
+                _dirtyList.Merge(currentSelectionRange);
+                measureNeeded = true;
+                return;
+            }
+
+            // Text selection is inherently different from speller highlights.  We are guaranteed a single contiguous range.
+            // As such, we can optimize our algorithm to choose arrange over measure.
+            int[] offsets = new int[] { currentSelectionRange.StartIndex, currentSelectionRange.StartIndex + currentSelectionRange.PositionsAdded };
+
+            using (TextBoxLine line = new TextBoxLine(this))
+            {
+                Control hostControl = (Control)_host;
+                LineProperties lineProperties = GetLineProperties();
+                TextFormattingMode textFormattingMode = TextOptions.GetTextFormattingMode(hostControl);
+                TextFormatter formatter = TextFormatter.FromCurrentDispatcher(textFormattingMode);
+                double width = GetWrappingWidth(this.RenderSize.Width);
+                double formatWidth = GetWrappingWidth(_previousConstraint.Width);
+
+                // We loop through both the start and end offsets for our text selection highlight.
+                // The start and end offsets are the only places where the text breaking in 
+                // TextBoxLine can result in a change in line metrics (making a line longer).
+                // It is this case that requires us to re-measure the line where the difference occurs
+                // and possibly subsequent lines.
+                // Note that by this time, the highlight layer has been updated so line.Format will
+                // take these into account when text breaking.
+                foreach (int offset in offsets)
+                {
+                    int lineIndex = GetLineIndexFromOffset(offset);
+
+                    LineRecord metrics = _lineMetrics[lineIndex];
+
+                    line.Format(metrics.Offset, formatWidth, width, lineProperties, new TextRunCache(), formatter);
+
+                    if (metrics.Length != line.Length)
+                    {
+                        measureNeeded = true;
+
+                        // If a line has a difference, we need to at least re-measure the range it covers.  When the dirty list
+                        // is eventually merged into a larger range in IncrementalMeasure, the entire selection range will be re-measured
+                        // if needed.
+                        _dirtyList.Merge(new DirtyTextRange(metrics.Offset, metrics.Length, metrics.Length, fromHighlightLayer: true));
+                    }
+                }
+            }
+
+            if (!measureNeeded)
+            {
+                // If we do not need a measure, then check if we need to arrange the visuals again.
+                // This is true if the selection intersects with the viewport as we will need to
+                // re-render those visuals.
+
+                // If the selection highlight is within our viewport, add the range
+                // to be rendered.
+                DirtyTextRange? selectionRenderRange = GetSelectionRenderRange(currentSelectionRange);
+
+                if (selectionRenderRange.HasValue)
+                {
+                    _dirtyList.Merge(selectionRenderRange.Value);
+                    arrangeNeeded = true;
+                    SetFlags(true, Flags.ArrangePendingFromHighlightLayer);
+                }
+                else if (_dirtyList.Length == 0)
+                {
+                    // If we have no work to do here, null out the list
+                    // as dirty list is kept null by convention when it is empty.
+                    _dirtyList = null;
+                }
+            }
         }
 
         // Sets boolean state.
@@ -1664,7 +1804,21 @@ Exit:
         // Updates line visuals on an ArrangeOverride call.
         private void ArrangeVisuals(Size arrangeSize)
         {
-            Invariant.Assert(_dirtyList == null); // We should never see pending incremental updates during arrange.
+            // We should only see pending incremental updates in arrange when they
+            // have come explicitly from the highlight layer.
+            Invariant.Assert(CheckFlags(Flags.ArrangePendingFromHighlightLayer) || _dirtyList == null);
+
+            SetFlags(false, Flags.ArrangePendingFromHighlightLayer);
+
+            // If _dirtyList is non-null here, it means we
+            // have pending highlight changes to sync to.
+            // These changes never affect line metrics, but
+            // they will clear out any cached Visuals affected.
+            if (_dirtyList != null)
+            {
+                InvalidateDirtyVisuals();
+                _dirtyList = null;
+            }
 
             //
             // Initialize state.
@@ -1714,6 +1868,14 @@ Exit:
 
             double formatWidth = GetWrappingWidth(_previousConstraint.Width);
 
+            double endOfParaGlyphWidth = ((Control)_host).FontSize * CaretElement.c_endOfParaMagicMultiplier;
+
+            // Only render the selection if we are not using the adorner and
+            // the selection is active or if inactive selection rendering is enabled.
+            bool shouldRenderSelection = ((ITextView)this).RendersOwnSelection
+                && ((bool)((Control)_host).GetValue(TextBoxBase.IsInactiveSelectionHighlightEnabledProperty)
+                || (bool)((Control)_host).GetValue(TextBoxBase.IsSelectionActiveProperty));
+
             for (int lineIndex = firstLineIndex; lineIndex <= lastLineIndex; lineIndex++)
             {
                 TextBoxLineDrawingVisual lineVisual = GetLineVisual(lineIndex);
@@ -1732,7 +1894,19 @@ Exit:
                             Invariant.Assert(metrics.Length == line.Length, "Line is out of sync with metrics!");
                         }
 
-                        lineVisual = line.CreateVisual();
+                        Geometry selectionGeometry = null;
+
+                        if (shouldRenderSelection)
+                        {
+                            var selection = _host.TextContainer.TextSelection;
+
+                            if (!selection.IsEmpty)
+                            {
+                                GetTightBoundingGeometryFromLineIndexForSelection(line, lineIndex, selection.Start.CharOffset, selection.End.CharOffset, CalculatedTextAlignment, endOfParaGlyphWidth, ref selectionGeometry);
+                            }
+                        }
+
+                        lineVisual = line.CreateVisual(selectionGeometry);
                     }
 
                     SetLineVisual(lineIndex, lineVisual);
@@ -1743,14 +1917,40 @@ Exit:
             }
         }
 
+        /// <summary>
+        /// Called during Arrange, clears any cached line Visuals that intersect with highlight changes
+        /// stored in the dirty range list.
+        /// </summary>
+        private void InvalidateDirtyVisuals()
+        {
+            // Find the affected line, and reset its visual.
+            // Highlights never affect measure.
+            for (int i = 0; i < _dirtyList.Length; i++)
+            {
+                DirtyTextRange range = _dirtyList[i];
+
+                Invariant.Assert(range.FromHighlightLayer); // We should never get any non-highlight changes here
+                Invariant.Assert(range.PositionsAdded == range.PositionsRemoved); // FromHighlightLayer never changes document size.
+
+                int firstLineIndex = GetLineIndexFromOffset(range.StartIndex, LogicalDirection.Forward);
+                int endOffset = Math.Min(range.StartIndex + range.PositionsAdded, _host.TextContainer.SymbolCount);
+                int lastLineIndex = GetLineIndexFromOffset(endOffset, LogicalDirection.Backward);
+
+                for (int lineIndex = firstLineIndex; lineIndex <= lastLineIndex; lineIndex++)
+                {
+                    ClearLineVisual(lineIndex);
+                }
+            }
+        }
+
         // Removes lines that were discarded during Measure from the visual tree. We don't want to
         // clear all of the visual children and then add lines that were already in the visual tree
         // back because native resources will get freed and reallocated unnecessarily (ref count goes
-        // to 0 -- see Dev10 
-
-
-
-
+        // to 0 -- see Dev10 bug 607756).
+        //
+        // It is safe to modify the visual tree in Arrange, but there are no guarantees during Measure.
+        // It might be possible to get rid of TextBoxLineDrawingVisual and remove items from the
+        // visual tree during Measure as well.
         private void DetachDiscardedVisualChildren()
         {
             int j = _visualChildren.Count - 1; // last non-discarded element index
@@ -1783,7 +1983,7 @@ Exit:
             // So that VisualDiagnostics.OnVisualChildChanged can get correct child index.
             // However it is not clear what can regress. We'll use _parentIndex.
             // Note that there is a comment in Visual.cs stating that _parentIndex should
-            // be set to -1 in DEBUG builds when child is removed. We are not going to 
+            // be set to -1 in DEBUG builds when child is removed. We are not going to
             // honor it. There is no _parentIndex == -1 validation is performed anywhere.
             lineVisual._parentIndex = _visualChildren.Count;
             AddVisualChild(lineVisual);
@@ -1861,21 +2061,21 @@ Exit:
                 }
                 else
                 {
-                    // WinBlue 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    // WinBlue bug 433347 uncovered a scenario where Narrator (starting
+                    // in Win8, and worsening in Blue) asks for the geometry around a
+                    // range that includes only end-of-line characters.   Such a call
+                    // arrives in this method with startOffset==endOffset ==
+                    // _lineMetrics[lineIndex].Offset + _lineMetrics[lineIndex].ContentLength;
+                    // in other words, pointing at the end of the line, just before the
+                    // end-of-line characters.  The previous comment suggests that
+                    // this was intended be handled by adding "the newline whitespace
+                    // geometry", but that doesn't happen.   Instead, control flows
+                    // here where the assert fails.
+                    //
+                    // Ideally, we'd fix this by implementing the intent of the
+                    // comment correctly.  But at this date, the consensus is to
+                    // simply avoid crashing.   Changing the assert does this.
+                    //Invariant.Assert(endOffset == _lineMetrics[lineIndex].Offset);
                     Invariant.Assert(endOffset == _lineMetrics[lineIndex].Offset ||
                             endOffset == _lineMetrics[lineIndex].Offset + _lineMetrics[lineIndex].ContentLength);
                 }
@@ -1904,6 +2104,85 @@ Exit:
                         double contentOffset = GetContentOffset(_lineMetrics[lineIndex].Width, alignment);
                         Rect rect = new Rect(contentOffset + _lineMetrics[lineIndex].Width, lineIndex * _lineHeight, endOfParaGlyphWidth, _lineHeight);
                         rect = TransformToVisualSpace(rect);
+                        CaretElement.AddGeometry(ref geometry, new RectangleGeometry(rect));
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generates bounding geometry for a text selection.  This is similar to 
+        /// GetTightBoundingGeometryFromLineIndex, but optimized for when text
+        /// selection geometry isn't drawn within the adorner layer.  We need this
+        /// method to allow us to generate appropriate geometry when inside of 
+        /// ArrangeVisuals instead of post-arrange as the Adorner layer does.
+        /// </summary>
+        /// <param name="line">The TextBoxLine being bound</param>
+        /// <param name="lineIndex">The index of the bound line</param>
+        /// <param name="unclippedStartOffset">The start offset of the selection</param>
+        /// <param name="unclippedEndOffset">The end offset of the selection</param>
+        /// <param name="alignment"></param>
+        /// <param name="endOfParaGlyphWidth"></param>
+        /// <param name="geometry"></param>
+        private void GetTightBoundingGeometryFromLineIndexForSelection(TextBoxLine line, int lineIndex, int unclippedStartOffset, int unclippedEndOffset, TextAlignment alignment, double endOfParaGlyphWidth, ref Geometry geometry)
+        {
+            IList<Rect> bounds;
+
+            int lineStartOffset = _lineMetrics[lineIndex].Offset;
+            int lineEndOffset = _lineMetrics[lineIndex].EndOffset;
+
+            // If this line is not covered by the selection, no geometry is needed.
+            if (lineStartOffset > unclippedEndOffset
+                || lineEndOffset <= unclippedStartOffset)
+            {
+                return;
+            }
+
+            int startOffset = Math.Max(lineStartOffset, unclippedStartOffset);
+            int endOffset = Math.Min(lineEndOffset, unclippedEndOffset);
+
+            if (startOffset == endOffset) // GetRangeBounds does not accept empty runs.
+            {
+                // If we have any empty intersection, the only case to handle is when
+                // the empty range is exactly at the end of a line with a hard break.
+                // In that case we need to add the newline whitespace geometry.
+                if (unclippedStartOffset == _lineMetrics[lineIndex].EndOffset)
+                {
+                    ITextPointer position = _host.TextContainer.CreatePointerAtOffset(unclippedStartOffset, LogicalDirection.Backward);
+                    if (TextPointerBase.IsNextToPlainLineBreak(position, LogicalDirection.Backward))
+                    {
+                        Rect rect = new Rect(0, 0, endOfParaGlyphWidth, _lineHeight);
+                        CaretElement.AddGeometry(ref geometry, new RectangleGeometry(rect));
+                    }
+                }
+                else
+                {
+                    // See the comment in GetTightBoundingGeometryFromLineIndex for information about this assert.
+                    Invariant.Assert(endOffset == _lineMetrics[lineIndex].Offset ||
+                        endOffset == _lineMetrics[lineIndex].Offset + _lineMetrics[lineIndex].ContentLength);
+                }
+            }
+            else
+            {
+                bounds = line.GetRangeBounds(startOffset, endOffset - startOffset, 0, 0);
+
+                for (int i = 0; i < bounds.Count; i++)
+                {
+                    Rect rect = bounds[i];
+                    CaretElement.AddGeometry(ref geometry, new RectangleGeometry(rect));
+                }
+
+                // Add the Rect representing end-of-line, if the range covers the line end
+                // and the line has a hard line break.
+                if (unclippedEndOffset >= _lineMetrics[lineIndex].EndOffset)
+                {
+                    ITextPointer endOfLinePosition = _host.TextContainer.CreatePointerAtOffset(endOffset, LogicalDirection.Backward);
+
+                    if (TextPointerBase.IsNextToPlainLineBreak(endOfLinePosition, LogicalDirection.Backward))
+                    {
+                        double contentOffset = GetContentOffset(_lineMetrics[lineIndex].Width, alignment);
+                        Rect rect = new Rect(contentOffset + _lineMetrics[lineIndex].Width, 0, endOfParaGlyphWidth, _lineHeight);
+
                         CaretElement.AddGeometry(ref geometry, new RectangleGeometry(rect));
                     }
                 }
@@ -1967,11 +2246,11 @@ Exit:
 
             if ((ScrollBarVisibility)((Control)_host).GetValue(ScrollViewer.VerticalScrollBarVisibilityProperty) == ScrollBarVisibility.Auto)
             {
-                // Workaround for 
-
-
-
-
+                // Workaround for bug 1766924.
+                // When VerticalScrollBarVisiblity == Auto, there's a problem with
+                // our interaction with ScrollViewer.  Disable background layout to
+                // mitigate the problem until we can take a real fix in v.next.
+                // 
                 stopTime = DateTime.MaxValue;
             }
             else
@@ -2313,6 +2592,25 @@ Exit:
                             // sync position and don't stop until EndOfParagraph).
                             Invariant.Assert(lineOffset < _lineMetrics[lineIndex].EndOffset);
 
+                            var curLine = _lineMetrics[lineIndex];
+
+                            // DDVSO:405199
+                            // If we see we are working with a speller or selection highlight
+                            // DirtyTextRange, then once we know the metrics have not changed
+                            // and we are beyond the end of the dirty region we can short 
+                            // circuit the loop.  An unchanged metric means that the line
+                            // has not been influenced by prior changes due to the highlight.
+                            if (range.FromHighlightLayer
+                               && curLine.Offset > lastCoveredCharOffset
+                               && curLine.ContentLength == record.ContentLength
+                               && curLine.EndOffset == record.EndOffset
+                               && curLine.Length == record.Length
+                               && curLine.Offset == record.Offset
+                               && Standard.DoubleUtilities.AreClose(curLine.Width, record.Width))
+                            {
+                                break;
+                            }
+
                             _lineMetrics[lineIndex] = record;
                             ClearLineVisual(lineIndex);
 
@@ -2647,6 +2945,37 @@ Exit:
             return correction;
         }
 
+        /// <summary>
+        /// Uses the current selection range in order to calculate the subset of
+        /// the range that is within the viewport.
+        /// </summary>
+        /// <returns>The current range subset of the selection that resides in the viewport.</returns>
+        private DirtyTextRange? GetSelectionRenderRange(DirtyTextRange selectionRange)
+        {
+            DirtyTextRange? result = null;
+
+            int firstLineIndex, lastLineIndex;
+
+            GetVisibleLines(out firstLineIndex, out lastLineIndex);
+
+            int selectionStart = selectionRange.StartIndex;
+            int selectionEnd = selectionRange.StartIndex + selectionRange.PositionsAdded;
+
+            int viewportStart = _lineMetrics[firstLineIndex].Offset;
+            int viewportEnd = _lineMetrics[lastLineIndex].EndOffset;
+
+            if (viewportEnd >= selectionStart
+                && viewportStart <= selectionEnd)
+            {
+                int rangeStart = Math.Max(viewportStart, selectionStart);
+                int rangeSize = Math.Min(viewportEnd, selectionEnd) - rangeStart;
+
+                result = new DirtyTextRange(rangeStart, rangeSize, rangeSize, fromHighlightLayer: true);
+            }
+
+            return result;
+        }
+
         #endregion Private Methods
 
         //------------------------------------------------------
@@ -2801,7 +3130,11 @@ Exit:
 
             // When true, background layout is still running.
             BackgroundLayoutPending = 0x2,
-        }
+
+            // Determines if an arrange has been requested from the highlight layer.
+            // If this is true, then we should expect the dirty list to contain items in ArrangeVisuals.
+            ArrangePendingFromHighlightLayer = 0x4,
+    }
 
         // Caches state used across a measure/arrange calculation.
         // In addition to performance benefits, this ensures a consistent
@@ -2934,7 +3267,7 @@ Exit:
         // Number of seconds to disable background layout after receiving
         // user input.
         private const int _throttleBackgroundSeconds = 2;
-
+               
         #endregion Private Fields
     }
 }

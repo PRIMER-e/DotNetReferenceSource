@@ -319,6 +319,8 @@ namespace System.Net.Security {
         //
         private void ProcessWrite(BufferOffsetSize[] buffers, SplitWriteAsyncProtocolRequest asyncRequest)
         {
+            _SslState.CheckThrow(authSuccessCheck: true, shutdownCheck: true);
+
             foreach (BufferOffsetSize buffer in buffers)
             {
                 ValidateParameters(buffer.Buffer, buffer.Offset, buffer.Size);
@@ -376,6 +378,7 @@ namespace System.Net.Security {
             }
 
             ValidateParameters(buffer, offset, count);
+            _SslState.CheckThrow(authSuccessCheck: true, shutdownCheck: true);
 
             if (Interlocked.Exchange(ref _NestedWrite, 1) == 1)
             {

@@ -76,7 +76,7 @@ public:
     //
     static GdiGeometryConverter^ Convert(GeometryProxy% geometry, Matrix geometryToWorldTransform, bool stroking)
     {
-        // Fix 
+        // Fix bug 1534923: See GdiGeometryConverter.ResolutionScale.
         int resolutionScale = GetResolutionScale(geometry);
 
         if (resolutionScale > 1)
@@ -119,7 +119,7 @@ private:
     // conversion input
     Matrix _transform;          // geometry transformation to world space
     bool _stroking;             // if we're building GDI path for stroking or filling
-    int _resolutionScale;       // Fix 
+    int _resolutionScale;       // Fix bug 1534923: Increase path resolution if it has curves to preserve fidelity.
 
     // conversion output
     bool _isValid;              // if conversion is valid, otherwise fallback to filling widened path
@@ -182,12 +182,12 @@ public:
     }
 
     //
-    // Fix 
-
-
-
-
-
+    // Fix bug 1534923: Small Glyphs converted to Geometry loses fidelity.
+    //
+    // Factor by which the geometry has been scaled to preserve fidelity.
+    // To render this path, world transformation must be scaled by inverse of
+    // ResolutionScale.
+    //
     property int ResolutionScale
     {
         int get()
@@ -198,7 +198,7 @@ public:
 
 // Private Methods
 private:
-    // Fix 
+    // Fix bug 1534923: See GdiGeometryConverter.ResolutionScale.
     static int GetResolutionScale(GeometryProxy% geometry)
     {
         // currently we'll treat all geometry with curves as susceptible.
@@ -1214,11 +1214,11 @@ double CGDIPath::MaxCos(void)
             if (prevIndex < figureStartPoint)
             {
                 //
-                // Fix 
-
-
-
-
+                // Fix bug 1334425: MGC: Miter incorrect when last point == start point and IsClosed == true
+                //
+                // If close point is same as start point, ignore it and use point previous to close in
+                // mitering calculations.
+                //
                 PointI s = pPoints[figureStartPoint];
                 PointI e = pPoints[figureClosePoint];
 
@@ -1279,28 +1279,28 @@ double CGDIPath::MaxCos(void)
 /**************************************************************************\
 *
 * Function Description:
-*    inline function to calculate min and max values of a sequence
-*
-* Return Value:
-*    update valmin and valmax through reference
-*
-* Created:
-*    9/28/2001 fyuan
-*
+*    inline function that adjusts bounds of a rectangle specified by 
+*    topleft and bottomright to ensure that it includes the point pt. 
 \**************************************************************************/
 
-inline void UpdateMinMax(
-    IN LONG nValue,         // input vale
-    interior_ptr<int> pnMin,        // current minimum
-    interior_ptr<int> pnMax)        // current maximum
+inline void AdjustBounds(PointI^ pt, PointI^ topleft, PointI^ bottomright)
 {
-    if (nValue < *pnMin)
+    if (pt->x < topleft->x)
     {
-        *pnMin = nValue;
+        topleft->x = pt->x;
     }
-    else if (nValue > *pnMax)
+    else if (pt->x > bottomright->x)
     {
-        *pnMax = nValue;
+        bottomright->x = pt->x;
+    }
+
+    if (pt->y < topleft->y)
+    {
+        topleft->y = pt->y;
+    }
+    else if (pt->y > bottomright->y)
+    {
+        bottomright->y = pt->y;
     }
 }
 
@@ -1335,7 +1335,6 @@ void CPolyPolygon::Set(
     m_cPolygons  = cPolygons;
 }
 
-
 /**************************************************************************\
 *
 * Function Description:
@@ -1365,8 +1364,7 @@ void CPolyPolygon::GetBounds(void)
 
     for (int i = 1; i < nTotal; i++)
     {
-        UpdateMinMax(m_rgptVertex[m_offsetP + i].x, &m_topleft.x, &m_bottomright.x);
-        UpdateMinMax(m_rgptVertex[m_offsetP + i].y, &m_topleft.y, &m_bottomright.y);
+        AdjustBounds(m_rgptVertex[m_offsetP + i], m_topleft, m_bottomright);
     }
 }
 

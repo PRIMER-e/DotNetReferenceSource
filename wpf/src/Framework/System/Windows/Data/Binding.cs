@@ -165,10 +165,10 @@ namespace System.Windows.Data
 
         // PreSharp checks that the type of the DP agrees with the type of the static
         // accessors.  But setting the type of the DP to XmlNamespaceManager would
-        // load System.Xml during the static cctor, which is considered a perf 
-
-
-
+        // load System.Xml during the static cctor, which is considered a perf bug.
+        // So instead we set the type of the DP to 'object' and use the
+        // ValidateValueCallback to ensure that only values of the right type are allowed.
+        // Meanwhile, disable the PreSharp warning
         #pragma warning disable 7008
 
         /// <summary>

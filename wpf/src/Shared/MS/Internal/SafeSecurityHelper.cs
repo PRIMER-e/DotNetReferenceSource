@@ -293,7 +293,7 @@ namespace System.Xaml
         // Determine if two Public Key Tokens are the same.
         //
 #if !REACHFRAMEWORK
-#if PRESENTATIONFRAMEWORK || SYSTEM_XAML
+#if PRESENTATIONFRAMEWORK || SYSTEM_XAML || PRESENTATION_CORE
         internal
 #else
         private
@@ -427,13 +427,13 @@ namespace System.Xaml
 
         /// <summary>
         ///     This function is a wrapper for CultureInfo.GetCultureInfoByIetfLanguageTag().
-        ///     The wrapper works around a 
-
-
-
-
-
-
+        ///     The wrapper works around a bug in that routine, which causes it to throw
+        ///     a SecurityException in Partial Trust.  VSWhidbey bug #572162.
+        /// </summary>
+        /// <SecurityNote>
+        ///   Critical: This code elevates to access registry
+        ///   TreatAsSafe: The information it exposes is safe to give out and all it does is read a specific key
+        /// </SecurityNote>
         [SecurityCritical,SecurityTreatAsSafe]
         static internal CultureInfo GetCultureInfoByIetfLanguageTag(string languageTag)
         {

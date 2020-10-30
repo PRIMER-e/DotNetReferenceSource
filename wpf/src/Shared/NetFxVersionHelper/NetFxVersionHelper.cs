@@ -59,14 +59,18 @@ namespace MS.Internal
         internal static string GetTargetFrameworkVersion()
         {
             string frameworkVersion = string.Empty;
-            try
+            string targetFrameworkName = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+            if (!string.IsNullOrEmpty(targetFrameworkName))
             {
-                FrameworkName frameworkName = new FrameworkName(AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName);
-                frameworkVersion = frameworkName.Version.ToString();
-            }
-            catch (Exception e) when (e is ArgumentException || e is ArgumentNullException)
-            {
-                // do nothing as we want empty string to be returned in case of exception
+                try
+                {
+                    FrameworkName frameworkName = new FrameworkName(targetFrameworkName);
+                    frameworkVersion = frameworkName.Version.ToString();
+                }
+                catch (Exception e) when (e is ArgumentException)
+                {
+                    // do nothing as we want empty string to be returned in case of exception
+                }
             }
             return frameworkVersion;
         }

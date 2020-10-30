@@ -449,7 +449,7 @@ Semantics::DefAsgEvalStatementList
         ptreeStmtCur = ptreeStmtCur->AsStatement().Next)
     {
 #pragma warning (suppress:4302)
-        DBG_SWITCH_PRINTF(fDumpFlow, L"%*c  EvalStatement %S  {CURBITSET=%08x}\n", ClosureDepth*2, ' ', ILTree::BilopName(ptreeStmt->bilop), (unsigned)m_DefAsgCurrentBitset);
+        DBG_SWITCH_PRINTF(fDumpFlow, L"%*c  EvalStatement %S  {CURBITSET=%08x}\n", ClosureDepth*2, ' ', ILTree::BilopName(ptreeStmt->bilop), PtrToUlong(m_DefAsgCurrentBitset));
 
         // stop the eval of this sequence if the code is no more reachable
         // the block will end in non reachable state
@@ -1052,7 +1052,7 @@ Semantics::DefAsgEvalBlock
     m_DefAsgCurrentBitset = m_DefAsgCurrentBitset->setInto(block->inDefAsgBitset);
 
 #pragma warning (suppress:4302)
-    DBG_SWITCH_PRINTF(fDumpFlow, L"%*c  EvalBlock: %S@%08x  {INBITSET=%08x}  {OUTBITSET=%08x}\n", ClosureDepth*2, ' ', ILTree::BilopName(block->bilop), (unsigned)block, (unsigned)block->inDefAsgBitset, (unsigned)block->outDefAsgBitset);
+    DBG_SWITCH_PRINTF(fDumpFlow, L"%*c  EvalBlock: %S@%08x  {INBITSET=%08x}  {OUTBITSET=%08x}\n", ClosureDepth*2, ' ', ILTree::BilopName(block->bilop), PtrToUlong(block), PtrToUlong(block->inDefAsgBitset), PtrToUlong(block->outDefAsgBitset));
 
 
     switch (block->bilop)
@@ -1344,15 +1344,15 @@ Semantics::DefAsgEvalBlock
             // Consider control variable initialized, set the slot.
 
 
-            // Dev11 
-
+            // Dev11 Bug 150829, if ControlVariableReference is NULL, it should 
+            // skip DefAsgSet. Also assert if ControlVariableReference is NULL.
             if (NULL != ControlVariableReference)
             {
                 DefAsgSet(ControlVariableReference, ClosureDepth);
             }
             else
             {
-                // Reactivate  Dev11 
+                // Reactivate  Dev11 Bug 150829, if this assert is hit.          
                 VSFAIL("Why ControlVariableReference is NULL?");
             }
 
@@ -1476,7 +1476,7 @@ Semantics::DefAsgEvalBlock
     } // switch
 
 #pragma warning (suppress:4302)
-    DBG_SWITCH_PRINTF(fDumpFlow, L"%*c  EvalBlockDone: %S@%08x  {INBITSET=%08x}  {OUTBITSET=%08x}\n", ClosureDepth*2, ' ', ILTree::BilopName(block->bilop), (unsigned)block, (unsigned)block->inDefAsgBitset, (unsigned)block->outDefAsgBitset);
+    DBG_SWITCH_PRINTF(fDumpFlow, L"%*c  EvalBlockDone: %S@%08x  {INBITSET=%08x}  {OUTBITSET=%08x}\n", ClosureDepth*2, ' ', ILTree::BilopName(block->bilop), PtrToUlong(block), PtrToUlong(block->inDefAsgBitset), PtrToUlong(block->outDefAsgBitset));
 
 }
 
@@ -1709,7 +1709,7 @@ Semantics::DefAsgProcessSlots
                         }
                     }
 #pragma warning (suppress:4302)
-                    DBG_SWITCH_PRINTF(fDumpFlow, L"    %s @%08x: slot=%i, size=%i\n", pvar->GetName(), (unsigned)pvar, m_DefAsgCount+1, size);
+                    DBG_SWITCH_PRINTF(fDumpFlow, L"    %s @%08x: slot=%i, size=%i\n", pvar->GetName(), PtrToUlong(pvar), m_DefAsgCount+1, size);
                     if (size)
                     {
 #if DEBUG
@@ -1724,7 +1724,7 @@ Semantics::DefAsgProcessSlots
                 else
                 {
 #pragma warning (suppress:4302)
-                    DBG_SWITCH_PRINTF(fDumpFlow, L"    %s @%08x skipped; Varkind=%i\n", pvar->GetName(), (unsigned)pvar, pvar->GetVarkind());
+                    DBG_SWITCH_PRINTF(fDumpFlow, L"    %s @%08x skipped; Varkind=%i\n", pvar->GetName(), PtrToUlong(pvar), pvar->GetVarkind());
                 }
             } // while locals
         }
@@ -2502,8 +2502,8 @@ void Semantics::DefAsgCheckUse
             if (ptree->AsCallExpression().ptreeThis)
             {
                 // Make definite assignment handle the special case of initializing structures for the
-                // scenario in 
-
+                // scenario in bug VSWhidbey 270278.
+                //
                 if (ptree->AsCallExpression().ptreeThis->bilop == SX_ADR &&
                     ptree->AsCallExpression().ptreeThis->AsExpressionWithChildren().Left->bilop == SX_SYM &&
                     ptree->AsCallExpression().Left->bilop == SX_SYM &&
@@ -2528,8 +2528,8 @@ void Semantics::DefAsgCheckUse
             } // while ptreeList
 
             // Make definite assignment handle the special case of initializing structures for the
-            // scenario in 
-
+            // scenario in bug VSWhidbey 270278.
+            //
             if (pinitializedStruct)
             {
                 DefAsgSet(pinitializedStruct, ClosureDepth);
@@ -2724,7 +2724,8 @@ void Semantics::UpdateLabelOrBlockAcrossTryCatch( ILTree::PILNode gotoOrExitNode
             m_DefAsgTempBitset->setInto(gotoOrExitNode->AsReturnStatement().outDefAsgBitset):
             m_DefAsgTempBitset->setInto(gotoOrExitNode->AsExitStatement().outDefAsgBitset));
 
-    for (ILTree::ExecutableBlock* parent = gotoOrExitNode->AsStatement().Parent;
+	ILTree::ExecutableBlock* parent;
+    for (parent = gotoOrExitNode->AsStatement().Parent;
         parent;
         parent = parent->Parent)
     {
@@ -2855,7 +2856,7 @@ void Semantics::DefAsgSetOrCheckForUse(ILTree::PILNode ptree, BITSET   *&bitSet,
                 VSASSERT(pvar->GetVarkind() == VAR_Local || pvar->GetVarkind() == VAR_FunctionResult, "Why a non local has defasg slot");
                 bitSet = bitSet->setBits(pvar->GetDefAsgSlot(), pvar->GetDefAsgSize());
 #pragma warning (suppress:4302)
-                DBG_SWITCH_PRINTF(fDumpFlow, L"  *Assigned: %s @%08x [slot:%u size:%u]  {CURBITSET=%08x}\n", pvar->GetName(), (unsigned)pvar, pvar->GetDefAsgSlot(), pvar->GetDefAsgSize(), m_DefAsgCurrentBitset);
+                DBG_SWITCH_PRINTF(fDumpFlow, L"  *Assigned: %s @%08x [slot:%u size:%u]  {CURBITSET=%08x}\n", pvar->GetName(), PtrToUlong(pvar), pvar->GetDefAsgSlot(), pvar->GetDefAsgSize(), m_DefAsgCurrentBitset);
                 VSASSERT(pvar == m_DefAsgSlotAssignments.Element(pvar->GetDefAsgSlot()), "error: we just assigned a variable into a slot not intended for it. This will lead to errors.");
             }
         }

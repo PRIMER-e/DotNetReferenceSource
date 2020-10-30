@@ -688,7 +688,7 @@ namespace System.Windows.Controls
             //         ...
             //
             // This is not what we intend to establish and support. But we discovered this after shipping V1. We need to maintain this behavior until
-            // V4.0 when we will have an opportunity to do BC. Will file a 
+            // V4.0 when we will have an opportunity to do BC. Will file a bug for V4.0.
 
             bool isParentValid = false;
             // Don't worry about FCE since FCE is not a visual

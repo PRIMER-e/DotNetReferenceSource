@@ -18,6 +18,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Markup;
 using System.Windows.Input;
+using System.Windows.Automation.Peers;
 
 using MS.Utility;
 using MS.Internal;
@@ -123,7 +124,7 @@ namespace System.Windows.Controls
 
             // the generator must attach its collection change handler before
             // the control itself, so that the generator is up-to-date by the
-            // time the control tries to use it (
+            // time the control tries to use it (bug 892806 et al.)
             _itemContainerGenerator = new ItemContainerGenerator(this);
 
             _itemContainerGenerator.ChangeAlternationCount();
@@ -1324,19 +1325,19 @@ namespace System.Windows.Controls
         {
             DependencyObject container;
 
-            // use the item directly, if possible (
+            // use the item directly, if possible (bug 870672)
             if (IsItemItsOwnContainerOverride(item))
                 container = item as DependencyObject;
             else
                 container = GetContainerForItemOverride();
 
             // the container might have a parent from a previous
-            // generation (
-
-
-
-
-
+            // generation (bug 873118).  If so, clean it up before using it again.
+            //
+            // Note: This assumes the container is about to be added to a new parent,
+            // according to the ItemsControl/Generator/Container pattern.
+            // If someone calls the generator and doesn't add the container to
+            // a visual parent, unexpected things might happen.
             Visual visual = container as Visual;
             if (visual != null)
             {
@@ -1395,7 +1396,7 @@ namespace System.Windows.Controls
             if (container == item && TraceData.IsEnabled)
             {
                 // issue a message if there's an ItemTemplate(Selector) for "direct" items
-                // The ItemTemplate isn't used, which may confuse the user (
+                // The ItemTemplate isn't used, which may confuse the user (bug 991101).
                 if (ItemTemplate != null || ItemTemplateSelector != null)
                 {
                     TraceData.Trace(TraceEventType.Error, TraceData.ItemTemplateForDirectItem, AvTrace.TypeName(item));
@@ -1414,13 +1415,13 @@ namespace System.Windows.Controls
         /// </summary>
         void IGeneratorHost.ClearContainerForItem(DependencyObject container, object item)
         {
-            // This method no longer does most of the work it used to (
-
-
-
-
-
-
+            // This method no longer does most of the work it used to (bug 1445288).
+            // It is called when a container is removed from the tree;  such a
+            // container will be GC'd soon, so there's no point in changing
+            // its properties.
+            //
+            // We still call the override method, to give subclasses a chance
+            // to clean up anything they may have done during Prepare (bug 1561206).
 
             GroupItem groupItem = container as GroupItem;
             if (groupItem == null)
@@ -1871,7 +1872,17 @@ namespace System.Windows.Controls
 
         internal bool NavigateByLine(FocusNavigationDirection direction, ItemNavigateArgs itemNavigateArgs)
         {
-            return NavigateByLine(FocusedInfo, Keyboard.FocusedElement as FrameworkElement, direction, itemNavigateArgs);
+            DependencyObject startingElement = Keyboard.FocusedElement as DependencyObject;
+            if (!FrameworkAppContextSwitches.KeyboardNavigationFromHyperlinkInItemsControlIsNotRelativeToFocusedElement)
+            {
+                while (startingElement != null && !(startingElement is FrameworkElement))
+                {
+                    // if focus is on a non-FE (e.g. Hyperlink), start the navigation
+                    // from its nearest FE ancestor (DDVSO 405208)
+                    startingElement = KeyboardNavigation.GetParent(startingElement) as DependencyObject;
+                }
+            }
+            return NavigateByLine(FocusedInfo, startingElement as FrameworkElement, direction, itemNavigateArgs);
         }
 
         internal void PrepareNavigateByLine(ItemInfo startingInfo,
@@ -1981,9 +1992,9 @@ namespace System.Windows.Controls
                 if (startingElement == null || !ItemsHost.IsAncestorOf(startingElement))
                 {
                     //
-                    // 
-
-
+                    // Bug 991220 makes it so that we have to start from the ScrollHost.
+                    // If we try to start from the ItemsHost it will always skip the first item.
+                    //
                     startingElement = ScrollHost;
                 }
                 else
@@ -3410,7 +3421,7 @@ namespace System.Windows.Controls
         {
             FrameworkObject foContainer = new FrameworkObject(container);
 
-            // don't overwrite a locally-defined style (
+            // don't overwrite a locally-defined style (bug 1018408)
             if (!foContainer.IsStyleSetFromGenerator &&
                 container.ReadLocalValue(FrameworkElement.StyleProperty) != DependencyProperty.UnsetValue)
             {
@@ -3472,13 +3483,24 @@ namespace System.Windows.Controls
             return item;
         }
 
-        // A version of Object.Equals with paranoia for UnsetValue, to avoid problems
-        // with classes that implement Object.Equals poorly, as in Dev11 439664, 746174
+        // A version of Object.Equals with paranoia for mismatched types, to avoid problems
+        // with classes that implement Object.Equals poorly, as in Dev11 439664, 746174, DDVSO 602650
         internal static bool EqualsEx(object o1, object o2)
         {
-            if (DependencyProperty.UnsetValue == o1)    return (o1 == o2);
-            if (DependencyProperty.UnsetValue == o2)    return false;
-            return Object.Equals(o1, o2);
+            try
+            {
+                return Object.Equals(o1, o2);
+            }
+            catch (System.InvalidCastException)
+            {
+                // A common programming error: the type of o1 overrides Equals(object o2)
+                // but mistakenly assumes that o2 has the same type as o1:
+                //     MyType x = (MyType)o2;
+                // This throws InvalidCastException when o2 is a sentinel object,
+                // e.g. UnsetValue, DisconnectedItem, NewItemPlaceholder, etc.
+                // Rather than crash, just return false - the objects are clearly unequal.
+                return false;
+            }
         }
 
         #endregion
@@ -3598,7 +3620,7 @@ namespace System.Windows.Controls
                             object item = info.Item;
                             ItemContainerGenerator.FindItem(
                                 delegate(object o, DependencyObject d)
-                                    { return Object.Equals(o, item) &&
+                                    { return ItemsControl.EqualsEx(o, item) &&
                                         !claimedContainers.Contains(d); },
                                 out container, out index);
                         }
@@ -3749,11 +3771,10 @@ namespace System.Windows.Controls
             {
                 // mark the special DOs as sentinels.  This helps catch bugs involving
                 // using them accidentally for anything besides equality comparison.
-                // [Removed from 4.6.2 at request of .Net Shiproom]
-                //SentinelContainer.MakeSentinel();
-                //UnresolvedContainer.MakeSentinel();
-                //KeyContainer.MakeSentinel();
-                //RemovedContainer.MakeSentinel();
+                SentinelContainer.MakeSentinel();
+                UnresolvedContainer.MakeSentinel();
+                KeyContainer.MakeSentinel();
+                RemovedContainer.MakeSentinel();
             }
 
             public ItemInfo(object item, DependencyObject container=null, int index=-1)
@@ -3916,6 +3937,20 @@ namespace System.Windows.Controls
             // but this function should try to return what's consistent with ItemsControl state.
             int itemsCount = HasItems ? Items.Count : 0;
             return SR.Get(SRID.ToStringFormatString_ItemsControl, this.GetType(), itemsCount);
+        }
+
+        // work around DDVSO 410007
+        // This should really override OnCreateAutomationPeer, but that API addition
+        // isn't an option.   When it becomes an option:
+        //  a. rename this method to OnCreateAutomationPeer
+        //  b. change its visibilty from internal to protected
+        //  c. remove UIElement.OnCreateAutomationPeerInternal, and its use in
+        //      UIElement.CreateAutomationPeer
+        //  d. change visibility of ItemsControlWrapperAutomationPeer and
+        //      ItemsControlItemAutomationPeer from internal to public
+        internal override AutomationPeer OnCreateAutomationPeerInternal()
+        {
+            return new ItemsControlWrapperAutomationPeer(this);
         }
 
         #endregion

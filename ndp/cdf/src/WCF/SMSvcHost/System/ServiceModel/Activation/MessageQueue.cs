@@ -437,7 +437,24 @@ namespace System.ServiceModel.Activation
                 return ListenerExceptionStatus.ProtocolUnsupported;
             }
 
-            ListenerExceptionStatus status = RoutingTable.Start(this, path);
+            ListenerExceptionStatus status;
+            int registrationRetries = AppSettings.ListenerRegistrationRetryCount;
+            do
+            {
+                status = RoutingTable.Start(this, path);
+                if (status == ListenerExceptionStatus.ConflictingRegistration)
+                {
+                    if (registrationRetries > 0)
+                    {
+                        Thread.Sleep(AppSettings.ListenerRegistrationRetryDelay);
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            } while (registrationRetries-- > 0);
+
             if (status == ListenerExceptionStatus.Success)
             {
                 paths.Add(path);

@@ -343,7 +343,7 @@ _CRT_DEPRECATE_TEXT("Direct heap access is not safely possible from managed code
 #endif  /* _CRT_MANAGED_HEAP_NO_WARNINGS */
 #endif  /* _CRT_MANAGED_HEAP_DEPRECATE */
 
-/* Change the __FILL_BUFFER_PATTERN to 0xFE to fix security function buffer overrun detection */
+/* Change the __FILL_BUFFER_PATTERN to 0xFE to fix security function buffer overrun detection bug */
 #define _SECURECRT_FILL_BUFFER_PATTERN 0xFE
 
 /* obsolete stuff */

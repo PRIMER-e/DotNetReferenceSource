@@ -7,12 +7,12 @@
 // Description: This is a super simple Matrix3DStack implementation.
 //              MatrixStack (2D) is optimized to avoid boxig and copying
 //              of structs.  This was written as a stop-gap to address
-//              a 
-
-
-
-
-
+//              a bug until we can use CodeGen here.
+//              
+// History:  
+//  1/19/2004 : Microsoft - Created
+//
+//---------------------------------------------------------------------------
 
 using System;
 using System.Collections;

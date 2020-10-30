@@ -709,7 +709,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
                 ManagementPath classPath = new ManagementPath();
@@ -806,7 +806,7 @@ namespace System.Management
                         if ((status & 0xfffff000) == 0x80041000)
                             ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                         else
-                            Marshal.ThrowExceptionForHR(status);
+                            Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                     }
 
                     wbemObject = tempObj;
@@ -942,7 +942,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -1078,7 +1078,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
             }
@@ -1208,7 +1208,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -1312,7 +1312,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
             }
@@ -1434,7 +1434,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -1526,7 +1526,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
                 newPath = GetPath(wbemCallResult);
@@ -1689,7 +1689,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -1831,7 +1831,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
                 newPath = GetPath(wbemCallResult);
@@ -1947,7 +1947,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -2009,7 +2009,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
             finally
@@ -2082,7 +2082,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -2341,7 +2341,7 @@ namespace System.Management
                         if ((status & 0xfffff000) == 0x80041000)
                             ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                         else
-                            Marshal.ThrowExceptionForHR(status);
+                            Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                     }
 
                     if (outParams != null)
@@ -2419,7 +2419,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -2487,8 +2487,8 @@ namespace System.Management
                 // Ask it for the method parameters
                 status = wmiClass.GetMethod_(methodName, 0, out inParametersClass, out outParametersClass);
 
-                // 
-
+                // bug#92427 - To ensure that all forms of invoke return the same error codes when
+                // the method does not exist, we will map WBEM_E_NOT_FOUND to WBEM_E_METHOD_NOT_IMPLEMENTED.
                 if(status == (int)tag_WBEMSTATUS.WBEM_E_NOT_FOUND)
                     status = (int)tag_WBEMSTATUS.WBEM_E_METHOD_NOT_IMPLEMENTED;
 
@@ -2512,7 +2512,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -2546,7 +2546,7 @@ namespace System.Management
                 if ((status & 0xfffff000) == 0x80041000)
                     ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                 else
-                    Marshal.ThrowExceptionForHR(status);
+                    Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
             }
 
             return ManagementObject.GetManagementObject(theClone, this);
@@ -2698,7 +2698,7 @@ namespace System.Management
                                 if ((status & 0xfffff000) == 0x80041000)
                                     ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                                 else
-                                    Marshal.ThrowExceptionForHR(status);
+                                    Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                             }
                         }
                         finally
@@ -2787,7 +2787,7 @@ namespace System.Management
                         if ((status & 0xfffff000) == 0x80041000)
                             ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                         else
-                            Marshal.ThrowExceptionForHR(status);
+                            Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                     }
                 }
             }
@@ -2879,7 +2879,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
 

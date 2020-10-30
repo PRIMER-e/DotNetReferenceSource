@@ -89,19 +89,23 @@ using Microsoft.Win32;
            }
        }
 
-       /// <include file='doc\RadioButtonRenderer.uex' path='docs/doc[@for="RadioButtonRenderer.DrawRadioButton"]/*' />
-       /// <devdoc>
-       ///    <para>
-       ///       Renders a RadioButton control.
-       ///    </para>
-       /// </devdoc>
-       public static void DrawRadioButton(Graphics g, Point glyphLocation, RadioButtonState state) {
-           Rectangle glyphBounds = new Rectangle(glyphLocation, GetGlyphSize(g, state));
+        /// <include file='doc\RadioButtonRenderer.uex' path='docs/doc[@for="RadioButtonRenderer.DrawRadioButton"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       Renders a RadioButton control.
+        ///    </para>
+        /// </devdoc>
+        public static void DrawRadioButton(Graphics g, Point glyphLocation, RadioButtonState state) {
+            DrawRadioButton(g, glyphLocation, state, IntPtr.Zero);
+        }
+
+        internal static void DrawRadioButton(Graphics g, Point glyphLocation, RadioButtonState state, IntPtr hWnd) {
+           Rectangle glyphBounds = new Rectangle(glyphLocation, GetGlyphSize(g, state, hWnd));
 
            if (RenderWithVisualStyles) {
                InitializeRenderer((int)state);
 
-               visualStyleRenderer.DrawBackground(g, glyphBounds);
+               visualStyleRenderer.DrawBackground(g, glyphBounds, hWnd);
            }
            else {
                ControlPaint.DrawRadioButton(g, glyphBounds, ConvertToButtonState(state));
@@ -120,16 +124,18 @@ using Microsoft.Win32;
                       focused, state);
        }
 
+        /// <include file='doc\RadioButtonRenderer.uex' path='docs/doc[@for="RadioButtonRenderer.DrawRadioButton2"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       Renders a RadioButton control.
+        ///    </para>
+        /// </devdoc>
+        public static void DrawRadioButton(Graphics g, Point glyphLocation, Rectangle textBounds, string radioButtonText, Font font, TextFormatFlags flags, bool focused, RadioButtonState state) {
+            DrawRadioButton(g, glyphLocation, textBounds, radioButtonText, font, flags, focused, state, IntPtr.Zero);
+        }
 
-
-       /// <include file='doc\RadioButtonRenderer.uex' path='docs/doc[@for="RadioButtonRenderer.DrawRadioButton2"]/*' />
-       /// <devdoc>
-       ///    <para>
-       ///       Renders a RadioButton control.
-       ///    </para>
-       /// </devdoc>
-       public static void DrawRadioButton(Graphics g, Point glyphLocation, Rectangle textBounds, string radioButtonText, Font font, TextFormatFlags flags, bool focused, RadioButtonState state) {
-           Rectangle glyphBounds = new Rectangle(glyphLocation, GetGlyphSize(g, state));
+        internal static void DrawRadioButton(Graphics g, Point glyphLocation, Rectangle textBounds, string radioButtonText, Font font, TextFormatFlags flags, bool focused, RadioButtonState state, IntPtr hWnd) {
+           Rectangle glyphBounds = new Rectangle(glyphLocation, GetGlyphSize(g, state, hWnd));
            Color textColor;
 
            if (RenderWithVisualStyles) {
@@ -164,14 +170,18 @@ using Microsoft.Win32;
 
 
 
-       /// <include file='doc\RadioButtonRenderer.uex' path='docs/doc[@for="RadioButtonRenderer.DrawRadioButton4"]/*' />
-       /// <devdoc>
-       ///    <para>
-       ///       Renders a RadioButton control.
-       ///    </para>
-       /// </devdoc>
-       public static void DrawRadioButton(Graphics g, Point glyphLocation, Rectangle textBounds, string radioButtonText, Font font, TextFormatFlags flags, Image image, Rectangle imageBounds, bool focused, RadioButtonState state) {
-           Rectangle glyphBounds = new Rectangle(glyphLocation, GetGlyphSize(g, state));
+        /// <include file='doc\RadioButtonRenderer.uex' path='docs/doc[@for="RadioButtonRenderer.DrawRadioButton4"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       Renders a RadioButton control.
+        ///    </para>
+        /// </devdoc>
+        public static void DrawRadioButton(Graphics g, Point glyphLocation, Rectangle textBounds, string radioButtonText, Font font, TextFormatFlags flags, Image image, Rectangle imageBounds, bool focused, RadioButtonState state) {
+            DrawRadioButton(g, glyphLocation, textBounds, radioButtonText, font, flags, image, imageBounds, focused, state, IntPtr.Zero);
+        }
+
+        internal static void DrawRadioButton(Graphics g, Point glyphLocation, Rectangle textBounds, string radioButtonText, Font font, TextFormatFlags flags, Image image, Rectangle imageBounds, bool focused, RadioButtonState state, IntPtr hWnd) {
+           Rectangle glyphBounds = new Rectangle(glyphLocation, GetGlyphSize(g, state, hWnd));
            Color textColor;
 
            if (RenderWithVisualStyles) {
@@ -205,10 +215,14 @@ using Microsoft.Win32;
            SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters") // Using Graphics instead of IDeviceContext intentionally
        ]
        public static Size GetGlyphSize(Graphics g, RadioButtonState state) {
+           return GetGlyphSize(g, state, IntPtr.Zero); 
+       }
+
+       internal static Size GetGlyphSize(Graphics g, RadioButtonState state, IntPtr hWnd) {
            if (RenderWithVisualStyles) {
                InitializeRenderer((int)state);
     
-               return visualStyleRenderer.GetPartSize(g, ThemeSizeType.Draw);
+               return visualStyleRenderer.GetPartSize(g, ThemeSizeType.Draw, hWnd);
            }
 
            return new Size(13, 13); 
@@ -263,13 +277,22 @@ using Microsoft.Win32;
            }
        }
 
-       private static void InitializeRenderer(int state) {
-           if (visualStyleRenderer == null) {
-               visualStyleRenderer = new VisualStyleRenderer(RadioElement.ClassName, RadioElement.Part, state);
-           }
-           else {
-               visualStyleRenderer.SetParameters(RadioElement.ClassName, RadioElement.Part, state);
-           }
-       }
+        private static void InitializeRenderer(int state) {
+            RadioButtonState radioButtonState = (RadioButtonState)state;
+            int part = RadioElement.Part;
+            if (AccessibilityImprovements.Level2
+                && SystemInformation.HighContrast 
+                && (radioButtonState == RadioButtonState.CheckedDisabled || radioButtonState == RadioButtonState.UncheckedDisabled)
+                && VisualStyleRenderer.IsCombinationDefined(RadioElement.ClassName, VisualStyleElement.Button.RadioButton.HighContrastDisabledPart)) {
+                    part = VisualStyleElement.Button.RadioButton.HighContrastDisabledPart;
+            }
+
+            if (visualStyleRenderer == null) {
+                visualStyleRenderer = new VisualStyleRenderer(RadioElement.ClassName, part, state);
+            }
+            else {
+                visualStyleRenderer.SetParameters(RadioElement.ClassName, part, state);
+            }
+        }
     }
 }

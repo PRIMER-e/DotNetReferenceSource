@@ -26,7 +26,7 @@ namespace System.Windows.Automation.Peers
     /// <remarks>
     /// Basically, the idea is to add a virtual method called CreateAutomationPeer on ViewBase
     /// Any view can override this method to create its own automation peer.
-    /// ListView will use this method to get an automation peer for a given view and default to 
+    /// ListView will use this method to get an automation peer for a given view and default to
     /// the properties/methods/patterns implemented by the view before going to default fall-backs on it
     /// These view automation peer must implement IViewAutomationPeer interface
     /// </remarks>
@@ -54,7 +54,7 @@ namespace System.Windows.Automation.Peers
             return AutomationControlType.DataGrid;
         }
 
-        /// 
+        ///
         object IViewAutomationPeer.GetPattern(PatternInterface patternInterface)
         {
             object ret = null;
@@ -69,7 +69,7 @@ namespace System.Windows.Automation.Peers
             return ret;
         }
 
-        /// 
+        ///
         List<AutomationPeer> IViewAutomationPeer.GetChildren(List<AutomationPeer> children)
         {
             //Add GridViewHeaderRowPresenter as the first child of ListView
@@ -112,9 +112,9 @@ namespace System.Windows.Automation.Peers
         }
 
         //Called when the view is detached from the listview
-        // Note: see 
-
-
+        // Note: see bug 1555137 for details.
+        // Never inline, as we don't want to unnecessarily link the
+        // automation DLL via the ITableProvider, IGridProvider interface type initialization.
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void IViewAutomationPeer.ViewDetached()
         {
@@ -163,7 +163,7 @@ namespace System.Windows.Automation.Peers
         /// </summary>
         IRawElementProviderSimple[] ITableProvider.GetRowHeaders()
         {
-            //If there are no row headers, return an empty array 
+            //If there are no row headers, return an empty array
             return new IRawElementProviderSimple[0];
         }
 
@@ -176,13 +176,13 @@ namespace System.Windows.Automation.Peers
         /// </summary>
         int IGridProvider.ColumnCount
         {
-            get 
+            get
             {
                 if (_owner.HeaderRowPresenter != null)
                 {
                     return _owner.HeaderRowPresenter.ActualColumnHeaders.Count;
                 }
-                return _owner.Columns.Count; 
+                return _owner.Columns.Count;
             }
         }
 
@@ -222,7 +222,7 @@ namespace System.Windows.Automation.Peers
 
                 if (lvi != null)
                 {
-                    //Must call Invoke here to force run the render process 
+                    //Must call Invoke here to force run the render process
                     _listview.Dispatcher.Invoke(
                         System.Windows.Threading.DispatcherPriority.Loaded,
                         (System.Windows.Threading.DispatcherOperationCallback)delegate(object arg)
@@ -239,11 +239,16 @@ namespace System.Windows.Automation.Peers
                 AutomationPeer lvpeer = UIElementAutomationPeer.FromElement(_listview);
                 if(lvpeer != null)
                 {
-                    List<AutomationPeer> rows = lvpeer.GetChildren();
-                    //Headers is the first child of GridView, so we need to skip it here
-                    if (rows.Count-1 > row)
+                    AutomationPeer peer = UIElementAutomationPeer.FromElement(lvi);
+                    if (peer != null)
                     {
-                        AutomationPeer peer = rows[row+1];
+                        // use the GridViewItemAutomationPeer, if available
+                        AutomationPeer eventSource = peer.EventsSource;
+                        if (eventSource != null)
+                        {
+                            peer = eventSource;
+                        }
+
                         List<AutomationPeer> columns = peer.GetChildren();
                         if (columns.Count > column)
                         {

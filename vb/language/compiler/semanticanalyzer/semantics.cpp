@@ -705,8 +705,8 @@ Semantics::InitializeFields
         // Indidate that this statement is an initialization statement in an
         // instance constructor so that it is generated outside the try block
         // generated for the on error statement.
-        // 
-
+        // Bug VSWhidbey 204996
+        //
         SetFlag32(InitStmt, SLF_INIT_ME);
     }
 
@@ -823,7 +823,7 @@ Semantics::InitializeFields
         if (FileContainingMember &&
             FileContainingMember != m_SourceFile)
         {
-            // 
+            // Bug VSWhidbey 564823.
             m_SourceFile = FileContainingMember;
 
             m_UnnamedNamespaceForNameLookupInImports = FileContainingMember->GetUnnamedNamespace();
@@ -963,7 +963,7 @@ Semantics::InitializeFields
         // interpret the initializers in the context of the class rather the ctor context.
         // if the initializers are interpreted in the context of the ctor then the argument
         // names can hide the names of other fields in the class. The initializer will bind to
-        // argument names instead. 
+        // argument names instead. bug(b156175)
         Scope *savedLookup = m_Lookup;
         m_Lookup = ViewAsScope(ContainingClass());
         if (Member->IsNew())
@@ -2220,7 +2220,7 @@ Semantics::InterpretMethodBody
         // But if there were field initializers, then they'll have been injected into all class constructors,
         // and we need to do flow-analysis on them. (although not on constructors of anonymous delegates)
         // Note: if there were multiple constructors then each field initializer will end up
-        // being analyzed multiple times; see 
+        // being analyzed multiple times; see bug Dev10#498116
         CheckFlow(BoundBody,false);
     }
 
@@ -2372,7 +2372,7 @@ Semantics::InterpretExpressionAndLower
 
         // During processing in the iterator, all SX_DEFERRED_TEMPs should be removed.
         // If the method still has deferred temps then they were created during iterate.
-        // This is a 
+        // This is a bug in the iterate code. 
         ThrowIfTrue(m_methodDeferredTempCount != 0);
     }
 
@@ -2621,7 +2621,7 @@ Semantics::InterpretConstantExpression
         (m_EvaluatingConditionalCompilationConstants &&
         TypeHelpers::IsArrayType(ExpressionResult->ResultType)))
     {
-        // DevDiv 
+        // DevDiv Bug #162847: things like #Date1#-#Date2# will yield a TimeSpan, which isn't a constant, so we report an error
 
         if (!IsBad(ExpressionResult))
         {
@@ -5185,16 +5185,16 @@ Semantics::InferTypeArgumentsFromLambdaArgument
         if(Argument->bilop == SX_UNBOUND_LAMBDA)
         {
             // Port SP1 CL 2943055 to VS10
-            // 
-
-
-
-
-
-
-
-
-
+            // Bug #165844 - DevDiv Bugs        
+            // It turns out that InterpretUnboundLambdaBinding() is destructive to the UnboundLambdaExpression node.
+            // In particular parameter's type may be modified. Also, below we modify some fields in this structure.
+            // So, let's clone the node here and operate on the copy instead. The xCopyBilTreeForScratch will clone 
+            // parameters too. Instead, we could do a shallow copy here and clone parameters inside 
+            // InterpretUnboundLambdaBinding. However, it seems like an overkill to clone parameters every time 
+            // InterpretUnboundLambdaBinding is called because, usually, when we don't want the tree to be mutated,
+            // InterpretUnboundLambdaBinding is operating on a copy already created by Overload Resolution. 
+            // The interesting thing about type inference is that it may be called twice from MatchArguments (the second
+            // time is to report errors) and the second call is going to operate on mutated Lambdas, unless we prevent mutation.
             ILTree::UnboundLambdaExpression* UnboundLambda = &m_TreeAllocator.xCopyBilTreeForScratch(Argument)->AsUnboundLambdaExpression();
 
             // Don't allow relaxation semantics, we want the pure type of the body.
@@ -5538,8 +5538,8 @@ Semantics::InferTypeArguments
                 if (TypeArguments[TypeArgumentIndex] == NULL)
                 {
                     InferenceOK = false;
-                    // 
-
+                    // Bug 122092: AddressOf doesn't want detailed info on which parameters could not be
+                    // inferred, just report the general type inference failed message in this case.
                     if (HasFlag(OvrldFlags, OvrldReportErrorsForAddressOf))
                     {
                         SomeInferenceFailed = true;
@@ -7855,7 +7855,7 @@ Semantics::TransformDeferredTemps()
 
         // During processing in the iterator, all SX_DEFERRED_TEMPs should be removed.
         // If the method still has deferred temps then they were created during iterate.
-        // This is a 
+        // This is a bug in the iterate code. 
 
         ThrowIfTrue(m_methodDeferredTempCount != 0);
     }
@@ -8045,8 +8045,8 @@ Semantics::LowerBoundTreesForMethod(ILTree::ProcedureBlock *BoundBody, Transient
         // late during interpretation and not as soon as the anonymous delegate is created
         // in order to ensure that only the anonymous delegates that are used in the final
         // bound tree are emitted into the assembly.
-        // For an exmaple, see 
-
+        // For an exmaple, see bug Devdiv 78381.
+        //
         RegisterRequiredAnonymousDelegates(BoundBody);
 
         CLinkRangeIter<TransientSymbol> iter(m_SymbolsCreatedDuringInterpretation->MethodSymbolIterator());
@@ -8982,8 +8982,8 @@ Semantics::LowerCType(
 // late during interpretation and not as soon as the anonymous delegate is created
 // in order to ensure that only the anonymous delegates that are used in the final
 // bound tree are emitted into the assembly.
-// For an exmaple, see 
-
+// For an exmaple, see bug Devdiv 78381.
+//
 void Semantics::RegisterRequiredAnonymousDelegates
 (
     ILTree::ProcedureBlock *OuterMostProcedureBoundTree
@@ -9247,11 +9247,11 @@ Semantics::IterateNamespaceRingForEM
         {
             // Dev10 #570673 Below is a comment copied from Semantics::LookupInModulesInNamespace(), 
             // we are hitting the same issue here.
-            // 
-
-
-
-
+            // Bug 437737. With the new compilation order for diamond references,
+            // modules in metadata files that are not referenced by this project
+            // either directly or indirectly cannot be loaded when binding this
+            // project.
+            //
             if (!(pNamespace->GetCompilerFile() &&
                   pNamespace->GetCompilerFile()->IsMetaDataFile() &&
                   pNamespace->GetCompilerFile()->GetCompState() < CS_Bound))

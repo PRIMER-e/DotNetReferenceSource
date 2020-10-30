@@ -1784,8 +1784,11 @@ namespace System.Windows
 
             lock (_colorCacheValid)
             {
-                if (!_colorCacheValid[(int)slot])
+                // the loop protects against a race condition - see SystemParameters
+                while (!_colorCacheValid[(int)slot])
                 {
+                    _colorCacheValid[(int)slot] = true;
+
                     uint argb;
                     int sysColor = SafeNativeMethods.GetSysColor(SlotToFlag(slot));
 
@@ -1793,12 +1796,9 @@ namespace System.Windows
                     color = Color.FromArgb((byte)((argb & 0xff000000) >>24), (byte)((argb & 0x00ff0000) >>16), (byte)((argb & 0x0000ff00) >>8), (byte)(argb & 0x000000ff));
 
                     _colorCache[(int)slot] = color;
-                    _colorCacheValid[(int)slot] = true;
                 }
-                else
-                {
-                    color = _colorCache[(int)slot];
-                }
+
+                color = _colorCache[(int)slot];
             }
 
             return color;
@@ -1810,18 +1810,18 @@ namespace System.Windows
 
             lock (_brushCacheValid)
             {
-                if (!_brushCacheValid[(int)slot])
+                // the loop protects against a race condition - see SystemParameters
+                while (!_brushCacheValid[(int)slot])
                 {
+                    _brushCacheValid[(int)slot] = true;
+
                     brush = new SolidColorBrush(GetSystemColor(slot));
                     brush.Freeze();
 
                     _brushCache[(int)slot] = brush;
-                    _brushCacheValid[(int)slot] = true;
                 }
-                else
-                {
-                    brush = _brushCache[(int)slot];
-                }
+
+                brush = _brushCache[(int)slot];
             }
 
             return brush;

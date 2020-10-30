@@ -401,6 +401,11 @@ BeginPrintFixedDocumentSequence(
     {
         _manager->SaveAsXaml(documentSequence);
 
+        if (destinationPrintQueue != nullptr)
+        {
+            destinationPrintQueue->EnsureJobId(_manager);
+        }
+
         printJobIdentifier = _manager->JobIdentifier;
     }
 }
@@ -1430,7 +1435,11 @@ CancelAsync(
             break;
 
         case DocumentWriterState::kDone:
-            if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(_manager->GetType()))
+            if (System::Windows::Xps::Serialization::XpsOMSerializationManagerAsync::typeid->Equals(_manager->GetType()))
+            {
+                ((XpsOMSerializationManagerAsync^)_manager)->CancelAsync();
+            }
+            else if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(_manager->GetType()))
             {
                 ((XpsSerializationManagerAsync^)_manager)->CancelAsync();
             }
@@ -1706,33 +1715,33 @@ ForwardProgressChangedEvent(
 WritingProgressChangeLevel
 XpsDocumentWriter::
 TranslateProgressChangeLevel(
-			 System::
-			 Windows::
-			 Xps::Serialization::XpsWritingProgressChangeLevel xpsChangeLevel )
+             System::
+             Windows::
+             Xps::Serialization::XpsWritingProgressChangeLevel xpsChangeLevel )
 {
-	WritingProgressChangeLevel changeLevel = System::Windows::Documents::Serialization::WritingProgressChangeLevel::None;
+    WritingProgressChangeLevel changeLevel = System::Windows::Documents::Serialization::WritingProgressChangeLevel::None;
 
-	switch( xpsChangeLevel )
+    switch( xpsChangeLevel )
 
-	{
+    {
 
-		case System::Windows::Documents::Serialization::WritingProgressChangeLevel::None:
-			changeLevel = System::Windows::Documents::Serialization::WritingProgressChangeLevel::None;
-			break;
+        case System::Windows::Documents::Serialization::WritingProgressChangeLevel::None:
+            changeLevel = System::Windows::Documents::Serialization::WritingProgressChangeLevel::None;
+            break;
 
-		case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentSequenceWritingProgress:
-			changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentSequenceWritingProgress;
-			break;
+        case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentSequenceWritingProgress:
+            changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentSequenceWritingProgress;
+            break;
 
-		case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentWritingProgress:
-			changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentWritingProgress;
-			break;
+        case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentWritingProgress:
+            changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentWritingProgress;
+            break;
 
-		case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedPageWritingProgress:
-			changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedPageWritingProgress;
-			break;
-	}
-	return changeLevel;
+        case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedPageWritingProgress:
+            changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedPageWritingProgress;
+            break;
+    }
+    return changeLevel;
 }
 /*++
 
@@ -1858,10 +1867,17 @@ SetPrintTicketEventHandler(
     )
 {
     #pragma warning ( disable:4691 )
-
-    if(System::Windows::Xps::Serialization::XpsSerializationManager::typeid->Equals(manager->GetType()))
+    if (System::Windows::Xps::Serialization::XpsOMSerializationManager::typeid->Equals(manager->GetType()))
+    {
+        ((XpsOMSerializationManager^)manager)->XpsSerializationPrintTicketRequired += eventHandler;
+    }
+    else if(System::Windows::Xps::Serialization::XpsSerializationManager::typeid->Equals(manager->GetType()))
     {
         ((XpsSerializationManager^)manager)->XpsSerializationPrintTicketRequired += eventHandler;
+    }
+    else if (System::Windows::Xps::Serialization::XpsOMSerializationManagerAsync::typeid->Equals(manager->GetType()))
+    {
+        ((XpsOMSerializationManagerAsync^)manager)->XpsSerializationPrintTicketRequired += eventHandler;
     }
     else if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(manager->GetType()))
     {
@@ -1909,8 +1925,13 @@ SetCompletionEventHandler(
     {
         _currentUserState = userState;
     }
-
-    if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(manager->GetType()))
+    if (System::Windows::Xps::Serialization::XpsOMSerializationManagerAsync::typeid->Equals(manager->GetType()))
+    {
+        ((XpsOMSerializationManagerAsync^)manager)->
+            XpsSerializationCompleted += gcnew XpsSerializationCompletedEventHandler(this,
+            &XpsDocumentWriter::ForwardWriteCompletedEvent);
+    }
+    else if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(manager->GetType()))
     {
         ((XpsSerializationManagerAsync^)manager)->
             XpsSerializationCompleted += gcnew XpsSerializationCompletedEventHandler(this,
@@ -1935,12 +1956,24 @@ SetProgressChangedEventHandler(
     {
         _currentUserState = userState;
     }
-
-    if(System::Windows::Xps::Serialization::XpsSerializationManager::typeid->Equals(manager->GetType()))
+    
+    if (System::Windows::Xps::Serialization::XpsOMSerializationManager::typeid->Equals(manager->GetType()))
+    {
+        ((XpsOMSerializationManager^)manager)->
+            XpsSerializationProgressChanged += gcnew XpsSerializationProgressChangedEventHandler(this,
+            &XpsDocumentWriter::ForwardProgressChangedEvent);
+    }
+    else if(System::Windows::Xps::Serialization::XpsSerializationManager::typeid->Equals(manager->GetType()))
     {
         ((XpsSerializationManager^)manager)->
         XpsSerializationProgressChanged += gcnew XpsSerializationProgressChangedEventHandler(this,
                                                                                              &XpsDocumentWriter::ForwardProgressChangedEvent);
+    }
+    else if (System::Windows::Xps::Serialization::XpsOMSerializationManagerAsync::typeid->Equals(manager->GetType()))
+    {
+        ((XpsOMSerializationManagerAsync^)manager)->
+            XpsSerializationProgressChanged += gcnew XpsSerializationProgressChangedEventHandler(this,
+            &XpsDocumentWriter::ForwardProgressChangedEvent);
     }
     else if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(manager->GetType()))
     {
@@ -2048,6 +2081,36 @@ BeginWrite(
                             }
                             else
                             {
+                                // When printing to XPS OM we won't get another chance to set the document sequence print ticket
+                                // call into the WritingPrintTicketRequired event to see if the user wants to set it
+                                if (setPrintTicketHandler && destinationPrintQueue->IsXpsOMPrintingSupported())
+                                {
+                                    currentWriteLevel = printTicketLevel;
+                                    currentUserPrintTicket = printTicket;
+                                    XpsSerializationPrintTicketRequiredEventArgs^ args = gcnew XpsSerializationPrintTicketRequiredEventArgs(PrintTicketLevel::FixedDocumentSequencePrintTicket, 0);
+                                    if (_isDocumentCloned)
+                                    {
+                                        CloneSourcePrintTicket(this, args);
+                                    }
+                                    else
+                                    {
+                                        ForwardUserPrintTicket(this, args);
+                                    }
+
+                                    // In the StartXpsPrintJob there is an ambiguity problem between PrintJob PrintTicket and
+                                    // DocumentSequence PrintTicket, they should be one and the same, but WPF may end up
+                                    // assigning different print tickets to each, the PrintJob PrintTicket will end up
+                                    // overriding the DocumentSequence PrintTicket, so we should do the same here, if the user
+                                    // provided a PrintTicket in the Write method, that print ticket gets set directly to the 
+                                    // PrintJob and whatever comes from the WritingPrintTicketRequired event gets ignored,
+                                    // if the user only sets the print ticket in the event then that print ticket should
+                                    // get passed as the job level print ticket
+                                    if (printTicket == nullptr && args->PrintTicket != nullptr)
+                                    {
+                                        printTicket = args->PrintTicket;
+                                    }
+                                }
+
                                 _manager = destinationPrintQueue->CreateSerializationManager(batchMode,jobIdentifierSet,printTicket);
                             }
                     }
@@ -2084,7 +2147,37 @@ BeginWrite(
                         }
                         else
                         {
-                            _manager = destinationPrintQueue->CreateAsyncSerializationManager(batchMode, jobIdentifierSet);
+                            // When printing to XPS OM we won't get another chance to set the document sequence print ticket
+                            // call into the WritingPrintTicketRequired event to see if the user wants to set it
+                            if (setPrintTicketHandler && destinationPrintQueue->IsXpsOMPrintingSupported())
+                            {
+                                currentWriteLevel = printTicketLevel;
+                                currentUserPrintTicket = printTicket;
+                                XpsSerializationPrintTicketRequiredEventArgs^ args = gcnew XpsSerializationPrintTicketRequiredEventArgs(PrintTicketLevel::FixedDocumentSequencePrintTicket, 0);
+                                if (_isDocumentCloned)
+                                {
+                                    CloneSourcePrintTicket(this, args);
+                                }
+                                else
+                                {
+                                    ForwardUserPrintTicket(this, args);
+                                }
+
+                                // In the StartXpsPrintJob there is an ambiguity problem between PrintJob PrintTicket and
+                                // DocumentSequence PrintTicket, they should be one and the same, but WPF may end up
+                                // assigning different print tickets to each, the PrintJob PrintTicket will end up
+                                // overriding the DocumentSequence PrintTicket, so we should do the same here, if the user
+                                // provided a PrintTicket in the Write method, that print ticket gets set directly to the 
+                                // PrintJob and whatever comes from the WritingPrintTicketRequired event gets ignored,
+                                // if the user only sets the print ticket in the event then that print ticket should
+                                // get passed as the job level print ticket
+                                if (printTicket == nullptr && args->PrintTicket != nullptr)
+                                {
+                                    printTicket = args->PrintTicket;
+                                }
+                            }
+
+                            _manager = destinationPrintQueue->CreateAsyncSerializationManager(batchMode, jobIdentifierSet, printTicket);
                         }
                     }
                     else
@@ -2236,7 +2329,6 @@ OnWritingCanceled(
     return (_writingCancelledEventHandlersCount>0);
 }
 
-
 /*--------------------------------------------------------------------------------------------*/
 /*                             Private methods used for MXDW optimization                     */
 /*--------------------------------------------------------------------------------------------*/
@@ -2246,25 +2338,7 @@ MxdwConversionRequired(
     PrintQueue^ printQueue
     )
 {
-    bool conversionRequired = false;
-
-    if (printQueue->InPartialTrust)
-    {
-        (gcnew PrintingPermission(PrintingPermissionLevel::DefaultPrinting))->Assert();
-    }
-
-    try
-    {
-        conversionRequired = printQueue->QueueDriver->Name->Equals("Microsoft XPS Document Writer",
-                                                                    StringComparison::OrdinalIgnoreCase);
-    }
-    __finally
-    {
-        if (printQueue->InPartialTrust)
-        {
-            SecurityPermission::RevertAssert();
-        }
-    }
+    bool conversionRequired = PrintQueue::IsMxdwLegacyDriver(printQueue);
 
     if(conversionRequired)
     {
@@ -2452,7 +2526,15 @@ EndBatchWrite(
 
     if(_manager !=nullptr)
     {
-        if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(_manager->GetType()))
+        if (System::Windows::Xps::Serialization::XpsOMSerializationManager::typeid->Equals(_manager->GetType()))
+        {
+            ((XpsOMSerializationManager^)_manager)->Commit();
+        }
+        else if (System::Windows::Xps::Serialization::XpsOMSerializationManagerAsync::typeid->Equals(_manager->GetType()))
+        {
+            ((XpsOMSerializationManagerAsync^)_manager)->Commit();
+        }
+        else if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(_manager->GetType()))
         {
             ((XpsSerializationManagerAsync^)_manager)->Commit();
         }
@@ -2487,7 +2569,7 @@ EndBatchWrite(
     }
     else
     {
-    	XpsWriterException::ThrowException("XpsWriter.WriteNotCalledEndBatchWrite");
+        XpsWriterException::ThrowException("XpsWriter.WriteNotCalledEndBatchWrite");
     }
 }
 
@@ -2595,7 +2677,11 @@ CancelAsync(
             break;
 
         case VisualsCollaterState::kAsync:
-            if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(_manager->GetType()))
+            if (System::Windows::Xps::Serialization::XpsOMSerializationManagerAsync::typeid->Equals(_manager->GetType()))
+            {
+                ((XpsOMSerializationManagerAsync^)_manager)->CancelAsync();
+            }
+            else if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(_manager->GetType()))
             {
                 ((XpsSerializationManagerAsync^)_manager)->CancelAsync();
             }
@@ -2679,7 +2765,19 @@ WriteVisual(
                 }
                 else
                 {
-                    _manager = destinationPrintQueue->CreateAsyncSerializationManager(TRUE);
+                    PrintTicket^ jobPT = nullptr;
+                    // When printing to XPS OM we won't get another chance to set the document sequence print ticket
+                    // call into the WritingPrintTicketRequired event to see if the user wants to set it
+                    if (destinationPrintQueue->IsXpsOMPrintingSupported())
+                    {
+                        XpsSerializationPrintTicketRequiredEventArgs^ args = gcnew XpsSerializationPrintTicketRequiredEventArgs(PrintTicketLevel::FixedDocumentSequencePrintTicket, 0);
+                        ForwardUserPrintTicket(this, args);
+                        jobPT = args->PrintTicket;
+                    }
+                    // CreateSerializationManager(TRUE) evaluates to CreateSerializationManager (TRUE, FALSE, nullptr)
+                    // So when XpsOM is not supported this will continue to work the same
+
+                    _manager = destinationPrintQueue->CreateAsyncSerializationManager(TRUE, FALSE, jobPT);
                 }
             }
             else
@@ -2711,7 +2809,18 @@ WriteVisual(
                 }
                 else
                 {
-                    _manager = destinationPrintQueue->CreateSerializationManager(TRUE);
+                    PrintTicket^ jobPT = nullptr;
+                    // When printing to XPS OM we won't get another chance to set the document sequence print ticket
+                    // call into the WritingPrintTicketRequired event to see if the user wants to set it
+                    if (destinationPrintQueue->IsXpsOMPrintingSupported())
+                    {
+                        XpsSerializationPrintTicketRequiredEventArgs^ args = gcnew XpsSerializationPrintTicketRequiredEventArgs(PrintTicketLevel::FixedDocumentSequencePrintTicket, 0);
+                        ForwardUserPrintTicket(this, args);
+                        jobPT = args->PrintTicket;
+                    }
+                    // CreateSerializationManager(TRUE) evaluates to CreateSerializationManager (TRUE, FALSE, nullptr)
+                    // So when XpsOM is not supported this will continue to work the same
+                    _manager = destinationPrintQueue->CreateSerializationManager(TRUE, FALSE, jobPT);
                 }
             }
             else
@@ -2888,11 +2997,23 @@ SetPrintTicketEventHandler(
 {
     #pragma warning ( disable:4691 )
 
-    if(System::Windows::Xps::Serialization::XpsSerializationManager::typeid->Equals(manager->GetType()))
+    if (System::Windows::Xps::Serialization::XpsOMSerializationManager::typeid->Equals(manager->GetType()))
+    {
+        ((XpsOMSerializationManager^)manager)->
+            XpsSerializationPrintTicketRequired += gcnew XpsSerializationPrintTicketRequiredEventHandler(this,
+            &VisualsToXpsDocument::ForwardUserPrintTicket);
+    }
+    else if(System::Windows::Xps::Serialization::XpsSerializationManager::typeid->Equals(manager->GetType()))
     {
         ((XpsSerializationManager^)manager)->
         XpsSerializationPrintTicketRequired += gcnew XpsSerializationPrintTicketRequiredEventHandler(this,
                                                                                                      &VisualsToXpsDocument::ForwardUserPrintTicket);
+    }
+    else if (System::Windows::Xps::Serialization::XpsOMSerializationManagerAsync::typeid->Equals(manager->GetType()))
+    {
+        ((XpsOMSerializationManagerAsync^)manager)->
+            XpsSerializationPrintTicketRequired += gcnew XpsSerializationPrintTicketRequiredEventHandler(this,
+            &VisualsToXpsDocument::ForwardUserPrintTicket);
     }
     else if(System::Windows::Xps::Serialization::XpsSerializationManagerAsync::typeid->Equals(manager->GetType()))
     {
@@ -2926,25 +3047,7 @@ MxdwConversionRequired(
     PrintQueue^ printQueue
     )
 {
-    bool conversionRequired = false;
-
-    if (printQueue->InPartialTrust)
-    {
-        (gcnew PrintingPermission(PrintingPermissionLevel::DefaultPrinting))->Assert();
-    }
-    try
-    {
-        conversionRequired = printQueue->QueueDriver->Name->Equals("Microsoft XPS Document Writer",
-                                                                    StringComparison::OrdinalIgnoreCase);
-
-    }
-    __finally
-    {
-        if (printQueue->InPartialTrust)
-        {
-            SecurityPermission::RevertAssert();
-        }
-    }
+    bool conversionRequired = PrintQueue::IsMxdwLegacyDriver(printQueue);
 
     if(conversionRequired)
     {

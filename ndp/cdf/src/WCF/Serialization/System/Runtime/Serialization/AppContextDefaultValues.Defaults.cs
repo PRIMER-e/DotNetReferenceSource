@@ -1,6 +1,8 @@
 ﻿// <copyright>
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
+
+#pragma warning disable 0436 //Disable the type conflict warning for the types used by LocalAppContext framework (Quirking)
 namespace System
 {
     using System;
@@ -24,6 +26,11 @@ namespace System
                         if (version <= 40601)
                         {
                             LocalAppContext.DefineSwitchDefault("Switch.System.Runtime.Serialization.DoNotUseTimeZoneInfo", true);
+                        }
+                        
+                        if (version <= 40602)
+                        {
+                            LocalAppContext.DefineSwitchDefault(System.Runtime.Serialization.LocalAppContextSwitches.DoNotUseEcmaScriptV6EscapeControlCharacterKeyString, true);
                         }
 
                         break;

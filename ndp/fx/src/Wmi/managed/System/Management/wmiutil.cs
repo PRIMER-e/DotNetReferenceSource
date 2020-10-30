@@ -49,13 +49,12 @@ namespace System.Management
     {
         public static IWbemClassObjectFreeThreaded GetErrorInfo()
         {
-            IErrorInfo errorInfo = GetErrorInfo(0);
-            if(null != errorInfo)
+            IntPtr pErrorInfo = WmiNetUtilsHelper.GetErrorInfo_f();
+            if (IntPtr.Zero != pErrorInfo && new IntPtr(-1) != pErrorInfo)
             {
-                IntPtr pUnk = Marshal.GetIUnknownForObject(errorInfo);
                 IntPtr pIWbemClassObject;
-                Marshal.QueryInterface(pUnk, ref IWbemClassObjectFreeThreaded.IID_IWbemClassObject, out pIWbemClassObject);
-                Marshal.Release(pUnk);
+                Marshal.QueryInterface(pErrorInfo, ref IWbemClassObjectFreeThreaded.IID_IWbemClassObject, out pIWbemClassObject);
+                Marshal.Release(pErrorInfo);
 
                 // The IWbemClassObjectFreeThreaded instance will own reference count on pIWbemClassObject
                 if(pIWbemClassObject != IntPtr.Zero)
@@ -63,9 +62,6 @@ namespace System.Management
             }
             return null;
         }
- 
-        [ResourceExposure( ResourceScope.None),DllImport("oleaut32.dll", PreserveSig=false)]
-        static extern IErrorInfo GetErrorInfo(int reserved);
     }
 
     //RCW for IErrorInfo

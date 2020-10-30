@@ -1724,7 +1724,7 @@ namespace System.IO {
 
         // Checks the position of the OS's handle equals what we expect it to.
         // This will fail if someone else moved the FileStream's handle or if
-        // we've hit a 
+        // we've hit a bug in FileStream's position updating code.
         private void VerifyOSHandlePosition()
         {
             if (!CanSeek)

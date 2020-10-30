@@ -28,7 +28,7 @@ namespace System.Windows.Forms {
 
 
         private const int MINALLOWEDWIDTH = 50;
-        private const int DragInflateSize = 4;
+        private int minAllowedWidth = MINALLOWEDWIDTH;
 
         private static readonly int stateVisible = BitVector32.CreateMask();
         private static readonly int stateDisposing = BitVector32.CreateMask(stateVisible);
@@ -65,6 +65,10 @@ namespace System.Windows.Forms {
 #if DEBUG
             thisRowID = ++rowCreationCount;
 #endif            
+            if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                minAllowedWidth = DpiHelper.LogicalToDeviceUnitsX(MINALLOWEDWIDTH);
+            }
+
             this.parent = parent;
             this.state[stateVisible] = visible;
             this.state[stateDisposing | stateLocked| stateInitialized] = false;
@@ -337,7 +341,7 @@ namespace System.Windows.Forms {
 
         internal Size GetMinimumSize(ToolStrip toolStrip) {
             if (toolStrip.MinimumSize == Size.Empty) {
-                return new Size(MINALLOWEDWIDTH,MINALLOWEDWIDTH);
+                return new Size(minAllowedWidth,minAllowedWidth);
             }
             else {
                 return toolStrip.MinimumSize;

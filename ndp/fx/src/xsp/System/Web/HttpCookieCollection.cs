@@ -84,7 +84,7 @@ namespace System.Web {
             if (append) {
                 // DevID 251951	Cookie is getting duplicated by ASP.NET when they are added via a native module
                 // Need to not double add response cookies from native modules
-                if (!cookie.FromHeader) {
+                if (!cookie.IsInResponseHeader) {
                     // mark cookie as new
                     cookie.Added = true;
                 }
@@ -96,6 +96,17 @@ namespace System.Web {
                     cookie.Changed = true;
                 }
                 BaseSet(cookie.Name, cookie);
+            }
+        }
+
+        // VSO bug #289778: when copying cookie from Response to Request, there is side effect
+        // which changes Added property and causes dup cookie in response header
+        // This method is meant to append cookie from one collection without changing cookie object
+        internal void Append(HttpCookieCollection cookies) {
+            for (int i = 0; i < cookies.Count; ++i) {
+                //BaseGet method doesn't trigger validation, while Get method does
+                HttpCookie cookie = (HttpCookie) cookies.BaseGet(i);
+                BaseAdd(cookie.Name, cookie);
             }
         }
 

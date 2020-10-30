@@ -461,7 +461,7 @@ namespace System.Web.Compilation {
             //
 
             // Always try the memory cache first
-            _memoryCache = new MemoryBuildResultCache(HttpRuntime.CacheInternal);
+            _memoryCache = new MemoryBuildResultCache();
 
             // Use the standard disk cache for regular apps
             _codeGenCache = new StandardDiskBuildResultCache(HttpRuntime.CodegenDirInternal);
@@ -479,7 +479,7 @@ namespace System.Web.Compilation {
             //
 
             // Always try the memory cache first
-            _memoryCache = new MemoryBuildResultCache(HttpRuntime.CacheInternal);
+            _memoryCache = new MemoryBuildResultCache();
 
             // Used the precomp cache for precompiled apps
             BuildResultCache preCompCache = new PrecompiledSiteDiskBuildResultCache(
@@ -501,7 +501,7 @@ namespace System.Web.Compilation {
             // We are precompiling an app
 
             // Always try the memory cache first
-            _memoryCache = new MemoryBuildResultCache(HttpRuntime.CacheInternal);
+            _memoryCache = new MemoryBuildResultCache();
 
             // Create a regular disk cache, to take advantage of the fact that the app
             // may already have been compiled (and to cause it to be if it wasn't)
@@ -779,7 +779,7 @@ namespace System.Web.Compilation {
             }
         }
 
-        // this method requires global lock as the part of the fix of DevDiv 
+        // this method requires global lock as the part of the fix of DevDiv bug 501777
         private static ISet<string> CallPreStartInitMethods(string preStartInitListPath, out bool isRefAssemblyLoaded) {
             Debug.Assert(PreStartInitStage == Compilation.PreStartInitStage.BeforePreStartInit);
             isRefAssemblyLoaded = false;
@@ -793,8 +793,8 @@ namespace System.Web.Compilation {
                 if (methods == null) {
                     // In case of ctlr-f5 scenario, two processes (VS and IisExpress) will start compilation simultaneously.
                     // GetPreStartInitMethodsFromReferencedAssemblies() will load all referenced assemblies
-                    // If shallow copy is enabled, one process may fail due race condition in copying assemblies (DevDiv 
-
+                    // If shallow copy is enabled, one process may fail due race condition in copying assemblies (DevDiv bug 501777) 
+                    // to fix it, put GetPreStartInitMethodsFromReferencedAssemblies() under the global lock 
                     bool gotLock = false;
                     try {
                         CompilationLock.GetLock(ref gotLock);
@@ -832,7 +832,7 @@ namespace System.Web.Compilation {
             return null;
         }
 
-        // this method requires global lock as the part of the fix of DevDiv 
+        // this method requires global lock as the part of the fix of DevDiv bug 501777
         internal static void SavePreStartInitAssembliesToFile(string path, ISet<string> assemblies) {
             Debug.Assert(assemblies != null);
             Debug.Assert(!String.IsNullOrEmpty(path));
@@ -933,7 +933,7 @@ namespace System.Web.Compilation {
                 }
                 catch {
                     // GetCustomAttributes invokes the constructors of the attributes, so it is possible that they might throw unexpected exceptions.
-                    // (Dev10 
+                    // (Dev10 bug 831981)
                 }
 
                 if (attributes == null || !attributes.Any()) {
@@ -1400,7 +1400,7 @@ namespace System.Web.Compilation {
             if (buildProviderType == null)
                 return null;
 
-            object o = HttpRuntime.CreatePublicInstance(buildProviderType);
+            object o = HttpRuntime.CreatePublicInstanceByWebObjectActivator(buildProviderType);
 
             BuildProvider buildProvider = (BuildProvider)o;
 
@@ -1420,7 +1420,7 @@ namespace System.Web.Compilation {
             List<Type> buildProviderTypes = CompilationUtil.GetFolderLevelBuildProviderTypes(compConfig, appliesTo);
             if (buildProviderTypes != null) {
                 foreach (Type buildProviderType in buildProviderTypes) {
-                    object o = HttpRuntime.CreatePublicInstance(buildProviderType);
+                    object o = HttpRuntime.CreatePublicInstanceByWebObjectActivator(buildProviderType);
 
                     BuildProvider buildProvider = (BuildProvider)o;
 
@@ -1844,7 +1844,7 @@ namespace System.Web.Compilation {
             _localResourcesAssemblies[virtualDir] = resourceAssembly;
         }
 
-        // VSWhidbey 
+        // VSWhidbey Bug 560521
         private void EnsureFirstTimeDirectoryInitForDependencies(ICollection dependencies) {
             foreach (String dependency in dependencies) {
                 VirtualPath dependencyPath = VirtualPath.Create(dependency);
@@ -2324,11 +2324,11 @@ namespace System.Web.Compilation {
                     // There might be changes in local resources for dependencies,
                     // so we need to make sure EnsureFirstTimeDirectoryInit gets called
                     // for them even when we already have a cache result.
-                    // VSWhidbey 
+                    // VSWhidbey Bug 560521
 
                     if (result != null) {
                         // We should only process the local resources folder after the top level files have been compiled,
-                        // so that any custom VPP can be registered first. (Dev10 
+                        // so that any custom VPP can be registered first. (Dev10 bug 890796)
                         if (_compilationStage == CompilationStage.AfterTopLevelFiles && result.VirtualPathDependencies != null) {
                             EnsureFirstTimeDirectoryInitForDependencies(result.VirtualPathDependencies);
                         }
@@ -2943,8 +2943,8 @@ namespace System.Web.Compilation {
             bool createdDirectory = false;
 
             foreach (FileData fileData in FileEnumerator.Create(fromDir)) {
-                // Windows OS 
-
+                // Windows OS Bug 1981578
+                // Create a new directory only if there is something in the directory.
                 if (!createdDirectory)
                     Directory.CreateDirectory(toDir);
                 createdDirectory = true;
@@ -2967,7 +2967,7 @@ namespace System.Web.Compilation {
                     continue;
 
                 // Do not copy the file to the target folder if it has been already
-                // marked for deletion - Dev10 
+                // marked for deletion - Dev10 bug 676794
                 if (DiskBuildResultCache.HasDotDeleteFile(fileData.FullName)) {
                     continue;
                 }
@@ -3057,7 +3057,8 @@ namespace System.Web.Compilation {
         internal static void ReportDirectoryCompilationProgress(VirtualPath virtualDir) {
 
             // Nothing to do if there is no CBM callback
-            if (CBMCallback == null)
+            ClientBuildManagerCallback callback = CBMCallback;
+            if (callback == null)
                 return;
 
             // Don't report anything if the directory doesn't exist
@@ -3065,7 +3066,7 @@ namespace System.Web.Compilation {
                 return;
 
             string message = SR.GetString(SR.Directory_progress, virtualDir.VirtualPathString);
-            CBMCallback.ReportProgress(message);
+            callback.ReportProgress(message);
         }
 
 

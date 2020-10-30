@@ -299,10 +299,10 @@ namespace MS.Internal
                     _typeMapper.ClearReflectionOnlyAssemblyResolver();
                 }
 
-                if (s_md5HashAlgorithm != null)
+                if (s_hashAlgorithm != null)
                 {
-                    s_md5HashAlgorithm.Clear();
-                    s_md5HashAlgorithm = null;
+                    s_hashAlgorithm.Clear();
+                    s_hashAlgorithm = null;
                 }
             }
         }
@@ -627,17 +627,30 @@ namespace MS.Internal
                     // } end namespace
                     CodeCompileUnit ccu = new CodeCompileUnit();
 
-                    // generate pragma checksum data
-                    if (s_md5HashAlgorithm == null)
+                    if (BuildTasksAppContextSwitches.DoNotUseSha256ForMarkupCompilerChecksumAlgorithm)
                     {
-                        s_md5HashAlgorithm = new MD5CryptoServiceProvider();
-                        s_hashMD5Guid = new Guid(0x406ea660, 0x64cf, 0x4c82, 0xb6, 0xf0, 0x42, 0xd4, 0x81, 0x72, 0xa7, 0x99);
+                        // Use SHA1 if compat flag is set
+                        // generate pragma checksum data
+                        if (s_hashAlgorithm == null)
+                        {
+                            s_hashAlgorithm = new SHA1CryptoServiceProvider();
+                            s_hashGuid = s_hashSHA1Guid;
+                        }
+                    }
+                    else
+                    {
+                        // generate pragma checksum data
+                        if (s_hashAlgorithm == null)
+                        {
+                            s_hashAlgorithm = new SHA256CryptoServiceProvider();
+                            s_hashGuid = s_hashSHA256Guid;
+                        }
                     }
 
                     CodeChecksumPragma csPragma = new CodeChecksumPragma();
                     csPragma.FileName = ParentFolderPrefix + SourceFileInfo.RelativeSourceFilePath + XAML;
-                    csPragma.ChecksumAlgorithmId = s_hashMD5Guid;
-                    csPragma.ChecksumData = TaskFileService.GetChecksum(SourceFileInfo.OriginalFilePath, s_hashMD5Guid);
+                    csPragma.ChecksumAlgorithmId = s_hashGuid;
+                    csPragma.ChecksumData = TaskFileService.GetChecksum(SourceFileInfo.OriginalFilePath, s_hashGuid);
                     ccu.StartDirectives.Add(csPragma);
 
                     if (cnsImports != _ccRoot.CodeNS)
@@ -1874,7 +1887,7 @@ namespace MS.Internal
             cdce.TargetObject = new CodeThisReferenceExpression();
             CodeExpression cDelExp = cdce;
 
-            // NOTE: workaround for VB CodeDom 
+            // NOTE: workaround for VB CodeDom bug which does not produce correct Delegate expression code
             if (IsLanguageVB)
             {
                 CodeExpression[] delParams = { cdce };
@@ -1882,9 +1895,9 @@ namespace MS.Internal
                 cDelExp = coce;
             }
 
-//            The 
-
-
+//            The bug that this chunk of code works around (VS#542946) was fixed but
+//            exposes a different bug (VS#572060)   To work around the second bug, we
+//            remove the workaround for the first one.  (RogerCh 20020918)
 
 //            Note that #542946 was not fixed for VB, so the code block above remains.
 
@@ -3501,8 +3514,11 @@ namespace MS.Internal
         private const string            PARENTFOLDER = @"..\";
 
         // For generating pragma checksum data
-        private static HashAlgorithm s_md5HashAlgorithm;
-        private static Guid s_hashMD5Guid;
+        private static HashAlgorithm s_hashAlgorithm;
+        private static Guid s_hashGuid;
+
+        private static readonly Guid s_hashSHA256Guid = new Guid(0x8829d00f, 0x11b8, 0x4213, 0x87, 0x8b, 0x77, 0x0e, 0x85, 0x97, 0xac, 0x16);
+        private static readonly Guid s_hashSHA1Guid = new Guid(0xff1816ec, 0xaa5e, 0x4d10, 0x87, 0xf7, 0x6f, 0x49, 0x63, 0x83, 0x34, 0x60);
 
         private static string s_generatedCode_ToolName;
         private static string s_generatedCode_ToolVersion;

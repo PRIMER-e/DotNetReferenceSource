@@ -501,7 +501,7 @@ namespace MS.Internal.Data
                     _hostWorker.OnXmlValueChanged();
                 }
             }
-            GC.KeepAlive(target);   // keep target alive during process xml change (
+            GC.KeepAlive(target);   // keep target alive during process xml change (bug 1494812)
         }
 
         private XmlNodeList SelectNodes()

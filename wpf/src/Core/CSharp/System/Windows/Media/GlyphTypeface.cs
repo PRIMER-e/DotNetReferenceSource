@@ -1077,8 +1077,8 @@ namespace System.Windows.Media
 
 
         // The next several properties return non CLS-compliant types.  This is
-        // tracked by 
-
+        // tracked by bug 1792236.  For now, suppress the compiler warning.
+        // 
         #pragma warning disable 3003
 
         /// <summary>

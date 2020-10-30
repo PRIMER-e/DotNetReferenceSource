@@ -89,7 +89,9 @@ namespace System.Windows.Forms {
         private Object[]   currentObjects;
         
         private int                                 paintFrozen;
-        private Color                               lineColor = SystemColors.InactiveBorder;
+        private Color                               lineColor = SystemInformation.HighContrast ? (AccessibilityImprovements.Level1 ? SystemColors.ControlDarkDark : SystemColors.ControlDark )
+                                                                : SystemColors.InactiveBorder;
+        internal bool                               developerOverride = false;
         internal Brush                              lineBrush = null;
         private Color                               categoryForeColor = SystemColors.ControlText;
         private Color                               categorySplitterColor = SystemColors.Control;
@@ -104,6 +106,7 @@ namespace System.Windows.Forms {
         private SnappableControl                    targetMove = null;
         private int                                 dividerMoveY = -1;
         private const int                    CYDIVIDER = 3;
+        private static int                   cyDivider = CYDIVIDER;
         private const int                    CXINDENT = 0;
         private const int                    CYINDENT = 2;
         private const int                    MIN_GRID_HEIGHT = 20;
@@ -118,6 +121,7 @@ namespace System.Windows.Forms {
         private const int                    LARGE_BUTTONS = 1;
 
         private const int                    TOOLSTRIP_BUTTON_PADDING_Y = 9;
+        private int                          toolStripButtonPaddingY = TOOLSTRIP_BUTTON_PADDING_Y;
         private static readonly Size         DEFAULT_LARGE_BUTTON_SIZE = new Size(32, 32);
         private static readonly Size         DEFAULT_NORMAL_BUTTON_SIZE = new Size(16, 16);
         private static Size                  largeButtonSize = DEFAULT_LARGE_BUTTON_SIZE;
@@ -183,12 +187,20 @@ namespace System.Windows.Forms {
             SuspendLayout();
             AutoScaleMode = AutoScaleMode.None;
 
-            if (!isScalingInitialized) {
-                if (DpiHelper.IsScalingRequired) {
-                    normalButtonSize = DpiHelper.LogicalToDeviceUnits(DEFAULT_NORMAL_BUTTON_SIZE);
-                    largeButtonSize = DpiHelper.LogicalToDeviceUnits(DEFAULT_LARGE_BUTTON_SIZE);
+            // static variables are problem in a child level mixed mode scenario. Changing static variables cause compatibility issue. 
+            // So, conditioning on new quirk to recalculate static variables everytime property grid initialized.
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                RescaleConstants();
+            }
+            else {
+                if (!isScalingInitialized ) {
+                    if (DpiHelper.IsScalingRequired) {
+                        normalButtonSize = LogicalToDeviceUnits(DEFAULT_NORMAL_BUTTON_SIZE);
+                        largeButtonSize = LogicalToDeviceUnits(DEFAULT_LARGE_BUTTON_SIZE);
+                    }
+
+                    isScalingInitialized = true;
                 }
-                isScalingInitialized = true;
             }
 
             try
@@ -202,7 +214,7 @@ namespace System.Windows.Forms {
                 separator1 = CreateSeparatorButton();
                 separator2 = CreateSeparatorButton();
 
-                toolStrip = new ToolStrip();
+                toolStrip = AccessibilityImprovements.Level3 ? new PropertyGridToolStrip(this) : new ToolStrip();
                 toolStrip.SuspendLayout();
                 toolStrip.ShowItemToolTips = true;
                 toolStrip.AccessibleName = SR.GetString(SR.PropertyGridToolbarAccessibleName);
@@ -277,7 +289,7 @@ namespace System.Windows.Forms {
                 ResumeLayout(true);
             }
         }
-   
+
         internal IDesignerHost ActiveDesigner {
             get{
                 if (this.designerHost == null) {
@@ -717,7 +729,7 @@ namespace System.Windows.Forms {
                     SetToolStripRenderer();
                 }
 
-                SetHotCommandColors(value);
+                SetHotCommandColors(value && !AccessibilityImprovements.Level2);
             }
         }
 
@@ -766,6 +778,15 @@ namespace System.Windows.Forms {
                   }
                   
                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the help control accessibility object.
+        /// </summary>
+        internal AccessibleObject HelpAccessibleObject {
+            get {
+                return doccomment.AccessibilityObject;
             }
         }
         
@@ -844,6 +865,33 @@ namespace System.Windows.Forms {
                 OnLayoutInternal(false);
                 Invalidate();
                 doccomment.Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Gets the hot commands control accessible object.
+        /// </summary>
+        internal AccessibleObject HotCommandsAccessibleObject {
+            get {
+                return hotcommands.AccessibilityObject;
+            }
+        }
+
+        /// <summary>
+        /// Gets the main entry accessible object.
+        /// </summary>
+        internal AccessibleObject GridViewAccessibleObject {
+            get {
+                return gridView.AccessibilityObject;
+            }
+        }
+
+        /// <summary>
+        /// Gets the value indicating whether the main entry is visible.
+        /// </summary>
+        internal bool GridViewVisible {
+            get {
+                return gridView != null && gridView.Visible;
             }
         }
 
@@ -976,6 +1024,7 @@ namespace System.Windows.Forms {
             set {
                 if (lineColor != value) {
                     lineColor = value;
+                    developerOverride = true;
                     if (lineBrush != null) {
                         lineBrush.Dispose();
                         lineBrush = null;
@@ -1418,6 +1467,15 @@ namespace System.Windows.Forms {
             }
         }
 
+        /// <summary>
+        /// Gets the value indicating whether the Property grid is sorted by categories.
+        /// </summary>
+        internal bool SortedByCategories {
+            get {
+                return (PropertySort & PropertySort.Categorized) != 0;
+            }
+        }
+
         [Browsable(false), 
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public override string Text {
@@ -1475,6 +1533,15 @@ namespace System.Windows.Forms {
                 OnLayoutInternal(false);
                 Invalidate();
                 toolStrip.Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Gets the toolbar control accessibility object.
+        /// </summary>
+        internal AccessibleObject ToolbarAccessibleObject {
+            get {
+                return toolStrip.AccessibilityObject;
             }
         }
 
@@ -1910,6 +1977,18 @@ namespace System.Windows.Forms {
             internal bool inGridViewCreate = false;
         #endif
 
+        /// <summary>
+        /// Constructs the new instance of the accessibility object for current PropertyGrid control.
+        /// </summary>
+        /// <returns></returns>
+        protected override AccessibleObject CreateAccessibilityInstance() {
+            if (AccessibilityImprovements.Level3) {
+                return new PropertyGridAccessibleObject(this);
+            }
+
+            return base.CreateAccessibilityInstance();
+        }
+
         private /*protected virtual*/ PropertyGridView CreateGridView(IServiceProvider sp) {
 #if DEBUG
             try {
@@ -1926,6 +2005,14 @@ namespace System.Windows.Forms {
 
         private ToolStripSeparator CreateSeparatorButton() {
             ToolStripSeparator button = new ToolStripSeparator();
+
+            // On DpiChanged in PerMonV2 scenarios, we need to delegate the new DPI value to
+            // the affected ToolStripItems, which become newly created. DpiHelper.DeviceDpi does
+            // not have the changed DPI value at this point.
+            if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements) {
+                button.DeviceDpi = DeviceDpi;
+            }
+
             return button;
         }
 
@@ -2003,14 +2090,28 @@ namespace System.Windows.Forms {
         }
         */
 
-        private ToolStripButton CreatePushButton(string toolTipText, int imageIndex, EventHandler eventHandler) {
+        private ToolStripButton CreatePushButton(string toolTipText, int imageIndex, EventHandler eventHandler, bool useCheckButtonRole = false) {
             ToolStripButton button = new ToolStripButton();
+
+            // On DpiChanged in PerMonV2 scenarios, we need to delegate the new DPI value to
+            // the affected ToolStripItems, which become newly created. DpiHelper.DeviceDpi does
+            // not have the changed DPI value at this point.
+            if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements) {
+                button.DeviceDpi = DeviceDpi;
+            }
             button.Text = toolTipText;
             button.AutoToolTip = true;
             button.DisplayStyle = ToolStripItemDisplayStyle.Image;
             button.ImageIndex = imageIndex;
             button.Click += eventHandler;
             button.ImageScaling = ToolStripItemImageScaling.SizeToFit;
+
+            if (AccessibilityImprovements.Level1) {
+                if (useCheckButtonRole) {
+                    button.AccessibleRole = AccessibleRole.CheckButton;
+                }
+            }
+
             return button;
         }
         
@@ -2169,8 +2270,8 @@ namespace System.Windows.Forms {
                 return;
 
             Rectangle rectangle = gridView.Bounds;
-            rectangle.Y = y-CYDIVIDER;
-            rectangle.Height = CYDIVIDER;
+            rectangle.Y = y - cyDivider;
+            rectangle.Height = cyDivider;
 
             DrawXorBar(this,rectangle);
         }
@@ -2181,7 +2282,7 @@ namespace System.Windows.Forms {
 
             if (hotcommands.Visible) {
                 Point locDoc = hotcommands.Location;
-                if (y >= (locDoc.Y - CYDIVIDER) &&
+                if (y >= (locDoc.Y - cyDivider) &&
                     y <= (locDoc.Y + 1)) {
                     return hotcommands;
                 }
@@ -2190,7 +2291,7 @@ namespace System.Windows.Forms {
 
             if (doccomment.Visible) {
                 Point locDoc = doccomment.Location;
-                if (y >= (locDoc.Y - CYDIVIDER) &&
+                if (y >= (locDoc.Y - cyDivider) &&
                     y <= (locDoc.Y+1)) {
                     return doccomment;
                 }
@@ -2503,6 +2604,31 @@ namespace System.Windows.Forms {
             return peDefault;
         }
 
+        /// <summary>
+        /// Gets the element from point.
+        /// </summary>
+        /// <param name="point">The point where to search the element.</param>
+        /// <returns>The element found in the current point.</returns>
+        internal Control GetElementFromPoint(Point point) {
+            if (ToolbarAccessibleObject.Bounds.Contains(point)) {
+                return toolStrip;
+            }
+
+            if (GridViewAccessibleObject.Bounds.Contains(point)) {
+                return gridView;
+            }
+
+            if (HotCommandsAccessibleObject.Bounds.Contains(point)) {
+                return hotcommands;
+            }
+
+            if (HelpAccessibleObject.Bounds.Contains(point)) {
+                return doccomment;
+            }
+
+            return null;
+        }
+
         private object GetUnwrappedObject(int index) {
             if (currentObjects == null || index < 0 || index > currentObjects.Length) {
                 return null;
@@ -2738,8 +2864,8 @@ namespace System.Windows.Forms {
                         object[] newObjects = new object[currentObjects.Length - 1];
                         Array.Copy(currentObjects, 0, newObjects, 0, i);
                         if (i < newObjects.Length) {
-                            // Dev10 
-
+                            // Dev10 Bug 462203: Array.Copy throws Argument Exception when deleting
+                            //                   multiple controls with PropertyTabs in designer.
                             Array.Copy(currentObjects, i + 1, newObjects, i, newObjects.Length - i);
                         }
 
@@ -2865,7 +2991,7 @@ namespace System.Windows.Forms {
                     if (toolStrip.Visible) {
 
                         int toolStripWidth = this.Width;
-                        int toolStripHeight = ((LargeButtons) ? largeButtonSize : normalButtonSize).Height + TOOLSTRIP_BUTTON_PADDING_Y; 
+                        int toolStripHeight = ((LargeButtons) ? largeButtonSize : normalButtonSize).Height + toolStripButtonPaddingY; 
                         Rectangle toolStripBounds = new Rectangle(0,1,toolStripWidth, toolStripHeight); 
                         toolStrip.Bounds = toolStripBounds;
                                                
@@ -2909,7 +3035,7 @@ namespace System.Windows.Forms {
                 }
                 else {
                     if (doccomment.Visible) {
-                        dcOptHeight = doccomment.GetOptimalHeight(Size.Width - CYDIVIDER);
+                        dcOptHeight = doccomment.GetOptimalHeight(Size.Width - cyDivider);
                         if (doccomment.userSized) {
                             dcRequestedHeight = doccomment.Size.Height;
                         }
@@ -2922,7 +3048,7 @@ namespace System.Windows.Forms {
                     }
 
                     if (hotcommands.Visible) {
-                        hcOptHeight = hotcommands.GetOptimalHeight(Size.Width - CYDIVIDER);
+                        hcOptHeight = hotcommands.GetOptimalHeight(Size.Width - cyDivider);
                         if (hotcommands.userSized) {
                             hcRequestedHeight = hotcommands.Size.Height;
                         }
@@ -2938,7 +3064,7 @@ namespace System.Windows.Forms {
                 // place the help comment window
                 if (dcRequestedHeight > 0) {
 
-                    maxSpace -= CYDIVIDER;
+                    maxSpace -= cyDivider;
 
                     if (hcRequestedHeight == 0 || (dcRequestedHeight + hcRequestedHeight) < maxSpace) {
                         // full size
@@ -2953,7 +3079,7 @@ namespace System.Windows.Forms {
                         height = Math.Min(dcRequestedHeight, maxSpace / 2 - 1);
                     }
 
-                    height = Math.Max(height, CYDIVIDER * 2);
+                    height = Math.Max(height, cyDivider * 2);
 
                     doccomment.SetBounds(0, endSize - height, Size.Width, height);
 
@@ -2966,13 +3092,13 @@ namespace System.Windows.Forms {
                     }
 
                     doccomment.Invalidate();
-                    endSize = doccomment.Location.Y - CYDIVIDER;
+                    endSize = doccomment.Location.Y - cyDivider;
                     maxSpace -= height;
                 }
 
                 // place the hot commands
                 if (hcRequestedHeight > 0) {
-                    maxSpace -= CYDIVIDER;
+                    maxSpace -= cyDivider;
 
 
                     if (maxSpace > hcRequestedHeight) {
@@ -2984,7 +3110,7 @@ namespace System.Windows.Forms {
                         height = maxSpace;
                     }
 
-                    height = Math.Max(height, CYDIVIDER * 2);
+                    height = Math.Max(height, cyDivider * 2);
 
                     // if we've modified the height, clear the userSized item
                     if (height <= hcOptHeight && height < hcRequestedHeight) {
@@ -2996,7 +3122,7 @@ namespace System.Windows.Forms {
 
                     hotcommands.SetBounds(0, endSize - height, Size.Width, height);
                     hotcommands.Invalidate();
-                    endSize = hotcommands.Location.Y - CYDIVIDER;
+                    endSize = hotcommands.Location.Y - cyDivider;
                 }
 
                 gridView.Size = new Size(Size.Width, endSize - gridView.Location.Y);
@@ -3071,7 +3197,7 @@ namespace System.Windows.Forms {
             dividerMoveY = DividerLimitMove(targetMove, me.Y);
             Rectangle rectDoc = targetMove.Bounds;
             if (dividerMoveY != rectDoc.Y) {
-                int yNew = rectDoc.Height + rectDoc.Y - dividerMoveY - (CYDIVIDER / 2); // we subtract two so the mouse is still over the divider
+                int yNew = rectDoc.Height + rectDoc.Y - dividerMoveY - (cyDivider / 2); // we subtract two so the mouse is still over the divider
                 Size size = targetMove.Size;
                 size.Height = Math.Max(0,yNew);
                 targetMove.Size = size;
@@ -3079,11 +3205,11 @@ namespace System.Windows.Forms {
                 OnLayoutInternal(true);
                 // invalidate the divider area so we cleanup anything
                 // left by the xor
-                Invalidate(new Rectangle(0, me.Y - CYDIVIDER, Size.Width, me.Y + CYDIVIDER));
+                Invalidate(new Rectangle(0, me.Y - cyDivider, Size.Width, me.Y + cyDivider));
 
                 // in case we're doing the top one, we might have wrecked stuff
                 // on the grid
-                gridView.Invalidate(new Rectangle(0, gridView.Size.Height - CYDIVIDER, Size.Width, CYDIVIDER));
+                gridView.Invalidate(new Rectangle(0, gridView.Size.Height - cyDivider, Size.Width, cyDivider));
             }
 
             // end the move
@@ -3233,6 +3359,29 @@ namespace System.Windows.Forms {
 
         internal void OnPropertyValueSet(GridItem changedItem, object oldValue) {
             OnPropertyValueChanged(new PropertyValueChangedEventArgs(changedItem, oldValue));
+
+            // In Level 3 announce the property value change like standalone combobox control do: "[something] selected".
+            if (AccessibilityImprovements.Level3 && changedItem != null) {
+                    bool dropDown = false;
+                Type propertyType = changedItem.PropertyDescriptor.PropertyType;
+                UITypeEditor editor = (UITypeEditor)TypeDescriptor.GetEditor(propertyType, typeof(UITypeEditor));
+                if (editor != null) {
+                    dropDown = editor.GetEditStyle() == UITypeEditorEditStyle.DropDown;
+                }
+                else {
+                    var gridEntry = changedItem as GridEntry;
+                    if (gridEntry != null && gridEntry.Enumerable) {
+                        dropDown = true;
+                    }
+                }
+
+                if (dropDown && !gridView.DropDownVisible) {
+                    this.AccessibilityObject.RaiseAutomationNotification(
+                        Automation.AutomationNotificationKind.ActionCompleted,
+                        Automation.AutomationNotificationProcessing.All,
+                        SR.GetString(SR.PropertyGridPropertyValueSelectedFormat, changedItem.Value));
+                }
+            }
         }
         
         internal void OnSelectedGridItemChanged(GridEntry oldEntry, GridEntry newEntry) {
@@ -3605,6 +3754,12 @@ namespace System.Windows.Forms {
                         else if (gridView.FocusInside) {
                             if (toolStrip.Visible) {
                                 toolStrip.FocusInternal();
+                                if (AccessibilityImprovements.Level1) {
+                                    // we need to select first ToolStrip item, otherwise, ToolStrip container has the focus
+                                    if (toolStrip.Items.Count > 0) {
+                                        toolStrip.SelectNextToolStripItem(null, /*forward =*/ true);
+                                    }
+                                }
                             }
                             else {
                                 return base.ProcessDialogKey(keyData);
@@ -4186,7 +4341,7 @@ namespace System.Windows.Forms {
         }
 
         private void SetToolStripRenderer() {
-            if (DrawFlatToolbar) {
+            if (DrawFlatToolbar || (SystemInformation.HighContrast && AccessibilityImprovements.Level1)) {
                 // use an office look and feel with system colors 
                 ProfessionalColorTable colorTable = new ProfessionalColorTable();
                 colorTable.UseSystemColors = true;
@@ -4269,11 +4424,11 @@ namespace System.Windows.Forms {
                        Debug.Fail("Failed to load category bitmap", e.ToString());
                    }
    
-                   viewSortButtons[ALPHA] = CreatePushButton(SR.GetString(SR.PBRSToolTipAlphabetic), alphaIndex, ehViewType);
-                   viewSortButtons[CATEGORIES] = CreatePushButton(SR.GetString(SR.PBRSToolTipCategorized), categoryIndex, ehViewType);
+                   viewSortButtons[ALPHA] = CreatePushButton(SR.GetString(SR.PBRSToolTipAlphabetic), alphaIndex, ehViewType, true);
+                   viewSortButtons[CATEGORIES] = CreatePushButton(SR.GetString(SR.PBRSToolTipCategorized), categoryIndex, ehViewType, true);
                    
                    // we create a dummy hidden button for view sort
-                   viewSortButtons[NO_SORT] = CreatePushButton("", 0, ehViewType);
+                   viewSortButtons[NO_SORT] = CreatePushButton("", 0, ehViewType, true);
                    viewSortButtons[NO_SORT].Visible = false;
    
                    // add the viewType buttons and a separator
@@ -4308,7 +4463,7 @@ namespace System.Windows.Forms {
                for (i = 0; i < viewTabs.Length; i++) {
                    try {
                        b = viewTabs[i].Bitmap;
-                       viewTabButtons[i] = CreatePushButton(viewTabs[i].TabName, AddImage(b), ehViewTab);
+                       viewTabButtons[i] = CreatePushButton(viewTabs[i].TabName, AddImage(b), ehViewTab, true);
                        if (doAdd) {
                            buttonList.Add(viewTabButtons[i]);
                        }
@@ -4338,7 +4493,7 @@ namespace System.Windows.Forms {
    
                // we recreate this every time to ensure it's at the end
                //
-               btnViewPropertyPages = CreatePushButton(SR.GetString(SR.PBRSToolTipPropertyPages), designpg, ehPP);
+               btnViewPropertyPages = CreatePushButton(SR.GetString(SR.PBRSToolTipPropertyPages), designpg, ehPP, false);
                btnViewPropertyPages.Enabled = false;
                buttonList.Add(btnViewPropertyPages);
    
@@ -4606,6 +4761,16 @@ namespace System.Windows.Forms {
             }
         }
 
+        /// <summary>
+        /// Indicates whether or not the control supports UIA Providers via
+        /// IRawElementProviderFragment/IRawElementProviderFragmentRoot interfaces.
+        /// </summary>
+        internal override bool SupportsUiaProviders {
+            get {
+                return AccessibilityImprovements.Level3 && !DesignMode;
+            }
+        }
+
         /// <devdoc>
         ///     Determines whether the control supports rendering text using GDI+ and GDI.
         ///     This is provided for container controls to iterate through its children to set UseCompatibleTextRendering to the same
@@ -4615,6 +4780,10 @@ namespace System.Windows.Forms {
             get {
                 return true;
             }
+        }
+
+        internal override bool AllowsKeyboardToolTip() {
+            return false;
         }
 
         // a mini version of process dialog key
@@ -4662,11 +4831,39 @@ namespace System.Windows.Forms {
             base.OnSystemColorsChanged(e);
         }
 
+        /// <summary>
+        /// Rescaling constants.
+        /// </summary>
+        private void RescaleConstants() {
+            normalButtonSize = LogicalToDeviceUnits(DEFAULT_NORMAL_BUTTON_SIZE);
+            largeButtonSize = LogicalToDeviceUnits(DEFAULT_LARGE_BUTTON_SIZE);
+            cyDivider = LogicalToDeviceUnits(CYDIVIDER);
+            toolStripButtonPaddingY = LogicalToDeviceUnits(TOOLSTRIP_BUTTON_PADDING_Y);
+
+            if (hotcommands != null && hotcommands.Visible) {
+                // Require a fontchange notification
+                this.Controls.Remove(hotcommands);
+                this.Controls.Add(hotcommands);
+            }
+        }
+
+        /// <summary>
+        /// Rescale constants when DPI changed
+        /// </summary>
+        /// <param name="deviceDpiOld">old dpi</param>
+        /// <param name="deviceDpiNew">new dpi</param>
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                RescaleConstants();
+                SetupToolbar(true);
+            }
+        }
+
         /// <include file='doc\PropertyGrid.uex' path='docs/doc[@for="PropertyGrid.WndProc"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        
         // SECREVIEW: Technically full trust != unmanaged code, therefore this WndProc is at 
         // lesser permission that all the other members in the class.  Practically speaking though
         // they are the same - keeping UnmanagedCode to match the base class.
@@ -5210,5 +5407,287 @@ namespace System.Windows.Forms {
         }
     }
 
+    /// <summary>
+    /// Represents the PropertyGrid accessibility object.
+    /// Is used only in Accessibility Improvements of level3 to show correct accessible hierarchy.
+    /// </summary>
+    [ComVisible(true)]
+    internal class PropertyGridAccessibleObject : Control.ControlAccessibleObject {
+
+        private PropertyGrid _owningPropertyGrid;
+
+        /// <summary>
+        /// Initializes new instance of PropertyGridAccessibleObject
+        /// </summary>
+        /// <param name="owningPropertyGrid">The PropertyGrid owning control.</param>
+        public PropertyGridAccessibleObject(PropertyGrid owningPropertyGrid) : base(owningPropertyGrid) {
+            _owningPropertyGrid = owningPropertyGrid;
+        }
+
+        /// <summary>
+        /// Return the child element at the specified point, if one exists,
+        /// otherwise return this element if the point is on this element,
+        /// otherwise return null.
+        /// </summary>
+        /// <param name="x">x coordinate of point to check</param>
+        /// <param name="y">y coordinate of point to check</param>
+        /// <returns>Return the child element at the specified point, if one exists,
+        /// otherwise return this element if the point is on this element,
+        /// otherwise return null.
+        /// </returns>
+        internal override UnsafeNativeMethods.IRawElementProviderFragment ElementProviderFromPoint(double x, double y) {
+            Point clientPoint = _owningPropertyGrid.PointToClient(new Point((int)x, (int)y));
+
+            var element = _owningPropertyGrid.GetElementFromPoint(clientPoint);
+            if (element != null) {
+                return element.AccessibilityObject;
+            }
+
+            return base.ElementProviderFromPoint(x, y);
+        }
+
+        /// <summary>
+        /// Request to return the element in the specified direction.
+        /// </summary>
+        /// <param name="direction">Indicates the direction in which to navigate.</param>
+        /// <returns>Returns the element in the specified direction.</returns>
+        internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+            switch(direction) {
+                case UnsafeNativeMethods.NavigateDirection.Parent:
+                    return null;
+                case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                    return GetChildFragment(0);
+                case UnsafeNativeMethods.NavigateDirection.LastChild:
+                    var childFragmentCount = GetChildFragmentCount();
+                    if (childFragmentCount > 0) {
+                        return GetChildFragment(childFragmentCount - 1);
+                    }
+                    break;
+            }
+
+            return base.FragmentNavigate(direction);
+        }
+
+        /// <summary>
+        /// Request to return the element in the specified direction regarding the provided child element.
+        /// </summary>
+        /// <param name="childFragment">The child element regarding which the target element is searched.</param>
+        /// <param name="direction">Indicates the direction in which to navigate.</param>
+        /// <returns>Returns the element in the specified direction.</returns>
+        internal UnsafeNativeMethods.IRawElementProviderFragment ChildFragmentNavigate(AccessibleObject childFragment, UnsafeNativeMethods.NavigateDirection direction) {
+            switch(direction) {
+                case UnsafeNativeMethods.NavigateDirection.Parent:
+                    return this;
+                case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                    int fragmentCount = GetChildFragmentCount();
+                    int childFragmentIndex = GetChildFragmentIndex(childFragment);
+                    int nextChildFragmentIndex = childFragmentIndex + 1;
+                    if (fragmentCount > nextChildFragmentIndex) {
+                        return GetChildFragment(nextChildFragmentIndex);
+                    }
+
+                    return null;
+                case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                    fragmentCount = GetChildFragmentCount();
+                    childFragmentIndex = GetChildFragmentIndex(childFragment);
+                    if (childFragmentIndex > 0) {
+                        return GetChildFragment(childFragmentIndex - 1);
+                    }
+
+                    return null;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Return the element that is the root node of this fragment of UI.
+        /// </summary>
+        internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+            get {
+                return this;
+            }
+        }
+
+        /// <summary>
+        /// Gets the accessible child corresponding to the specified index.</para>
+        /// </summary>
+        /// <param name="index">The child index.</param>
+        /// <returns>The accessible child.</returns>
+        internal AccessibleObject GetChildFragment(int index) {
+            if (index < 0) {
+                return null;
+            }
+            
+            if (_owningPropertyGrid.ToolbarVisible) {
+                if (index == 0) {
+                    return _owningPropertyGrid.ToolbarAccessibleObject;
+                }
+
+                index--;
+            }
+
+            if (_owningPropertyGrid.GridViewVisible) {
+                if (index == 0) {
+                    return _owningPropertyGrid.GridViewAccessibleObject;
+                }
+
+                index--;
+            }
+            
+            if (_owningPropertyGrid.CommandsVisible) {
+                if (index == 0) {
+                    return _owningPropertyGrid.HotCommandsAccessibleObject;
+                }
+
+                index--;
+            }
+            
+            if (_owningPropertyGrid.HelpVisible) {
+                if (index == 0) {
+                    return _owningPropertyGrid.HelpAccessibleObject;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the number of children belonging to an accessible object.
+        /// </summary>
+        /// <returns>The number of children.</returns>
+        internal int GetChildFragmentCount() {
+            int childCount = 0;
+
+            if (_owningPropertyGrid.ToolbarVisible) {
+                childCount++;
+            }
+
+            if (_owningPropertyGrid.GridViewVisible) {
+                childCount++;
+            }
+
+            if (_owningPropertyGrid.CommandsVisible) {
+                childCount++;
+            }
+
+            if (_owningPropertyGrid.HelpVisible) {
+                childCount++;
+            }
+
+            return childCount;
+        }
+
+        /// <summary>
+        /// Return the element in this fragment which has the keyboard focus,
+        /// </summary>
+        /// <returns>Return the element in this fragment which has the keyboard focus,
+        /// if any; otherwise return null.</returns>
+        internal override UnsafeNativeMethods.IRawElementProviderFragment GetFocus() {
+            return GetFocused();
+        }
+
+        /// <summary>
+        /// Gets the child control index.
+        /// </summary>
+        /// <param name="controlAccessibleObject">The control accessible object which index should be found.</param>
+        /// <returns>The child accessible index or -1 if not found.</returns>
+        internal int GetChildFragmentIndex(AccessibleObject controlAccessibleObject) {
+            int childFragmentCount = GetChildFragmentCount();
+            for (int i = 0; i < childFragmentCount; i++) {
+                var childFragment = GetChildFragment(i);
+                if (childFragment == controlAccessibleObject) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+    }
+
+    /// <summary>
+    /// Represents the PropertyGrid inner ToolStrip control.
+    /// Is used starting with Accessibility Improvements of level 3.
+    /// </summary>
+    internal class PropertyGridToolStrip : ToolStrip {
+
+        private PropertyGrid _parentPropertyGrid;
+
+        /// <summary>
+        /// Initializes new instance of PropertyGridToolStrip control.
+        /// </summary>
+        /// <param name="parentPropertyGrid">The parent PropertyGrid control.</param>
+        public PropertyGridToolStrip(PropertyGrid parentPropertyGrid) {
+            _parentPropertyGrid = parentPropertyGrid;
+        }
+
+        /// <summary>
+        /// Indicates whether or not the control supports UIA Providers via
+        /// IRawElementProviderFragment/IRawElementProviderFragmentRoot interfaces.
+        /// </summary>
+        internal override bool SupportsUiaProviders {
+            get {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Constructs the new instance of the accessibility object for this control.
+        /// </summary>
+        /// <returns>The accessibility object for this control.</returns>
+        protected override AccessibleObject CreateAccessibilityInstance() {
+            return new PropertyGridToolStripAccessibleObject(this, _parentPropertyGrid);
+        }
+    }
+
+    /// <summary>
+    /// Represents the PropertyGridToolStrip control accessibility object.
+    /// </summary>
+    [ComVisible(true)]
+    internal class PropertyGridToolStripAccessibleObject : ToolStrip.ToolStripAccessibleObject {
+
+        private PropertyGrid _parentPropertyGrid;
+
+        /// <summary>
+        /// Constructs new instance of PropertyGridToolStripAccessibleObject
+        /// </summary>
+        /// <param name="owningPropertyGridToolStrip">The PropertyGridToolStrip owning control.</param>
+        /// <param name="parentPropertyGrid">The parent PropertyGrid control.</param>
+        public PropertyGridToolStripAccessibleObject(PropertyGridToolStrip owningPropertyGridToolStrip, PropertyGrid parentPropertyGrid) : base(owningPropertyGridToolStrip) {
+            _parentPropertyGrid = parentPropertyGrid;
+        }
+
+        /// <summary>
+        /// Request to return the element in the specified direction.
+        /// </summary>
+        /// <param name="direction">Indicates the direction in which to navigate.</param>
+        /// <returns>Returns the element in the specified direction.</returns>
+        internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+            var propertyGridAccessibleObject = _parentPropertyGrid.AccessibilityObject as PropertyGridAccessibleObject;
+            if (propertyGridAccessibleObject != null) {
+                var navigationTarget = propertyGridAccessibleObject.ChildFragmentNavigate(this, direction);
+                if (navigationTarget != null) {
+                    return navigationTarget;
+                }
+            }
+
+            return base.FragmentNavigate(direction);
+        }
+
+        /// <summary>
+        /// Request value of specified property from an element.
+        /// </summary>
+        /// <param name="propertyId">Identifier indicating the property to return</param>
+        /// <returns>Returns a ValInfo indicating whether the element supports this property, or has no value for it.</returns>
+        internal override object GetPropertyValue(int propertyID) {
+            if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                return NativeMethods.UIA_ToolBarControlTypeId;
+            } else if (propertyID == NativeMethods.UIA_NamePropertyId) {
+                return Name;
+            }
+
+            return base.GetPropertyValue(propertyID);
+        }
+    }
 }
 

@@ -517,7 +517,7 @@ namespace System.Windows.Data
                     _waitForInlineDoc.Set();
             }
 
-            // warn the user if the default xmlns wasn't set explicitly (
+            // warn the user if the default xmlns wasn't set explicitly (bug 1006946)
             if (TraceData.IsEnabled)
             {
                 XmlNode root = doc.DocumentElement;

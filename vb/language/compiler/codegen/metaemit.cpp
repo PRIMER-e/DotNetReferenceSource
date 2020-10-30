@@ -429,7 +429,7 @@ mdTypeRef MetaEmit::DefineTypeRefByContainer
                         // HACK: Microsoft This is an arbitrary token value. It is just as arbitrary as returning the token
                         // for Sytem.Object like we did before, but it keeps us from entering an infinite recursion.
                         // We should consider going through the compiler sources and handling mdTokenNil
-                        // gracefully, as it is a value that we can get back line in the above 
+                        // gracefully, as it is a value that we can get back line in the above bug.
                         tr = mdTypeRefNil + 1;
 
                         goto GotToken;
@@ -815,7 +815,7 @@ mdTypeRef *MetaEmit::DefineImplements
         // Devdiv 35011:
         // Should not emit the Re-implemented interfaces in order for the CLR interface layout
         // algorithm to provide VB semantics with respect to interface implementation.
-        // Unless all members are reimplemented (
+        // Unless all members are reimplemented (Bug #104767 - DevDiv Bugs)
         if (----l->IsRedundantImplements() ||
             (----l->IsReimplementingInterface() && !----l->AreAllMembersReimplemented()))
         {
@@ -865,7 +865,7 @@ mdTypeRef *MetaEmit::DefineImplements
         // Devdiv 35011:
         // Should not emit the Re-implemented interfaces in order for the CLR interface layout
         // algorithm to provide VB semantics with respect to interface implementation.
-        // Unless all members are reimplemented (
+        // Unless all members are reimplemented (Bug #104767 - DevDiv Bugs)
         if (----l->IsRedundantImplements() ||
             (----l->IsReimplementingInterface() && !----l->AreAllMembersReimplemented()))
         {
@@ -2685,8 +2685,8 @@ mdMemberRef MetaEmit::DefineMemberRefByName
 {
     mdMemberRef *pmrFound = NULL;
 
-    //disable caching for static locals  (
-
+    //disable caching for static locals  (bug DevDiv 44120).
+    //Consider to implement a caching mechanism based on the munged name
     if(psymNamed && !(psymNamed->IsStaticLocalBackingField()))
     {
         pmrFound = (mdMemberRef *)m_pBuilder->m_ProjectHashTable.FindWithSize(pmmr, cbSizeRef);
@@ -2790,8 +2790,8 @@ mdMemberRef MetaEmit::DefineMemberRefByName
                                                    &mr));
         }
 
-        //disable caching for static locals  (
-
+        //disable caching for static locals  (bug DevDiv 44120).
+        //Consider to implement a caching mechanism based on the munged name
         if(psymNamed && !(psymNamed->IsStaticLocalBackingField()))
         {
             m_pBuilder->m_ProjectHashTable.AddWithSize(pmmr, cbSizeRef, mr);
@@ -4317,7 +4317,7 @@ HRESULT MetaEmit::DefineCustomAttribute
 {
     HRESULT hr;
 
-    // Do not remove this Assert 
+    // Do not remove this Assert Bug 56115 - DevDiv Bugs
     VSASSERT(TypeFromToken(tkObj) != mdtAssembly, "Assembly attributes must be emitted via ALink!");
 
     hr = m_pmdEmit->DefineCustomAttribute(
@@ -5196,7 +5196,7 @@ static void ValidateAssemblyLink
 {
     // See whether the referenced assembly exists on our list of linked items.
     // If so, this indirect reference will cause our link to fail, because we'll end up with a
-    // reference to the linked item anyway. This is related to 
+    // reference to the linked item anyway. This is related to bug #480600.
     for (unsigned int iList = 0; iList < list.Count(); iList++)
     {
         AssemblyComparisonResult acr = AssemblyIdentity::CompareAssemblies(
@@ -5362,7 +5362,7 @@ void MetaEmit::ALinkImportReferences()
                 // assembly, and we can count on the existing check for ERRID_IndirectUnreferencedAssembly to ensure
                 // that all of an assembly's references have been included in the list. The only case we need to check
                 // for is the one where a non-linked assembly has an indirect reference to a linked assembly. 
-                // This was Dev10 
+                // This was Dev10 bug #616590.
                 ValidateAssemblyLinks(pCompilerProject, linkedProjectList, m_pCompiler, m_pBuilder->m_pErrorTable);
             }
             VSASSERT(spMetaDataImport != NULL, "Ouch. What happened to the metadata import for this project?");
@@ -5916,7 +5916,7 @@ void MetaEmit::ALinkEmitAssemblyAttributes()
                                                                 NULL
                                                         ) ;
 
-            // Use ALink to emit the attribute (
+            // Use ALink to emit the attribute (Bug #56115 - DevDiv Bugs)
             HRESULT hr1 =
 
                                     m_pALink->EmitAssemblyCustomAttribute(

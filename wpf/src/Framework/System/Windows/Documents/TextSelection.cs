@@ -746,8 +746,8 @@ namespace System.Windows.Documents
             {
                 // Use the locally defined caretElement because _caretElement can be null by
                 // detaching CaretElement object
-                // Stress 
-
+                // Stress bug#1583327 indicate that _caretElement can be set to null by
+                // detaching. So the below code is caching the caret element instance locally.
                 CaretElement caretElement = _caretElement;
                 if (caretElement != null)
                 {
@@ -1805,11 +1805,11 @@ namespace System.Windows.Documents
         {
             ITextContainer textContainer = ((ITextSelection)this).Start.TextContainer;
 
-            // Only fixed documents use the highlight layer for selection. In all other cases,
-            // selection is rendered on the adorner layer. Since we split up individual runs
-            // fed in to TextFormatter at highlight boundaries, using the highlight layer for
-            // selection can affect measure.
-            if (textContainer is TextContainer || textContainer is PasswordTextContainer)
+            // DDVSO:405199
+            // If we are using the adorner, then we should not instantiate highlight layers
+            // for TextContainer or PasswordTextContainer.
+            if (FrameworkAppContextSwitches.UseAdornerForTextboxSelectionRendering
+                && (textContainer is TextContainer || textContainer is PasswordTextContainer))
             {
                 return;
             }

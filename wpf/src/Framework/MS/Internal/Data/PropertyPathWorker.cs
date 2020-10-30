@@ -415,7 +415,7 @@ namespace MS.Internal.Data
             for (int k=1; k<_arySVS.Length; ++k)
             {
                 object oldValue = BindingExpression.GetReference(_arySVS[k].item);
-                if (!Object.Equals(oldValue, RawValue(k-1)))
+                if (!ItemsControl.EqualsEx(oldValue, RawValue(k-1)))
                 {
                     UpdateSourceValueState(k-1, null);
                     return;
@@ -604,6 +604,11 @@ namespace MS.Internal.Data
             int initialLevel = k;
             object rawValue = null;
 
+            // don't do a data transfer if there's no one to do it, or if this is
+            // a (re-)activation with a new source item.   In the latter case,
+            // the host binding decides whether to do a transfer.
+            bool suppressTransfer = (_host == null) || (k < 0);
+
             // optimistically assume the new value will fix previous path errors
             _status = PropertyPathStatus.Active;
 
@@ -632,6 +637,13 @@ namespace MS.Internal.Data
                     _status = PropertyPathStatus.AsyncRequestPending;
                     break;      // we'll resume the loop after the request completes
                 }
+                else if (!suppressTransfer &&
+                         rawValue == BindingExpressionBase.DisconnectedItem &&
+                         _arySVS[k-1].info == FrameworkElement.DataContextProperty)
+                {
+                    // don't transfer if {DisconnectedItem} shows up on the path (DDVSO 801039)
+                    suppressTransfer = true;
+                }
 
                 ReplaceItem(k, BindingExpression.NullDataItem, rawValue);
 
@@ -657,10 +669,18 @@ namespace MS.Internal.Data
                             typeof(DependencyObject).IsAssignableFrom(_arySVS[_arySVS.Length-1].type);
                 }
 
-                _host.NewValueAvailable(_dependencySourcesChanged, initialLevel < 0, isASubPropertyChange);
+                if (!suppressTransfer && _arySVS.Length > 0 &&
+                    _arySVS[_arySVS.Length-1].info == FrameworkElement.DataContextProperty &&
+                    RawValue() == BindingExpressionBase.DisconnectedItem)
+                {
+                    // don't transfer if {DisconnectedItem} is the final value (DDVSO 801039)
+                    suppressTransfer = true;
+                }
+
+                _host.NewValueAvailable(_dependencySourcesChanged, suppressTransfer, isASubPropertyChange);
             }
 
-            GC.KeepAlive(target);   // keep target alive during changes (
+            GC.KeepAlive(target);   // keep target alive during changes (bug 956831)
         }
 
         // replace the item at level k with the given item, or with an item obtained from the given parent
@@ -973,7 +993,7 @@ namespace MS.Internal.Data
                     item = BindingExpression.StaticSource;
                 }
 
-                if (!Object.Equals(item, BindingExpression.GetReference(_arySVS[level].item))
+                if (!ItemsControl.EqualsEx(item, BindingExpression.GetReference(_arySVS[level].item))
                     && !IsNonIdempotentProperty(level-1))
                 {
                     return false;
@@ -1184,7 +1204,7 @@ namespace MS.Internal.Data
                         PropertyInfo pi = defaultMembers[jj] as PropertyInfo;
                         if (pi != null)
                         {
-                            if (MatchIndexerParameters(pi.GetIndexParameters(), aryInfo, args, isIList))
+                            if (MatchIndexerParameters(pi, aryInfo, args, isIList))
                             {
                                 info = pi;
                                 sourceType = newType.GetElementType();
@@ -1330,8 +1350,10 @@ namespace MS.Internal.Data
         // convert the (string) argument names to types appropriate for use with
         // the given property.  Put the results in the args[] array.  Return
         // true if everything works.
-        private bool MatchIndexerParameters(ParameterInfo[] aryPI, IndexerParameterInfo[] aryInfo, object[] args, bool isIList)
+        private bool MatchIndexerParameters(PropertyInfo pi, IndexerParameterInfo[] aryInfo, object[] args, bool isIList)
         {
+            ParameterInfo[] aryPI = pi?.GetIndexParameters();
+
             // must have the right number of parameters
             if (aryPI != null && aryPI.Length != aryInfo.Length)
                 return false;
@@ -1390,7 +1412,7 @@ namespace MS.Internal.Data
                             // the conversion didn't work (often because the converter
                             // reverts to the default behavior - returning null).  So
                             // we treat null as an "error", and keep trying for something
-                            // better.  (See 
+                            // better.  (See bug 861966)
                         }
                     }
 
@@ -1426,7 +1448,30 @@ namespace MS.Internal.Data
             // that we can treat it specially in Get/SetValue.
             if (isIList && aryPI.Length == 1 && aryPI[0].ParameterType == typeof(int))
             {
-                args[0] = new IListIndexerArg((int)args[0]);
+                // only wrap when the property returns the same value as IList.Item[]
+                bool shouldWrap = true;
+
+                // .Net 4.0-4.7.2 always wrapped, but this hides more-derived
+                // indexers that don't agree with IList, e.g. the indexer
+                // provided by KeyedCollection<int,TItem> (DDVSO 565980, 585942).
+                // The app-context switch maintains compat.
+                if (!FrameworkAppContextSwitches.IListIndexerHidesCustomIndexer)
+                {
+                    // We can't recognize such properties in general, but we can
+                    // recognize the most common cases - properties declared by .Net
+                    // types on a ----.
+                    Type type = pi.DeclaringType;
+                    if (type.IsGenericType)
+                    {
+                        type = type.GetGenericTypeDefinition();
+                    }
+                    shouldWrap = IListIndexerWhitelist.Contains(type);
+                }
+
+                if (shouldWrap)
+                {
+                    args[0] = new IListIndexerArg((int)args[0]);
+                }
             }
 
             return true;
@@ -1439,8 +1484,8 @@ namespace MS.Internal.Data
             // argument, use the property instead.  (E.g. convert [foo] to .foo)
             // This works around a problem in ADO - they raise PropertyChanged for
             // property "foo", but they don't raise PropertyChanged for "Item[]".
-            // See 
-
+            // See bug 1180454.
+            // Likewise when the indexer arg is an integer - convert to the corresponding named property.
             if (SystemDataHelper.IsDataRowView(item))
             {
                 PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(item);
@@ -1512,6 +1557,7 @@ namespace MS.Internal.Data
                 {
                     if (CriticalExceptions.IsCriticalApplicationException(ex))
                         throw;
+                    BindingOperations.LogException(ex);
                     if (_host != null)
                         _host.ReportGetValueError(k, item, ex);
                 }
@@ -1856,6 +1902,23 @@ namespace MS.Internal.Data
         static readonly object NoParent = new NamedObject("NoParent");
         static readonly object AsyncRequestPending = new NamedObject("AsyncRequestPending");
         internal static readonly object IListIndexOutOfRange = new NamedObject("IListIndexOutOfRange");
+
+        // a list of types that declare indexers known to be consistent
+        // with IList.Item[int index].  It is safe to replace these indexers
+        // with the IList one.
+        static readonly IList<Type> IListIndexerWhitelist = new Type[]
+        {
+            typeof(System.Collections.ArrayList),
+            typeof(System.Collections.IList),
+            typeof(System.Collections.Generic.List<>),
+     // not typeof(System.Collections.Generic.SynchronizedCollection), safe but not worth adding a reference to System.ServiceModel
+            typeof(System.Collections.ObjectModel.Collection<>),
+     // not typeof(System.Collections.ObjectModel.KeyedCollection), indexer for KeyedCollection<int,TItem> is *not* consistent with IList (DDVSO 585942)
+            typeof(System.Collections.ObjectModel.ReadOnlyCollection<>),
+            typeof(System.Collections.Specialized.StringCollection),
+            typeof(System.Windows.Documents.LinkTargetCollection),
+     // not typeof(other type-safe derived class of CollectionBase),  safe but not worth adding references
+        };
 
         //------------------------------------------------------
         //

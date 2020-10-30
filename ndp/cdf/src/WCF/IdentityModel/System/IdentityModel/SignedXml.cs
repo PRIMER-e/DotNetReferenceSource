@@ -178,7 +178,7 @@ namespace System.IdentityModel
         void VerifySignature(KeyedHashAlgorithm hash)
         {
             this.Signature.SignedInfo.ComputeHash(hash);
-            if (!CryptoHelper.IsEqual(hash.Hash, GetSignatureValue()))
+            if (!CryptoHelper.FixedTimeEquals(hash.Hash, GetSignatureValue()))
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new CryptographicException(SR.GetString(SR.SignatureVerificationFailed)));
             }
@@ -685,6 +685,13 @@ namespace System.IdentityModel
 
         public void AddReference(Reference reference)
         {
+            if (!LocalAppContextSwitches.AllowUnlimitedXmlReferences)
+            {
+                long maximumNumberOfReferences = SecurityUtils.GetMaxXmlReferencesPerSignedInfo();
+                if (ReferenceCount > maximumNumberOfReferences)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new CryptographicException());
+            }
+
             reference.ResourcePool = this.ResourcePool;
             this.references.Add(reference);
         }
@@ -1092,7 +1099,7 @@ namespace System.IdentityModel
             {
                 return false;
             }
-            if (!CryptoHelper.IsEqual(computedDigest, GetDigestValue()))
+            if (!CryptoHelper.FixedTimeEquals(computedDigest, GetDigestValue()))
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
                     new CryptographicException(SR.GetString(SR.DigestVerificationFailedForReference, this.uri)));
@@ -1184,7 +1191,7 @@ namespace System.IdentityModel
         public bool CheckDigest()
         {
             byte[] computedDigest = ComputeDigest();
-            bool result = CryptoHelper.IsEqual(computedDigest, GetDigestValue());
+            bool result = CryptoHelper.FixedTimeEquals(computedDigest, GetDigestValue());
 #if LOG_DIGESTS
             Console.WriteLine(">>> Checking digest for reference '{0}', result {1}", uri, result);
             Console.WriteLine("    Computed digest {0}", Convert.ToBase64String(computedDigest));
@@ -1356,6 +1363,13 @@ namespace System.IdentityModel
 
         public void Add(Transform transform)
         {
+            if (!LocalAppContextSwitches.AllowUnlimitedXmlTransforms)
+            {
+                long maximumTransforms = SecurityUtils.GetMaxXmlTransformsPerReference();
+                if (TransformCount > maximumTransforms)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new CryptographicException());
+            }
+
             this.transforms.Add(transform);
         }
 

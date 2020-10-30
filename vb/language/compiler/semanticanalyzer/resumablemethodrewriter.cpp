@@ -2322,7 +2322,7 @@ ILTree::Expression* ResumableMethodLowerer::RewriteSymbolExpression(_In_ ILTree:
     {
 
         // For ByRef parameter, ScanMethodForObsoleteUsage has already reported an error, then RewriteVariable can
-        // be skipped. But if the type of symref invovles type parameter then it must be substituted, see 
+        // be skipped. But if the type of symref invovles type parameter then it must be substituted, see bug 282233.
         symref->ResultType = RewriteType(symref->ResultType);
         return symref;
     }

@@ -339,8 +339,8 @@ namespace MS.Win32
             // If we are unattached and we receive a message, then we must have
             // been used as the original window proc.  In this case, we insert
             // ourselves as if the original window proc had been DefWindowProc.
-            // We pass in DefWndProcStub as a workaround for a 
-
+            // We pass in DefWndProcStub as a workaround for a bug in UxTheme on
+            // Windows XP. For details see the comment on the DefWndProcWrapper method.
             if(_bond == Bond.Unattached)
             {
                 HookWindowProc(hwnd, new NativeMethods.WndProc(SubclassWndProc),
@@ -429,13 +429,13 @@ namespace MS.Win32
             return retval;
         }
 
-        // Perf 
-
-
-
-
-
-
+        // Perf bug: 1963989
+        // _paramDispatcherCallbackOperation is a thread static member which should be reused to avoid
+        // creating a new data structure every time we DispatcherCallbackOperation is called
+        // It also contains the return results (handled and retValue) from DispatcherCallbackOperation call
+        /// <SecurityNote>
+        ///  Critical: DispatcherOperationCallbackParameter contains hwnd, which is critical
+        ///</SecurityNote>
         [SecurityCritical]
         [ThreadStatic]
         private static DispatcherOperationCallbackParameter _paramDispatcherCallbackOperation;
@@ -692,15 +692,15 @@ namespace MS.Win32
 
         /// <summary>
         /// This is a delegate that points to DefWndProcWrapper.  It is set into
-        /// a Window's WndProc instead of DefWndProc in order to work around a 
-
-
-
-
-
-
-
-
+        /// a Window's WndProc instead of DefWndProc in order to work around a bug.
+        /// See the comment on DefWndProcWrapper.
+        ///
+        /// By instantiating this delegate as a static variable we ensure that
+        /// it will remain alive long enough to process messages.
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical: This will expose DefWndProc
+        /// </SecurityNote>
         [SecurityCritical]
         private static NativeMethods.WndProc DefWndProcStub = new NativeMethods.WndProc(DefWndProcWrapper);
 

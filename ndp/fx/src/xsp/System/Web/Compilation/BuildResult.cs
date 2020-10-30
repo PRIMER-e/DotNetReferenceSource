@@ -46,8 +46,9 @@ using System.Web.Hosting;
 using System.Web.Util;
 using System.Web.UI;
 using System.Web.Configuration;
+using System.Diagnostics.CodeAnalysis;
 
-internal enum BuildResultTypeCode {
+    internal enum BuildResultTypeCode {
     Invalid=-1,
     BuildResultCompiledAssembly = 1,
     BuildResultCompiledType = 2,
@@ -341,7 +342,7 @@ internal abstract class BuildResult {
 
         // Don't check more than every two seconds
         DateTime now = DateTime.Now;
-        // Due to 
+        // Due to bug 214038, CBM can be called multiple times in a very short time.
         if (now < _nextUpToDateCheck && !BuildManagerHost.InClientBuildManager) {
             Debug.Trace("BuildResult", "IsUpToDate: true since called less than 2 seconds ago. "
                 + _nextUpToDateCheck + "," + now);
@@ -503,11 +504,11 @@ internal abstract class BuildResultCompiledAssemblyBase: BuildResult {
         }
     }
 
-    // DevDiv 
-
-
-
-
+    // DevDiv Bug 98735
+    // Go through the assembly and all references (including deeper levels) to make sure that
+    // each referenced assembly exists and does not have a dot delete.
+    // If any referenced assembly is removed or marked for deletion,
+    // we invalidate the base assembly by throwing an InvalidOperationException
     private static void CheckAssemblyIsValid(Assembly a, Hashtable checkedAssemblies) {
 
         // Keep track of which assemblies we already checked so we can skip them
@@ -536,7 +537,8 @@ internal abstract class BuildResultCompiledAssemblyBase: BuildResult {
         }
     }
 
-    internal static bool AssemblyIsInCodegenDir(Assembly a) {
+        [SuppressMessage("Microsoft.Security.Xml", "CA3003 ReviewCodeForFileCanonicalizationVulnerabilities", Justification = "Developer-controlled contents are implicitly trusted.")]
+        internal static bool AssemblyIsInCodegenDir(Assembly a) {
         string path = Util.GetAssemblyCodeBase(a);
         FileInfo f = new FileInfo(path);
         string assemblyDir = FileUtil.RemoveTrailingDirectoryBackSlash(f.Directory.FullName);
@@ -877,7 +879,7 @@ internal class BuildResultCompiledType : BuildResultCompiledAssemblyBase, ITyped
         // If the fast factory is not available, just call CreateInstance
         // 
         if (_instObj == null) {
-            return HttpRuntime.CreatePublicInstance(ResultType);
+            return HttpRuntime.CreatePublicInstanceByWebObjectActivator(ResultType);
         }
 
         // Call it to instantiate the object
@@ -1036,9 +1038,9 @@ internal abstract class BuildResultNoCompileTemplateControl : BuildResult, IType
         try {
             // Create the control tree
 
-            // DevDiv 
-
-
+            // DevDiv Bug 59351
+            // Lock during the first time we initialize the control builder with the object,
+            // to prevent concurrency issues.
             if (!_initialized) {
                 lock (this) {
                     _rootBuilder.InitObject(templateControl);

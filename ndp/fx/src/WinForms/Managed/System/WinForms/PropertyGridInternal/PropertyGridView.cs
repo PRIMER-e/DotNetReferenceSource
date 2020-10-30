@@ -18,11 +18,11 @@ namespace System.Windows.Forms.PropertyGridInternal {
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System;
-    using System.Collections;   
+    using System.Collections;
     using System.Windows.Forms;
     using System.Windows.Forms.Internal;
     using System.Windows.Forms.ComponentModel;
-    using System.Windows.Forms.Design;    
+    using System.Windows.Forms.Design;
     using System.ComponentModel.Design;
     using System.Windows.Forms.VisualStyles;
     using System.IO;
@@ -63,17 +63,16 @@ namespace System.Windows.Forms.PropertyGridInternal {
         private const int       OUTLINE_INDENT = 10;
         private const int       OUTLINE_SIZE = 9;
         private const int       OUTLINE_SIZE_EXPLORER_TREE_STYLE = 16;
-        private static int      outlineSize = OUTLINE_SIZE;
-        private static int      outlineSizeExplorerTreeStyle = OUTLINE_SIZE_EXPLORER_TREE_STYLE;
-        private static bool     isScalingInitialized = false;
+        private  int            outlineSize = OUTLINE_SIZE;
+        private  int            outlineSizeExplorerTreeStyle = OUTLINE_SIZE_EXPLORER_TREE_STYLE;
         private const int       PAINT_WIDTH = 20;
-        private static int      paintWidth = PAINT_WIDTH;
+        private int             paintWidth = PAINT_WIDTH;
         private const int       PAINT_INDENT = 26;
-        private static int      paintIndent = PAINT_INDENT;
+        private int             paintIndent = PAINT_INDENT;
         private const int       ROWLABEL = 1;
         private const int       ROWVALUE = 2;
         private const int       MAX_LISTBOX_HEIGHT = 200;
-        private static int      maxListBoxHeight = MAX_LISTBOX_HEIGHT;
+        private int             maxListBoxHeight = MAX_LISTBOX_HEIGHT;
         
         private const short    ERROR_NONE = 0;
         private const short    ERROR_THROWN = 1;
@@ -83,6 +82,11 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
         private const int DOTDOTDOT_ICONWIDTH = 7;
         private const int DOTDOTDOT_ICONHEIGHT = 8;
+        private const int DOWNARROW_ICONWIDTH = 16;
+        private const int DOWNARROW_ICONHEIGHT = 16;
+
+        private static int OFFSET_2PIXELS = 2;
+        private int offset_2Units = OFFSET_2PIXELS;
 
         protected static readonly Point InvalidPosition = new Point(int.MinValue, int.MinValue);
 
@@ -173,18 +177,14 @@ namespace System.Windows.Forms.PropertyGridInternal {
         ]
         public PropertyGridView(IServiceProvider serviceProvider, PropertyGrid propertyGrid)
         : base() {
-
-            if (!isScalingInitialized) {
-                if (DpiHelper.IsScalingRequired) {
-                    paintWidth = DpiHelper.LogicalToDeviceUnitsX(PAINT_WIDTH);
-                    paintIndent = DpiHelper.LogicalToDeviceUnitsX(PAINT_INDENT);
-                    outlineSizeExplorerTreeStyle = DpiHelper.LogicalToDeviceUnitsX(OUTLINE_SIZE_EXPLORER_TREE_STYLE);
-                    outlineSize = DpiHelper.LogicalToDeviceUnitsX(OUTLINE_SIZE);
-                    maxListBoxHeight = DpiHelper.LogicalToDeviceUnitsY(MAX_LISTBOX_HEIGHT);
-                }
-                isScalingInitialized = true;
+            if (DpiHelper.IsScalingRequired) {
+                paintWidth = DpiHelper.LogicalToDeviceUnitsX(PAINT_WIDTH);
+                paintIndent = DpiHelper.LogicalToDeviceUnitsX(PAINT_INDENT);
+                outlineSizeExplorerTreeStyle = DpiHelper.LogicalToDeviceUnitsX(OUTLINE_SIZE_EXPLORER_TREE_STYLE);
+                outlineSize = DpiHelper.LogicalToDeviceUnitsX(OUTLINE_SIZE);
+                maxListBoxHeight = DpiHelper.LogicalToDeviceUnitsY(MAX_LISTBOX_HEIGHT);
             }
-
+                    
             this.ehValueClick = new EventHandler(this.OnGridEntryValueClick);
             this.ehLabelClick = new EventHandler(this.OnGridEntryLabelClick);
             this.ehOutlineClick = new EventHandler(this.OnGridEntryOutlineClick);
@@ -268,7 +268,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
-        private DropDownButton DropDownButton {
+        internal DropDownButton DropDownButton {
             get {
                 if (btnDropDown == null) {
                     #if DEBUG
@@ -279,17 +279,16 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     
                     btnDropDown = new DropDownButton();
                     btnDropDown.UseComboBoxTheme = true;
-                    Bitmap bitmap = CreateDownArrow();
+                    Bitmap bitmap = CreateResizedBitmap("Arrow.ico", DOWNARROW_ICONWIDTH, DOWNARROW_ICONHEIGHT);
                     btnDropDown.Image = bitmap;
                     btnDropDown.BackColor = SystemColors.Control;
                     btnDropDown.ForeColor = SystemColors.ControlText;
                     btnDropDown.Click += new EventHandler(this.OnBtnClick);
-                   // btnDropDown.MouseUp += new MouseEventHandler(this.OnBtnMouseUp);
-                   // btnDropDown.MouseDown += new MouseEventHandler(this.OnBtnMouseDown);
+                    btnDropDown.GotFocus += new EventHandler(OnDropDownButtonGotFocus);
                     btnDropDown.LostFocus += new EventHandler(this.OnChildLostFocus);
                     btnDropDown.TabIndex = 2;
                     CommonEditorSetup(btnDropDown);
-                    btnDropDown.Size = new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);
+                    btnDropDown.Size = DpiHelper.EnableDpiChangedHighDpiImprovements ? new Size(SystemInformation.VerticalScrollBarArrowHeightForDpi(this.deviceDpi), RowHeight) : new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);
                 }
                 return btnDropDown;
             }
@@ -308,22 +307,12 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     btnDialog.BackColor = SystemColors.Control;
                     btnDialog.ForeColor = SystemColors.ControlText;
                     btnDialog.TabIndex = 3;
-
-                    int scaledIconWidth = DOTDOTDOT_ICONWIDTH;
-                    int scaledIconHeight = DOTDOTDOT_ICONHEIGHT;
-
-                    if (DpiHelper.IsScalingRequired) {
-                        scaledIconWidth = DpiHelper.LogicalToDeviceUnitsX(DOTDOTDOT_ICONWIDTH);
-                        scaledIconHeight = DpiHelper.LogicalToDeviceUnitsY(DOTDOTDOT_ICONHEIGHT);
-                    }
-
-                    btnDialog.Image = GetBitmapFromIcon("dotdotdot.ico", scaledIconWidth, scaledIconHeight);
+                    btnDialog.Image = CreateResizedBitmap("dotdotdot.ico", DOTDOTDOT_ICONWIDTH, DOTDOTDOT_ICONHEIGHT);
                     btnDialog.Click += new EventHandler(this.OnBtnClick);
-                    //btnDialog.MouseUp += new MouseEventHandler(this.OnBtnMouseUp);
-                    //btnDialog.MouseDown += new MouseEventHandler(this.OnBtnMouseDown);
                     btnDialog.KeyDown += new KeyEventHandler(this.OnBtnKeyDown);
+                    btnDialog.GotFocus += new EventHandler(OnDropDownButtonGotFocus);
                     btnDialog.LostFocus += new EventHandler(this.OnChildLostFocus);
-                    btnDialog.Size = new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);                    
+                    btnDialog.Size = DpiHelper.EnableDpiChangedHighDpiImprovements ? new Size(SystemInformation.VerticalScrollBarArrowHeightForDpi(this.deviceDpi), RowHeight) : new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);
                     CommonEditorSetup(btnDialog);
                 }
                 return btnDialog;
@@ -338,7 +327,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             Bitmap b = icon.ToBitmap();
             icon.Dispose();
             
-            if (DpiHelper.IsScalingRequired && (b.Size.Width != iconsWidth || b.Size.Height != iconsHeight)) {
+            if ((DpiHelper.IsScalingRequired || DpiHelper.EnableDpiChangedHighDpiImprovements) && (b.Size.Width != iconsWidth || b.Size.Height != iconsHeight)) {
                 Bitmap scaledBitmap = DpiHelper.CreateResizedBitmap(b, desiredSize);
                 if (scaledBitmap != null) {
                     b.Dispose();
@@ -379,6 +368,15 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
+        /// <summary>
+        /// Represents the Editor's control accessible object.
+        /// </summary>
+        internal AccessibleObject EditAccessibleObject {
+            get {
+                return Edit.AccessibilityObject;
+            }
+        }
+
         private GridViewListBox DropDownListBox {
             get {
                 if (listBox == null) {
@@ -402,6 +400,19 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 return listBox;
             }
         }
+
+        /// <summary>
+        /// Represents the DropDownListBox accessible object.
+        /// </summary>
+        internal AccessibleObject DropDownListBoxAccessibleObject {
+            get {
+                if (DropDownListBox.Visible) {
+                    return DropDownListBox.AccessibilityObject;
+                }
+
+                return null;
+            }
+        }
         
         internal bool DrawValuesRightToLeft {
             get {
@@ -415,6 +426,11 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
+        internal bool DropDownVisible {
+            get {
+                return dropDownHolder != null && dropDownHolder.Visible;
+            }
+        }
         
         public bool FocusInside {
             get {
@@ -461,7 +477,9 @@ namespace System.Windows.Forms.PropertyGridInternal {
         private GridErrorDlg ErrorDialog {
             get {
                 if (this.errorDlg == null) {
-                    errorDlg = new GridErrorDlg(this.ownerGrid);
+                    using (DpiHelper.EnterDpiAwarenessScope(DpiAwarenessContext.DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
+                        errorDlg = new GridErrorDlg(this.ownerGrid);
+                    }
                 }
                 return errorDlg;
             }
@@ -691,8 +709,18 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     helpService = null;
                }
             }
-        }    
-        
+        }
+
+        /// <summary>
+        /// Indicates whether or not the control supports UIA Providers via
+        /// IRawElementProviderFragment/IRawElementProviderFragmentRoot interfaces.
+        /// </summary>
+        internal override bool SupportsUiaProviders {
+            get {
+                return AccessibilityImprovements.Level3;
+            }
+        }
+
         private int TipColumn {
             get{
                 return(tipInfo & unchecked((int)0xFFFF0000)) >> 16;
@@ -734,6 +762,15 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     toolTip.Font = this.Font;
                 }   
                 return toolTip;
+            }
+        }
+
+        /// <summary>
+        /// Gets the top level grid entries.
+        /// </summary>
+        internal GridEntryCollection TopLevelGridEntries {
+            get {
+                return topLevelGridEntries;
             }
         }
 
@@ -895,7 +932,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     }
 
                     Edit.Filter = false;
-                    
+
                     // disable the ddh so it wont' steal the focus back
                     //
                     dropDownHolder.SetComponent(null, false);
@@ -919,6 +956,17 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     
                         if (selectedRow != -1) {
                             SelectRow(selectedRow);
+                        }
+                    }
+
+                    if (AccessibilityImprovements.Level3 && selectedRow != -1) {
+                        var gridEntry = GetGridEntryFromRow(selectedRow);
+                        if (gridEntry != null) {
+                            gridEntry.AccessibilityObject.RaiseAutomationEvent(NativeMethods.UIA_AutomationFocusChangedEventId);
+                            gridEntry.AccessibilityObject.RaiseAutomationPropertyChangedEvent(
+                                NativeMethods.UIA_ExpandCollapseExpandCollapseStatePropertyId,
+                                UnsafeNativeMethods.ExpandCollapseState.Expanded,
+                                UnsafeNativeMethods.ExpandCollapseState.Collapsed);
                         }
                     }
                 }
@@ -1045,24 +1093,32 @@ namespace System.Windows.Forms.PropertyGridInternal {
         ///     should not call base.CreateAccessibilityObject.
         /// </devdoc>
         protected override AccessibleObject CreateAccessibilityInstance() {
-            return new PropertyGridViewAccessibleObject(this);
+            return new PropertyGridViewAccessibleObject(this, ownerGrid);
         }
-        
+
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        private Bitmap CreateDownArrow() {
+        private Bitmap CreateResizedBitmap(string icon, int width, int height) {
             Bitmap bitmap = null;
-
-            try
-            {
-                Icon icon = new Icon(typeof(PropertyGrid), "Arrow.ico");
-                bitmap = icon.ToBitmap();
-                icon.Dispose();
+            var scaledIconWidth = width;
+            var scaledIconHeight = height;
+            try {
+                //scale for per-monitor DPI.
+                if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                    scaledIconWidth = LogicalToDeviceUnits(width);
+                    scaledIconHeight = LogicalToDeviceUnits(height);
+                }
+                else if (DpiHelper.IsScalingRequired ) {
+                    // only primary monitor scaling.
+                    scaledIconWidth = DpiHelper.LogicalToDeviceUnitsX(width);
+                    scaledIconHeight = DpiHelper.LogicalToDeviceUnitsY(height);
+                }
+                
+                bitmap = GetBitmapFromIcon(icon, scaledIconWidth, scaledIconHeight);
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 Debug.Fail(e.ToString());
-                bitmap = new Bitmap(16, 16);
+                bitmap = new Bitmap(scaledIconWidth, scaledIconHeight);
             }
             return bitmap;
         }
@@ -1414,6 +1470,32 @@ namespace System.Windows.Forms.PropertyGridInternal {
             return baseHfont;
         }
 
+        /// <summary>
+        /// Gets the element from point.
+        /// </summary>
+        /// <param name="x">The point x coordinate.</param>
+        /// <param name="y">The point y coordinate.</param>
+        /// <returns>The found grid element.</returns>
+        internal GridEntry GetElementFromPoint(int x, int y) {
+            Point point = new Point(x, y);
+            var allGridEntries = GetAllGridEntries();
+            GridEntry[] targetEntries = new GridEntry[allGridEntries.Count];
+            try {
+                GetGridEntriesFromOutline(allGridEntries, 0, allGridEntries.Count - 1, targetEntries);
+            }
+            catch (Exception ex) {
+                Debug.Fail(ex.ToString());
+            }
+
+            foreach (GridEntry gridEntry in targetEntries) {
+                if (gridEntry.AccessibilityObject.Bounds.Contains(point)) {
+                    return gridEntry;
+                }
+            }
+
+            return null;
+        }
+
         internal IntPtr GetBoldHfont() {
             if (boldHfont == IntPtr.Zero) {
                 boldHfont = GetBoldFont().ToHfont();
@@ -1547,6 +1629,43 @@ namespace System.Windows.Forms.PropertyGridInternal {
             return(int)(InternalLabelWidth * (labelRatio - 1));
         }
 
+        private void SetDropDownWindowPosition(Rectangle rect, bool setBounds = false) {
+             Size size = dropDownHolder.Size;
+            
+            // Setting size to the width of selected row value field at the minimum.
+            size.Width = Math.Max(rect.Width + 1, size.Width);
+
+            Point loc = PointToScreen(new Point(0, 0));
+            Rectangle rectScreen = Screen.FromControl(Edit).WorkingArea;
+
+            loc.X = Math.Min(rectScreen.X + rectScreen.Width - size.Width,
+                Math.Max(rectScreen.X, loc.X + rect.X + rect.Width - size.Width));
+            loc.Y += rect.Y;
+            if (rectScreen.Y + rectScreen.Height < (size.Height + loc.Y + Edit.Height)) {
+                loc.Y -= size.Height;
+                dropDownHolder.ResizeUp = true;
+            }
+            else {
+                loc.Y += rect.Height + 1;
+                dropDownHolder.ResizeUp = false;
+            }
+
+            int flags = NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE;
+
+            if (loc.X == 0 && loc.Y == 0) {
+                flags |= NativeMethods.SWP_NOMOVE;
+            }
+
+            if (this.Width == size.Width && this.Height == size.Height) {
+                flags |= NativeMethods.SWP_NOSIZE;
+            }
+
+            SafeNativeMethods.SetWindowPos(new HandleRef(this.dropDownHolder, this.dropDownHolder.Handle), NativeMethods.NullHandleRef, loc.X, loc.Y, size.Width, size.Height, flags);
+            if (setBounds) {
+                dropDownHolder.SetBounds(loc.X, loc.Y, size.Width, size.Height);
+            }
+        }
+
         /// <include file='doc\PropertyGridView.uex' path='docs/doc[@for="PropertyGridView.DropDownControl"]/*' />
         /// <devdoc>
         ///      Displays the provided control in a drop down.  When possible, the
@@ -1564,41 +1683,80 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
 
             dropDownHolder.Visible = false;
-            dropDownHolder.SetComponent(ctl, GetFlag(FlagResizableDropDown));
-            Rectangle rect = GetRectangle(selectedRow,ROWVALUE);
-            Size size = dropDownHolder.Size;
-            Point loc = PointToScreen(new Point(0, 0));
-            Rectangle rectScreen = Screen.FromControl(Edit).WorkingArea;
-            size.Width = Math.Max(rect.Width+1,size.Width);
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                Rectangle rect = GetRectangle(selectedRow, ROWVALUE);
 
-            // Not needed... CYMAXDDLHEIGHT used to be 200, but why limit it???
-            //size.Height = Math.Min(size.Height,CYMAXDDLHEIGHT);
+                dropDownHolder.SuspendAllLayout(dropDownHolder);
+                // Parenting the dropdown holder - may cause WM_DPI changed event
+                UnsafeNativeMethods.SetWindowLong(new HandleRef(dropDownHolder, dropDownHolder.Handle), NativeMethods.GWL_HWNDPARENT, new HandleRef(this, Handle));
 
-            loc.X = Math.Min(rectScreen.X + rectScreen.Width - size.Width,
-                             Math.Max(rectScreen.X,loc.X + rect.X + rect.Width - size.Width));
-            loc.Y += rect.Y;
-            if (rectScreen.Y + rectScreen.Height < (size.Height + loc.Y + Edit.Height)) {
-                loc.Y -= size.Height;
-                dropDownHolder.ResizeUp = true;
+                // WMDPI changed events are raised when parent DPi changed or windows is positioned on a screen with different Dpi than primary monitor.
+                // So order of the parenting and positioning of the window need to be in synch to avoid repetitive WM_DPI changed messages.
+                SetDropDownWindowPosition(rect);
+
+                dropDownHolder.SetComponent(ctl, GetFlag(FlagResizableDropDown));
+
+                //Set window position but not bounds to avoid moving window to primary monitor ( set bounds cause it ).
+                SetDropDownWindowPosition(rect);
+                dropDownHolder.ResumeAllLayout(dropDownHolder,true);
+
+                // control is a top=level window. standard way of setparent on the control is prohibited for top-level controls.
+                // It is unknown why this control was created as a top-level control. Windows does not recommend this way of setting parent.
+                // We are not touching this for this release. We may revisit it in next release.
+                SafeNativeMethods.ShowWindow(new HandleRef(dropDownHolder, dropDownHolder.Handle), NativeMethods.SW_SHOWNA);
+                SetDropDownWindowPosition(rect, setBounds: true);
             }
             else {
-                loc.Y += rect.Height + 1;
-                dropDownHolder.ResizeUp = false;
+                dropDownHolder.SetComponent(ctl, GetFlag(FlagResizableDropDown));
+                Rectangle rect = GetRectangle(selectedRow, ROWVALUE);
+                Size size = dropDownHolder.Size;
+                Point loc = PointToScreen(new Point(0, 0));
+                Rectangle rectScreen = Screen.FromControl(Edit).WorkingArea;
+                size.Width = Math.Max(rect.Width + 1, size.Width);
+
+                // Not needed... CYMAXDDLHEIGHT used to be 200, but why limit it???
+                //size.Height = Math.Min(size.Height,CYMAXDDLHEIGHT);
+
+                loc.X = Math.Min(rectScreen.X + rectScreen.Width - size.Width,
+                    Math.Max(rectScreen.X, loc.X + rect.X + rect.Width - size.Width));
+                loc.Y += rect.Y;
+                if (rectScreen.Y + rectScreen.Height < (size.Height + loc.Y + Edit.Height)) {
+                    loc.Y -= size.Height;
+                    dropDownHolder.ResizeUp = true;
+                }
+                else {
+                    loc.Y += rect.Height + 1;
+                    dropDownHolder.ResizeUp = false;
+                }
+
+                // control is a top=level window. standard way of setparent on the control is prohibited for top-level controls.
+                // It is unknown why this control was created as a top-level control. Windows does not recommend this way of setting parent.
+                // We are not touching this for this relase. We may revisit it in next release.
+                UnsafeNativeMethods.SetWindowLong(new HandleRef(dropDownHolder, dropDownHolder.Handle), NativeMethods.GWL_HWNDPARENT, new HandleRef(this, Handle));
+                dropDownHolder.SetBounds(loc.X, loc.Y, size.Width, size.Height);
+                SafeNativeMethods.ShowWindow(new HandleRef(dropDownHolder, dropDownHolder.Handle), NativeMethods.SW_SHOWNA);
             }
 
-            UnsafeNativeMethods.SetWindowLong(new HandleRef(dropDownHolder, dropDownHolder.Handle), NativeMethods.GWL_HWNDPARENT, new HandleRef(this, Handle));
-            dropDownHolder.SetBounds(loc.X,loc.Y,size.Width,size.Height);
-            SafeNativeMethods.ShowWindow(new HandleRef(dropDownHolder, dropDownHolder.Handle), NativeMethods.SW_SHOWNA);
             Edit.Filter = true;
             dropDownHolder.Visible = true;
-
             dropDownHolder.FocusComponent();
-            SelectEdit(false);            
+            SelectEdit(false);
+
+            if (AccessibilityImprovements.Level3) {
+                var gridEntry = GetGridEntryFromRow(selectedRow);
+                if (gridEntry != null) {
+                    gridEntry.AccessibilityObject.RaiseAutomationEvent(NativeMethods.UIA_AutomationFocusChangedEventId);
+                    gridEntry.AccessibilityObject.RaiseAutomationPropertyChangedEvent(
+                        NativeMethods.UIA_ExpandCollapseExpandCollapseStatePropertyId,
+                        UnsafeNativeMethods.ExpandCollapseState.Collapsed,
+                        UnsafeNativeMethods.ExpandCollapseState.Expanded);
+                }
+            }
 
             try {
-                DropDownButton.IgnoreMouse = true;                
+                DropDownButton.IgnoreMouse = true;
                 dropDownHolder.DoModalLoop();
-            }    
+            }
             finally {
                 DropDownButton.IgnoreMouse = false;
             }
@@ -2000,7 +2158,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             return rect;
         }
 
-        private /*protected virtual*/ int GetRowFromGridEntry(GridEntry gridEntry) {
+        private int GetRowFromGridEntry(GridEntry gridEntry) {
             GridEntryCollection rgipesAll = GetAllGridEntries();
             if (gridEntry == null || rgipesAll == null)
                 return -1;
@@ -2024,6 +2182,10 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
 
             return -1 - GetScrollOffset();
+        }
+
+        internal int GetRowFromGridEntryInternal(GridEntry gridEntry) {
+            return GetRowFromGridEntry(gridEntry);
         }
 
         public virtual bool GetInPropertySet() {
@@ -2241,7 +2403,16 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
         private void OnChildLostFocus(object sender, EventArgs e) {
             Debug.WriteLineIf(CompModSwitches.DebugGridView.TraceVerbose,  "PropertyGridView:OnChildLostFocus");
-            OnLostFocus(e);
+            this.InvokeLostFocus(this, e);
+        }
+
+        private void OnDropDownButtonGotFocus(object sender, EventArgs e) {
+            if (AccessibilityImprovements.Level3) {
+                DropDownButton dropDownButton = sender as DropDownButton;
+                if (dropDownButton != null) {
+                    dropDownButton.AccessibilityObject.SetFocus();
+                }
+            }
         }
 
         protected override void OnGotFocus(EventArgs e) {
@@ -2266,6 +2437,17 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
             if (selectedGridEntry != null && selectedGridEntry.GetValueOwner() != null) {
                 UpdateHelpAttributes(null, selectedGridEntry);
+            }
+
+            // For empty GridView, draw a focus-indicator rectangle, just inside GridView borders
+            if ((totalProps <= 0) && AccessibilityImprovements.Level1) {
+                int doubleOffset = 2 * offset_2Units;
+
+                if ((Size.Width > doubleOffset) && (Size.Height > doubleOffset)) {
+                    using (Graphics g = CreateGraphicsInternal()) {
+                        ControlPaint.DrawFocusRectangle(g, new Rectangle(offset_2Units, offset_2Units, Size.Width - doubleOffset, Size.Height - doubleOffset));
+                    }
+                }
             }
         }
 
@@ -2418,6 +2600,16 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 InvalidateRow(selectedRow);
             }
             base.OnLostFocus(e);
+
+            // For empty GridView, clear the focus indicator that was painted in OnGotFocus()
+            if (totalProps <= 0 && AccessibilityImprovements.Level1) {
+                using (Graphics g = CreateGraphicsInternal()) {
+                    Rectangle clearRect = new Rectangle(1, 1, Size.Width - 2, Size.Height - 2);
+                    Debug.WriteLineIf(GridViewDebugPaint.TraceVerbose, "Filling empty gridview rect=" + clearRect.ToString());
+
+                    g.FillRectangle(backgroundBrush, clearRect);
+                }
+            }
         }
 
         private void OnEditChange(object sender, EventArgs e) {
@@ -2462,24 +2654,65 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 selectedGridEntry.Focus = true;
                 InvalidateRow(selectedRow);
                 (Edit.AccessibilityObject as ControlAccessibleObject).NotifyClients(AccessibleEvents.Focus);
+
+                if (AccessibilityImprovements.Level3) {
+                    Edit.AccessibilityObject.SetFocus();
+                }
             }
             else {
                 SelectRow(0);
             }
         }
-/*
-        private void OnEditImeModeChanged(object sender, EventArgs e) {
-            // URT  #51190
-            // The property grid ImeMode tracks the ImeMode of the edit control.
-            // We require this because the first character the goes into the edit control
-            // is composed while the PropertyGrid still has focus - so the ImeMode
-            // of the grid and the edit need to be the same or we get inconsistent IME composition.
-            //
-            if (this.ImeMode != edit.ImeMode) {
-                this.ImeMode = edit.ImeMode;
+        /*
+                private void OnEditImeModeChanged(object sender, EventArgs e) {
+                    // URT  #51190
+                    // The property grid ImeMode tracks the ImeMode of the edit control.
+                    // We require this because the first character the goes into the edit control
+                    // is composed while the PropertyGrid still has focus - so the ImeMode
+                    // of the grid and the edit need to be the same or we get inconsistent IME composition.
+                    //
+                    if (this.ImeMode != edit.ImeMode) {
+                        this.ImeMode = edit.ImeMode;
+                    }
+                }
+        */
+
+        private bool ProcessEnumUpAndDown(GridEntry gridEntry, Keys keyCode, bool closeDropDown = true) {
+            object value = gridEntry.PropertyValue;
+            object[] rgvalues = gridEntry.GetPropertyValueList();
+            if (rgvalues != null) {
+                for (int i = 0; i < rgvalues.Length; i++) {
+                    object rgvalue = rgvalues[i];
+                    if (value != null && rgvalue != null && value.GetType() != rgvalue.GetType() && gridEntry.TypeConverter.CanConvertTo(gridEntry, value.GetType())) {
+                        rgvalue = gridEntry.TypeConverter.ConvertTo(gridEntry, CultureInfo.CurrentCulture, rgvalue, value.GetType());
+                    }
+
+                    bool equal = (value == rgvalue) || (value != null && value.Equals(rgvalue));
+
+                    if (!equal && value is string && rgvalue != null) {
+                        equal = 0 == String.Compare((string)value, rgvalue.ToString(), true, CultureInfo.CurrentCulture);
+                    }
+                    if (equal) {
+                        object valueNew = null;
+                        if (keyCode == Keys.Up) {
+                            if (i == 0) return true;
+                            valueNew = rgvalues[i - 1];
+                        }
+                        else {
+                            if (i == rgvalues.Length - 1) return true;
+                            valueNew = rgvalues[i + 1];
+                        }
+
+                        CommitValue(gridEntry, valueNew, closeDropDown);
+                        SelectEdit(false);
+                        return true;
+                    }
+                }
             }
+
+            return false;
         }
-*/
+
         private void OnEditKeyDown(object sender, KeyEventArgs ke) {
             Debug.WriteLineIf(CompModSwitches.DebugGridView.TraceVerbose,  "PropertyGridView:OnEditKeyDown");
             bool fAlt = ke.Alt;
@@ -2488,36 +2721,11 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 if (!gridEntry.Enumerable || !gridEntry.IsValueEditable) {
                     return;
                 }
-                object value = gridEntry.PropertyValue;
-                object[] rgvalues = gridEntry.GetPropertyValueList();
+
                 ke.Handled = true;
-                if (rgvalues != null) {
-                    for (int i = 0; i < rgvalues.Length; i++) {
-                        object rgvalue = rgvalues[i];
-                        if (value != null && rgvalue != null && value.GetType() != rgvalue.GetType() && gridEntry.TypeConverter.CanConvertTo(gridEntry, value.GetType())) {
-                            rgvalue = gridEntry.TypeConverter.ConvertTo(gridEntry, CultureInfo.CurrentCulture, rgvalue, value.GetType());
-                        }
-
-                        bool equal = (value == rgvalue) || (value != null && value.Equals(rgvalue));
-
-                        if (!equal && value is string && rgvalue != null) {
-                            equal = 0 == String.Compare((string)value, rgvalue.ToString(), true, CultureInfo.CurrentCulture);
-                        }
-                        if (equal) {
-                            object valueNew = null;
-                            if (ke.KeyCode == Keys.Up) {
-                                if (i == 0) return;
-                                valueNew = rgvalues[i - 1];
-                            }
-                            else {
-                                if (i == rgvalues.Length - 1) return;
-                                valueNew = rgvalues[i + 1];
-                            }
-                            CommitValue(valueNew);
-                            SelectEdit(false);
-                            return;
-                        }
-                    }
+                bool processed = ProcessEnumUpAndDown(gridEntry, ke.KeyCode);
+                if (processed) {
+                    return;
                 }
             }
             // VS7 # 13336:  handle non-expand/collapse case of left & right as up & down
@@ -2573,7 +2781,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 return;
             }
             // change our focus state.
-            OnLostFocus(EventArgs.Empty);
+            this.InvokeLostFocus(this, EventArgs.Empty);
         }
 
         private void OnEditMouseDown(object sender, MouseEventArgs me) {
@@ -2731,7 +2939,6 @@ namespace System.Windows.Forms.PropertyGridInternal {
             if (ToolTip.Visible) {
                 ToolTip.ToolTip = "";
             }
-
 
             if (fBoth || sender == this || sender == this.ownerGrid) {
                 switch (keyCode) {
@@ -2935,7 +3142,14 @@ namespace System.Windows.Forms.PropertyGridInternal {
                    }
                }
             */
-            
+
+            if (AccessibilityImprovements.Level3 && selectedGridEntry.Enumerable &&
+                dropDownHolder != null && dropDownHolder.Visible &&
+                (keyCode == Keys.Up || keyCode == Keys.Down))
+            {
+                ProcessEnumUpAndDown(selectedGridEntry, keyCode, false);
+            }
+
             ke.Handled = false;
             return;
         }
@@ -3579,7 +3793,12 @@ namespace System.Windows.Forms.PropertyGridInternal {
             SetScrollOffset(0);
             SetConstants();
             SetScrollOffset(scroll);
-            
+
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                SetFlag(FlagNeedUpdateUIBasedOnFont, true);
+                UpdateUIBasedOnFont(true);
+                base.OnFontChanged(e);
+            }
 
             CommonEditorHide();
 
@@ -3732,30 +3951,6 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 }
             }
         }
-        
-        internal static void PositionTooltip(Control parent, GridToolTip ToolTip, Rectangle itemRect) {
-            ToolTip.Visible = false;
-            
-            NativeMethods.RECT rect = NativeMethods.RECT.FromXYWH(itemRect.X, itemRect.Y, itemRect.Width, itemRect.Height);
-
-            ToolTip.SendMessage(NativeMethods.TTM_ADJUSTRECT, 1, ref rect);
-
-            // now offset it back to screen coords
-            Point locPoint = parent.PointToScreen(new Point(rect.left, rect.top));
-            
-            ToolTip.Location = locPoint;   // set the position once so it updates it's size with it's real width.
-            
-            int overHang =  (ToolTip.Location.X + ToolTip.Size.Width) - SystemInformation.VirtualScreen.Width;
-            if (overHang > 0) {
-                locPoint.X -= overHang;
-                ToolTip.Location = locPoint;
-            }
-
-            // tell the control we've repositioned it.
-            ToolTip.Visible = true;  
-        }
-        
-        
 
         protected override bool ProcessDialogKey(Keys keyData) {
             Debug.WriteLineIf(CompModSwitches.DebugGridView.TraceVerbose,  "PropertyGridView:ProcessDialogKey");
@@ -3879,6 +4074,18 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
         public override void Refresh() {
             Refresh(false, -1, -1);
+
+            //resetting gridoutline rect to recalculate before repaint when viewsort property changed. This is necessary especially when user 
+            // changes sort and move to a secondary monitor with different DPI and change view sort back to original.
+            if (topLevelGridEntries != null && DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                var outlineRectIconSize = this.GetOutlineIconSize();
+                foreach (GridEntry gridentry in topLevelGridEntries) {
+                    if (gridentry.OutlineRect.Height != outlineRectIconSize || gridentry.OutlineRect.Width != outlineRectIconSize) {
+                        ResetOutline(gridentry);
+                    }
+                }
+            }
+
             // make sure we got everything
             Invalidate();
         }
@@ -4216,7 +4423,8 @@ namespace System.Windows.Forms.PropertyGridInternal {
             // we want to allow builders on read-only properties
             if ((fBtnDialog || fBtnDropDown) && !gridEntry.ShouldRenderReadOnly && FocusInside) {
                 Control btn = fBtnDropDown ? (Control)DropDownButton : (Control)DialogButton;
-                Size sizeBtn = new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);
+                Size sizeBtn = DpiHelper.EnableDpiChangedHighDpiImprovements? new Size(SystemInformation.VerticalScrollBarArrowHeightForDpi(this.deviceDpi), RowHeight):
+                                                                              new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);
                 Rectangle rectTarget = new Rectangle(rect.X+rect.Width-sizeBtn.Width,
                                                       rect.Y,
                                                       sizeBtn.Width,rect.Height);
@@ -4523,7 +4731,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             return CommitValue(ipeCur, value);
         }
 
-        internal bool CommitValue(GridEntry ipeCur, object value) {
+        internal bool CommitValue(GridEntry ipeCur, object value, bool closeDropDown = true) {
 
             Debug.WriteLineIf(CompModSwitches.DebugGridView.TraceVerbose,  "PropertyGridView:CommitValue(" + (value==null ? "null" :value.ToString()) + ")");
 
@@ -4548,7 +4756,8 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     //working with Anchor for ex., then we should be able to select different values
                     //from the editor, without having it close every time.
                     if (ipeCur != null &&
-                        ipeCur.Enumerable) {
+                        ipeCur.Enumerable &&
+                        closeDropDown) {
                            CloseDropDown();
                     }
 
@@ -4974,12 +5183,23 @@ namespace System.Windows.Forms.PropertyGridInternal {
                         DropDownListBox.ItemHeight = RowHeight + 2;
                     }
                     if (btnDropDown != null) {
-                        btnDropDown.Size = new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);
+                        if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                            btnDropDown.Size = new Size(SystemInformation.VerticalScrollBarArrowHeightForDpi(this.deviceDpi), RowHeight);
+                        }
+                        else {
+                            btnDropDown.Size = new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);
+                        }
                         if (btnDialog != null) {
                             DialogButton.Size = DropDownButton.Size;
+                            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                                btnDialog.Image = CreateResizedBitmap("dotdotdot.ico", DOTDOTDOT_ICONWIDTH, DOTDOTDOT_ICONHEIGHT);
+                            }
+                        }
+                        if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                            btnDropDown.Image = CreateResizedBitmap("Arrow.ico", DOWNARROW_ICONWIDTH, DOWNARROW_ICONHEIGHT);
                         }
                     }
-                    
+
                     if (layoutRequired) {
                         LayoutWindow(true);
                     }
@@ -5088,7 +5308,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
     
                             if (tipPt != InvalidPoint) {
                                 itemRect.Offset(tipPt);
-                                PositionTooltip(this, ToolTip, itemRect);
+                                ToolTip.PositionToolTip(this, itemRect);
                                 m.Result = (IntPtr)1;
                                 return true;
                             }
@@ -5173,6 +5393,50 @@ namespace System.Windows.Forms.PropertyGridInternal {
             base.WndProc(ref m);
         }
 
+        /// <summary>
+        /// rescale constants for the DPI change
+        /// </summary>
+        /// <param name="deviceDpiOld"></param>
+        /// <param name="deviceDpiNew"></param>
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+            RescaleConstants();
+        }
+
+        /// <summary>
+        /// Rescale constants on this object
+        /// </summary>
+        private void RescaleConstants() {
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                ClearCachedFontInfo();
+                cachedRowHeight = -1;
+                paintWidth = LogicalToDeviceUnits(PAINT_WIDTH);
+                paintIndent = LogicalToDeviceUnits(PAINT_INDENT);
+                outlineSizeExplorerTreeStyle = LogicalToDeviceUnits(OUTLINE_SIZE_EXPLORER_TREE_STYLE);
+                outlineSize = LogicalToDeviceUnits(OUTLINE_SIZE);
+                maxListBoxHeight = LogicalToDeviceUnits(MAX_LISTBOX_HEIGHT);
+                offset_2Units = LogicalToDeviceUnits(OFFSET_2PIXELS);
+                if (topLevelGridEntries != null) {
+                    foreach (GridEntry t in topLevelGridEntries) {
+                        ResetOutline(t);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// private method to recursively reset outlinerect for grid entries ( both visible and invisible)
+        /// </summary>
+        private void ResetOutline(GridEntry entry) {
+            entry.OutlineRect = Rectangle.Empty;
+            if (entry.ChildCount > 0) {
+                foreach (GridEntry ent in entry.Children) {
+                    ResetOutline(ent);
+                }
+            }
+            return;
+        }
+
         private class DropDownHolder : Form, IMouseHookClient {
 
             private  Control                        currentControl = null; // the control that is hosted in the holder
@@ -5190,10 +5454,10 @@ namespace System.Windows.Forms.PropertyGridInternal {
             private Rectangle                       dragBaseRect    = Rectangle.Empty; // the original bounds of our control.
             private int                             currentMoveType = MoveTypeNone;    // what type of move are we processing? left, bottom, or both?
         
-            private readonly static int             ResizeBarSize;    // the thickness of the resize bar
-            private readonly static int             ResizeBorderSize; // the thickness of the 2-way resize area along the outer edge of the resize bar
-            private readonly static int             ResizeGripSize;   // the size of the 4-way resize grip at outermost corner of the resize bar
-            private readonly static Size            MinDropDownSize;  // the minimum size for the control.
+            private int                             ResizeBarSize;    // the thickness of the resize bar
+            private int                             ResizeBorderSize; // the thickness of the 2-way resize area along the outer edge of the resize bar
+            private int                             ResizeGripSize;   // the size of the 4-way resize grip at outermost corner of the resize bar
+            private Size                            MinDropDownSize;  // the minimum size for the control.
             private Bitmap                          sizeGripGlyph;    // our cached size grip glyph.  Control paint only does right bottom glyphs, so we cache a mirrored one.  See GetSizeGripGlyph
 
             private const int                       DropDownHolderBorder = 1;
@@ -5202,19 +5466,18 @@ namespace System.Windows.Forms.PropertyGridInternal {
             private const int                       MoveTypeLeft	= 0x2;
             private const int                       MoveTypeTop  	= 0x4;
         
-            static DropDownHolder() {
-                MinDropDownSize = new Size(SystemInformation.VerticalScrollBarWidth * 4, SystemInformation.HorizontalScrollBarHeight * 4);
-                ResizeGripSize = SystemInformation.HorizontalScrollBarHeight;
-                ResizeBarSize = ResizeGripSize + 1;
-                ResizeBorderSize = ResizeBarSize / 2;
-            }
-            
             [
                 SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters") // DropDownHolder's caption is not visible.
                                                                                                             // So we don't have to localize its text.
             ]
             internal DropDownHolder(PropertyGridView psheet)
             : base() {
+                
+               MinDropDownSize = new Size(SystemInformation.VerticalScrollBarWidth * 4, SystemInformation.HorizontalScrollBarHeight * 4);
+               ResizeGripSize = SystemInformation.HorizontalScrollBarHeight;
+               ResizeBarSize = ResizeGripSize + 1;
+               ResizeBorderSize = ResizeBarSize / 2;
+
                this.ShowInTaskbar = false;
                this.ControlBox = false;
                this.MinimizeBox = false;
@@ -5687,7 +5950,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
                 this.resizable = resizable;
                 this.Font = gridView.Font;
-                
+
                 // check to see if we're going to be adding an InstanceCreationEditor
                 //
                 InstanceCreationEditor editor = (ctl == null ? null : GetInstanceCreationEditor(gridView.SelectedGridEntry as PropertyDescriptorGridEntry));
@@ -5776,8 +6039,21 @@ namespace System.Windows.Forms.PropertyGridInternal {
                         // set the size stuff.
                         //
                         Size = sz;
-                        ctl.Dock = DockStyle.Fill;
-                        ctl.Visible = true;
+
+                        // DockStyle property on child control is forcing to resize to Parent control size that is not yet scaled.
+                        // Parent control's Preffered size, by this time, is calculated based on child controls scaled dimensions.
+                        // Also, making sure we are not shrinking if we are already there.
+                        if(DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                            ctl.Visible = true;
+                            if (this.Size.Height < this.PreferredSize.Height) {
+                                this.Size = new Size(this.Size.Width, this.PreferredSize.Height);
+                            }
+                            ctl.Dock = DockStyle.Fill;
+                        }
+                        else {
+                            ctl.Dock = DockStyle.Fill;
+                            ctl.Visible = true;
+                        }
 
                         if (editor != null) {
                             CreateNewLink.Dock = DockStyle.Bottom;
@@ -5799,13 +6075,13 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
                 if (m.Msg == NativeMethods.WM_ACTIVATE) {
                     SetState(STATE_MODAL, true);
-                    Debug.WriteLineIf(CompModSwitches.DebugGridView.TraceVerbose,  "DropDownHolder:WM_ACTIVATE()");
-                    IntPtr activatedWindow = (IntPtr) m.LParam;
+                    Debug.WriteLineIf(CompModSwitches.DebugGridView.TraceVerbose, "DropDownHolder:WM_ACTIVATE()");
+                    IntPtr activatedWindow = (IntPtr)m.LParam;
                     if (Visible && NativeMethods.Util.LOWORD(m.WParam) == NativeMethods.WA_INACTIVE && !this.OwnsWindow(activatedWindow)) {
                         gridView.CloseDropDownInternal(false);
                         return;
                     }
-                    
+
                     // prevent the IMsoComponentManager active code from getting fired.
                     //Active = ((int)m.WParam & 0x0000FFFF) != NativeMethods.WA_INACTIVE;
                     //return;
@@ -5818,17 +6094,54 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     }
                     return;
                 }
+                else if (m.Msg == NativeMethods.WM_DPICHANGED) {
+                    if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                        // Dropdownholder in PropertyGridView is already scaled based on parent font and other properties that were already set for new DPI
+                        // This case is to avoid rescaling(double scaling) of this form due to Font changes.
+                        
+                        var oldDpi = this.deviceDpi;
+                        this.deviceDpi =
+                            (int) UnsafeNativeMethods.GetDpiForWindow(new HandleRef(this, HandleInternal));
+                        if (oldDpi != deviceDpi) {
+                            RescaleConstantsForDpi(oldDpi, this.deviceDpi);
+                            this.PerformLayout();
+                        }
+
+                        m.Result = IntPtr.Zero;
+                        return;
+                    }
+                }
 
                 base.WndProc(ref m);
             }
+
+            protected override void RescaleConstantsForDpi(int oldDpi, int newDpi) {
+                base.RescaleConstantsForDpi(oldDpi, newDpi);
+                if (!DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                    return;
+                }
+
+                var scrollbarHeight = SystemInformation.GetHorizontalScrollBarHeightForDpi(newDpi);
+                MinDropDownSize = new Size(SystemInformation.GetVerticalScrollBarWidthForDpi(newDpi) * 4, scrollbarHeight * 4);
+                ResizeGripSize = scrollbarHeight;
+
+                ResizeBarSize = ResizeGripSize + 1;
+                ResizeBorderSize = ResizeBarSize / 2;
+                
+                var factor = (double)newDpi / oldDpi;
+                this.Height = (int)Math.Round(factor * this.Height);
+            }
+
         }
 
         private class GridViewListBox : ListBox {
 
             internal bool fInSetSelectedIndex = false;
-            
+            private PropertyGridView _owningPropertyGridView;
+
             public GridViewListBox(PropertyGridView gridView) {
                 base.IntegralHeight = false;
+                _owningPropertyGridView = gridView;
                 base.BackColor = gridView.BackColor;
             }
 
@@ -5841,6 +6154,37 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 }
             }
 
+            /// <summary>
+            /// Gets the owning PropertyGridView.
+            /// </summary>
+            internal PropertyGridView OwningPropertyGridView {
+                get {
+                    return _owningPropertyGridView;
+                }
+            }
+
+            /// <summary>
+            /// Indicates whether or not the control supports UIA Providers via
+            /// IRawElementProviderFragment/IRawElementProviderFragmentRoot interfaces
+            /// </summary>
+            internal override bool SupportsUiaProviders {
+                get {
+                    return AccessibilityImprovements.Level3;
+                }
+            }
+
+            /// <summary>
+            /// Constructs the new instance of the accessibility object for this control.
+            /// </summary>
+            /// <returns>The accessibility object instance.</returns>
+            protected override AccessibleObject CreateAccessibilityInstance() {
+                if (AccessibilityImprovements.Level3) {
+                    return new GridViewListBoxAccessibleObject(this);
+                }
+
+                return base.CreateAccessibilityInstance();
+            }
+
             public virtual bool InSetSelectedIndex() {
                 return fInSetSelectedIndex;
             }
@@ -5849,8 +6193,339 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 fInSetSelectedIndex = true;
                 base.OnSelectedIndexChanged(e);
                 fInSetSelectedIndex = false;
+
+                var gridViewListBoxAccessibleObject = AccessibilityObject as GridViewListBoxAccessibleObject;
+                if (gridViewListBoxAccessibleObject != null) {
+                    gridViewListBoxAccessibleObject.SetListBoxItemFocus();
+                }
+            }
+        }
+
+        [ComVisible(true)]
+        private class GridViewListBoxItemAccessibleObject : AccessibleObject {
+
+            private GridViewListBox _owningGridViewListBox;
+            private object _owningItem;
+
+            public GridViewListBoxItemAccessibleObject(GridViewListBox owningGridViewListBox, object owningItem) {
+                _owningGridViewListBox = owningGridViewListBox;
+                _owningItem = owningItem;
+
+                UseStdAccessibleObjects(_owningGridViewListBox.Handle);
             }
 
+            /// <summary>
+            /// Gets the DropDown button bounds.
+            /// </summary>
+            public override Rectangle Bounds {
+                get {
+                    int left;
+                    int top;
+                    int width;
+                    int height;
+                    var systemIAccessible = GetSystemIAccessibleInternal();
+                    systemIAccessible.accLocation(out left, out top, out width, out height, GetChildId());
+                    return new Rectangle(left, top, width, height);
+                }
+            }
+
+            /// <summary>
+            /// Gets the DropDown button default action.
+            /// </summary>
+            public override string DefaultAction {
+                get {
+                    var systemIAccessible = GetSystemIAccessibleInternal();
+                    return systemIAccessible.accDefaultAction[GetChildId()];
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                switch (direction) {
+                    case UnsafeNativeMethods.NavigateDirection.Parent:
+                        return _owningGridViewListBox.AccessibilityObject;
+                    case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                        int currentIndex = GetCurrentIndex();
+                        var gridViewListBoxAccessibleObject = _owningGridViewListBox.AccessibilityObject as GridViewListBoxAccessibleObject;
+                        if (gridViewListBoxAccessibleObject != null) {
+                            int itemsCount = gridViewListBoxAccessibleObject.GetChildFragmentCount();
+                            int nextItemIndex = currentIndex + 1;
+                            if (itemsCount > nextItemIndex) {
+                                return gridViewListBoxAccessibleObject.GetChildFragment(nextItemIndex);
+                            }
+                        }
+                        break;
+                    case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                        currentIndex = GetCurrentIndex();
+                        gridViewListBoxAccessibleObject = _owningGridViewListBox.AccessibilityObject as GridViewListBoxAccessibleObject;
+                        if (gridViewListBoxAccessibleObject != null) {
+                            var itemsCount = gridViewListBoxAccessibleObject.GetChildFragmentCount();
+                            int previousItemIndex = currentIndex - 1;
+                            if (previousItemIndex >= 0) {
+                                return gridViewListBoxAccessibleObject.GetChildFragment(previousItemIndex);
+                            }
+                        }
+                        
+                        break;
+                }
+
+                return base.FragmentNavigate(direction);
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                get {
+                    return _owningGridViewListBox.AccessibilityObject;
+                }
+            }
+
+            private int GetCurrentIndex() {
+                return _owningGridViewListBox.Items.IndexOf(_owningItem);
+            }
+            
+            internal override int GetChildId() {
+                return GetCurrentIndex() + 1; // Index is zero-based, Child ID is 1-based.
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                switch (propertyID) {
+                    case NativeMethods.UIA_RuntimeIdPropertyId:
+                        return RuntimeId;
+                    case NativeMethods.UIA_BoundingRectanglePropertyId:
+                        return BoundingRectangle;
+                    case NativeMethods.UIA_ControlTypePropertyId:
+                        return NativeMethods.UIA_ListItemControlTypeId;
+                    case NativeMethods.UIA_NamePropertyId:
+                        return Name;
+                    case NativeMethods.UIA_AccessKeyPropertyId:
+                        return KeyboardShortcut;
+                    case NativeMethods.UIA_HasKeyboardFocusPropertyId:
+                        return _owningGridViewListBox.Focused;
+                    case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                        return (State & AccessibleStates.Focusable) == AccessibleStates.Focusable;
+                    case NativeMethods.UIA_IsEnabledPropertyId:
+                        return _owningGridViewListBox.Enabled;
+                    case NativeMethods.UIA_HelpTextPropertyId:
+                        return Help ?? string.Empty;
+                    case NativeMethods.UIA_IsPasswordPropertyId:
+                        return false;
+                    case NativeMethods.UIA_IsOffscreenPropertyId:
+                        return (State & AccessibleStates.Offscreen) == AccessibleStates.Offscreen;
+                    default:
+                        return base.GetPropertyValue(propertyID);
+                }
+            }
+
+            /// <summary>
+            /// Gets the help text.
+            /// </summary>
+            public override string Help {
+                get {
+                    var systemIAccessible = GetSystemIAccessibleInternal();
+                    return systemIAccessible.accHelp[GetChildId()];
+                }
+            }
+
+            /// <summary>
+            /// Gets the keyboard shortcut.
+            /// </summary>
+            public override string KeyboardShortcut {
+                get {
+                    var systemIAccessible = GetSystemIAccessibleInternal();
+                    return systemIAccessible.get_accKeyboardShortcut(GetChildId());
+                }
+            }
+
+            /// <summary>
+            /// Indicates whether specified pattern is supported.
+            /// </summary>
+            /// <param name="patternId">The pattern ID.</param>
+            /// <returns>True if specified </returns>
+            internal override bool IsPatternSupported(int patternId) {
+                if (patternId == NativeMethods.UIA_LegacyIAccessiblePatternId ||
+                    patternId == NativeMethods.UIA_InvokePatternId) {
+                    return true;
+                }
+
+                return base.IsPatternSupported(patternId);
+            }
+            
+            /// <summary>
+            /// Gets or sets the accessible name.
+            /// </summary>
+            public override string Name {
+                get {
+                    if (_owningGridViewListBox != null) {
+                        return _owningItem.ToString();
+                    }
+
+                    return base.Name;
+                }
+
+                set {
+                    base.Name = value;
+                }
+            }
+
+            /// <summary>
+            /// Gets the accessible role.
+            /// </summary>
+            public override AccessibleRole Role {
+                get {
+                    var systemIAccessible = GetSystemIAccessibleInternal();
+                    return (AccessibleRole)systemIAccessible.get_accRole(GetChildId());
+                }
+            }
+            
+            /// <summary>
+            /// Gets the runtime ID.
+            /// </summary>
+            internal override int[] RuntimeId {
+                get {
+                    var runtimeId = new int[3];
+                    runtimeId[0] = RuntimeIDFirstItem;
+                    runtimeId[1] = (int)(long)_owningGridViewListBox.Handle;
+                    runtimeId[2] = _owningItem.GetHashCode();
+
+                    return runtimeId;
+                }
+            }
+
+            /// <summary>
+            /// Gets the accessible state.
+            /// </summary>
+            public override AccessibleStates State {
+                get {
+                    var systemIAccessible = GetSystemIAccessibleInternal();
+                    return (AccessibleStates)systemIAccessible.get_accState(GetChildId());
+                }
+            }
+
+            internal override void SetFocus() {
+                RaiseAutomationEvent(NativeMethods.UIA_AutomationFocusChangedEventId);
+
+                base.SetFocus();
+            }
+        }
+
+        private class GridViewListBoxItemAccessibleObjectCollection : Hashtable {
+
+            private GridViewListBox _owningGridViewListBox;
+
+            public GridViewListBoxItemAccessibleObjectCollection(GridViewListBox owningGridViewListBox) {
+                _owningGridViewListBox = owningGridViewListBox;
+            }
+
+            public override object this[object key] {
+                get {
+                    if (!ContainsKey(key)) {
+                        var itemAccessibleObject = new GridViewListBoxItemAccessibleObject(_owningGridViewListBox, key);
+                        base[key] = itemAccessibleObject;
+                    }
+
+                    return base[key];
+                }
+
+                set {
+                    base[key] = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Represents the PropertyGridView ListBox accessibility object.
+        /// </summary>
+        [ComVisible(true)]
+        private class GridViewListBoxAccessibleObject : ControlAccessibleObject {
+
+            private GridViewListBox _owningGridViewListBox;
+            private PropertyGridView _owningPropertyGridView;
+            private GridViewListBoxItemAccessibleObjectCollection _itemAccessibleObjects;
+
+            /// <summary>
+            /// Constructs the new instance of GridViewListBoxAccessibleObject.
+            /// </summary>
+            /// <param name="owningGridViewListBox">The owning GridViewListBox.</param>
+            public GridViewListBoxAccessibleObject(GridViewListBox owningGridViewListBox) : base(owningGridViewListBox) {
+                _owningGridViewListBox = owningGridViewListBox;
+                _owningPropertyGridView = owningGridViewListBox.OwningPropertyGridView;
+                _itemAccessibleObjects = new GridViewListBoxItemAccessibleObjectCollection(owningGridViewListBox);
+            }
+
+            /// <summary>
+            /// Request to return the element in the specified direction.
+            /// </summary>
+            /// <param name="direction">Indicates the direction in which to navigate.</param>
+            /// <returns>Returns the element in the specified direction.</returns>
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                if (direction == UnsafeNativeMethods.NavigateDirection.Parent) {
+                    return _owningPropertyGridView.SelectedGridEntry.AccessibilityObject;
+                }
+                else if (direction == UnsafeNativeMethods.NavigateDirection.FirstChild) {
+                    return GetChildFragment(0);
+                }
+                else if (direction == UnsafeNativeMethods.NavigateDirection.LastChild) {
+                    var childFragmentCount = GetChildFragmentCount();
+                    if (childFragmentCount > 0) {
+                        return GetChildFragment(childFragmentCount - 1);
+                    }
+                }
+                else if (direction == UnsafeNativeMethods.NavigateDirection.NextSibling) {
+                    return _owningPropertyGridView.Edit.AccessibilityObject;
+                }
+
+                return base.FragmentNavigate(direction);
+            }
+
+            /// <summary>
+            /// Return the element that is the root node of this fragment of UI.
+            /// </summary>
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                get {
+                    return _owningPropertyGridView.AccessibilityObject;
+                }
+            }
+
+            public AccessibleObject GetChildFragment(int index) {
+                if (index < 0  || index >= _owningGridViewListBox.Items.Count) {
+                    return null;
+                }
+
+                var item = _owningGridViewListBox.Items[index];
+                return _itemAccessibleObjects[item] as AccessibleObject;
+            }
+
+
+            public int GetChildFragmentCount() {
+                return _owningGridViewListBox.Items.Count;
+            }
+
+            /// <summary>
+            /// Request value of specified property from an element.
+            /// </summary>
+            /// <param name="propertyId">Identifier indicating the property to return</param>
+            /// <returns>Returns a ValInfo indicating whether the element supports this property, or has no value for it.</returns>
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_ListControlTypeId;
+                } else if (propertyID == NativeMethods.UIA_NamePropertyId) {
+                    return Name;
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
+            internal override void SetFocus() {
+                RaiseAutomationEvent(NativeMethods.UIA_AutomationFocusChangedEventId);
+
+                base.SetFocus();
+            }
+
+            internal void SetListBoxItemFocus() {
+                var selectedItem = _owningGridViewListBox.SelectedItem;
+                var itemAccessibleObject = _itemAccessibleObjects[selectedItem] as AccessibleObject;
+                if (itemAccessibleObject != null) {
+                    itemAccessibleObject.SetFocus();
+                }
+            }
         }
 
         private class GridViewEdit : TextBox , IMouseHookClient {
@@ -5880,7 +6555,17 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     this.filter = value;
                 }
             }
-            
+
+            /// <summary>
+            /// Indicates whether or not the control supports UIA Providers via
+            /// IRawElementProviderFragment/IRawElementProviderFragmentRoot interfaces
+            /// </summary>
+            internal override bool SupportsUiaProviders {
+                get {
+                    return AccessibilityImprovements.Level3;
+                }
+            }
+
             public override bool Focused {
                 get {
                     if (dontFocusMe) {
@@ -5928,6 +6613,23 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 mouseHook = new MouseHook(this, this, psheet);
             }
         
+            /// <summary>
+            /// Creates a new AccessibleObject for this GridViewEdit instance.
+            /// The AccessibleObject instance returned by this method overrides several UIA properties.
+            /// However the new object is only available in applications that are recompiled to target 
+            /// .NET Framework 4.7.2 or opt in into this feature using a compatibility switch. 
+            /// </summary>
+            /// <returns>
+            /// AccessibleObject for this GridViewEdit instance.
+            /// </returns>
+            protected override AccessibleObject CreateAccessibilityInstance() {
+                if (AccessibilityImprovements.Level2) {
+                    return new GridViewEditAccessibleObject(this);
+                }
+
+                return base.CreateAccessibilityInstance();
+            }
+
             protected override void DestroyHandle() {
                   mouseHook.HookMouseDown = false;
                   base.DestroyHandle();
@@ -6148,7 +6850,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
                    if (nmhdr->hwndFrom == psheet.ToolTip.Handle) {
                        switch (nmhdr->code) {
                           case NativeMethods.TTN_SHOW:
-                             PropertyGridView.PositionTooltip(this, psheet.ToolTip, ClientRectangle);
+                             psheet.ToolTip.PositionToolTip(this, ClientRectangle);
                              m.Result = (IntPtr)1;
                              return true;
                           default:
@@ -6227,7 +6929,137 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 return fInSetText;
             }
 
-          
+            [ComVisible(true)]
+            protected class GridViewEditAccessibleObject : ControlAccessibleObject {
+
+                private PropertyGridView propertyGridView;
+
+                public GridViewEditAccessibleObject(GridViewEdit owner) : base(owner) {
+                    this.propertyGridView = owner.psheet;
+                }
+
+                public override AccessibleStates State {
+                    get {
+                        AccessibleStates states = base.State;
+                        if (this.IsReadOnly) {
+                            states |= AccessibleStates.ReadOnly;
+                        }
+                        else {
+                            states &= ~AccessibleStates.ReadOnly;
+                        }
+                        return states;
+                    }
+                }
+
+                internal override bool IsIAccessibleExSupported() {
+                    return true;
+                }
+
+                /// <summary>
+                /// Returns the element in the specified direction.
+                /// </summary>
+                /// <param name="direction">Indicates the direction in which to navigate.</param>
+                /// <returns>Returns the element in the specified direction.</returns>
+                internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                    if (AccessibilityImprovements.Level3) {
+                        if (direction == UnsafeNativeMethods.NavigateDirection.Parent) {
+                            return propertyGridView.SelectedGridEntry.AccessibilityObject;
+                        }
+                        else if (direction == UnsafeNativeMethods.NavigateDirection.NextSibling) {
+                            if (propertyGridView.DropDownButton.Visible) {
+                                return propertyGridView.DropDownButton.AccessibilityObject;
+                            } else if (propertyGridView.DialogButton.Visible) {
+                                return propertyGridView.DialogButton.AccessibilityObject;
+                            }
+                        }
+                    }
+
+                    return base.FragmentNavigate(direction);
+                }
+
+                /// <summary>
+                /// Gets the top level element.
+                /// </summary>
+                internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                    get {
+                        if (AccessibilityImprovements.Level3) {
+                            return propertyGridView.AccessibilityObject;
+                        }
+
+                        return base.FragmentRoot;
+                    }
+                }
+
+                internal override object GetPropertyValue(int propertyID) {
+                    if (propertyID == NativeMethods.UIA_IsEnabledPropertyId) {
+                        return !this.IsReadOnly;
+                    }
+                    else if (propertyID == NativeMethods.UIA_IsValuePatternAvailablePropertyId) {
+                        return IsPatternSupported(NativeMethods.UIA_ValuePatternId);
+                    }
+
+                    if (AccessibilityImprovements.Level3) {
+                        if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                            return NativeMethods.UIA_EditControlTypeId;
+                        }
+                        else if (propertyID == NativeMethods.UIA_NamePropertyId) {
+                            return Name;
+                        }
+                    }
+
+                    return base.GetPropertyValue(propertyID);
+                }
+
+                internal override bool IsPatternSupported(int patternId) {
+                    if (patternId == NativeMethods.UIA_ValuePatternId) {
+                        return true;
+                    }
+
+                    return base.IsPatternSupported(patternId);
+                }
+
+                public override string Name {
+                    get {
+                        if (AccessibilityImprovements.Level3) {
+                            string name = Owner.AccessibleName;
+                            if (name != null) {
+                                return name;
+                            }
+                            else {
+                                var selectedGridEntry = propertyGridView.SelectedGridEntry;
+                                if (selectedGridEntry != null) {
+                                    return selectedGridEntry.AccessibilityObject.Name;
+                                }
+                            }
+                        }
+
+                        return base.Name;
+                    }
+
+                    set {
+                        base.Name = value;
+                    }
+                }
+
+                #region IValueProvider
+
+                internal override bool IsReadOnly {
+                    get {
+                        PropertyDescriptorGridEntry propertyDescriptorGridEntry = this.propertyGridView.SelectedGridEntry as PropertyDescriptorGridEntry;
+                        return propertyDescriptorGridEntry == null || propertyDescriptorGridEntry.IsPropertyReadOnly;
+                    }
+                }
+
+                #endregion
+
+                internal override void SetFocus() {
+                    if (AccessibilityImprovements.Level3) {
+                        RaiseAutomationEvent(NativeMethods.UIA_AutomationFocusChangedEventId);
+                    }
+
+                    base.SetFocus();
+                }
+            }
         }
         
         internal interface IMouseHookClient {
@@ -6481,16 +7313,123 @@ namespace System.Windows.Forms.PropertyGridInternal {
         ///     The accessible object class for a PropertyGridView. The child accessible objects
         ///     are accessible objects corresponding to the property grid entries.        
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(true)]        
+        [ComVisible(true)]
         internal class PropertyGridViewAccessibleObject : ControlAccessibleObject {
+
+            private PropertyGridView _owningPropertyGridView;
+            private PropertyGrid _parentPropertyGrid;
 
             /// <include file='doc\PropertyGridView.uex' path='docs/doc[@for="PropertyGridView.PropertyGridViewAccessibleObject.PropertyGridViewAccessibleObject"]/*' />
             /// <devdoc>
             ///     Construct a PropertyGridViewAccessibleObject
             /// </devdoc>
-            public PropertyGridViewAccessibleObject(PropertyGridView owner) : base(owner) {
+            public PropertyGridViewAccessibleObject(PropertyGridView owner, PropertyGrid parentPropertyGrid) : base(owner) {
+                _owningPropertyGridView = owner;
+                _parentPropertyGrid = parentPropertyGrid;
             }
-            
+
+            /// <summary>
+            /// Return the child element at the specified point, if one exists,
+            /// otherwise return this element if the point is on this element,
+            /// otherwise return null.
+            /// </summary>
+            /// <param name="x">x coordinate of point to check</param>
+            /// <param name="y">y coordinate of point to check</param>
+            /// <returns>Return the child element at the specified point, if one exists,
+            /// otherwise return this element if the point is on this element,
+            /// otherwise return null.
+            /// </returns>
+            internal override UnsafeNativeMethods.IRawElementProviderFragment ElementProviderFromPoint(double x, double y) {
+                if (AccessibilityImprovements.Level3) {
+                    return HitTest((int)x, (int)y);
+                }
+
+                return base.ElementProviderFromPoint(x, y);
+            }
+
+            /// <summary>
+            /// Request to return the element in the specified direction.
+            /// </summary>
+            /// <param name="direction">Indicates the direction in which to navigate.</param>
+            /// <returns>Returns the element in the specified direction.</returns>
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                if (AccessibilityImprovements.Level3) {
+                    var propertyGridAccessibleObject = _parentPropertyGrid.AccessibilityObject as PropertyGridAccessibleObject;
+                    if (propertyGridAccessibleObject != null) {
+                        var navigationTarget = propertyGridAccessibleObject.ChildFragmentNavigate(this, direction);
+                        if (navigationTarget != null) {
+                            return navigationTarget;
+                        }
+                    }
+
+                    if (_owningPropertyGridView.OwnerGrid.SortedByCategories) {
+                        switch (direction) {
+                            case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                                return GetFirstCategory();
+                            case UnsafeNativeMethods.NavigateDirection.LastChild:
+                                return GetLastCategory();
+                        }
+                    }
+                    else {
+                        switch (direction) {
+                            case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                                return GetChild(0);
+                            case UnsafeNativeMethods.NavigateDirection.LastChild:
+                                int childCount = GetChildCount();
+                                if (childCount > 0) {
+                                    return GetChild(childCount - 1);
+                                }
+
+                                return null;
+                        }
+                    }
+                }
+
+                return base.FragmentNavigate(direction);
+            }
+
+            /// <summary>
+            /// Return the element that is the root node of this fragment of UI.
+            /// </summary>
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                get {
+                    if (AccessibilityImprovements.Level3) {
+                        return _owningPropertyGridView.OwnerGrid.AccessibilityObject;
+                    }
+
+                    return base.FragmentRoot;
+                }
+            }
+
+            /// <summary>
+            /// Gets the accessible object for the currently focused grid entry.
+            /// </summary>
+            /// <returns>The accessible object for the currently focused grid entry.</returns>
+            internal override UnsafeNativeMethods.IRawElementProviderFragment GetFocus() {
+                if (AccessibilityImprovements.Level3) {
+                    return GetFocused();
+                }
+
+                return base.FragmentRoot;
+            }
+
+            /// <summary>
+            /// Request value of specified property from an element.
+            /// </summary>
+            /// <param name="propertyId">Identifier indicating the property to return</param>
+            /// <returns>Returns a ValInfo indicating whether the element supports this property, or has no value for it.</returns>
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3) {
+                    if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                        return NativeMethods.UIA_TableControlTypeId;
+                    } else if (propertyID == NativeMethods.UIA_NamePropertyId) {
+                        return Name;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
             public override string Name {
                 get {
                     string name = Owner.AccessibleName;
@@ -6524,12 +7463,205 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 return null;
             }
 
+            internal AccessibleObject GetCategory(int categoryIndex) {
+                GridEntry[] targetEntries = new GridEntry[1];
+                var topLevelGridEntries = _owningPropertyGridView.TopLevelGridEntries;
+                var topLevelGridEntriesCount = topLevelGridEntries.Count;
+                if (topLevelGridEntriesCount > 0) {
+                    var targetEntry = topLevelGridEntries[categoryIndex];
+                    var categoryGridEntry = targetEntry as CategoryGridEntry;
+                    if (categoryGridEntry != null) {
+                        return categoryGridEntry.AccessibilityObject;
+                    }
+                }
+
+                return null;
+            }
+
+            internal AccessibleObject GetFirstCategory() {
+                return GetCategory(0);
+            }
+
+            internal AccessibleObject GetLastCategory() {
+                var topLevelGridEntries = _owningPropertyGridView.TopLevelGridEntries;
+                var topLevelGridEntriesCount = topLevelGridEntries.Count;
+                return GetCategory(topLevelGridEntries.Count - 1);
+            }
+
+            /// <summary>
+            /// Gets the previous grid entry accessibility object.
+            /// </summary>
+            /// <param name="currentGridEntry">The current grid entry.</param>
+            /// <param name="gridEntryCollection">The grid entry collection.</param>
+            /// <param name="currentGridEntryFound">Indicates whether the current grid entry is found.</param>
+            /// <returns>The previous grid entry.</returns>
+            internal AccessibleObject GetPreviousGridEntry(GridEntry currentGridEntry, GridEntryCollection gridEntryCollection, out bool currentGridEntryFound) {
+                GridEntry previousGridEntry = null;
+                currentGridEntryFound = false;
+
+                foreach (GridEntry gridEntry in gridEntryCollection) {
+                    if (currentGridEntry == gridEntry) {
+                        // Set to true to return the previous iterable element.
+                        currentGridEntryFound = true;
+                        if (previousGridEntry != null) {
+                            // In the current iteration return previous entry if the current entry == iterated grid entry.
+                            return previousGridEntry.AccessibilityObject;
+                        }
+                        else {
+                            return null;
+                        }
+                    }
+                    else {
+                        previousGridEntry = gridEntry;
+                        if (gridEntry.ChildCount > 0) {
+                            var foundChild = GetPreviousGridEntry(currentGridEntry, gridEntry.Children, out currentGridEntryFound);
+                            if (foundChild != null) {
+                                // Return some down-level child if found.
+                                return foundChild;
+                            }
+                            else if (currentGridEntryFound) {
+                                // If the passed current is found but there is no next near this current.
+                                return null;
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            /// <summary>
+            /// Gets the next grid entry.
+            /// </summary>
+            /// <param name="currentGridEntry">The current grid entry.</param>
+            /// <param name="gridEntryCollection">The grid entry collection.</param>
+            /// <param name="currentGridEntryFound">Indicates whether the current grid entry is found.</param>
+            /// <returns>The next grid entry.</returns>
+            internal AccessibleObject GetNextGridEntry(GridEntry currentGridEntry, GridEntryCollection gridEntryCollection, out bool currentGridEntryFound) {
+                currentGridEntryFound = false;
+
+                foreach (GridEntry gridEntry in gridEntryCollection) {
+                    if (currentGridEntryFound) {
+                        // Return the next entry via IEnumerable.Next() if previous entry == passed current.
+                        return gridEntry.AccessibilityObject;
+                    }
+
+                    if (currentGridEntry == gridEntry) {
+                        // Set to true to return the next iterable element. (see above)
+                        currentGridEntryFound = true;
+                    }
+                    else if (gridEntry.ChildCount > 0) {
+                        var foundChild = GetNextGridEntry(currentGridEntry, gridEntry.Children, out currentGridEntryFound);
+                        if (foundChild != null) {
+                            // Return some down-level child if found.
+                            return foundChild;
+                        }
+                        else if (currentGridEntryFound) {
+                            // If the passed current is found but there is no next near this current.
+                            return null;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            /// <summary>
+            /// Gets the first child property.
+            /// </summary>
+            /// <param name="current">The current grid entry.</param>
+            /// <returns>The first child property.</returns>
+            internal AccessibleObject GetFirstChildProperty(CategoryGridEntry current) {
+                if (current.ChildCount > 0) {
+                    GridEntryCollection subGridEntry = current.Children;
+                    if (subGridEntry != null && subGridEntry.Count > 0) {
+                        GridEntry[] targetEntries = new GridEntry[1];
+                        try {
+                            _owningPropertyGridView.GetGridEntriesFromOutline(subGridEntry, 0, 0, targetEntries);
+                        }
+                        catch (Exception ex) {
+                            Debug.Fail(ex.ToString());
+                        }
+
+                        return targetEntries[0].AccessibilityObject;
+                    }
+                }
+
+                return null;
+            }
+
+            /// <summary>
+            /// Gets the last child property.
+            /// </summary>
+            /// <param name="current">The current grid entry.</param>
+            /// <returns>The last child property.</returns>
+            internal AccessibleObject GetLastChildProperty(CategoryGridEntry current) {
+                if (current.ChildCount > 0) {
+                    GridEntryCollection subGridEntry = current.Children;
+                    if (subGridEntry != null && subGridEntry.Count > 0) {
+                        GridEntry[] targetEntries = new GridEntry[1];
+                        try {
+                            _owningPropertyGridView.GetGridEntriesFromOutline(subGridEntry, 0, subGridEntry.Count - 1, targetEntries);
+                        }
+                        catch (Exception ex) {
+                            Debug.Fail(ex.ToString());
+                        }
+
+                        return targetEntries[0].AccessibilityObject;
+                    }
+                }
+
+                return null;
+            }
+
+            /// <summary>
+            /// Gets the next category.
+            /// </summary>
+            /// <param name="current">The current grid entry.</param>
+            /// <returns>The next category.</returns>
+            internal AccessibleObject GetNextCategory(CategoryGridEntry current) {
+                int row = _owningPropertyGridView.GetRowFromGridEntry(current);
+
+                GridEntry nextEntry;
+
+                do {
+                    nextEntry = _owningPropertyGridView.GetGridEntryFromRow(++row);
+                    if (nextEntry is CategoryGridEntry) {
+                        return nextEntry.AccessibilityObject;
+                    }
+                }
+                while (nextEntry != null);
+
+                return null;
+            }
+
             public AccessibleObject Previous(GridEntry current) {
                 int row = ((PropertyGridView)Owner).GetRowFromGridEntry(current);
                 GridEntry prevEntry = ((PropertyGridView)Owner).GetGridEntryFromRow(--row);
                 if (prevEntry != null) {
                     return prevEntry.AccessibilityObject;
                 }
+                return null;
+            }
+
+            /// <summary>
+            /// Gets the previous category.
+            /// </summary>
+            /// <param name="current">The current grid entry.</param>
+            /// <returns>The previous category.</returns>
+            internal AccessibleObject GetPreviousCategory(CategoryGridEntry current) {
+                int row = _owningPropertyGridView.GetRowFromGridEntry(current);
+
+                GridEntry previousEntry;
+
+                do {
+                    previousEntry = _owningPropertyGridView.GetGridEntryFromRow(--row);
+                    if (previousEntry is CategoryGridEntry) {
+                        return previousEntry.AccessibilityObject;
+                    }
+                }
+                while (previousEntry != null);
+
                 return null;
             }
 

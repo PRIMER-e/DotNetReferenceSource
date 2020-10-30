@@ -843,8 +843,8 @@ namespace MS.Internal.PtsHost
             {
                 PTS.FSRECT rect = GetRect();
                 PTS.FSBBOX bbox = GetBoundingBox();
-                // Workaround for PTS 
-
+                // Workaround for PTS bug 860: get max of the page rect and 
+                // bounding box of the page.
                 if (!FinitePage && PTS.ToBoolean(bbox.fDefined))
                 {
                     rect.dv = Math.Max(rect.dv, bbox.fsrc.dv);
@@ -858,8 +858,8 @@ namespace MS.Internal.PtsHost
                     _contentSize.Width = Math.Max(Math.Max(TextDpi.FromTextDpi(bbox.fsrc.du), TextDpi.MinWidth), _calculatedSize.Width);
                     _contentSize.Height = Math.Max(TextDpi.MinWidth, TextDpi.FromTextDpi(bbox.fsrc.dv));
                     // In bottomless pages, page size reported by PTS is 
-                    // actually content size (see PTS 
-
+                    // actually content size (see PTS bug 860 for exceptions).
+                    // Take PTS calculated value into account.
                     if (!FinitePage)
                     {
                         _contentSize.Height = Math.Max(_contentSize.Height, _calculatedSize.Height);

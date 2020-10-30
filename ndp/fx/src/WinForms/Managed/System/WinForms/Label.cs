@@ -25,6 +25,7 @@ namespace System.Windows.Forms {
     using System.Globalization;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Versioning;
+    using Automation;
 
 
     /// <include file='doc\Label.uex' path='docs/doc[@for="Label"]/*' />
@@ -42,7 +43,7 @@ namespace System.Windows.Forms {
     SRDescription(SR.DescriptionLabel)
     ]
     // If not for FormatControl, we could inherit from ButtonBase and get foreground images for free.
-    public class Label : Control {
+    public class Label : Control, IAutomationLiveRegion {
 
         private static readonly object EVENT_TEXTALIGNCHANGED = new object();
 
@@ -82,6 +83,7 @@ namespace System.Windows.Forms {
         // This bool suggests that the User has added a toolTip to this label
         // In such a case we should not show the AutoEllipsis tooltip.
         bool        controlToolTip = false;
+        AutomationLiveSetting liveSetting;
 
         // } End Members
         ///////////////////////////////////////////////////////////////////////
@@ -674,6 +676,29 @@ namespace System.Windows.Forms {
         }
         */
 
+        /// <summary>
+        /// Indicates the "politeness" level that a client should use
+        /// to notify the user of changes to the live region.
+        /// </summary>
+        [
+        SRCategory(SR.CatAccessibility),
+        DefaultValue(AutomationLiveSetting.Off),
+        SRDescription(SR.LiveRegionAutomationLiveSettingDescr),
+        Browsable(true),
+        EditorBrowsable(EditorBrowsableState.Always)
+        ]
+        public AutomationLiveSetting LiveSetting {
+            get {
+                return liveSetting;
+            }
+            set {
+                if (!ClientUtils.IsEnumValid(value, (int)value, (int)AutomationLiveSetting.Off, (int)AutomationLiveSetting.Assertive)) {
+                    throw new InvalidEnumArgumentException("value", (int)value, typeof(AutomationLiveSetting));
+                }
+                liveSetting = value;
+            }
+        }
+
         /// <include file='doc\Label.uex' path='docs/doc[@for="Label.ImeMode"]/*' />
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         new public ImeMode ImeMode {
@@ -1216,7 +1241,7 @@ namespace System.Windows.Forms {
            // COMPAT VSW 248415: Everett added random numbers to the height of the label               
            if (UseCompatibleTextRendering) {               
               //Always return the Fontheight + some buffer else the Text gets clipped for Autosize = true..
-              //(
+              //(bug 118909)
               if (BorderStyle != BorderStyle.None) {
                   bordersAndPadding.Height += 6; // taken from Everett.PreferredHeight
                   bordersAndPadding.Width += 2; // taken from Everett.PreferredWidth
@@ -1459,6 +1484,10 @@ namespace System.Windows.Forms {
                 AdjustSize();
                 Invalidate();
             }
+
+            if (AccessibilityImprovements.Level3 && LiveSetting != AutomationLiveSetting.Off) {
+                AccessibilityObject.RaiseLiveRegionChanged();
+            }
         }
 
         /// <include file='doc\Label.uex' path='docs/doc[@for="Label.OnTextAlignChanged"]/*' />
@@ -1493,13 +1522,12 @@ namespace System.Windows.Forms {
 
             Color color;
             IntPtr hdc = e.Graphics.GetHdc();
-
-            try{
-                using(WindowsGraphics wg = WindowsGraphics.FromHdc( hdc )) {
+            try {
+                using (WindowsGraphics wg = WindowsGraphics.FromHdc( hdc )) {
                     color = wg.GetNearestColor((Enabled) ? ForeColor : DisabledColor);
                 }
             }
-            finally{
+            finally {
                 e.Graphics.ReleaseHdc();
             }
 
@@ -1677,6 +1705,12 @@ namespace System.Windows.Forms {
             }
         }
 
+        internal override bool SupportsUiaProviders {
+            get {
+                return AccessibilityImprovements.Level3 && !DesignMode;
+            }
+        }
+
         /// <include file='doc\Label.uex' path='docs/doc[@for="Label.ToString"]/*' />
         /// <devdoc>
         ///    Returns a string representation for this control.
@@ -1713,6 +1747,17 @@ namespace System.Windows.Forms {
             }
         }
 
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+            if (!DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                return;
+            }
+
+            // When Font is derived from parent, Dpi changed event required to clear the cache 
+            // to recalculate the label size. 
+            MeasureTextCache.InvalidateCache();
+        }
+
         [System.Runtime.InteropServices.ComVisible(true)]
         internal class LabelAccessibleObject : ControlAccessibleObject {
 
@@ -1730,6 +1775,22 @@ namespace System.Windows.Forms {
                     }
                     return AccessibleRole.StaticText;
                 }
+            }
+
+            internal override bool IsIAccessibleExSupported() {
+                if (AccessibilityImprovements.Level3) {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_TextControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
         }
     }

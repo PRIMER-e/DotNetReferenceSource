@@ -215,7 +215,7 @@ void DoTimerStop(TIMERID timerId)
     {
         --stackPtr;
     }
-    ASSERT(stackPtr >= 0 && g_timeridStack[stackPtr] == timerId, "in timing.cpp");  // if this is hit, we never found our timer id. Probably logic 
+    ASSERT(stackPtr >= 0 && g_timeridStack[stackPtr] == timerId, "in timing.cpp");  // if this is hit, we never found our timer id. Probably logic bug.
     --stackPtr;
 
     // Record the amount of time so far in the current section, if any.

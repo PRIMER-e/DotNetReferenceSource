@@ -17,6 +17,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -91,6 +92,8 @@ namespace System.Windows.Controls
             KeyboardNavigation.TabNavigationProperty.OverrideMetadata(typeof(DatePicker), new FrameworkPropertyMetadata(KeyboardNavigationMode.Once));
             KeyboardNavigation.IsTabStopProperty.OverrideMetadata(typeof(DatePicker), new FrameworkPropertyMetadata(false));
             IsEnabledProperty.OverrideMetadata(typeof(DatePicker), new UIPropertyMetadata(new PropertyChangedCallback(OnIsEnabledChanged)));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.DatePicker);
         }
 
         /// <summary>

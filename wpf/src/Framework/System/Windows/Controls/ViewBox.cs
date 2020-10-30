@@ -16,6 +16,7 @@
 using MS.Internal;
 using MS.Utility;
 using MS.Internal.Controls;
+using MS.Internal.Telemetry.PresentationFramework;
 using System.Diagnostics;
 using System.Collections;
 using System.Windows.Threading;
@@ -69,6 +70,11 @@ namespace System.Windows.Controls
         //-------------------------------------------------------------------
 
         #region Constructors
+
+        static Viewbox()
+        {
+            ControlsTraceLogger.AddControl(TelemetryControls.ViewBox);
+        }
 
         /// <summary>
         ///     Default DependencyObject constructor

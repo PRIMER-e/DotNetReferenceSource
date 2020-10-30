@@ -7,6 +7,7 @@
 using System.Security.Permissions;
 using System.Drawing;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Windows.Forms
 {
@@ -18,6 +19,7 @@ namespace System.Windows.Forms
         ]
         protected class DataGridViewTopRowAccessibleObject : AccessibleObject
         {
+            private int[] runtimeId;
             DataGridView owner;
 
             /// <include file='doc\DataGridViewTopRowAccessibleObject.uex' path='docs/doc[@for="DataGridViewTopRowAccessibleObject.DataGridViewTopRowAccessibleObject1"]/*' />
@@ -98,6 +100,22 @@ namespace System.Windows.Forms
                 get
                 {
                     return AccessibleRole.Row;
+                }
+            }
+
+            internal override int[] RuntimeId
+            {
+                get
+                {
+                    if (AccessibilityImprovements.Level3 && runtimeId == null)
+                    {
+                        runtimeId = new int[3];
+                        runtimeId[0] = RuntimeIDFirstItem; // first item is static - 0x2a
+                        runtimeId[1] = this.Parent.GetHashCode();
+                        runtimeId[2] = this.GetHashCode();
+                    }
+
+                    return runtimeId;
                 }
             }
 
@@ -193,6 +211,100 @@ namespace System.Windows.Forms
                         return null;
                 }
             }
+
+            #region IRawElementProviderFragment Implementation
+
+            internal override Rectangle BoundingRectangle
+            {
+                get
+                {
+                    return this.Bounds;
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot
+            {
+                get
+                {
+                    return this.owner.AccessibilityObject;
+                }
+            }
+
+            [return: MarshalAs(UnmanagedType.IUnknown)]
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction)
+            {
+                switch (direction)
+                {
+                    case UnsafeNativeMethods.NavigateDirection.Parent:
+                        return Parent;
+                    case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                        if (Parent.GetChildCount() > 1)
+                        {
+                            return Parent.GetChild(1);
+                        }
+                        break;
+                    case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                        if (GetChildCount() > 0)
+                        {
+                            return GetChild(0);
+                        }
+                        break;
+                    case UnsafeNativeMethods.NavigateDirection.LastChild:
+                        if (GetChildCount() > 0)
+                        {
+                            return GetChild(GetChildCount() - 1);
+                        }
+                        break;
+                }
+
+                return null;
+            }
+
+            #endregion
+
+            #region IRawElementProviderSimple Implementation
+            
+            internal override bool IsPatternSupported(int patternId)
+            {
+                if (AccessibilityImprovements.Level3 && patternId.Equals(NativeMethods.UIA_LegacyIAccessiblePatternId))
+                {
+                    return true;
+                }
+
+                return base.IsPatternSupported(patternId);
+            }
+
+            internal override object GetPropertyValue(int propertyId)
+            {
+                if (AccessibilityImprovements.Level3)
+                {
+                    switch (propertyId)
+                    {
+                        case NativeMethods.UIA_NamePropertyId:
+                            return SR.GetString(SR.DataGridView_AccTopRow);
+                        case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                        case NativeMethods.UIA_HasKeyboardFocusPropertyId:
+                            return false;
+                        case NativeMethods.UIA_IsEnabledPropertyId:
+                            return owner.Enabled;
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                            return false;
+                        case NativeMethods.UIA_IsContentElementPropertyId:
+                            return true;
+                        case NativeMethods.UIA_IsPasswordPropertyId:
+                            return false;
+                        case NativeMethods.UIA_AccessKeyPropertyId:
+                        case NativeMethods.UIA_HelpTextPropertyId:
+                            return string.Empty;
+                        case NativeMethods.UIA_IsLegacyIAccessiblePatternAvailablePropertyId:
+                            return true;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyId);
+            }
+
+            #endregion
         }
     }
 }

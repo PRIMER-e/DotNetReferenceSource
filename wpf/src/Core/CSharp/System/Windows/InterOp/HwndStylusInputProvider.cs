@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows.Input;
+using System.Windows.Input.StylusWisp;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ using MS.Utility;
 using System.Security;
 using System.Security.Permissions;
 
+
 using SR=MS.Internal.PresentationCore.SR;
 using SRID=MS.Internal.PresentationCore.SRID;
 
@@ -18,7 +20,7 @@ namespace System.Windows.Interop
 {
     /////////////////////////////////////////////////////////////////////////
 
-    internal sealed class HwndStylusInputProvider : DispatcherObject, IInputProvider, IDisposable
+    internal sealed class HwndStylusInputProvider : DispatcherObject, IStylusInputProvider
     {
         private const uint TABLET_PRESSANDHOLD_DISABLED = 0x00000001;
         private const uint TABLET_TAPFEEDBACK_DISABLED  = 0x00000008;
@@ -36,7 +38,7 @@ namespace System.Windows.Interop
         internal HwndStylusInputProvider(HwndSource source)
         {
             InputManager inputManager = InputManager.Current;
-            StylusLogic stylusLogic = inputManager.StylusLogic;
+            _stylusLogic = new SecurityCriticalDataClass<WispLogic>(StylusLogic.GetCurrentStylusLogicAs<WispLogic>());
 
             IntPtr sourceHandle;
 
@@ -53,9 +55,8 @@ namespace System.Windows.Interop
                 UIPermission.RevertAssert();
             }
 
-            stylusLogic.RegisterHwndForInput(inputManager, source);
+            _stylusLogic.Value.RegisterHwndForInput(inputManager, source);
             _source = new SecurityCriticalDataClass<HwndSource>(source);
-            _stylusLogic = new SecurityCriticalDataClass<StylusLogic>(stylusLogic);
 
             // Enables multi-touch input
             UnsafeNativeMethods.SetProp(new HandleRef(this, sourceHandle), "MicrosoftTabletPenServiceProperty", new HandleRef(null, new IntPtr(MultiTouchEnabledFlag)));
@@ -98,12 +99,12 @@ namespace System.Windows.Interop
         void IInputProvider.NotifyDeactivate() {}
 
         /////////////////////////////////////////////////////////////////////
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
-
-
-
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        /// <SecurityNote>
+        ///     Critical: This code is critical since it handles all stylus messages and could be used to spoof input
+        /// </SecurityNote>
         [SecurityCritical]
-        internal IntPtr FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        IntPtr IStylusInputProvider.FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             IntPtr result = IntPtr.Zero ;
 
@@ -175,7 +176,7 @@ namespace System.Windows.Interop
 
                     // We always handle any scroll actions if we are enabled.  We do this when we see the SystemGesture Flick come through.
                     // Note: Scrolling happens on window flicked on even if it is not the active window.
-                    if(_stylusLogic != null && _stylusLogic.Value.Enabled && (StylusLogic.GetFlickAction(flickData) == 1))
+                    if(_stylusLogic != null && _stylusLogic.Value.Enabled && (WispLogic.GetFlickAction(flickData) == StylusLogic.FlickAction.Scroll))
                     {
                         result = new IntPtr(0x0001); // tell UIHub the flick has already been handled.
                     }
@@ -197,7 +198,7 @@ namespace System.Windows.Interop
 
         /////////////////////////////////////////////////////////////////////
 
-        private SecurityCriticalDataClass<StylusLogic>        _stylusLogic;
+        private SecurityCriticalDataClass<WispLogic>         _stylusLogic;
         /// <SecurityNote>
         ///     Critical: This is the HwndSurce object , not ok to expose
         /// </SecurityNote>

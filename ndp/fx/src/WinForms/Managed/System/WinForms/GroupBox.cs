@@ -623,27 +623,63 @@ namespace System.Windows.Forms {
 
                 int boxTop = FontHeight / 2;
 
-                // left
-                graphics.DrawLine(light, 1, boxTop, 1, Height - 1);
-                graphics.DrawLine(dark, 0, boxTop, 0, Height - 2);
+                if (SystemInformation.HighContrast && AccessibilityImprovements.Level1) {
+                    Color boxColor;
+                    if (Enabled) {
+                        boxColor = ForeColor;
+                    }
+                    else {
+                        boxColor = SystemColors.GrayText;
+                    }
+                    bool needToDispose = !boxColor.IsSystemColor;
+                    Pen boxPen = null;
+                    try {
+                        if (needToDispose) {
+                            boxPen = new Pen(boxColor);
+                        }
+                        else {
+                            boxPen = SystemPens.FromSystemColor(boxColor);
+                        }
 
-                // bottom
-                graphics.DrawLine(light, 0, Height - 1, Width, Height - 1);
-                graphics.DrawLine(dark, 0, Height - 2, Width - 1, Height - 2);
+                        // left
+                        graphics.DrawLine(boxPen, 0, boxTop, 0, Height);
+                        //bottom
+                        graphics.DrawLine(boxPen, 0, Height-1, Width, Height-1);
+                        //top-left
+                        graphics.DrawLine(boxPen, 0, boxTop, textLeft, boxTop);
+                        //top-right
+                        graphics.DrawLine(boxPen, textRight, boxTop, Width-1, boxTop);
+                        //right
+                        graphics.DrawLine(boxPen, Width-1, boxTop, Width-1, Height-1);
+                    }
+                    finally {
+                        if (needToDispose && boxPen != null) {
+                            boxPen.Dispose();
+                        }
+                    }
+                }
+                else {
+                    // left
+                    graphics.DrawLine(light, 1, boxTop, 1, Height - 1);
+                    graphics.DrawLine(dark, 0, boxTop, 0, Height - 2);
 
-                // top-left
+                    // bottom
+                    graphics.DrawLine(light, 0, Height - 1, Width, Height - 1);
+                    graphics.DrawLine(dark, 0, Height - 2, Width - 1, Height - 2);
 
-                graphics.DrawLine(dark, 0, boxTop - 1, textLeft, boxTop - 1);
-                graphics.DrawLine(light, 1, boxTop, textLeft, boxTop);
+                    // top-left
 
-                // top-right
-                graphics.DrawLine(dark, textRight, boxTop - 1, Width - 2, boxTop - 1);
-                graphics.DrawLine(light, textRight, boxTop, Width - 1, boxTop);
+                    graphics.DrawLine(dark, 0, boxTop - 1, textLeft, boxTop - 1);
+                    graphics.DrawLine(light, 1, boxTop, textLeft, boxTop);
 
-                // right
-                graphics.DrawLine(light, Width - 1, boxTop - 1, Width - 1, Height - 1);
-                graphics.DrawLine(dark, Width - 2, boxTop, Width - 2, Height - 2);
+                    // top-right
+                    graphics.DrawLine(dark, textRight, boxTop - 1, Width - 2, boxTop - 1);
+                    graphics.DrawLine(light, textRight, boxTop, Width - 1, boxTop);
 
+                    // right
+                    graphics.DrawLine(light, Width - 1, boxTop - 1, Width - 1, Height - 1);
+                    graphics.DrawLine(dark, Width - 2, boxTop, Width - 2, Height - 2);
+                }
             }
             finally {
                 light.Dispose();
@@ -706,6 +742,12 @@ namespace System.Windows.Forms {
                 cachedFont = null;
             }
             base.ScaleControl(factor, specified);
+        }
+
+        internal override bool SupportsUiaProviders {
+            get {
+                return AccessibilityImprovements.Level3 && !DesignMode;
+            }
         }
 
         /// <include file='doc\GroupBox.uex' path='docs/doc[@for="GroupBox.ToString"]/*' />
@@ -787,6 +829,25 @@ namespace System.Windows.Forms {
                     }
                     return AccessibleRole.Grouping;
                 }
+            }
+
+            internal override bool IsIAccessibleExSupported() {
+                if (AccessibilityImprovements.Level3) {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                switch (propertyID) {
+                    case NativeMethods.UIA_ControlTypePropertyId:
+                        return NativeMethods.UIA_GroupControlTypeId;
+                    case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                        return true;
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
         }
     }

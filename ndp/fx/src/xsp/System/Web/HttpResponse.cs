@@ -279,9 +279,20 @@ namespace System.Web {
                 {
                     cookie = _cookies[c];
                     if (cookie.Added) {
-                        // if a cookie was added, we generate a Set-Cookie header for it
-                        cookieHeader = cookie.GetSetCookieHeader(_context);
-                        headers.SetHeader(cookieHeader.Name, cookieHeader.Value, false);
+                        bool setHeader = true;
+                        if (AppSettings.AvoidDuplicatedSetCookie) {
+                            if(!cookie.IsInResponseHeader) { 
+                                cookie.IsInResponseHeader = true;
+                            }
+                            else {
+                                setHeader = false;
+                            }
+                        }
+                        if(setHeader) {
+                            // if a cookie was added, we generate a Set-Cookie header for it
+                            cookieHeader = cookie.GetSetCookieHeader(_context);
+                            headers.SetHeader(cookieHeader.Name, cookieHeader.Value, false);
+                        }
                         cookie.Added = false;
                         cookie.Changed = false;
                     }
@@ -310,6 +321,9 @@ namespace System.Web {
                     headers.SetHeader(cookieHeader.Name, cookieHeader.Value, false);
                     cookie.Added = false;
                     cookie.Changed = false;
+                    if(AppSettings.AvoidDuplicatedSetCookie) {
+                        cookie.IsInResponseHeader = true;
+                    }
                 }
 
                 _cookies.Changed = false;
@@ -1377,7 +1391,7 @@ namespace System.Web {
                             // the <customErrors> element to control this behavior.
 
                             if (customErrorsSetting.AllowNestedErrors) {
-                                // The user has set the compat switch to use the original (pre-
+                                // The user has set the compat switch to use the original (pre-bug fix) behavior.
                                 goto case RedirectToErrorPageStatus.NotAttempted;
                             }
 
@@ -1446,7 +1460,7 @@ namespace System.Web {
                     if (value != null) {
                         HttpCookie cookie = HttpRequest.CreateCookieFromString(value);
                         // do not write this cookie back to IIS
-                        cookie.FromHeader = true;
+                        cookie.IsInResponseHeader = true;
                         Cookies.Set(cookie);
                         cookie.Changed = false;
                         cookie.Added = false;
@@ -2395,6 +2409,11 @@ namespace System.Web {
                 Write("</BODY>");
             }
             else {
+                // VSO bug 360276
+                if(HttpRuntime.UseIntegratedPipeline) {
+                    this.ContentType = "text/html";
+                }
+
                 this.StatusCode = permanent ? 301 : 302;
                 RedirectLocation = url;
                 // DevDivBugs 158137: 302 Redirect vulnerable to XSS
@@ -3282,7 +3301,8 @@ namespace System.Web {
         }
 
         private String ConvertToFullyQualifiedRedirectUrlIfRequired(String url) {
-            HttpRuntimeSection runtimeConfig = RuntimeConfig.GetConfig(_context).HttpRuntime;
+            HttpRuntimeSection runtimeConfig = _context.IsRuntimeErrorReported ?
+                RuntimeConfig.GetLKGConfig(_context).HttpRuntime : RuntimeConfig.GetConfig(_context).HttpRuntime;
             if (    runtimeConfig.UseFullyQualifiedRedirectUrl ||
                     (Request != null && (string)Request.Browser["requiresFullyQualifiedRedirectUrl"] == "true")) {
                 return (new Uri(Request.Url, url)).AbsoluteUri ;
@@ -3293,10 +3313,10 @@ namespace System.Web {
         }
 
         private String UrlEncodeIDNSafe(String url) {
-            // 
-
-
-
+            // Bug 86594: Should not encode the domain part of the url. For example,
+            // http://Übersite/Überpage.aspx should only encode the 2nd Ü.
+            // To accomplish this we must separate the scheme+host+port portion of the url from the path portion,
+            // encode the path portion, then reconstruct the url.
             Debug.Assert(!url.Contains("?"), "Querystring should have been stripped off.");
 
             string schemeAndAuthority;

@@ -7,6 +7,7 @@
 namespace System.Windows.Forms {
 
     using System.Drawing;
+    using System.Drawing.Imaging;
 
     /// <include file='doc\ToolStripItemImageRenderEventArgs.uex' path='docs/doc[@for="ToolStripItemImageRenderEventArgs"]/*' />
     /// <devdoc/>
@@ -15,6 +16,7 @@ namespace System.Windows.Forms {
         private Image              image             = null;
         private Rectangle          imageRectangle    = Rectangle.Empty;
         private bool               shiftOnPress      = false;
+        private ImageAttributes    imageAttr         = null;
 
         public ToolStripItemImageRenderEventArgs(Graphics g, ToolStripItem item, Rectangle imageRectangle) : base(g, item) {
             this.image = (item.RightToLeftAutoMirrorImage && (item.RightToLeft == RightToLeft.Yes)) ? item.MirroredImage : item.Image;
@@ -57,6 +59,11 @@ namespace System.Windows.Forms {
             set { shiftOnPress = value; }
         }
 
+        // not public as it currently pertains to ToolStripRenderer.
+        internal ImageAttributes ImageAttributes {
+            get { return imageAttr; }
+            set { imageAttr = value; }
+        }
     
     }
 }

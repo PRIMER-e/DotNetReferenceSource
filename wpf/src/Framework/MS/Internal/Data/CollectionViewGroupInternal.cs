@@ -223,6 +223,13 @@ namespace MS.Internal.Data
 
         internal void Clear()
         {
+            // reset the counts before delving into subgroups.   The subgroup
+            // changes can incur re-entrant calls to LeafAt(index) which will
+            // get out-of-range exceptions (DDVSO 656948), unless we fend them
+            // off by ensuring that count<=index.
+            FullCount = 1;
+            ProtectedItemCount = 0;
+
             if (_groupBy != null)
             {
                 // This group has subgroups.  Disconnect from GroupDescription events
@@ -240,8 +247,6 @@ namespace MS.Internal.Data
                 }
             }
 
-            FullCount = 1;
-            ProtectedItemCount = 0;
             ProtectedItems.Clear();
             if (_nameToGroupMap != null)
             {
@@ -272,7 +277,7 @@ namespace MS.Internal.Data
                 else
                 {
                     // current item is a leaf - compare it directly
-                    if (Object.Equals(item, Items[k]))
+                    if (System.Windows.Controls.ItemsControl.EqualsEx(item, Items[k]))
                     {
                         return leaves;
                     }
@@ -304,7 +309,7 @@ namespace MS.Internal.Data
                 for (int k=0, n=group.Items.Count;  k < n;  ++k)
                 {
                     // if we've reached the item, move up to the next level
-                    if ((index < 0 && Object.Equals(item, group.Items[k])) ||
+                    if ((index < 0 && System.Windows.Controls.ItemsControl.EqualsEx(item, group.Items[k])) ||
                         index == k)
                     {
                         break;
@@ -463,7 +468,7 @@ namespace MS.Internal.Data
                     ++ oldIndex;
                 }
 
-                if (localIndex < n && Object.Equals(ProtectedItems[localIndex], list[fullIndex]))
+                if (localIndex < n && System.Windows.Controls.ItemsControl.EqualsEx(ProtectedItems[localIndex], list[fullIndex]))
                     ++ localIndex;
             }
 
@@ -656,7 +661,7 @@ namespace MS.Internal.Data
 
             public int Compare(object x, object y)
             {
-                if (Object.Equals(x, y))
+                if (System.Windows.Controls.ItemsControl.EqualsEx(x, y))
                     return 0;
 
                 // advance the index until seeing one x or y
@@ -664,11 +669,11 @@ namespace MS.Internal.Data
                 for (; _index < n; ++_index)
                 {
                     object z = _list[_index];
-                    if (Object.Equals(x, z))
+                    if (System.Windows.Controls.ItemsControl.EqualsEx(x, z))
                     {
                         return -1;  // x occurs first, so x < y
                     }
-                    else if (Object.Equals(y, z))
+                    else if (System.Windows.Controls.ItemsControl.EqualsEx(y, z))
                     {
                         return +1;  // y occurs first, so x > y
                     }
@@ -717,37 +722,26 @@ namespace MS.Internal.Data
         {
             bool changeLeafCount = !(item is CollectionViewGroup);
 
-            for (   CollectionViewGroupInternal group = this;
-                    group != null;
-                    group = group._parentGroup )
+            using (EmptyGroupRemover remover = EmptyGroupRemover.Create(isNeeded: changeLeafCount && delta < 0))
             {
-                group.FullCount += delta;
-                if (changeLeafCount)
+                for (   CollectionViewGroupInternal group = this;
+                        group != null;
+                        group = group._parentGroup )
                 {
-                    group.ProtectedItemCount += delta;
-
-                    if (group.ProtectedItemCount == 0)
+                    group.FullCount += delta;
+                    if (changeLeafCount)
                     {
-                        RemoveEmptyGroup(group);
+                        group.ProtectedItemCount += delta;
+
+                        if (group.ProtectedItemCount == 0)
+                        {
+                            remover.RemoveEmptyGroup(group);
+                        }
                     }
                 }
             }
 
             unchecked {++_version;}     // this invalidates enumerators
-        }
-
-        void RemoveEmptyGroup(CollectionViewGroupInternal group)
-        {
-            CollectionViewGroupInternal parent = group.Parent;
-
-            if (parent != null)
-            {
-                // remove the subgroup unless it is one of the explicit groups
-                if (!group.IsExplicit)
-                {
-                    parent.Remove(group, false);
-                }
-            }
         }
 
         void OnGroupByChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -856,6 +850,52 @@ namespace MS.Internal.Data
             int                 _index;     // current index into Items
             IEnumerator         _subEnum;   // enumerator over current subgroup
             object              _current;   // current item
+        }
+
+        // When removing a leaf item, ChangeCounts removes groups that become empty.
+        // It's important to propagate the changed item count all the way up
+        // to the root before actually removing the empty groups, as the removal
+        // raises an event whose handlers could call back into the group tree -
+        // if the counts are inconsistent, crashes can occur (DDVSO 765355).
+        // This class remembers the empty groups, and removes them after the
+        // counts have all been changed.
+        private class EmptyGroupRemover : IDisposable
+        {
+            public static EmptyGroupRemover Create(bool isNeeded)
+            {
+                return isNeeded ? new EmptyGroupRemover() : null;
+            }
+
+            public void RemoveEmptyGroup(CollectionViewGroupInternal group)
+            {
+                if (_toRemove == null)
+                {
+                    _toRemove = new System.Collections.Generic.List<CollectionViewGroupInternal>();
+                }
+                _toRemove.Add(group);
+            }
+
+            public void Dispose()
+            {
+                if (_toRemove != null)
+                {
+                    foreach (CollectionViewGroupInternal group in _toRemove)
+                    {
+                        CollectionViewGroupInternal parent = group.Parent;
+
+                        if (parent != null)
+                        {
+                            // remove the subgroup unless it is one of the explicit groups
+                            if (!group.IsExplicit)
+                            {
+                                parent.Remove(group, false);
+                            }
+                        }
+                    }
+                }
+            }
+
+            System.Collections.Generic.List<CollectionViewGroupInternal> _toRemove;
         }
 
         #endregion Private classes

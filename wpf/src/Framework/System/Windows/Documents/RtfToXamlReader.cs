@@ -146,6 +146,13 @@ namespace System.Windows.Documents
     /// </summary>
     internal static class Converters
     {
+        internal static double HalfPointToPositivePx(double halfPoint)
+        {
+            // Twip is 1/10 of half-point
+            // So convert it to Twip by multiplying halftPoint with 10
+            return TwipToPositivePx(halfPoint * 10);
+        }
+
         internal static double TwipToPx(double twip)
         {
             return (twip / 1440f) * 96f;
@@ -208,6 +215,21 @@ namespace System.Windows.Documents
             else
             {
                 return (long)(twip + 0.5);
+            }
+        }
+
+        internal static long PxToHalfPointRounded(double px)
+        {
+            // Twip is 1/10 of half-point
+            double twip = (px / 96f) * 1440f;
+            double halfPoint = twip / 10;
+            if (halfPoint < 0)
+            {
+                return (long)(halfPoint - 0.5);
+            }
+            else
+            {
+                return (long)(halfPoint + 0.5);
             }
         }
 
@@ -1681,6 +1703,30 @@ namespace System.Windows.Documents
             }
         }
 
+        internal double ImageBaselineOffset
+        {
+            get
+            {
+                return _imageBaselineOffset;
+            }
+            set
+            {
+                _imageBaselineOffset = value;
+            }
+        }
+
+        internal bool IncludeImageBaselineOffset
+        {
+            get
+            {
+                return _isIncludeImageBaselineOffset;
+            }
+            set
+            {
+                _isIncludeImageBaselineOffset = value;
+            }
+        }
+
         // Image width property
         internal double ImageScaleWidth
         {
@@ -1818,6 +1864,8 @@ namespace System.Windows.Documents
         private string _imageSource;
         private double _imageWidth;
         private double _imageHeight;
+        private double _imageBaselineOffset;
+        private bool _isIncludeImageBaselineOffset = false;
         private double _imageScaleWidth;
         private double _imageScaleHeight;
         private bool _isImageDataBinary;
@@ -3340,7 +3388,7 @@ namespace System.Windows.Documents
                     return -1;    // -1 means use ansicpg
                 case 77: // Mac
                     return 10000;
-                case 78:  // Shift JIS - 
+                case 78:  // Shift JIS - bug in MacWord98J
                 case 128: // Shift JIS
                     return 932;
                 case 129: // Hangul
@@ -8738,6 +8786,15 @@ namespace System.Windows.Documents
                 imageStringBuilder.Append(height.ToString(CultureInfo.InvariantCulture));
                 imageStringBuilder.Append("\"");
 
+                // Add the xaml image baseline offset property
+                if (formatState.IncludeImageBaselineOffset == true)
+                {
+                    double baselineOffset = height - formatState.ImageBaselineOffset;
+                    imageStringBuilder.Append(" TextBlock.BaselineOffset=\"");
+                    imageStringBuilder.Append(baselineOffset.ToString(CultureInfo.InvariantCulture));
+                    imageStringBuilder.Append("\"");
+                }
+
                 // Add the xaml image stretch property
                 imageStringBuilder.Append(" Stretch=\"Fill");
                 imageStringBuilder.Append("\"");
@@ -9677,6 +9734,14 @@ namespace System.Windows.Documents
                     if (formatState.RtfDestination == RtfDestination.DestPicture)
                     {
                         formatState.ImageFormat = RtfImageFormat.Wmf;
+                    }
+                    break;
+                case RtfControlWord.Ctrl_DN:
+                    if (formatState.RtfDestination == RtfDestination.DestPicture)
+                    {
+                        // DN comes in half points
+                        formatState.ImageBaselineOffset = Converters.HalfPointToPositivePx(token.Parameter);
+                        formatState.IncludeImageBaselineOffset = true;
                     }
                     break;
                 case RtfControlWord.Ctrl_PICHGOAL:

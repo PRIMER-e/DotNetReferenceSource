@@ -119,7 +119,7 @@ namespace MS.Internal.Data
             // Need to check for nullable types first, since NullableConverter is a bit over-eager;
             // TypeConverter for Nullable can convert e.g. Nullable<DateTime> to string
             // but it ends up doing a different conversion than the TypeConverter for the
-            // generic's inner type, e.g. 
+            // generic's inner type, e.g. bug 1361977
             innerType = Nullable.GetUnderlyingType(sourceType);
             if (innerType != null)
             {

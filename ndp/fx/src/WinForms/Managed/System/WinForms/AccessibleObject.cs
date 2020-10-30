@@ -21,6 +21,7 @@ namespace System.Windows.Forms {
     using System.Globalization;
     using System.Security;
     using System.Security.Permissions;
+    using Automation;
     
     /// <include file='doc\AccessibleObject.uex' path='docs/doc[@for="AccessibleObject"]/*' />
     /// <devdoc>
@@ -31,8 +32,27 @@ namespace System.Windows.Forms {
     public class AccessibleObject : StandardOleMarshalObject,
                                     IReflect,
                                     IAccessible,
+                                    UnsafeNativeMethods.IAccessibleEx,
+                                    UnsafeNativeMethods.IServiceProvider,
+                                    UnsafeNativeMethods.IRawElementProviderSimple,
+                                    UnsafeNativeMethods.IRawElementProviderFragment,
+                                    UnsafeNativeMethods.IRawElementProviderFragmentRoot,
+                                    UnsafeNativeMethods.IInvokeProvider,
+                                    UnsafeNativeMethods.IValueProvider,
+                                    UnsafeNativeMethods.IRangeValueProvider,
+                                    UnsafeNativeMethods.IExpandCollapseProvider,
+                                    UnsafeNativeMethods.IToggleProvider,
+                                    UnsafeNativeMethods.ITableProvider,
+                                    UnsafeNativeMethods.ITableItemProvider,
+                                    UnsafeNativeMethods.IGridProvider,
+                                    UnsafeNativeMethods.IGridItemProvider,
                                     UnsafeNativeMethods.IEnumVariant,
-                                    UnsafeNativeMethods.IOleWindow {
+                                    UnsafeNativeMethods.IOleWindow,
+                                    UnsafeNativeMethods.ILegacyIAccessibleProvider,
+                                    UnsafeNativeMethods.ISelectionProvider,
+                                    UnsafeNativeMethods.ISelectionItemProvider,
+                                    UnsafeNativeMethods.IRawElementProviderHwndOverride,
+                                    UnsafeNativeMethods.IScrollItemProvider { 
 
         // Member variables
 
@@ -56,6 +76,14 @@ namespace System.Windows.Forms {
         private bool systemWrapper = false;     // Indicates this object is being used ONLY to wrap a system IAccessible
 
         private int accObjId = NativeMethods.OBJID_CLIENT;    // Indicates what kind of 'inner' system accessible object we are using
+
+        // The support for the UIA Notification event begins in RS3.
+        // Assume the UIA Notification event is available until we learn otherwise.
+        // If we learn that the UIA Notification event is not available, 
+        // controls should not attempt to raise it.
+        private static bool notificationEventAvailable = true;
+
+        internal const int RuntimeIDFirstItem = 0x2a;
 
         /// <include file='doc\AccessibleObject.uex' path='docs/doc[@for="AccessibleObject.AccessibleObject"]/*' />
         public AccessibleObject() {
@@ -494,6 +522,733 @@ namespace System.Windows.Forms {
             }
             
             return null;
+        }
+
+        //
+        // UIAutomation support helpers
+        //
+
+        internal virtual bool IsIAccessibleExSupported() {
+            // Override this, in your derived class, to enable IAccessibleEx support
+            return false;
+        }
+
+        internal virtual bool IsPatternSupported(int patternId) {
+            // Override this, in your derived class, if you implement UIAutomation patterns 
+
+            if (AccessibilityImprovements.Level3 && patternId == NativeMethods.UIA_InvokePatternId) {
+                return IsInvokePatternAvailable;
+            }
+
+            return false;
+        }
+
+        //
+        // Overridable methods for IRawElementProviderSimple interface
+        //
+
+        internal virtual int[] RuntimeId {
+            get {
+                return null;
+            }
+        }
+
+        internal virtual int ProviderOptions {
+            get {
+                return (int)(UnsafeNativeMethods.ProviderOptions.ServerSideProvider | UnsafeNativeMethods.ProviderOptions.UseComThreading);
+            }
+        }
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple HostRawElementProvider {
+            get {
+                return null;
+            }
+        }
+
+        internal virtual object GetPropertyValue(int propertyID) {
+            if (AccessibilityImprovements.Level3 && propertyID == NativeMethods.UIA_IsInvokePatternAvailablePropertyId) {
+                return IsInvokePatternAvailable;
+            }
+
+            return null;
+        }
+
+        private bool IsInvokePatternAvailable {
+            get {
+                // MSAA Proxy determines the availability of invoke pattern based on Role/DefaultAction properties.
+                // Below code emulates the same rules.
+                switch (Role) {
+                    case AccessibleRole.MenuItem:
+                    case AccessibleRole.Link:
+                    case AccessibleRole.PushButton:
+                    case AccessibleRole.ButtonDropDown:
+                    case AccessibleRole.ButtonMenu:
+                    case AccessibleRole.ButtonDropDownGrid:
+                    case AccessibleRole.Clock:
+                    case AccessibleRole.SplitButton:
+                        return true;
+
+                    case AccessibleRole.Default:
+                    case AccessibleRole.None:
+                    case AccessibleRole.Sound:
+                    case AccessibleRole.Cursor:
+                    case AccessibleRole.Caret:
+                    case AccessibleRole.Alert:
+                    case AccessibleRole.Client:
+                    case AccessibleRole.Chart:
+                    case AccessibleRole.Dialog:
+                    case AccessibleRole.Border:
+                    case AccessibleRole.Column:
+                    case AccessibleRole.Row:
+                    case AccessibleRole.HelpBalloon:
+                    case AccessibleRole.Character:
+                    case AccessibleRole.PageTab:
+                    case AccessibleRole.PropertyPage:
+                    case AccessibleRole.DropList:
+                    case AccessibleRole.Dial:
+                    case AccessibleRole.HotkeyField:
+                    case AccessibleRole.Diagram:
+                    case AccessibleRole.Animation:
+                    case AccessibleRole.Equation:
+                    case AccessibleRole.WhiteSpace:
+                    case AccessibleRole.IpAddress:
+                    case AccessibleRole.OutlineButton:
+                        return false;
+
+                    default:
+                        return !string.IsNullOrEmpty(DefaultAction);
+                }
+            }
+        }
+
+        //
+        // Overridable methods for ILegacyAccessible interface
+        //
+
+        internal virtual int GetChildId() {
+            return NativeMethods.CHILDID_SELF;
+        }
+
+        //
+        // Overridable methods for IRawElementProviderFragment interface
+        //
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+            return null;
+        }
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple[] GetEmbeddedFragmentRoots() {
+            return null;
+        }
+
+        internal virtual void SetFocus() {
+        }
+
+        internal virtual Rectangle BoundingRectangle {
+            get {
+                return this.Bounds;
+            }
+        }
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+            get {
+                return null;
+            }
+        }
+
+        //
+        // Overridable methods for IRawElementProviderFragmentRoot interface
+        //
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderFragment ElementProviderFromPoint(double x, double y) {
+            return this;
+        }
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderFragment GetFocus() {
+            return null;
+        }
+
+        //
+        // Overridable methods for IExpandCollapseProvider pattern interface
+        //
+
+        internal virtual void Expand() {
+        }
+
+        internal virtual void Collapse() {
+        }
+
+        internal virtual UnsafeNativeMethods.ExpandCollapseState ExpandCollapseState {
+            get {
+                return UnsafeNativeMethods.ExpandCollapseState.Collapsed;
+            }
+        }
+
+        //
+        // Overridable methods for IToggleProvider pattern interface
+        //
+
+        internal virtual void Toggle() {
+        }
+
+        internal virtual UnsafeNativeMethods.ToggleState ToggleState {
+            get {
+                return UnsafeNativeMethods.ToggleState.ToggleState_Indeterminate;
+            }
+        }
+
+        //
+        // Overridable methods for ITableProvider pattern interface
+        //
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple[] GetRowHeaders() {
+            return null;
+        }
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple[] GetColumnHeaders() {
+            return null;
+        }
+
+        internal virtual UnsafeNativeMethods.RowOrColumnMajor RowOrColumnMajor {
+            get {
+                return UnsafeNativeMethods.RowOrColumnMajor.RowOrColumnMajor_RowMajor;
+            }
+        }
+
+        //
+        // Overridable methods for ITableItemProvider pattern interface
+        //
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple[] GetRowHeaderItems() {
+            return null;
+        }
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple[] GetColumnHeaderItems() {
+            return null;
+        }
+
+        //
+        // Overridable methods for IGridProvider pattern interface
+        //
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple GetItem(int row, int column) {
+            return null;
+        }
+
+        internal virtual int RowCount {
+            get {
+                return -1;
+            }
+        }
+
+        internal virtual int ColumnCount {
+            get {
+                return -1;
+            }
+        }
+
+        //
+        // Overridable methods for IGridItemProvider pattern interface
+        //
+        
+        internal virtual int Row {
+            get {
+                return -1;
+            }
+        }
+
+        internal virtual int Column {
+            get {
+                return -1;
+            }
+        }
+
+        internal virtual int RowSpan {
+            get {
+                return 1;
+            }
+        }
+
+        internal virtual int ColumnSpan {
+            get {
+                return 1;
+            }
+        }
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple ContainingGrid {
+            get {
+                return null;
+            }
+        }
+
+        //
+        // Overridable methods for IInvokeProvider pattern interface
+        //
+
+        internal virtual void Invoke() {
+            // Calling DoDefaultAction here is consistent with MSAA Proxy implementation.
+            DoDefaultAction();
+        }
+
+        // Overridable methods for IValueProvider pattern interface
+
+        internal virtual bool IsReadOnly {
+            get {
+                return false;
+            }
+        }
+
+        internal virtual void SetValue(string newValue) {
+            this.Value = newValue;
+        }
+
+        //
+        // Overridable methods for IRawElementProviderHwndOverride interface
+        //
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple GetOverrideProviderForHwnd(IntPtr hwnd) {
+            return null;
+        }
+
+        //
+        // Overridable methods for IRangeValueProvider pattern interface
+        //
+
+        internal virtual void SetValue(double newValue) {
+        }
+
+        internal virtual double LargeChange {
+            get {
+                return double.NaN;
+            }
+        }
+
+        internal virtual double Maximum {
+            get {
+                return double.NaN;
+            }
+        }
+
+        internal virtual double Minimum {
+            get {
+                return double.NaN;
+            }
+        }
+
+        internal virtual double SmallChange {
+            get {
+                return double.NaN;
+            }
+        }
+
+        internal virtual double RangeValue {
+            get {
+                return double.NaN;
+            }
+        }
+
+        //
+        // Overridable methods for ISelectionProvider interface
+        //
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple[] GetSelection() {
+            return null;
+        }
+
+        internal virtual bool CanSelectMultiple {
+            get {
+                return false;
+            }
+        }
+
+        internal virtual bool IsSelectionRequired {
+            get {
+                return false;
+            }
+        }
+
+        //
+        // Overridable methods for ISelectionItemProvider interface
+        //
+
+        internal virtual void SelectItem() {
+        }
+
+        internal virtual void AddToSelection() {
+        }
+
+        internal virtual void RemoveFromSelection() {
+        }
+
+        internal virtual bool IsItemSelected {
+            get {
+                return false;
+            }
+        }
+
+        internal virtual UnsafeNativeMethods.IRawElementProviderSimple ItemSelectionContainer {
+            get {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Sets the parent accessible object for the node which can be added or removed to/from hierachy nodes.
+        /// </summary>
+        /// <param name="parent">The parent accessible object.</param>
+        internal virtual void SetParent(AccessibleObject parent)
+        {
+        }
+
+        /// <summary>
+        /// Sets the detachable child accessible object which may be added or removed to/from hierachy nodes.
+        /// </summary>
+        /// <param name="child">The child accessible object.</param>
+        internal virtual void SetDetachableChild(AccessibleObject child)
+        {
+        }
+
+        int UnsafeNativeMethods.IServiceProvider.QueryService(ref Guid service, ref Guid riid, out IntPtr ppvObject) {
+
+            int hr = NativeMethods.E_NOINTERFACE;
+            ppvObject = IntPtr.Zero;
+
+            if (IsIAccessibleExSupported()) {
+                if (service.Equals(UnsafeNativeMethods.guid_IAccessibleEx) &&
+                    riid.Equals(UnsafeNativeMethods.guid_IAccessibleEx)) {
+                    // We want to return the internal, secure, object, which we don't have access here
+                    // Return non-null, which will be interpreted in internal method, to mean returning casted object to IAccessibleEx
+
+                    ppvObject = Marshal.GetComInterfaceForObject(this, typeof(UnsafeNativeMethods.IAccessibleEx));
+                    hr = NativeMethods.S_OK;
+                }
+            }
+
+            return hr;
+        }
+
+        object UnsafeNativeMethods.IAccessibleEx.GetObjectForChild(int childId) {
+            return GetObjectForChild(childId);
+        }
+
+        internal virtual object GetObjectForChild(int childId) {
+            return null;
+        }
+
+        // This method is never called
+        int UnsafeNativeMethods.IAccessibleEx.GetIAccessiblePair(out object ppAcc, out int pidChild) {
+
+            // No need to implement this for patterns and properties
+            ppAcc = null;
+            pidChild = 0;
+            return NativeMethods.E_POINTER;
+        }
+
+        int[] UnsafeNativeMethods.IAccessibleEx.GetRuntimeId() {
+            return RuntimeId;
+        }
+
+        int UnsafeNativeMethods.IAccessibleEx.ConvertReturnedElement(object pIn, out object ppRetValOut) {
+
+            // No need to implement this for patterns and properties
+            ppRetValOut = null;
+            return NativeMethods.E_NOTIMPL;
+        }
+
+        //
+        // IRawElementProviderSimple interface
+        //
+
+        UnsafeNativeMethods.ProviderOptions UnsafeNativeMethods.IRawElementProviderSimple.ProviderOptions {
+            get {
+                return (UnsafeNativeMethods.ProviderOptions) ProviderOptions;
+            }
+        }
+
+        UnsafeNativeMethods.IRawElementProviderSimple UnsafeNativeMethods.IRawElementProviderSimple.HostRawElementProvider {
+            get {
+                return HostRawElementProvider;
+            }
+        }
+
+        object UnsafeNativeMethods.IRawElementProviderSimple.GetPatternProvider(int patternId) {
+            if (IsPatternSupported(patternId)) {
+                return this;
+            }
+            else {
+                return null;
+            }
+        }
+
+        object UnsafeNativeMethods.IRawElementProviderSimple.GetPropertyValue(int propertyID) {
+            return GetPropertyValue(propertyID);
+        }
+
+        //
+        // IRawElementProviderFragment interface
+        //
+
+        object UnsafeNativeMethods.IRawElementProviderFragment.Navigate(UnsafeNativeMethods.NavigateDirection direction) {
+            return FragmentNavigate(direction);
+        }
+
+        int[] UnsafeNativeMethods.IRawElementProviderFragment.GetRuntimeId() {
+            return RuntimeId;
+        }
+
+        object[] UnsafeNativeMethods.IRawElementProviderFragment.GetEmbeddedFragmentRoots() {
+            return GetEmbeddedFragmentRoots();
+        }
+
+        void UnsafeNativeMethods.IRawElementProviderFragment.SetFocus() {
+            SetFocus();
+        }
+
+        NativeMethods.UiaRect UnsafeNativeMethods.IRawElementProviderFragment.BoundingRectangle {
+            get {
+                return new NativeMethods.UiaRect(BoundingRectangle);
+            }
+        }
+
+        UnsafeNativeMethods.IRawElementProviderFragmentRoot UnsafeNativeMethods.IRawElementProviderFragment.FragmentRoot {
+            get {
+                return FragmentRoot;
+            }
+        }
+
+        //
+        // IRawElementProviderFragmentRoot interface
+        //
+
+        object UnsafeNativeMethods.IRawElementProviderFragmentRoot.ElementProviderFromPoint(double x, double y) {
+            return ElementProviderFromPoint(x, y);
+        }
+
+        object UnsafeNativeMethods.IRawElementProviderFragmentRoot.GetFocus() {
+            return GetFocus();
+        }
+
+        //
+        // ILegacyIAccessibleProvider interface
+        //
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.DefaultAction {
+            get {
+                return this.DefaultAction;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.Description {
+            get {
+                return this.Description;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.Help {
+            get {
+                return this.Help;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.KeyboardShortcut {
+            get {
+                return this.KeyboardShortcut;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.Name {
+            get {
+                return this.Name;
+            }
+        }
+
+        uint UnsafeNativeMethods.ILegacyIAccessibleProvider.Role {
+            get {
+                return (uint)this.Role;
+            }
+        }
+
+        uint UnsafeNativeMethods.ILegacyIAccessibleProvider.State {
+            get {
+                return (uint)this.State;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.Value {
+            get {
+                return this.Value;
+            }
+        }
+
+        int UnsafeNativeMethods.ILegacyIAccessibleProvider.ChildId {
+            get {
+                return GetChildId();
+            }
+        }
+
+        void UnsafeNativeMethods.ILegacyIAccessibleProvider.DoDefaultAction() {
+            this.DoDefaultAction();
+        }
+
+        IAccessible UnsafeNativeMethods.ILegacyIAccessibleProvider.GetIAccessible() {
+            return this.AsIAccessible(this);
+        }
+
+        object[] UnsafeNativeMethods.ILegacyIAccessibleProvider.GetSelection() {
+            return new UnsafeNativeMethods.IRawElementProviderSimple[] {
+                this.GetSelected() as UnsafeNativeMethods.IRawElementProviderSimple
+            };
+        }
+
+        void UnsafeNativeMethods.ILegacyIAccessibleProvider.Select(int flagsSelect) {
+            this.Select((AccessibleSelection)flagsSelect);
+        }
+
+        void UnsafeNativeMethods.ILegacyIAccessibleProvider.SetValue(string szValue) {
+            this.SetValue(szValue);
+        }
+
+        //
+        // IExpandCollapseProvider interface
+        //
+
+        void UnsafeNativeMethods.IExpandCollapseProvider.Expand() {
+            Expand();
+        }
+        void UnsafeNativeMethods.IExpandCollapseProvider.Collapse() {
+            Collapse();
+        }
+
+        UnsafeNativeMethods.ExpandCollapseState UnsafeNativeMethods.IExpandCollapseProvider.ExpandCollapseState {
+            get {
+                return ExpandCollapseState;
+            }
+        }
+
+        //
+        // IInvokeProvider interface
+        //
+
+        void UnsafeNativeMethods.IInvokeProvider.Invoke() {
+            Invoke();
+        }
+
+        //
+        // IValueProvider interface
+        //
+
+        bool UnsafeNativeMethods.IValueProvider.IsReadOnly {
+            get {
+                return IsReadOnly;
+            }
+        }
+
+        string UnsafeNativeMethods.IValueProvider.Value {
+            get {
+                return Value;
+            }
+        }
+
+        void UnsafeNativeMethods.IValueProvider.SetValue(string newValue) {
+            SetValue(newValue);
+        }
+
+        //
+        // IToggleProvider implementation
+        //
+
+        void UnsafeNativeMethods.IToggleProvider.Toggle() {
+            Toggle();
+        }
+
+        UnsafeNativeMethods.ToggleState UnsafeNativeMethods.IToggleProvider.ToggleState {
+            get {
+                return ToggleState;
+            }
+        }
+
+        //
+        // ITableProvider implementation
+        //
+
+        object[] UnsafeNativeMethods.ITableProvider.GetRowHeaders() {
+            return GetRowHeaders();
+        }
+
+        object[] UnsafeNativeMethods.ITableProvider.GetColumnHeaders() {
+            return GetColumnHeaders();
+        }
+
+        UnsafeNativeMethods.RowOrColumnMajor UnsafeNativeMethods.ITableProvider.RowOrColumnMajor {
+            get {
+                return RowOrColumnMajor;
+            }
+        }
+
+        //
+        // ITableItemProvider implementation
+        //
+
+        object[] UnsafeNativeMethods.ITableItemProvider.GetRowHeaderItems() {
+            return GetRowHeaderItems();
+        }
+
+        object[] UnsafeNativeMethods.ITableItemProvider.GetColumnHeaderItems() {
+            return GetColumnHeaderItems();
+        }
+
+        //
+        // IGridProvider implementation
+        //
+
+        object UnsafeNativeMethods.IGridProvider.GetItem(int row, int column) {
+            return GetItem(row, column);
+        }
+
+        int UnsafeNativeMethods.IGridProvider.RowCount {
+            get {
+                return RowCount;
+            }
+        }
+
+        int UnsafeNativeMethods.IGridProvider.ColumnCount {
+            get {
+                return ColumnCount;
+            }
+        }
+
+        //
+        // IGridItemProvider implementation
+        //
+        
+        int UnsafeNativeMethods.IGridItemProvider.Row {
+            get {
+                return Row;
+            }
+        }
+
+        int UnsafeNativeMethods.IGridItemProvider.Column {
+            get {
+                return Column;
+            }
+        }
+
+        int UnsafeNativeMethods.IGridItemProvider.RowSpan {
+            get {
+                return RowSpan;
+            }
+        }
+
+        int UnsafeNativeMethods.IGridItemProvider.ColumnSpan {
+            get {
+                return ColumnSpan;
+            }
+        }
+
+        UnsafeNativeMethods.IRawElementProviderSimple UnsafeNativeMethods.IGridItemProvider.ContainingGrid {
+            get {
+                return ContainingGrid;
+            }
         }
 
         /// <include file='doc\AccessibleObject.uex' path='docs/doc[@for="AccessibleObject.IAccessible.accDoDefaultAction"]/*' />
@@ -1877,7 +2632,178 @@ namespace System.Windows.Forms {
                 return typeof(IAccessible);
             }
         }
-        
+
+        UnsafeNativeMethods.IRawElementProviderSimple UnsafeNativeMethods.IRawElementProviderHwndOverride.GetOverrideProviderForHwnd(IntPtr hwnd) {
+            return GetOverrideProviderForHwnd(hwnd);
+        }
+
+        bool UnsafeNativeMethods.IRangeValueProvider.IsReadOnly {
+            get {
+                return IsReadOnly;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.LargeChange {
+            get {
+                return LargeChange;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.Maximum {
+            get {
+                return Maximum;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.Minimum {
+            get {
+                return Minimum;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.SmallChange {
+            get {
+                return SmallChange;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.Value {
+            get {
+                return RangeValue;
+            }
+        }
+
+        void UnsafeNativeMethods.IRangeValueProvider.SetValue(double value) {
+            SetValue(value);
+        }
+
+        object[] UnsafeNativeMethods.ISelectionProvider.GetSelection() {
+            return GetSelection();
+        }
+
+        bool UnsafeNativeMethods.ISelectionProvider.CanSelectMultiple {
+            get {
+                return CanSelectMultiple;
+            }
+        }
+
+        bool UnsafeNativeMethods.ISelectionProvider.IsSelectionRequired {
+            get {
+                return IsSelectionRequired;
+            }
+        }
+
+        void UnsafeNativeMethods.ISelectionItemProvider.Select() {
+            SelectItem();
+        }
+
+        void UnsafeNativeMethods.ISelectionItemProvider.AddToSelection() {
+            AddToSelection();
+        }
+
+        void UnsafeNativeMethods.ISelectionItemProvider.RemoveFromSelection() {
+            RemoveFromSelection();
+        }
+
+        bool UnsafeNativeMethods.ISelectionItemProvider.IsSelected {
+            get {
+                return IsItemSelected;
+            }
+        }
+
+        UnsafeNativeMethods.IRawElementProviderSimple UnsafeNativeMethods.ISelectionItemProvider.SelectionContainer {
+            get {
+                return ItemSelectionContainer;
+            }
+        }
+
+        /// <summary>
+        /// Raises the UIA Notification event.
+        /// The event is available starting with Windows 10, version 1709.
+        /// </summary>
+        /// <param name="notificationKind">The type of notification</param>
+        /// <param name="notificationProcessing">Indicates how to process notifications</param>
+        /// <param name="notificationText">Notification text</param>
+        /// <returns>
+        /// True if operation succeeds.
+        /// False if the underlying windows infrastructure is not available or the operation had failed.
+        /// Use Marshal.GetLastWin32Error for details.
+        /// </returns>
+        public bool RaiseAutomationNotification(
+            AutomationNotificationKind notificationKind,
+            AutomationNotificationProcessing notificationProcessing,
+            string notificationText) {
+
+            if (!AccessibilityImprovements.Level3 || !notificationEventAvailable) {
+                return false;
+            }
+
+            int result = NativeMethods.S_FALSE;
+            try {
+                // The activityId can be any string. It cannot be null. It isn�t used currently.
+                result = UnsafeNativeMethods.UiaRaiseNotificationEvent(
+                    this,
+                    notificationKind,
+                    notificationProcessing,
+                    notificationText,
+                    String.Empty);
+            }
+            catch (EntryPointNotFoundException) {
+                // The UIA Notification event is not available, so don't attempt to raise it again.
+                notificationEventAvailable = false;
+            }
+
+            return result == NativeMethods.S_OK;
+        }
+
+        /// <summary>
+        /// Raises the LiveRegionChanged UIA event.
+        /// This method must be overridden in derived classes that support the UIA live region feature.
+        /// </summary>
+        /// <returns>True if operation succeeds, False otherwise.</returns>
+        public virtual bool RaiseLiveRegionChanged() {
+            throw new NotSupportedException(SR.GetString(SR.AccessibleObjectLiveRegionNotSupported));
+        }
+
+        internal bool RaiseAutomationEvent(int eventId) {
+            if (UnsafeNativeMethods.UiaClientsAreListening()) {
+                int result = UnsafeNativeMethods.UiaRaiseAutomationEvent(this, eventId);
+                return result == NativeMethods.S_OK;
+            }
+
+            return false;
+        }
+
+        internal bool RaiseAutomationPropertyChangedEvent(int propertyId, object oldValue, object newValue) {
+            if (UnsafeNativeMethods.UiaClientsAreListening()) {
+                int result = UnsafeNativeMethods.UiaRaiseAutomationPropertyChangedEvent(this, propertyId, oldValue, newValue);
+                return result == NativeMethods.S_OK;
+            }
+
+            return false;
+        }
+
+        internal bool RaiseStructureChangedEvent(UnsafeNativeMethods.StructureChangeType structureChangeType, int[] runtimeId) {
+            if (UnsafeNativeMethods.UiaClientsAreListening()) {
+                int result = UnsafeNativeMethods.UiaRaiseStructureChangedEvent(this, structureChangeType, runtimeId, runtimeId == null ? 0 : runtimeId.Length);
+                return result == NativeMethods.S_OK;
+            }
+
+            return false;
+        }
+
+        #region IScrollItemProvider implementation
+
+        void UnsafeNativeMethods.IScrollItemProvider.ScrollIntoView() {
+            ScrollIntoView();
+        }
+
+        internal virtual void ScrollIntoView() {
+            Debug.Fail($"{nameof(this.ScrollIntoView)}() is not overriden");
+        }
+
+        #endregion
+
         private class EnumVariantObject : UnsafeNativeMethods.IEnumVariant {
         
             private int currentChild = 0;
@@ -2090,13 +3016,52 @@ namespace System.Windows.Forms {
     internal sealed class InternalAccessibleObject : StandardOleMarshalObject, 
                                     UnsafeNativeMethods.IAccessibleInternal,
                                     System.Reflection.IReflect,
+                                    UnsafeNativeMethods.IServiceProvider,
+                                    UnsafeNativeMethods.IAccessibleEx,
+                                    UnsafeNativeMethods.IRawElementProviderSimple,
+                                    UnsafeNativeMethods.IRawElementProviderFragment,
+                                    UnsafeNativeMethods.IRawElementProviderFragmentRoot,
+                                    UnsafeNativeMethods.IInvokeProvider,
+                                    UnsafeNativeMethods.IValueProvider,
+                                    UnsafeNativeMethods.IRangeValueProvider,
+                                    UnsafeNativeMethods.IExpandCollapseProvider,
+                                    UnsafeNativeMethods.IToggleProvider,
+                                    UnsafeNativeMethods.ITableProvider,
+                                    UnsafeNativeMethods.ITableItemProvider,
+                                    UnsafeNativeMethods.IGridProvider,
+                                    UnsafeNativeMethods.IGridItemProvider,
                                     UnsafeNativeMethods.IEnumVariant,
-                                    UnsafeNativeMethods.IOleWindow {
+                                    UnsafeNativeMethods.IOleWindow,
+                                    UnsafeNativeMethods.ILegacyIAccessibleProvider,
+                                    UnsafeNativeMethods.ISelectionProvider,
+                                    UnsafeNativeMethods.ISelectionItemProvider,
+                                    UnsafeNativeMethods.IRawElementProviderHwndOverride {
 
         private IAccessible publicIAccessible;                       // AccessibleObject as IAccessible
         private UnsafeNativeMethods.IEnumVariant publicIEnumVariant; // AccessibleObject as IEnumVariant
         private UnsafeNativeMethods.IOleWindow publicIOleWindow;     // AccessibleObject as IOleWindow
         private IReflect publicIReflect;                             // AccessibleObject as IReflect
+
+        private UnsafeNativeMethods.IServiceProvider publicIServiceProvider;             // AccessibleObject as IServiceProvider
+        private UnsafeNativeMethods.IAccessibleEx publicIAccessibleEx;                   // AccessibleObject as IAccessibleEx
+
+        // UIAutomation
+        private UnsafeNativeMethods.IRawElementProviderSimple publicIRawElementProviderSimple;    // AccessibleObject as IRawElementProviderSimple
+        private UnsafeNativeMethods.IRawElementProviderFragment publicIRawElementProviderFragment;// AccessibleObject as IRawElementProviderFragment
+        private UnsafeNativeMethods.IRawElementProviderFragmentRoot publicIRawElementProviderFragmentRoot;// AccessibleObject as IRawElementProviderFragmentRoot
+        private UnsafeNativeMethods.IInvokeProvider publicIInvokeProvider;                        // AccessibleObject as IInvokeProvider
+        private UnsafeNativeMethods.IValueProvider publicIValueProvider;                          // AccessibleObject as IValueProvider
+        private UnsafeNativeMethods.IRangeValueProvider publicIRangeValueProvider;                // AccessibleObject as IRangeValueProvider
+        private UnsafeNativeMethods.IExpandCollapseProvider publicIExpandCollapseProvider;        // AccessibleObject as IExpandCollapseProvider
+        private UnsafeNativeMethods.IToggleProvider publicIToggleProvider;                        // AccessibleObject as IToggleProvider
+        private UnsafeNativeMethods.ITableProvider publicITableProvider;                          // AccessibleObject as ITableProvider
+        private UnsafeNativeMethods.ITableItemProvider publicITableItemProvider;                  // AccessibleObject as ITableItemProvider
+        private UnsafeNativeMethods.IGridProvider publicIGridProvider;                            // AccessibleObject as IGridProvider
+        private UnsafeNativeMethods.IGridItemProvider publicIGridItemProvider;                    // AccessibleObject as IGridItemProvider
+        private UnsafeNativeMethods.ILegacyIAccessibleProvider publicILegacyIAccessibleProvider;  // AccessibleObject as ILegayAccessibleProvider
+        private UnsafeNativeMethods.ISelectionProvider publicISelectionProvider;                  // AccessibleObject as ISelectionProvider
+        private UnsafeNativeMethods.ISelectionItemProvider publicISelectionItemProvider;          // AccessibleObject as ISelectionItemProvider
+        private UnsafeNativeMethods.IRawElementProviderHwndOverride publicIRawElementProviderHwndOverride; // AccessibleObject as IRawElementProviderHwndOverride
 
         /// <summary>
         ///     Create a new wrapper. Protect this with UnmanagedCode Permission
@@ -2110,6 +3075,24 @@ namespace System.Windows.Forms {
             publicIEnumVariant = (UnsafeNativeMethods.IEnumVariant) accessibleImplemention;
             publicIOleWindow = (UnsafeNativeMethods.IOleWindow) accessibleImplemention;
             publicIReflect = (IReflect) accessibleImplemention;
+            publicIServiceProvider = (UnsafeNativeMethods.IServiceProvider) accessibleImplemention;
+            publicIAccessibleEx = (UnsafeNativeMethods.IAccessibleEx) accessibleImplemention;
+            publicIRawElementProviderSimple = (UnsafeNativeMethods.IRawElementProviderSimple) accessibleImplemention;
+            publicIRawElementProviderFragment = (UnsafeNativeMethods.IRawElementProviderFragment)accessibleImplemention;
+            publicIRawElementProviderFragmentRoot = (UnsafeNativeMethods.IRawElementProviderFragmentRoot)accessibleImplemention;
+            publicIInvokeProvider = (UnsafeNativeMethods.IInvokeProvider)accessibleImplemention;
+            publicIValueProvider = (UnsafeNativeMethods.IValueProvider) accessibleImplemention;
+            publicIRangeValueProvider = (UnsafeNativeMethods.IRangeValueProvider)accessibleImplemention;
+            publicIExpandCollapseProvider = (UnsafeNativeMethods.IExpandCollapseProvider) accessibleImplemention;
+            publicIToggleProvider = (UnsafeNativeMethods.IToggleProvider)accessibleImplemention;
+            publicITableProvider = (UnsafeNativeMethods.ITableProvider)accessibleImplemention;
+            publicITableItemProvider = (UnsafeNativeMethods.ITableItemProvider)accessibleImplemention;
+            publicIGridProvider = (UnsafeNativeMethods.IGridProvider)accessibleImplemention;
+            publicIGridItemProvider = (UnsafeNativeMethods.IGridItemProvider)accessibleImplemention;
+            publicILegacyIAccessibleProvider = (UnsafeNativeMethods.ILegacyIAccessibleProvider)accessibleImplemention;
+            publicISelectionProvider = (UnsafeNativeMethods.ISelectionProvider)accessibleImplemention;
+            publicISelectionItemProvider = (UnsafeNativeMethods.ISelectionItemProvider)accessibleImplemention;
+            publicIRawElementProviderHwndOverride = (UnsafeNativeMethods.IRawElementProviderHwndOverride)accessibleImplemention;
             // Note: Deliberately not holding onto AccessibleObject to enforce all access through the interfaces
         }
 
@@ -2124,6 +3107,18 @@ namespace System.Windows.Forms {
             else {
                 return accObject;
             }
+        }
+
+        /// <summary>
+        ///     Wraps AccessibleObject elements of a given array into InternalAccessibleObjects
+        /// </summary>
+        private object[] AsArrayOfNativeAccessibles(object[] accObjectArray) {
+            if (accObjectArray != null && accObjectArray.Length > 0) {
+                for (int i = 0; i < accObjectArray.Length; i++) {
+                    accObjectArray[i] = AsNativeAccessible(accObjectArray[i]);
+                }
+            }
+            return accObjectArray;
         }
 
         //
@@ -2327,6 +3322,604 @@ namespace System.Windows.Forms {
                 IReflect r = publicIReflect;
                 return publicIReflect.UnderlyingSystemType;
             }
+        }
+
+        //
+        // IServiceProvider implementation
+        //
+
+        int UnsafeNativeMethods.IServiceProvider.QueryService(ref Guid service, ref Guid riid, out IntPtr ppvObject) {
+            IntSecurity.UnmanagedCode.Assert();
+
+            ppvObject = IntPtr.Zero;
+            int hr = publicIServiceProvider.QueryService(ref service, ref riid, out ppvObject);
+            if (hr >= NativeMethods.S_OK) {
+                // we always want to return the internal accessible object
+                ppvObject = Marshal.GetComInterfaceForObject(this, typeof(UnsafeNativeMethods.IAccessibleEx));
+            }
+
+            return hr;
+        }
+
+        //
+        // IAccessibleEx implementation
+        //
+
+        object UnsafeNativeMethods.IAccessibleEx.GetObjectForChild(int idChild) {
+            IntSecurity.UnmanagedCode.Assert();
+            return publicIAccessibleEx.GetObjectForChild(idChild);
+        }
+
+        int UnsafeNativeMethods.IAccessibleEx.GetIAccessiblePair(out object ppAcc, out int pidChild) {
+
+            IntSecurity.UnmanagedCode.Assert();
+
+            // We always want to return the internal accessible object
+            ppAcc = this;
+            pidChild = NativeMethods.CHILDID_SELF;
+            return NativeMethods.S_OK;
+        }
+
+        int[] UnsafeNativeMethods.IAccessibleEx.GetRuntimeId() {
+
+            IntSecurity.UnmanagedCode.Assert();
+            return publicIAccessibleEx.GetRuntimeId();
+        }
+
+        int UnsafeNativeMethods.IAccessibleEx.ConvertReturnedElement(object pIn, out object ppRetValOut) {
+
+            IntSecurity.UnmanagedCode.Assert();
+            return publicIAccessibleEx.ConvertReturnedElement(pIn, out ppRetValOut);
+        }
+
+        //
+        // IRawElementProviderSimple implementation
+        //
+
+        UnsafeNativeMethods.ProviderOptions UnsafeNativeMethods.IRawElementProviderSimple.ProviderOptions {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIRawElementProviderSimple.ProviderOptions;
+            }
+        }
+
+        UnsafeNativeMethods.IRawElementProviderSimple UnsafeNativeMethods.IRawElementProviderSimple.HostRawElementProvider {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIRawElementProviderSimple.HostRawElementProvider;
+            }
+        }
+
+        object UnsafeNativeMethods.IRawElementProviderSimple.GetPatternProvider(int patternId) {
+            IntSecurity.UnmanagedCode.Assert();
+
+            object obj = publicIRawElementProviderSimple.GetPatternProvider(patternId);
+            if (obj != null) {
+
+                // we always want to return the internal accessible object
+
+                if (patternId == NativeMethods.UIA_ExpandCollapsePatternId) {
+                    return (UnsafeNativeMethods.IExpandCollapseProvider)this;
+                }
+                else if (patternId == NativeMethods.UIA_ValuePatternId) {
+                    return (UnsafeNativeMethods.IValueProvider)this;
+                }
+                else if (AccessibilityImprovements.Level3 && patternId == NativeMethods.UIA_RangeValuePatternId) {
+                    return (UnsafeNativeMethods.IRangeValueProvider)this;
+                }
+                else if (patternId == NativeMethods.UIA_TogglePatternId) {
+                    return (UnsafeNativeMethods.IToggleProvider)this;
+                }
+                else if (patternId == NativeMethods.UIA_TablePatternId) {
+                    return (UnsafeNativeMethods.ITableProvider)this;
+                }
+                else if (patternId == NativeMethods.UIA_TableItemPatternId) {
+                    return (UnsafeNativeMethods.ITableItemProvider)this;
+                }
+                else if (patternId == NativeMethods.UIA_GridPatternId) {
+                    return (UnsafeNativeMethods.IGridProvider)this;
+                }
+                else if (patternId == NativeMethods.UIA_GridItemPatternId) {
+                    return (UnsafeNativeMethods.IGridItemProvider)this;
+                }
+                else if (AccessibilityImprovements.Level3 && patternId == NativeMethods.UIA_InvokePatternId) {
+                    return (UnsafeNativeMethods.IInvokeProvider)this;
+                }
+                else if (AccessibilityImprovements.Level3 && patternId == NativeMethods.UIA_LegacyIAccessiblePatternId) {
+                    return (UnsafeNativeMethods.ILegacyIAccessibleProvider)this;
+                }
+                else if (AccessibilityImprovements.Level3 && patternId == NativeMethods.UIA_SelectionPatternId) {
+                    return (UnsafeNativeMethods.ISelectionProvider)this;
+                }
+                else if (AccessibilityImprovements.Level3 && patternId == NativeMethods.UIA_SelectionItemPatternId) {
+                    return (UnsafeNativeMethods.ISelectionItemProvider)this;
+                }
+                else {
+                    return null;
+                }
+            }
+            else {
+                return null;
+            }
+        }
+
+        object UnsafeNativeMethods.IRawElementProviderSimple.GetPropertyValue(int propertyID) {
+            IntSecurity.UnmanagedCode.Assert();
+            return publicIRawElementProviderSimple.GetPropertyValue(propertyID);
+        }
+
+        //
+        // IRawElementProviderFragment implementation
+        //
+
+        object UnsafeNativeMethods.IRawElementProviderFragment.Navigate(UnsafeNativeMethods.NavigateDirection direction) {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsNativeAccessible(publicIRawElementProviderFragment.Navigate(direction));
+        }
+
+        int[] UnsafeNativeMethods.IRawElementProviderFragment.GetRuntimeId() {
+            IntSecurity.UnmanagedCode.Assert();
+            return publicIRawElementProviderFragment.GetRuntimeId();
+        }
+
+        object[] UnsafeNativeMethods.IRawElementProviderFragment.GetEmbeddedFragmentRoots() {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsArrayOfNativeAccessibles(publicIRawElementProviderFragment.GetEmbeddedFragmentRoots());
+        }
+
+        void UnsafeNativeMethods.IRawElementProviderFragment.SetFocus() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicIRawElementProviderFragment.SetFocus();
+        }
+
+        NativeMethods.UiaRect UnsafeNativeMethods.IRawElementProviderFragment.BoundingRectangle {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIRawElementProviderFragment.BoundingRectangle;
+            }
+        }
+
+        UnsafeNativeMethods.IRawElementProviderFragmentRoot UnsafeNativeMethods.IRawElementProviderFragment.FragmentRoot {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                if (AccessibilityImprovements.Level3) {
+                    return publicIRawElementProviderFragment.FragmentRoot;
+                }
+
+                return AsNativeAccessible(publicIRawElementProviderFragment.FragmentRoot) as UnsafeNativeMethods.IRawElementProviderFragmentRoot;
+            }
+        }
+
+        //
+        // IRawElementProviderFragmentRoot implementation
+        //
+
+        object UnsafeNativeMethods.IRawElementProviderFragmentRoot.ElementProviderFromPoint(double x, double y) {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsNativeAccessible(publicIRawElementProviderFragmentRoot.ElementProviderFromPoint(x, y));
+        }
+
+        object UnsafeNativeMethods.IRawElementProviderFragmentRoot.GetFocus() {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsNativeAccessible(publicIRawElementProviderFragmentRoot.GetFocus());
+        }
+
+        //
+        // ILegacyIAccessibleProvider implementation
+        //
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.DefaultAction {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.DefaultAction;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.Description {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.Description;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.Help {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.Help;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.KeyboardShortcut {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.KeyboardShortcut;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.Name {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.Name;
+            }
+        }
+
+        uint UnsafeNativeMethods.ILegacyIAccessibleProvider.Role {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.Role;
+            }
+        }
+
+        uint UnsafeNativeMethods.ILegacyIAccessibleProvider.State {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.State;
+            }
+        }
+
+        string UnsafeNativeMethods.ILegacyIAccessibleProvider.Value {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.Value;
+            }
+        }
+
+        int UnsafeNativeMethods.ILegacyIAccessibleProvider.ChildId {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicILegacyIAccessibleProvider.ChildId;
+            }
+        }
+
+        void UnsafeNativeMethods.ILegacyIAccessibleProvider.DoDefaultAction() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicILegacyIAccessibleProvider.DoDefaultAction();
+        }
+
+        IAccessible UnsafeNativeMethods.ILegacyIAccessibleProvider.GetIAccessible() {
+            IntSecurity.UnmanagedCode.Assert();
+            return publicILegacyIAccessibleProvider.GetIAccessible();
+        }
+
+        object[] UnsafeNativeMethods.ILegacyIAccessibleProvider.GetSelection() {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsArrayOfNativeAccessibles(publicILegacyIAccessibleProvider.GetSelection());
+        }
+
+        void UnsafeNativeMethods.ILegacyIAccessibleProvider.Select(int flagsSelect) {
+            IntSecurity.UnmanagedCode.Assert();
+            publicILegacyIAccessibleProvider.Select(flagsSelect);
+        }
+
+        void UnsafeNativeMethods.ILegacyIAccessibleProvider.SetValue(string szValue) {
+            IntSecurity.UnmanagedCode.Assert();
+            publicILegacyIAccessibleProvider.SetValue(szValue);
+        }
+
+        //
+        // IInvokeProvider implementation
+        //
+
+        void UnsafeNativeMethods.IInvokeProvider.Invoke() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicIInvokeProvider.Invoke();
+        }
+
+        //
+        // IValueProvider implementation
+        //
+
+        bool UnsafeNativeMethods.IValueProvider.IsReadOnly {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIValueProvider.IsReadOnly;
+            }
+        }
+
+        string UnsafeNativeMethods.IValueProvider.Value {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIValueProvider.Value;
+            }
+        }
+
+        void UnsafeNativeMethods.IValueProvider.SetValue(string newValue) {
+            IntSecurity.UnmanagedCode.Assert();
+            publicIValueProvider.SetValue(newValue);
+        }
+
+        //
+        // IRangeValueProvider implementation
+        //
+
+        bool UnsafeNativeMethods.IRangeValueProvider.IsReadOnly {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIValueProvider.IsReadOnly;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.LargeChange {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIRangeValueProvider.LargeChange;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.Maximum {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIRangeValueProvider.Maximum;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.Minimum {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIRangeValueProvider.Minimum;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.SmallChange {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIRangeValueProvider.SmallChange;
+            }
+        }
+
+        double UnsafeNativeMethods.IRangeValueProvider.Value {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIRangeValueProvider.Value;
+            }
+        }
+
+        void UnsafeNativeMethods.IRangeValueProvider.SetValue(double newValue) {
+            IntSecurity.UnmanagedCode.Assert();
+            publicIRangeValueProvider.SetValue(newValue);
+        }
+
+        //
+        // IExpandCollapseProvider implementation
+        //
+
+        void UnsafeNativeMethods.IExpandCollapseProvider.Expand() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicIExpandCollapseProvider.Expand();
+        }
+
+        void UnsafeNativeMethods.IExpandCollapseProvider.Collapse() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicIExpandCollapseProvider.Collapse();
+        }
+
+        UnsafeNativeMethods.ExpandCollapseState UnsafeNativeMethods.IExpandCollapseProvider.ExpandCollapseState {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIExpandCollapseProvider.ExpandCollapseState;
+            }
+        }
+
+        //
+        // IToggleProvider implementation
+        //
+
+        void UnsafeNativeMethods.IToggleProvider.Toggle() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicIToggleProvider.Toggle();
+        }
+
+        UnsafeNativeMethods.ToggleState UnsafeNativeMethods.IToggleProvider.ToggleState {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIToggleProvider.ToggleState;
+            }
+        }
+
+        //
+        // ITableProvider implementation
+        //
+
+        object[] UnsafeNativeMethods.ITableProvider.GetRowHeaders() {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsArrayOfNativeAccessibles(publicITableProvider.GetRowHeaders());
+        }
+
+        object[] UnsafeNativeMethods.ITableProvider.GetColumnHeaders() {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsArrayOfNativeAccessibles(publicITableProvider.GetColumnHeaders());
+        }
+
+        UnsafeNativeMethods.RowOrColumnMajor UnsafeNativeMethods.ITableProvider.RowOrColumnMajor {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicITableProvider.RowOrColumnMajor;
+            }
+        }
+
+        //
+        // ITableItemProvider implementation
+        //
+
+        object[] UnsafeNativeMethods.ITableItemProvider.GetRowHeaderItems() {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsArrayOfNativeAccessibles(publicITableItemProvider.GetRowHeaderItems());
+        }
+
+        object[] UnsafeNativeMethods.ITableItemProvider.GetColumnHeaderItems() {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsArrayOfNativeAccessibles(publicITableItemProvider.GetColumnHeaderItems());
+        }
+
+        //
+        // IGridProvider implementation
+        //
+
+        object UnsafeNativeMethods.IGridProvider.GetItem(int row, int column) {
+            IntSecurity.UnmanagedCode.Assert();
+            return AsNativeAccessible(publicIGridProvider.GetItem(row, column));
+        }
+
+        int UnsafeNativeMethods.IGridProvider.RowCount {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIGridProvider.RowCount;
+            }
+        }
+
+        int UnsafeNativeMethods.IGridProvider.ColumnCount {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIGridProvider.ColumnCount;
+            }
+        }
+
+        //
+        // IGridItemProvider implementation
+        //
+                
+        int UnsafeNativeMethods.IGridItemProvider.Row {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIGridItemProvider.Row;
+            }
+        }
+
+        int UnsafeNativeMethods.IGridItemProvider.Column {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIGridItemProvider.Column;
+            }
+        }
+
+        int UnsafeNativeMethods.IGridItemProvider.RowSpan {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIGridItemProvider.RowSpan;
+            }
+        }
+
+        int UnsafeNativeMethods.IGridItemProvider.ColumnSpan {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicIGridItemProvider.ColumnSpan;
+            }
+        }
+
+        UnsafeNativeMethods.IRawElementProviderSimple UnsafeNativeMethods.IGridItemProvider.ContainingGrid {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+
+                // Do not wrap returned UIA provider by InternalAccessibleObject in Level 3.
+                if (AccessibilityImprovements.Level3) {
+                    return publicIGridItemProvider.ContainingGrid;
+                }
+
+                return AsNativeAccessible(publicIGridItemProvider.ContainingGrid) as UnsafeNativeMethods.IRawElementProviderSimple;
+            }
+        }
+
+        //
+        // ISelectionProvider implementation
+        //
+
+        /// <summary>
+        /// Get the currently selected elements
+        /// </summary>
+        /// <returns>An AutomationElement array containing the currently selected elements</returns>
+        object[] UnsafeNativeMethods.ISelectionProvider.GetSelection() {
+            IntSecurity.UnmanagedCode.Assert();
+            return publicISelectionProvider.GetSelection();
+        }
+
+        /// <summary>
+        /// Indicates whether the control allows more than one element to be selected
+        /// </summary>
+        /// <returns>Boolean indicating whether the control allows more than one element to be selected</returns>
+        /// <remarks>If this is false, then the control is a single-select ccntrol</remarks>
+        bool UnsafeNativeMethods.ISelectionProvider.CanSelectMultiple {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicISelectionProvider.CanSelectMultiple;
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether the control requires at least one element to be selected
+        /// </summary>
+        /// <returns>Boolean indicating whether the control requires at least one element to be selected</returns>
+        /// <remarks>If this is false, then the control allows all elements to be unselected</remarks>
+        bool UnsafeNativeMethods.ISelectionProvider.IsSelectionRequired {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicISelectionProvider.IsSelectionRequired;
+            }
+        }
+
+        //
+        // ISelectionItemProvider implementation
+        //
+
+        /// <summary>
+        /// Sets the current element as the selection
+        /// This clears the selection from other elements in the container.
+        /// </summary>
+        void UnsafeNativeMethods.ISelectionItemProvider.Select() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicISelectionItemProvider.Select();
+        }
+
+        /// <summary>
+        /// Adds current element to selection.
+        /// </summary>
+        void UnsafeNativeMethods.ISelectionItemProvider.AddToSelection() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicISelectionItemProvider.AddToSelection();
+        }
+
+        /// <summary>
+        /// Removes current element from selection.
+        /// </summary>
+        void UnsafeNativeMethods.ISelectionItemProvider.RemoveFromSelection() {
+            IntSecurity.UnmanagedCode.Assert();
+            publicISelectionItemProvider.RemoveFromSelection();
+        }
+
+        /// <summary>
+        /// Check whether an element is selected.
+        /// </summary>
+        /// <returns>Returns true if the element is selected.</returns>
+        bool UnsafeNativeMethods.ISelectionItemProvider.IsSelected {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicISelectionItemProvider.IsSelected;
+            }
+        }
+
+        /// <summary>
+        /// The logical element that supports the SelectionPattern for this Item.
+        /// </summary>
+        /// <returns>Returns a IRawElementProviderSimple.</returns>
+        UnsafeNativeMethods.IRawElementProviderSimple UnsafeNativeMethods.ISelectionItemProvider.SelectionContainer {
+            get {
+                IntSecurity.UnmanagedCode.Assert();
+                return publicISelectionItemProvider.SelectionContainer;
+            }
+        }
+
+        //
+        // IRawElementProviderHwndOverride implementation
+        //
+
+        /// <summary>
+        /// Request a provider for the specified component. The returned provider can supply additional
+        /// properties or override properties of the specified component.
+        /// </summary>
+        /// <param name="hwnd">The window handle of the component.</param>
+        /// <returns>Return the provider for the specified component, or null if the component is not being overridden.</returns>
+        UnsafeNativeMethods.IRawElementProviderSimple UnsafeNativeMethods.IRawElementProviderHwndOverride.GetOverrideProviderForHwnd(IntPtr hwnd) {
+            IntSecurity.UnmanagedCode.Assert();
+            return publicIRawElementProviderHwndOverride.GetOverrideProviderForHwnd(hwnd);
         }
 
     } // end class InternalAccessibleObject

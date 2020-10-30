@@ -2243,15 +2243,15 @@ bool XMLDocNode::VerifyXMLDocRootChildren(IXMLDOMElement *pXMLRootElement, bool 
             //
             // Microsoft
             // 12/12/2005
-            // see VSWhidbey 
-
-
-
-
-
-
-
-
+            // see VSWhidbey bug # 566346
+            // we need to relax this error for <exception> tags, because it is legal to have multiple exception
+            // tags with the same attributes.
+            //
+            //
+            // Microsoft
+            // see Dev Div Bugs # 4389
+            // we need to relax the error further, because we allow custom tags to be present, so we now
+            // only generate this error for "well known unique" xml comment tags.
 
             if (TagMatchesCase(FirstText, SecondText) &&  IsUniqueTag(SecondText))
             {

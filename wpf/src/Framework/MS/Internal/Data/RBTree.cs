@@ -492,7 +492,7 @@ namespace MS.Internal.Data
 
         public virtual int IndexOf(T item)
         {
-            return IndexOf(item, (x,y)=>{ return Object.Equals(x,y); });
+            return IndexOf(item, (x,y)=>{ return System.Windows.Controls.ItemsControl.EqualsEx(x,y); });
         }
 
         public void Insert(int index, T item)

@@ -469,11 +469,7 @@ namespace System.Windows.Forms {
             get {
                 if (visitedLinkColor.IsEmpty) {
                     if (SystemInformation.HighContrast) {
-                        int r = ((int)SystemColors.Window.R + (int)SystemColors.WindowText.R + 1) / 2;
-                        int g = SystemColors.WindowText.G;
-                        int b = ((int)SystemColors.Window.B + (int)SystemColors.WindowText.B + 1) / 2;
-
-                        return Color.FromArgb(r, g, b);
+                        return LinkUtilities.GetVisitedLinkColor();
                     }
                     return IEVisitedLinkColor;
                 }
@@ -1030,7 +1026,7 @@ namespace System.Windows.Forms {
 
             base.OnMouseUp(e);
 
-            // 
+            // bug 95211 : don't do any Handle-related operations when in disposing state
             if (Disposing || IsDisposed) {
                 return;
             }
@@ -1205,10 +1201,10 @@ namespace System.Windows.Forms {
                                 }
                             }
 
-                            // Fix for Windows 7 
-
-
-
+                            // Fix for Windows 7 bug 361974
+                            // When there is only one link in link label,
+                            // it's not necessary to paint with forebrush first 
+                            // as it will be overlapped by linkbrush in the following steps
                             if (!IsOneLink()) {
                                 PaintLink(e.Graphics, null, foreBrush, linkBrush, optimizeBackgroundRendering, finalrect);
                             }
@@ -1906,6 +1902,12 @@ namespace System.Windows.Forms {
                     base.UseCompatibleTextRendering = value;
                     InvalidateTextLayout();
                 }
+            }
+        }
+
+        internal override bool SupportsUiaProviders {
+            get {
+                return false;
             }
         }
 
@@ -2641,6 +2643,14 @@ namespace System.Windows.Forms {
             public LinkLabelAccessibleObject(LinkLabel owner) : base(owner) {
             }
 
+            internal override bool IsIAccessibleExSupported() {
+                if (AccessibilityImprovements.Level3) {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
             /// <include file='doc\LinkLabel.uex' path='docs/doc[@for="LinkLabel.LinkLabelAccessibleObject.GetChild"]/*' />
             /// <devdoc>
             /// </devdoc>
@@ -2651,6 +2661,16 @@ namespace System.Windows.Forms {
                 else {
                     return null;
                 }
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_IsEnabledPropertyId) {
+                    if (!Owner.Enabled) {
+                        return false;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
             
             public override System.Windows.Forms.AccessibleObject HitTest(int x,  int y) {
@@ -2742,9 +2762,26 @@ namespace System.Windows.Forms {
             public override string Name {
                 get {          
                     string text = link.Owner.Text;
-                    int charStart = LinkLabel.ConvertToCharIndex(link.Start, text);
-                    int charEnd = LinkLabel.ConvertToCharIndex(link.Start + link.Length, text);
-                    return text.Substring(charStart, charEnd - charStart);
+                    string name;
+                    if (AccessibilityImprovements.Level3) {
+                        // return the full name of the link label for AI.Level3 
+                        // as sometimes the link name in isolation is unusable
+                        // to a customer using a screen reader
+                        name = text;
+                        if (link.Owner.UseMnemonic) {
+                            name = WindowsFormsUtils.TextWithoutMnemonics(name);
+                        }
+                    } else {
+                        int charStart = LinkLabel.ConvertToCharIndex(link.Start, text);
+                        int charEnd = LinkLabel.ConvertToCharIndex(link.Start + link.Length, text);
+                        name = text.Substring(charStart, charEnd - charStart);
+                        if (AccessibilityImprovements.Level1 && link.Owner.UseMnemonic) {
+                            // return the same value as the tooltip shows.
+                            name = WindowsFormsUtils.TextWithoutMnemonics(name);
+                        }
+                    }
+
+                    return name;
                 }
                 set {
                     base.Name = value;
@@ -2782,6 +2819,11 @@ namespace System.Windows.Forms {
             public override string Value {
                 [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
                 get {
+                    if (AccessibilityImprovements.Level1) {
+                        // Narrator announces Link's text twice, once as a Name property and once as a Value, thus removing value.
+                        // Value is optional for this role (Link).
+                        return string.Empty;
+                    } 
                     return Name;
                 }
             }
@@ -2789,6 +2831,24 @@ namespace System.Windows.Forms {
             [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
             public override void DoDefaultAction() {
                 link.Owner.OnLinkClicked(new LinkLabelLinkClickedEventArgs(link));
+            }
+
+            internal override bool IsIAccessibleExSupported() {
+                if (AccessibilityImprovements.Level3) {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_IsEnabledPropertyId) {
+                    if (!link.Owner.Enabled) {
+                        return false;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
         }
     }

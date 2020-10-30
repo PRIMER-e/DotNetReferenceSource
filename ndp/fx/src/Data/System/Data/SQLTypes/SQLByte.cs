@@ -49,7 +49,7 @@ namespace System.Data.SqlTypes {
         private bool    m_fNotNull; // false if null
         private byte    m_value;
 
-        private static readonly int x_iBitNotByteMax    = ~0xff;
+        private const int x_iBitNotByteMax    = ~0xff;
 
         // constructor
         // construct a Null

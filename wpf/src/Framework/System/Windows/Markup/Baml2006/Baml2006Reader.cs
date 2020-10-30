@@ -1039,8 +1039,8 @@ namespace System.Windows.Baml2006
             return true;
         }
 
-        // Need to write just a text node out but the V3 markup compiler has a 
-
+        // Need to write just a text node out but the V3 markup compiler has a bug where it will occasionally output
+        // text even though it shouldn't.  The checks are to get around that.
         private void Process_Text()
         {
             Read_RecordSize();
@@ -1621,12 +1621,21 @@ namespace System.Windows.Baml2006
                 }
                 if (converter != null)
                 {
-                    value = new TypeConverterMarkupExtension(converter, value);
+                    value = CreateTypeConverterMarkupExtension(property, converter, value, _settings);
                 }
             }
 
             _xamlNodesWriter.WriteValue(value);
             _xamlNodesWriter.WriteEndMember();
+        }
+
+        // DDVSO 546550: When processing ResourceDictionary.Source we may find a Uri that references the
+        // local assembly, but if another version of the same assembly is loaded we may have trouble resolving
+        // to the correct one. Baml2006ReaderInternal has an override of this method that returns a custom markup
+        // extension that passes down the local assembly information to help in this case.
+        internal virtual object CreateTypeConverterMarkupExtension(XamlMember property, TypeConverter converter, object propertyValue, Baml2006ReaderSettings settings)
+        {
+            return new TypeConverterMarkupExtension(converter, propertyValue);
         }
 
         // (property, markup extension, value) including the well known WPF TemplateBinding, StaticResource or DynamicResource markup extensions
@@ -2084,7 +2093,7 @@ namespace System.Windows.Baml2006
                         // We need to append local assembly
 
                         return uriInput + ((_settings.LocalAssembly != null)
-                                                ? ";assembly=" + GetAssemblyShortName(_settings.LocalAssembly)
+                                                ? ";assembly=" + GetAssemblyNameForNamespace(_settings.LocalAssembly)
                                                 : String.Empty);
                     }
                     else
@@ -2103,7 +2112,7 @@ namespace System.Windows.Baml2006
                         string assemblyName = uriInput.Substring(equalIdx + 1);
                         if (String.IsNullOrEmpty(assemblyName))
                         {
-                            return uriInput + GetAssemblyShortName(_settings.LocalAssembly);
+                            return uriInput + GetAssemblyNameForNamespace(_settings.LocalAssembly);
                         }
                     }
                 }
@@ -2112,8 +2121,10 @@ namespace System.Windows.Baml2006
             return uriInput;
         }
 
-        // Given an assembly, return the assembly short name.  We need to avoid Assembly.GetName() so we run in PartialTrust without asserting.
-        private static string GetAssemblyShortName(Assembly assembly)
+        // DDVSO 378607: Providing the assembly short name may lead to ambiguity between two versions of the same assembly, but we need to
+        // keep it this way since it is exposed publicly via the Namespace property, Baml2006ReaderInternal provides the full Assembly name.
+        // We need to avoid Assembly.GetName() so we run in PartialTrust without asserting.
+        internal virtual string GetAssemblyNameForNamespace(Assembly assembly)
         {
             string assemblyLongName = assembly.FullName;
             string assemblyShortName = assemblyLongName.Substring(0, assemblyLongName.IndexOf(','));
@@ -2128,7 +2139,7 @@ namespace System.Windows.Baml2006
             Read_RecordSize();
             string prefix = _binaryReader.ReadString();
             string xamlNs = _binaryReader.ReadString();
-
+            
             xamlNs = Logic_GetFullXmlns(xamlNs);
 
             _context.CurrentFrame.AddNamespace(prefix, xamlNs);

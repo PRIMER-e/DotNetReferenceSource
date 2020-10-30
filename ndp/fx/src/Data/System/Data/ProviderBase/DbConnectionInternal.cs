@@ -259,15 +259,15 @@ namespace System.Data.ProviderBase {
                 //
                 // That means that:
                 //
-                //    _pooledCount > 1    connection is in the pool multiple times (this is a serious 
-
-
-
-
-
-
-
-
+                //    _pooledCount > 1    connection is in the pool multiple times (this is a serious bug...)
+                //    _pooledCount == 1   connection is in the pool
+                //    _pooledCount == 0   connection is out of the pool
+                //    _pooledCount == -1  connection is not a pooled connection; we shouldn't be here for non-pooled connections.
+                //    _pooledCount < -1   connection out of the pool multiple times (not sure how this could happen...)
+                //
+                // Now, our job is to return TRUE when the connection is out
+                // of the pool and it's owning object is no longer around to
+                // return it.
 
                 bool value = !IsTxRootWaitingForTxEnd && (_pooledCount < 1) && !_owningObject.IsAlive;
                 return value;
@@ -605,6 +605,11 @@ namespace System.Data.ProviderBase {
         protected internal void DoomThisConnection() {
             _connectionIsDoomed = true;
             Bid.PoolerTrace("<prov.DbConnectionInternal.DoomThisConnection|RES|INFO|CPOOL> %d#, Dooming\n", ObjectID);
+        }
+
+        // Reset connection doomed status so it can be re-connected and pooled.
+        protected internal void UnDoomThisConnection() {
+            _connectionIsDoomed = false;
         }
 
         abstract public void EnlistTransaction(SysTx.Transaction transaction);

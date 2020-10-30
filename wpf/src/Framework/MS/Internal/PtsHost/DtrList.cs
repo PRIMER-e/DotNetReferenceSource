@@ -124,6 +124,9 @@ namespace MS.Internal.PtsHost
                         _dtrs[i].PositionsAdded   += dtr.PositionsAdded   - adjust;
                         _dtrs[i].PositionsRemoved += dtr.PositionsRemoved - adjust;
                     }
+
+                    // Prefer not highlight layer change when merging
+                    _dtrs[i].FromHighlightLayer &= dtr.FromHighlightLayer;
                 }
                 else
                 {
@@ -152,6 +155,42 @@ namespace MS.Internal.PtsHost
             }
             TextPanelDebug.Log(msg.ToString(), TextPanelDebug.Category.ContentChange);
 #endif
+        }
+
+        /// <summary>
+        /// Merges the DtrList into a single DirtyTextRange containing all
+        /// ranges in the list.
+        /// </summary>
+        /// <returns>A DirtyTextRange containing all ranges in this list</returns>
+        internal DirtyTextRange GetMergedRange()
+        {
+            if (_count > 0)
+            {
+                DirtyTextRange range = _dtrs[0];
+
+                int previousOffset = range.StartIndex;
+                int positionsAdded = range.PositionsAdded;
+                int positionsRemoved = range.PositionsRemoved;
+                bool fromHighlightLayer = range.FromHighlightLayer;
+
+                for (int i = 1; i < _count; i++)
+                {
+                    range = _dtrs[i];
+
+                    int rangeDistance = range.StartIndex - previousOffset;
+                    positionsAdded = rangeDistance + range.PositionsAdded;
+                    positionsRemoved = rangeDistance + range.PositionsRemoved;
+
+                    // Prefer not from highlight layer when squashing
+                    fromHighlightLayer &= range.FromHighlightLayer;
+
+                    previousOffset = range.StartIndex;
+                }
+
+                return new DirtyTextRange(_dtrs[0].StartIndex, positionsAdded, positionsRemoved, fromHighlightLayer);
+            }
+
+            return new DirtyTextRange(0, 0, 0, false);
         }
 
         // ------------------------------------------------------------------
@@ -240,6 +279,9 @@ namespace MS.Internal.PtsHost
                     //_dtrs[index].dcp: no need to change it
                     _dtrs[index].PositionsAdded += dtrNext.PositionsAdded;
                     _dtrs[index].PositionsRemoved += dtrNext.PositionsRemoved;
+
+                    // Prefer not highlight layer change when merging
+                    _dtrs[index].FromHighlightLayer &= dtrNext.FromHighlightLayer;
 
                     // Remove merged entry
                     for (int i = index + 2; i < _count; i++)

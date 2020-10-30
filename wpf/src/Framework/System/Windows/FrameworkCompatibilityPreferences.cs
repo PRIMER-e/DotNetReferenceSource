@@ -212,15 +212,15 @@ namespace System.Windows
 
         #endregion AllowTwoWayBindingToPropertyWithNonPublicSetter
 
-        // DevDiv #681144:  There is a 
-
-
-
-
-
-
-
-
+        // DevDiv #681144:  There is a bug in the Windows desktop window manager which can cause
+        // incorrect z-order for windows when several conditions are all met:
+        // (a) windows are parented/owned across different threads or processes
+        // (b) a parent/owner window is also owner of a topmost window (which needn't be visible)
+        // (c) the child window on a different thread/process tries to show an owned topmost window
+        //     (like a popup or tooltip) using ShowWindow().
+        // To avoid this window manager bug, this option causes SetWindowPos() to be used instead of
+        // ShowWindow() for topmost windows, avoiding condition (c).  Ideally the window manager bug
+        // will be fixed, but the risk of making a change there is considered too great at this time.
         #region UseSetWindowPosForTopmostWindows
 
         private static bool _useSetWindowPosForTopmostWindows = false; // use old behavior by default

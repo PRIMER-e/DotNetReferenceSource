@@ -1005,8 +1005,7 @@ namespace System.Resources {
                 // The hexadecimal E translates to binary 1110
                 // So, with this & condition we are checking that none of the highest 3 bits are
                 // set before multiplying, as that would cause an overflow.
-                if ((_numResources & 0xE0000000) != 0){
-
+                if ((_numResources & 0xE0000000) != 0) {
                     throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
                 }
 
@@ -1042,7 +1041,7 @@ namespace System.Resources {
                 // The hexadecimal E translates to binary 1110
                 // So, with this & condition we are checking that none of the highest 3 bits are
                 // set before multiplying, as that would cause an overflow.
-                if ((_numResources & 0xE0000000) != 0){
+                if ((_numResources & 0xE0000000) != 0) {
                     throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
                 }
 

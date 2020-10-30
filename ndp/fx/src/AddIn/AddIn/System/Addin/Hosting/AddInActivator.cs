@@ -463,9 +463,9 @@ namespace System.AddIn.Hosting
         [System.Security.SecurityCritical]
         private static DynamicMethod AssertAndCreateInvoker(Type targetType, Type argType,  Type[] methodArgs, ConstructorInfo havCtor)
         {
-            // As a workaround to a red bits 
-
-
+            // As a workaround to a red bits bug that leaks memory, we don't associate this
+            // DM with an assembly.  Instead, we host it anonymously, and we need to assert 
+            // full trust.            
             DynamicMethod invoker = new DynamicMethod(targetType.Name + "_ConstructorInvoker", // name, only usefult for debugging 
                                                       typeof(Object),  // return type
                                                       methodArgs, // parameterTypes

@@ -197,7 +197,8 @@ STDMETHODIMP VbHostedCompiler::CreateCompilerProject()
 
         STRING *SystemCoreDLL = m_pCompiler->AddString(L"System.Core.dll");
 
-        for(unsigned i = 0; i < StdLibs->Count(); i++)
+		unsigned i;
+        for(i = 0; i < StdLibs->Count(); i++)
         {
             if (StringPool::IsEqual(StdLibsArray[i] , SystemCoreDLL)) break;
         }

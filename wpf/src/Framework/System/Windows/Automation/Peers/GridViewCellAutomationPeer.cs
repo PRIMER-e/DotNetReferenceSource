@@ -70,13 +70,17 @@ namespace System.Windows.Automation.Peers
         ///
         protected override bool IsControlElementCore()
         {
+            bool includeInvisibleItems = IncludeInvisibleElementsInControlView;
             if (Owner is TextBlock)
             {
-                return true;
+                // We only want this peer to show up in the Control view if it is visible
+                // For compat we allow falling back to legacy behavior (returning true always)
+                // based on AppContext flags, IncludeInvisibleElementsInControlView evaluates them.
+                return includeInvisibleItems || Owner.IsVisible;
             }
             else
             {
-                List<AutomationPeer> children = GetChildrenAutomationPeer(Owner);
+                List<AutomationPeer> children = GetChildrenAutomationPeer(Owner, includeInvisibleItems);
                 return children != null && children.Count >= 1;
             }
         }
@@ -138,13 +142,13 @@ namespace System.Windows.Automation.Peers
         /// <summary>
         /// Get the children of the parent which has automation peer
         /// </summary>
-        private List<AutomationPeer> GetChildrenAutomationPeer(Visual parent)
+        private List<AutomationPeer> GetChildrenAutomationPeer(Visual parent, bool includeInvisibleItems)
         {
             Invariant.Assert(parent != null);
 
             List<AutomationPeer> children = null;
 
-            iterate(parent,
+            iterate(parent, includeInvisibleItems,
                     (IteratorCallback)delegate(AutomationPeer peer)
                     {
                         if (children == null)
@@ -160,7 +164,7 @@ namespace System.Windows.Automation.Peers
         private delegate bool IteratorCallback(AutomationPeer peer);
 
         //
-        private static bool iterate(Visual parent, IteratorCallback callback)
+        private static bool iterate(Visual parent, bool includeInvisibleItems, IteratorCallback callback)
         {
             bool done = false;
 
@@ -172,13 +176,14 @@ namespace System.Windows.Automation.Peers
                 Visual child = parent.InternalGetVisualChild(i);
                 if (child != null
                     && child.CheckFlagsAnd(VisualFlags.IsUIElement)
+                    && (includeInvisibleItems || ((UIElement)child).IsVisible)
                     && (peer = CreatePeerForElement((UIElement)child)) != null)
                 {
                     done = callback(peer);
                 }
                 else
                 {
-                    done = iterate(child, callback);
+                    done = iterate(child, includeInvisibleItems, callback);
                 }
             }
 

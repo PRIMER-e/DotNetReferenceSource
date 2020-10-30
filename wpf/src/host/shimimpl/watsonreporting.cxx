@@ -15,7 +15,11 @@
 #include "WatsonReporting.hxx"
 #include <fxver.h>
 
+#include "osversionhelper.h"
+
 #ifdef APPLICATION_SHIM
+
+using namespace WatsonReportingHelper;
 
 // Curiously, XPSViewer seems capable of coping with all the problems detected here. That's because
 // it doesn't use ClickOnce and also because if IPersistMoniker marshaling fails, IE's fallback to 
@@ -35,8 +39,8 @@ HRESULT CheckRegistryAccess()
         return S_OK;
     }
 
-    // Dev10 
-
+    // Dev10 bug 707086 - HKCU\SOFTWARE\Classes may not exist on clean XP installations.
+    //                    ClickOnce will create it, so don't bother about it here.
     if (error == ERROR_FILE_NOT_FOUND)
     {
         return S_OK;
@@ -95,7 +99,6 @@ void TriggerWatson(LPCWSTR problemId)
         //P3=OS version - added below
         //P4=problemId - added below
 
-    OSVERSIONINFOEX OSInfo = { sizeof OSInfo };
     HANDLE hFile = 0;
     DWORD cBytesWritten;
     wchar_t DWPath[MAX_PATH];
@@ -112,18 +115,15 @@ void TriggerWatson(LPCWSTR problemId)
     hFile = CreateFile(reportFilepath, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
     CHECK_BOOL_FROM_WIN32(hFile && hFile != INVALID_HANDLE_VALUE);
     CHECK_BOOL_FROM_WIN32(WriteFile(hFile, report, sizeof report - sizeof L'\0', &cBytesWritten, 0));
-    if(GetVersionEx(reinterpret_cast<OSVERSIONINFO*>(&OSInfo)))
-    {
-        wchar_t strOSVersion[96];
-        SYSTEM_INFO sysInfo;
-        GetNativeSystemInfo(&sysInfo);
-        StringCchPrintf(strOSVersion, ARRAYSIZE(strOSVersion), 
-            L"P3=%d.%d.%d.%d.%d%s" CRLF, 
-            OSInfo.dwMajorVersion, OSInfo.dwMinorVersion, OSInfo.dwBuildNumber,
-            OSInfo.wServicePackMajor, OSInfo.wServicePackMinor,
-            sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ? L" (x64)" : L"");
-        WriteFile(hFile, strOSVersion, (DWORD)wcslen(strOSVersion)*2, &cBytesWritten, 0);
-    }
+    wchar_t strOSVersion[96];
+    SYSTEM_INFO sysInfo;
+    GetNativeSystemInfo(&sysInfo);
+    StringCchPrintf(strOSVersion, ARRAYSIZE(strOSVersion), 
+        L"P3=%d.%d.%d.%d.%d%s" CRLF, 
+        OSVersion::GetMajorVersion(), OSVersion::GetMinorVersion(), OSVersion::GetBuildNumber(),
+        OSVersion::GetServicePackMajor(), OSVersion::GetServicePackMinor(),
+        sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ? L" (x64)" : L"");
+    WriteFile(hFile, strOSVersion, (DWORD)wcslen(strOSVersion)*2, &cBytesWritten, 0);
     if(problemId)
     {
         WriteFile(hFile, L"P4=", 3*sizeof(wchar_t), &cBytesWritten, 0);

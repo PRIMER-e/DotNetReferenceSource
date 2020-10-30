@@ -243,10 +243,23 @@ namespace System.Windows.Documents
                     allowedDragDropEffects |= DragDropEffects.Move;
                 }
 
-                DragDropEffects resultingDragDropEffects = DragDrop.DoDragDrop( //
+                DragDropEffects resultingDragDropEffects = DragDropEffects.None;
+
+                try
+                {
+                    resultingDragDropEffects = DragDrop.DoDragDrop( //
                     _textEditor.UiScope, // dragSource, 
                     dataObject, //
                     allowedDragDropEffects);
+                }
+                // DDVSO 685894:
+                // Ole32's DoDragDrop can return E_UNEXCEPTED, which comes to us as a COMException,
+                // if something unexpected happened during the drag and drop operation,
+                // e.g. the application receiving the drop failed. In this case we should
+                // not fail, we should catch the exception and act as if the drop wasn't allowed.
+                catch (COMException ex) when(ex.HResult == NativeMethods.E_UNEXPECTED)
+                {
+                }
 
                 // Remove source selection 
                 if (!_textEditor.IsReadOnly && //
@@ -414,7 +427,7 @@ namespace System.Windows.Documents
                     }
 
                     // Get the current text position from the dropable mouse point.
-                    _textEditor.TextView.RenderScope.UpdateLayout(); // 
+                    _textEditor.TextView.RenderScope.UpdateLayout(); // REVIEW:benwest:6/27/2006: This should use TextView.Validate, and check the return value instead of using IsValid below.
 
                     if (_textEditor.TextView.IsValid)
                     {

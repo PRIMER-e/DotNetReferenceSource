@@ -343,7 +343,7 @@ namespace System.Data {
             Index childIndex = childKey.GetSortIndex(      row.RowState == DataRowState.Deleted  ? DataViewRowState.OriginalRows : DataViewRowState.CurrentRows);
             object[] key     = row.GetKeyValues(parentKey, row.RowState == DataRowState.Modified ? DataRowVersion.Current        : DataRowVersion.Default      );
 
-            // 
+            // Bug : This is definitely not a proper fix. (Ref. MDAC Bug 73592)
             if (IsKeyNull(key)) {
                 return;
             }

@@ -460,6 +460,7 @@ struct SNI_CLIENT_CONSUMER_INFO
 	BOOL				fParallel; // input
 	TransparentNetworkResolutionMode transparentNetworkResolution; // input
 	int					totalTimeout; // input
+	bool 				isAzureSqlServerEndpoint; // input
 
 	SNI_CLIENT_CONSUMER_INFO()
 	{
@@ -475,6 +476,7 @@ struct SNI_CLIENT_CONSUMER_INFO
 		fParallel = FALSE;
 		transparentNetworkResolution = TransparentNetworkResolutionMode::DisabledMode;
 		totalTimeout = SNIOPEN_TIMEOUT_VALUE;
+		isAzureSqlServerEndpoint = false;
 	};
 };
 

@@ -9,6 +9,7 @@
 namespace System
 {
     using System.Diagnostics.Tracing;
+    using System.Runtime.CompilerServices;
 
     /// <summary>  
     /// <para>  
@@ -180,6 +181,15 @@ namespace System
         internal static EventSourceOptions CriticalDataOptions()
         {
             return new EventSourceOptions { Keywords = CriticalDataKeyword };
+        }
+        
+        /// <summary>
+        /// Writes a usage event with the name of the calling method as the event name.
+        /// </summary>
+        /// <param name="memberName">Name of the calling method</param>
+        private void WriteUsageEvent([CallerMemberName] string memberName = "")
+        {
+            Write(memberName, TelemetryEventSource.MeasuresOptions());
         }
     }
 }

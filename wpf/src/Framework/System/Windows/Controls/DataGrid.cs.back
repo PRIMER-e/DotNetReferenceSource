@@ -75,7 +75,7 @@ namespace System.Windows.Controls
 
             EventManager.RegisterClassHandler(typeof(DataGrid), MouseUpEvent, new MouseButtonEventHandler(OnAnyMouseUpThunk), true);
 
-            DataGridTraceLogger.LogUsageDetails();
+            ControlsTraceLogger.AddControl(TelemetryControls.DataGrid);
         }
 
         /// <summary>
@@ -2734,7 +2734,7 @@ namespace System.Windows.Controls
             {
                 case NewItemPlaceholderPosition.AtEnd:
                     index = Items.Count - 2;
-                    if (index >= 0 && Object.Equals(newItem, Items[index]))
+                    if (index >= 0 && ItemsControl.EqualsEx(newItem, Items[index]))
                     {
                         info = ItemInfoFromIndex(index);
                     }
@@ -2742,7 +2742,7 @@ namespace System.Windows.Controls
 
                 case NewItemPlaceholderPosition.AtBeginning:
                     index = 1;
-                    if (index < Items.Count && Object.Equals(newItem, Items[index]))
+                    if (index < Items.Count && ItemsControl.EqualsEx(newItem, Items[index]))
                     {
                         info = ItemInfoFromIndex(index);
                     }
@@ -3100,7 +3100,7 @@ namespace System.Windows.Controls
             int currentIndex = currentCell.ItemInfo.Index;
             return  (column == null || column == currentCell.Column) &&             // columns match
                     (   (currentContainer != null && currentContainer == row) ||    // rows match (the easy way)
-                        (   Object.Equals(CurrentItem, row.Item) &&                 // rows match (the hard way)
+                        (   ItemsControl.EqualsEx(CurrentItem, row.Item) &&         // rows match (the hard way)
                             (currentIndex < 0 || currentIndex == ItemContainerGenerator.IndexFromContainer(row))
                         )
                     );
@@ -3197,7 +3197,7 @@ namespace System.Windows.Controls
                         // When editing the NewItemPlaceHolder row the place holder row gets
                         // replaced with a real row and thus causes a new cellContainer to be
                         // generated. So we should be checking the new cellContainer to decide
-                        // if this operation succeeded. Please see Dev11 
+                        // if this operation succeeded. Please see Dev11 bug 329417 for details.
 
                         cellContainer = CurrentCellContainer;
 
@@ -4840,13 +4840,13 @@ namespace System.Windows.Controls
         ///     - Extending selection to the row
         /// </summary>
         /// <remarks>
-        ///     ADO.Net has a 
-
-
-
-
-
-
+        ///     ADO.Net has a bug (#524977) where if the row is in edit mode
+        ///     and atleast one of the cells are edited and committed without
+        ///     commiting the row itself, DataView.IndexOf for that row returns -1
+        ///     and DataView.Contains returns false. The Workaround to this problem
+        ///     is to try to use the previously computed row index if the operations
+        ///     are in the same row scope.
+        /// </remarks>
         private void MakeFullRowSelection(ItemInfo info, bool allowsExtendSelect, bool allowsMinimalSelect)
         {
             bool extendSelection = allowsExtendSelect && ShouldExtendSelection;
@@ -5004,7 +5004,7 @@ namespace System.Windows.Controls
 
                             if (_editingRowInfo == info)
                             {
-                                // ADO.Net 
+                                // ADO.Net bug workaround, see remarks.
                                 int numColumns = _columns.Count;
                                 if (numColumns > 0)
                                 {
@@ -5042,13 +5042,13 @@ namespace System.Windows.Controls
         ///     - Extending selection to the cell
         /// </summary>
         /// <remarks>
-        ///     ADO.Net has a 
-
-
-
-
-
-
+        ///     ADO.Net has a bug (#524977) where if the row is in edit mode
+        ///     and atleast one of the cells are edited and committed without
+        ///     commiting the row itself, DataView.IndexOf for that row returns -1
+        ///     and DataView.Contains returns false. The Workaround to this problem
+        ///     is to try to use the previously computed row index if the operations
+        ///     are in the same row scope.
+        /// </remarks>
         private void MakeCellSelection(DataGridCellInfo cellInfo, bool allowsExtendSelect, bool allowsMinimalSelect)
         {
             bool extendSelection = allowsExtendSelect && ShouldExtendSelection;
@@ -5147,7 +5147,7 @@ namespace System.Windows.Controls
                     if (!selectedCellsContainsCellInfo &&
                         singleRowOperation)
                     {
-                        // ADO.Net 
+                        // ADO.Net bug workaround, see remarks.
                         selectedCellsContainsCellInfo = _selectedCells.Contains(_editingRowInfo.Index, cellInfoColumnIndex);
                     }
 
@@ -5156,7 +5156,7 @@ namespace System.Windows.Controls
                         // Unselect the one cell
                         if (singleRowOperation)
                         {
-                            // ADO.Net 
+                            // ADO.Net bug workaround, see remarks.
                             _selectedCells.RemoveRegion(_editingRowInfo.Index, cellInfoColumnIndex, 1, 1);
                         }
                         else
@@ -5187,7 +5187,7 @@ namespace System.Windows.Controls
 
                         if (singleRowOperation)
                         {
-                            // ADO.Net 
+                            // ADO.Net bug workaround, see remarks.
                             _selectedCells.AddRegion(_editingRowInfo.Index, cellInfoColumnIndex, 1, 1);
                         }
                         else
@@ -5574,13 +5574,13 @@ namespace System.Windows.Controls
         ///     Helper method which handles the arrow key down
         /// </summary>
         /// <remarks>
-        ///     ADO.Net has a 
-
-
-
-
-
-
+        ///     ADO.Net has a bug (#524977) where if the row is in edit mode
+        ///     and atleast one of the cells are edited and committed without
+        ///     commiting the row itself, DataView.IndexOf for that row returns -1
+        ///     and DataView.Contains returns false. The Workaround to this problem
+        ///     is to try to use the previously computed row index if the operations
+        ///     are in the same row scope.
+        /// </remarks>
         private void OnArrowKeyDown(KeyEventArgs e)
         {
             DataGridCell currentCellContainer = CurrentCellContainer;
@@ -5637,8 +5637,8 @@ namespace System.Windows.Controls
                                     if (cvg != null && cvg.Items.Count > 0)
                                     {
                                         // Try default navigation if current item is first or last item of a group.
-                                        if ((e.Key == Key.Up && Object.Equals(cvg.Items[0], currentInfo.Item)) ||
-                                            (e.Key == Key.Down && Object.Equals(cvg.Items[cvg.Items.Count - 1], currentInfo.Item)))
+                                        if ((e.Key == Key.Up && ItemsControl.EqualsEx(cvg.Items[0], currentInfo.Item)) ||
+                                            (e.Key == Key.Down && ItemsControl.EqualsEx(cvg.Items[cvg.Items.Count - 1], currentInfo.Item)))
                                         {
                                             // there might be duplicate items, so double-check the index
                                             // (this is mildly expensive, which is why we put it off until necessary)
@@ -6008,7 +6008,7 @@ namespace System.Windows.Controls
                         ItemInfo rowInfo = ItemInfoFromIndex(index);
                         ScrollIntoView(rowInfo, column);
 
-                        if (!Object.Equals(CurrentCell.Item, rowInfo.Item))
+                        if (!ItemsControl.EqualsEx(CurrentCell.Item, rowInfo.Item))
                         {
                             // Focus the new cell
                             SetCurrentValueInternal(CurrentCellProperty, new DataGridCellInfo(rowInfo, column, this));
@@ -6749,7 +6749,7 @@ namespace System.Windows.Controls
         {
             CellAutomationValueHolder cellAutomationValueHolder;
 
-            if (_editingRowInfo == null || !Object.Equals(item, _editingRowInfo.Item) ||
+            if (_editingRowInfo == null || !ItemsControl.EqualsEx(item, _editingRowInfo.Item) ||
                 !_editingCellAutomationValueHolders.TryGetValue(column, out cellAutomationValueHolder))
             {
                 DataGridCell cell = TryFindCell(item, column);

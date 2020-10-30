@@ -369,7 +369,7 @@ namespace System.Windows.Forms {
             if (EnableMetric)
             {
                 //take the Units of Measurement while determining the PrinterUnits...
-                //
+                //bug (121347)...
                 StringBuilder sb = new StringBuilder(2);
                 int result = UnsafeNativeMethods.GetLocaleInfo(NativeMethods.LOCALE_USER_DEFAULT,NativeMethods.LOCALE_IMEASURE, sb,sb.Capacity);
                 

@@ -168,7 +168,7 @@ namespace System.Windows.Forms {
                 obj = bindingManager.Current;
                 if (obj is IEditableObject)
                     ((IEditableObject) obj).BeginEdit();
-                //(
+                //(bug 112947) .. checkif the Column is readonly while pushing data...
                 if (!fieldInfo.IsReadOnly) {
                     fieldInfo.SetValue(obj, value);
                 }

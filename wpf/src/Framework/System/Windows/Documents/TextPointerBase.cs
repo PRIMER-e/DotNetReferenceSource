@@ -797,9 +797,9 @@ namespace System.Windows.Documents
             return listItem != null && listItem.IsEmpty;
         }
 
-        //This overload is to cover for a 
-
-
+        //This overload is to cover for a bug that prevents line by line navigation in Fixed documents PS#1742102
+        //MoveToLineBoundary returns the previous line if the first position on the next line is inside a Hyperlink tag
+        //resulting in infinite loops, no line navigation etc.
         internal static int MoveToLineBoundary(ITextPointer thisPointer, ITextView textView, int count)
         {
             return MoveToLineBoundary(thisPointer, textView, count, false /* respectNonMeargeableInlineStart */);

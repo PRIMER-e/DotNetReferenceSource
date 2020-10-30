@@ -922,7 +922,7 @@ namespace System.ServiceModel.Description
                 // This method checks if there is a match based on Names, between the specified OperationBinding and Operation.
                 // When searching for the Operation associated with an OperationBinding, we need to return an exact match if possible,
                 // or a partial match otherwise (when some of the Names are null).
-                // 
+                // Bug 16833 @ CSDMain requires that partial matches are allowed, while the TFS bug 477838 requires that exact matches are done (when possible).
                 if (wsdlOperationBinding.Name != wsdlOperation.Name)
                 {
                     return MatchResult.None;

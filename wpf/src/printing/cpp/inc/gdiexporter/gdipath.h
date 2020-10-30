@@ -73,7 +73,7 @@ private:
     bool                    m_HasCurve;
 
     Int32Rect               m_DeviceBounds;
-    int                     m_ResolutionScale;  // Fix 
+    int                     m_ResolutionScale;  // Fix bug 1534923: See GdiGeometryConverter.ResolutionScale.
 
     array<Byte>^            m_Types;
     array<PointI>^          m_Points;

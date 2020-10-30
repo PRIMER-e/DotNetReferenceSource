@@ -324,7 +324,9 @@ namespace System.IO.Packaging
         {
             get
             {
-                return _defaultHashAlgorithm;
+                // DDVSO:395149
+                // If we set the compatibility flag, return the legacy default (SHA1).
+                return (BaseAppContextSwitches.UseSha1AsDefaultHashAlgorithmForDigitalSignatures) ? SignedXml.XmlDsigSHA1Url : _defaultHashAlgorithm;
             }
         }
 
@@ -1401,7 +1403,7 @@ namespace System.IO.Packaging
         private static Uri _defaultOriginPartName = PackUriHelper.CreatePartUri(new Uri("/package/services/digital-signature/origin.psdsor", UriKind.Relative));
         private Uri                             _originPartName = _defaultOriginPartName;
         private PackagePart                     _originPart;
-        private String                          _hashAlgorithmString = _defaultHashAlgorithm;
+        private String                          _hashAlgorithmString = DefaultHashAlgorithm;
         private String                          _signatureTimeFormat = XmlSignatureProperties.DefaultDateTimeFormat;
         private List<PackageDigitalSignature>   _signatures;
         private Dictionary<String, String>      _transformDictionary;
@@ -1412,7 +1414,7 @@ namespace System.IO.Packaging
         private static readonly ContentType _originPartContentType = new ContentType("application/vnd.openxmlformats-package.digital-signature-origin");
 
         private static readonly String _guidStorageFormatString = @"N";     // N - simple format without adornments
-        private static readonly String _defaultHashAlgorithm = SignedXml.XmlDsigSHA1Url;
+        private static readonly String _defaultHashAlgorithm = SignedXml.XmlDsigSHA256Url;
         private static readonly String _originRelationshipType = "http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/origin";
         private static readonly String _originToSignatureRelationshipType = "http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/signature";
         private static readonly String _defaultSignaturePartNamePrefix = "/package/services/digital-signature/xml-signature/";

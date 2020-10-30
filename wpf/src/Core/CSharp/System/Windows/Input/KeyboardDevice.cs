@@ -424,9 +424,9 @@ namespace System.Windows.Input
                 {
                     // focus might be delegated (e.g. during PreviewGotKeyboardFocus)
                     // without actually changing, if it was already on the delegated
-                    // element (see 
-
-
+                    // element (see bug 1794057).  We can't test for this directly,
+                    // but if focus is within the desired element we'll assume this
+                    // is what happened.
                     IInputElement newFocusElement = newFocus as IInputElement;
                     if (newFocusElement == null || !newFocusElement.IsKeyboardFocusWithin)
                     {

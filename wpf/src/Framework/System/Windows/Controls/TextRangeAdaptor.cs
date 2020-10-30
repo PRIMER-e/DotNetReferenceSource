@@ -485,8 +485,8 @@ namespace MS.Internal.Automation
         /// If the position is inside a Hyperlink, it is being moved out of the hyperlink and to the previous
         /// insertion position which can be on the previous line (or unit) and this is creating problems
         /// This is a temporary solution until we find a better solution to handle the case
-        /// There is also a related 
-
+        /// There is also a related bug in MoveToLineBoundary: PS#1742102
+        /// </summary>
         internal static bool MoveToInsertionPosition(ITextPointer position, LogicalDirection direction)
         {
             if (!position.TextContainer.IsReadOnly ||

@@ -86,6 +86,22 @@ namespace System.Experimental.Gdi
             return wg;
         }
 
+        /// <devdoc>
+        ///     Creates a WindowsGraphics from a memory DeviceContext object compatible with the a screen device.
+        ///     This object is suitable for performing text measuring but not for drawing into it because it does 
+        ///     not have a backup bitmap.
+        /// </devdoc>
+        [ResourceExposure(ResourceScope.Process)]
+        [ResourceConsumption(ResourceScope.Process)]
+        public static WindowsGraphics CreateMeasurementWindowsGraphics(IntPtr screenDC)
+        {
+            DeviceContext dc = DeviceContext.FromCompatibleDC(screenDC);
+            WindowsGraphics wg = new WindowsGraphics(dc);
+            wg.disposeDc = true; // we create it, we dispose it.
+            
+            return wg;
+        }
+
         /// <include file='doc\WindowsGraphics.uex' path='docs/doc[@for="WindowsGraphics.FromHwnd"]/*' />
         public static WindowsGraphics FromHwnd(IntPtr hWnd)
         { 

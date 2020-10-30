@@ -2109,7 +2109,12 @@ namespace System.Net {
 
             GlobalLog.Enter("ConnectStream#" + ValidationHelper.HashString(stream) + "::WriteHeadersCallback", "Connection#" + ValidationHelper.HashString(stream.m_Connection) + ", " + request.WriteBufferLength.ToString()); 
             try{
-                stream.m_Connection.EndWrite(ar);
+                try{
+                    stream.m_Connection.EndWrite(ar);
+                }
+                finally{
+                    request.FreeWriteBuffer();
+                }
                 if (stream.m_Connection.m_InnerException != null)
                     throw stream.m_Connection.m_InnerException;
                 else
@@ -2122,7 +2127,6 @@ namespace System.Net {
             stream.ExchangeCallNesting(Nesting.Idle, Nesting.InternalIO);
 
             if (error == WebExceptionStatus.Success && !stream.ErrorInStream) {
-
                 error = WebExceptionStatus.ReceiveFailure;
 
                 // Start checking async for responses.  This needs to happen outside of the Nesting.InternalIO lock 
@@ -2143,7 +2147,6 @@ namespace System.Net {
 
             // Resend data, etc.
             request.WriteHeadersCallback(error, stream, true);
-            request.FreeWriteBuffer();
             GlobalLog.Leave("ConnectStream#" + ValidationHelper.HashString(stream) + "::WriteHeadersCallback",request.WriteBufferLength.ToString());
         }
 
@@ -2185,7 +2188,15 @@ namespace System.Net {
                         WriteHeadersCallbackState state = new WriteHeadersCallbackState(m_Request, this);
                         IAsyncResult ar = m_Connection.UnsafeBeginWrite(writeBuffer,0,writeBufferLength, m_WriteHeadersCallback, state);
                         if (ar.CompletedSynchronously) {
-                            m_Connection.EndWrite(ar);
+                            try
+                            {
+                                m_Connection.EndWrite(ar);
+                            }
+                            finally
+                            {
+                                m_Request.FreeWriteBuffer();
+                            }
+
                             error = WebExceptionStatus.Success;
                         }
                         else {
@@ -2198,7 +2209,15 @@ namespace System.Net {
                     else
                     {
                         SafeSetSocketTimeout(SocketShutdown.Send);
-                        m_Connection.Write(writeBuffer, 0, writeBufferLength);
+                        try
+                        {
+                            m_Connection.Write(writeBuffer, 0, writeBufferLength);
+                        }
+                        finally
+                        {
+                            m_Request.FreeWriteBuffer();
+                        }
+
                         error = WebExceptionStatus.Success;
                     }
                 }
@@ -2253,7 +2272,6 @@ namespace System.Net {
             }
 
             m_Request.WriteHeadersCallback(error, this, async);            
-            m_Request.FreeWriteBuffer();
         }
 
         private void HandleWriteHeadersException(Exception e, WebExceptionStatus error) {

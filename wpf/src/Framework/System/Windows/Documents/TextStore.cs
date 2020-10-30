@@ -464,11 +464,11 @@ namespace System.Windows.Documents
 #if true
             //
             // Disable embedded object temporarily because...
-            // -  There is no persistency supported including cut and past (
-
-
-
-
+            // -  There is no persistency supported including cut and past (Bug 985589).
+            // -  It is GDI metadata that is rendered so there is no relation with Avalon ink editing at all.
+            // -  This was one of major feature in Cicero on Office XP timeframe however the latest Tablet
+            //    Input Panel does not have this feature anymore. (Does it?)
+            //
             insertable = false;
 #else
             if (TextEditor.AcceptsRichContent)
@@ -515,7 +515,7 @@ namespace System.Windows.Documents
 
             startPosition = container.CreatePointerAtOffset(startIndex, LogicalDirection.Backward);
             endPosition = container.CreatePointerAtOffset(endIndex, LogicalDirection.Forward);
-
+             
             InsertEmbeddedAtRange(startPosition, endPosition, data, out change);
 #else
             throw new COMException(SR.Get(SRID.TextStore_TS_E_FORMAT), UnsafeNativeMethods.TS_E_FORMAT);
@@ -1116,9 +1116,16 @@ namespace System.Windows.Documents
 
             GetCompositionPositions(view, out start, out end);
 
-            int startOffsetBefore;
-            int endOffsetBefore;
-
+            // DDVSO 515186: The call to MarkCultureProperty or SetText (which calls MarkCultureProperty)
+            // modifies the start and end TextPointers in the case of a multiple characters being replaced by 
+            // input from the IMEPad in a langugage different than that of the current text.
+            // startOffsetBefore, endOffsetBefore and _lastCompositionText are stored in a 
+            // CompositionEventRecord to be later replayed in RaiseCompositionEvents (after releasing the lock).
+            // Store these variables based off of the original start and end TextPointers.
+            int startOffsetBefore = start.Offset;
+            int endOffsetBefore = end.Offset;
+            _lastCompositionText = TextRangeBase.GetTextInternal(start, end);
+            
             if (_previousCompositionStartOffset != -1)
             {
                 startOffsetBefore = _previousCompositionStartOffset;
@@ -1126,27 +1133,16 @@ namespace System.Windows.Documents
             }
             else
             {
-                if (this.TextEditor.AcceptsRichContent && start.CompareTo(end) != 0)
+               if (this.TextEditor.AcceptsRichContent && start.CompareTo(end) != 0)
                 {
                     TextElement startElement = (TextElement)((TextPointer)start).Parent;
                     TextElement endElement = (TextElement)((TextPointer)end).Parent;
                     TextElement commonAncestor = TextElement.GetCommonAncestor(startElement, endElement);
-
-                    // Check if the IME is jump-starting a composition over existing content.
-                    // This is problematic if the existing content spans multiple
-                    // Inlines or the language of the existing content differs from the
-                    // current input language.
-                    // The IME will likely edit just a subset of the composition range.
-                    // But later, in UpdateCompositionText, we will update a larger range
-                    // (the whole composition) which could merge Runs.  And once we
-                    // merge Runs the IME did not originally merge, our recorded character
-                    // offsets are out of synch and very bad things will happen.
-                    // Force any merges now by replacing the content with a single
-                    // Run, before we start caching character offsets.
-
+                    
                     int originalIMECharCount = this.TextContainer.IMECharCount;
                     TextRange range = new TextRange(start, end);
-
+                    string unmergedText = range.Text;
+                    
                     if (commonAncestor is Run)
                     {
                         // A single Run needs to be handled differently from the cases below since the
@@ -1157,25 +1153,30 @@ namespace System.Windows.Documents
                     }
                     else if (commonAncestor is Paragraph || commonAncestor is Span)
                     {
-                        string unmergedText = range.Text;
-                        this.TextEditor.SetText(range, unmergedText, InputLanguageManager.Current.CurrentInputLanguage);
+                        // Check if the IME is jump-starting a composition over existing content.
+                        // This is problematic if the existing content spans multiple
+                        // Inlines or the language of the existing content differs from the
+                        // current input language.
+                        // The IME will likely edit just a subset of the composition range.
+                        // But later, in UpdateCompositionText, we will update a larger range
+                        // (the whole composition) which could merge Runs.  And once we
+                        // merge Runs the IME did not originally merge, our recorded character
+                        // offsets are out of synch and very bad things will happen.
+                        // Force any merges now by replacing the content with a single
+                        // Run, before we start caching character offsets.
 
-                        // It is crucial that from the point of view of the IME the document
-                        // has not changed.  That means the plain text of the content we just
-                        // replaced must not have changed.
-                        Invariant.Assert(range.Text == unmergedText);
+                        this.TextEditor.SetText(range, unmergedText, InputLanguageManager.Current.CurrentInputLanguage);                      
                     }
-
+                    // It is crucial that from the point of view of the IME the document
+                    // has not changed.  That means the plain text of the content we just
+                    // replaced must not have changed.
+                    Invariant.Assert(range.Text == unmergedText);
                     Invariant.Assert(originalIMECharCount == this.TextContainer.IMECharCount);
                 }
-
-                startOffsetBefore = start.Offset;
-                endOffsetBefore = end.Offset;
             }
-
+            
             // Add the composition message into the composition message list.
-            // This composition message list will be handled all together after release the lock.
-            _lastCompositionText = TextRangeBase.GetTextInternal(start, end);
+            // This composition message list will be handled all together after we release the lock.
             this.CompositionEventList.Add(new CompositionEventRecord(CompositionStage.StartComposition, startOffsetBefore, endOffsetBefore, _lastCompositionText));
 
             _previousCompositionStartOffset = start.Offset;
@@ -1634,7 +1635,7 @@ namespace System.Windows.Documents
         {
             // If there is a composition that covers the current selection,
             // we can return it is reconvertable.
-            // Some TIP may finalize and cancel the current candidate list (
+            // Some TIP may finalize and cancel the current candidate list (Bug 1291712).
             if (_isComposing && !fDoReconvert)
             {
                 ITextPointer compositionStart;
@@ -2212,9 +2213,9 @@ namespace System.Windows.Documents
 
                 // Reset the composition offsets.  Sometimes an IME will
                 // allow the editor handle a keystroke during an active composition.
-                // See 
-
-
+                // See bug 118934.  When this happens, we need to update the composition
+                // here.  Where the IME holds a lock, no one else can modify
+                // the text, and int offsets allow us to use the undo stack internally.
                 _previousCompositionStartOffset = (_previousCompositionStart == null) ? -1 : _previousCompositionStart.Offset;
                 _previousCompositionEndOffset = (_previousCompositionEnd == null) ? -1 : _previousCompositionEnd.Offset;
 
@@ -2255,8 +2256,8 @@ namespace System.Windows.Documents
 
                             // The next call to HandleCompositionEvents involves firing events
                             // that could result in a reentrancy. By initializing these TextPointers
-                            // we are being prepared for such an eventuality. See Dev11 
-
+                            // we are being prepared for such an eventuality. See Dev11 bug#
+                            // 262694 for details.
                             _previousCompositionStart = (_previousCompositionStartOffset == -1) ? null : textEditor.TextContainer.CreatePointerAtOffset(_previousCompositionStartOffset, LogicalDirection.Backward);
                             _previousCompositionEnd = (_previousCompositionEndOffset == -1) ? null : textEditor.TextContainer.CreatePointerAtOffset(_previousCompositionEndOffset, LogicalDirection.Forward);
                         }
@@ -3269,8 +3270,8 @@ namespace System.Windows.Documents
         }
 
         // Validates the character offset supplied by cicero.
-        // See 
-
+        // See bug 1395082.  Sometimes cicero gives us offsets that are
+        // too large for the document.
         private void ValidateCharOffset(int offset)
         {
             if (offset < 0 || offset > this.TextContainer.IMECharCount)
@@ -4401,7 +4402,7 @@ namespace System.Windows.Documents
         // We can't simply store int offsets because under some circumstances
         // IMEs will ignore text input during a composition, letting the editor
         // handle the event, in which case we need live pointers to react
-        // to the changes.  See 
+        // to the changes.  See bug 118934.
         private ITextPointer _previousCompositionStart;
 
         // Position of the composition end as of the last update.

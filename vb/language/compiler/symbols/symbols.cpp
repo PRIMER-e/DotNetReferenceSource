@@ -2915,7 +2915,8 @@ SymbolList::Verify()
 {
     BCSYM_NamedRoot *Cursor = m_First;
 
-    for (unsigned i = 0; i < m_Count; i++)
+	unsigned i;
+    for (i = 0; i < m_Count; i++)
     {
         if (Cursor == NULL) break;
         Cursor = Cursor->GetNextInSymbolList();

@@ -62,13 +62,13 @@ namespace System.Windows.Documents
             _undoMovingPositionOffset = movingPosition.Offset;
             _undoMovingPositionDirection = movingPosition.LogicalDirection;
 
-            // 
-
-
-
-
-
-
+            // Bug 1706768: we are seeing unitialized values when the undo
+            // undo is pulled off the undo stack. _redoAnchorPositionOffset
+            // and _redoMovingPositionOffset are supposed to be initialized
+            // with calls to RecordRedoSelectionState before that happens.
+            //
+            // This code path is being left enabled in DEBUG to help track down
+            // the underlying bug post V1.
 #if DEBUG
             _redoAnchorPositionOffset = -1;
             _redoMovingPositionOffset = -1;
@@ -91,13 +91,13 @@ namespace System.Windows.Documents
             _undoMovingPositionOffset = undoUnit._redoMovingPositionOffset;
             _undoMovingPositionDirection = undoUnit._redoMovingPositionDirection;
 
-            // 
-
-
-
-
-
-
+            // Bug 1706768: we are seeing unitialized values when the undo
+            // undo is pulled off the undo stack. _redoAnchorPositionOffset
+            // and _redoMovingPositionOffset are supposed to be initialized
+            // with calls to RecordRedoSelectionState before that happens.
+            //
+            // This code path is being left enabled in DEBUG to help track down
+            // the underlying bug post V1.
 #if DEBUG
             _redoAnchorPositionOffset = -1;
             _redoMovingPositionOffset = -1;

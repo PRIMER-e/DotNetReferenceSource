@@ -19,8 +19,8 @@
 
 #include "StdAfx.h"
 
-// Keep this define - fixed one 
-
+// Keep this define - fixed one bug where the string and the string used to figure this length 
+// were out of sync.
 #define PLUS_ONE_STRING WIDE( "+1" )
 
 //-------------------------------------------------------------------------------------------------
@@ -564,7 +564,7 @@ Declared::MakeType
             // the error or warning will be reported in Semantics after the initializer is evaluated.
             // When Option Infer is on or we are using this for Lambda expressions , we should allow this scenario.
             // We used to ignore constants when inferring types using Option Infer, but we are removing that
-            // exception as per 
+            // exception as per bug 400490.
             VSASSERT(!Context || m_SourceFile, "Please inform the VB compiler that you have a repro for DevDiv 806843");
             if (Context &&
                 ( !(
@@ -2492,8 +2492,8 @@ void Declared::ProcessAttributeList
 
 
             AttributeSymbol->SetExpression( m_SymbolAllocator.GetConstantExpression( 
-                                                    //&Attribute->TextSpan, //Fix for 
-
+                                                    //&Attribute->TextSpan, //Fix for bug B32565, when Assembly or module the loc of DeferredExpr 
+                                                    // is different than Atribute location               
                                                     &Attribute->DeferredRepresentationAsCall->TextSpan,
                                                     Symbol->IsNamedRoot() ? Symbol->PNamedRoot() : NULL, // context
                                                     NULL, // no const expr list
@@ -3701,7 +3701,7 @@ void Declared::MakeEnum
     // set the current container context
     SetContainerContext(EnumSymbol);
 
-    // 
+    // Bug 17864: we don't allow typeChars to follow an enum identifier
     if ( EnumTree->Name.TypeCharacter != chType_NONE )
     {
         ReportError( ERRID_TypecharNotallowed, &EnumTree->Name.TextSpan );
@@ -5473,7 +5473,7 @@ void Declared::MakeParams
             else if (MethodFlags & DECLF_LambdaArguments)
             {
                 // In lambda parameters's we don't allow array specifiers without the type since
-                // inference can become ambiguous, see 
+                // inference can become ambiguous, see bug dd:80897
                 ReportError(ERRID_CantSpecifyParamsOnLambaParamNoType, &CurrentParameter->Name->TextSpan );
                 SymbolForParamType = m_SymbolAllocator.GetGenericBadNamedRoot();
                 IsBadParameter = true;
@@ -6307,9 +6307,9 @@ void Declared::MakeMethodImpl
         HasMustOverrideMethod = true;
     }
 
-    // 
-
-
+    // bug 19283 : a shared procedure cannot be marked as overrides, notoverridable or mustoverride
+    // Do this check before we set flags to shared for a module below so that we catch the case where they
+    // explicitly mark the method as shared along with overrides
     if ( MethodFlags & DECLF_Shared )
     {
         if ( MethodFlags & DECLF_InvalidFlagsOnShared )
@@ -6512,7 +6512,7 @@ void Declared::MakeEvent
 
     if ( EventTree->Opcode == ParseTree::Statement::SyntaxError || EventTree->Name.IsBad )
     {
-        return; // Don't even try if we know the event declaration is horked - 
+        return; // Don't even try if we know the event declaration is horked - Bug #34508
     }
 
     bool DefinedInStruct = ContainerDeclFlags & DECLF_Structure;
@@ -6609,7 +6609,7 @@ void Declared::MakeEvent
             const DECLFLAGS DECLF_InvalidOnImplementsFlags = DECLF_Shared;
             if ( EventDeclFlags & DECLF_InvalidOnImplementsFlags )
             {
-                //
+                //Bug 314537 - Implementing with shared events is illegal.
                 ReportDeclFlagError( ERRID_SharedOnProcThatImpl, EventDeclFlags & DECLF_InvalidOnImplementsFlags, EventTree->Specifiers );
             }
 
@@ -6787,7 +6787,7 @@ Declared::BuildEventDelegate
             EventStatementListTree->Element->AsEventDeclaration() :
             EventStatementListTree->Element->AsBlockEventDeclaration()->EventSignature;
 
-    // For events implementing interface events, this may never get set if the host interface is bad (
+    // For events implementing interface events, this may never get set if the host interface is bad (bug #307340)
     BCSYM *DelegateSymbol = Symbols::GetGenericBadNamedRoot();
 
     // Create the event delegate name "<EventName>EventHandler"
@@ -7005,8 +7005,8 @@ Declared::BuildEventMethods
     }
     else
     {
-        // Fix for 
-
+        // Fix for bug VisualStudio7 - 312488 - Event add/remove methods should not be virtual by default,
+        // but should be virtual final when event is implementing another event
 
         EventMethodFlags |= ( EventDeclFlags & ( DECLF_Shared | DECLF_Implementing ));
     }
@@ -8573,7 +8573,7 @@ void Declared::MakeProc
         }
     }
 
-    // 
+    // bug 10265: no private on MustOverride functions
     if ( MethodFlags & DECLF_MustOverride )
     {
         if ( MethodFlags & DECLF_Private )

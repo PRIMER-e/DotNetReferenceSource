@@ -28,6 +28,7 @@ namespace System.Windows.Forms.ButtonInternal {
 
                 PaintImage(e, layout);
                 DrawCheckBox(e, layout);
+                AdjustFocusRectangle(layout);
                 PaintField(e, layout, colors, colors.windowText, true);
             }
         }
@@ -68,12 +69,13 @@ namespace System.Windows.Forms.ButtonInternal {
             layout.everettButtonCompat = !Application.RenderWithVisualStyles;            
 
             // VSWhidbey 420870
-            if (Application.RenderWithVisualStyles) {   
+            if (Application.RenderWithVisualStyles) {
+                ButtonBase b = Control; 
                 using (Graphics g = WindowsFormsUtils.CreateMeasurementGraphics()) {
-                    layout.checkSize = RadioButtonRenderer.GetGlyphSize(g, RadioButtonRenderer.ConvertFromButtonState(GetState(), Control.MouseIsOver)).Width;
+                    layout.checkSize = RadioButtonRenderer.GetGlyphSize(g, RadioButtonRenderer.ConvertFromButtonState(GetState(), b.MouseIsOver), b.HandleInternal).Width;
                 }
             }
-            // Dev10 
+            // Dev10 bug 525537
             else {
                 layout.checkSize = (int)(layout.checkSize * GetDpiScaleRatio(e.Graphics));
             }

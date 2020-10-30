@@ -620,9 +620,9 @@ void BoundTreeVisitor::ProcessExpression(_In_ ILTree::Expression *Expr)
             break;
         }
         case SX_BOGUS:
-            // (
-
-
+            // (Bug 71364 - DevDiv Bugs) ignore SX_BOGUS by default
+            // !!! Consider to handle this node specially when you implement your own BoundTreeVisitor. 
+            // !!! You probably don't want to ignore it.            
             break;
 
 #if DEBUG
@@ -3121,7 +3121,7 @@ void  DeferredTempIterator::EndExpression(ILTree::Expression **)
 {
     // During processing in the iterator, all SX_DEFERRED_TEMPs should be removed.
     // If the method still has deferred temps then they were created during iterate.
-    // This is a 
+    // This is a bug in the iterate code. 
 
     ThrowIfTrue(m_semantics->m_methodDeferredTempCount != 0);
 }

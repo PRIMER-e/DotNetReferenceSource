@@ -24,6 +24,7 @@ namespace System.Windows.Controls
     using System.Collections.ObjectModel; // ReadOnlyCollection
     using MS.Internal.Automation;     // For TextAdaptor
     using MS.Internal.Controls; // EmptyEnumerator
+    using MS.Internal.Telemetry.PresentationFramework;
 
     /// <summary>
     /// RichTextBox control
@@ -54,10 +55,20 @@ namespace System.Windows.Controls
             // Default value for AutoWordSelection is false.  We want true.
             TextBoxBase.AutoWordSelectionProperty.OverrideMetadata(typeof(RichTextBox), new FrameworkPropertyMetadata(true));
 
+            if (!FrameworkAppContextSwitches.UseAdornerForTextboxSelectionRendering)
+            {
+                // DDVSO:405199
+                // Override the default selection opacity so if FrameworkAppContextSwitches.UseAdornerForTextboxSelectionRendering
+                // is false, we still get the appropriate value.
+                TextBoxBase.SelectionOpacityProperty.OverrideMetadata(typeof(RichTextBox), new FrameworkPropertyMetadata(TextBoxBase.AdornerSelectionOpacityDefaultValue));
+            }
+
             // We need to transfer all character formatting properties and some behavioral inheriting properties
             // from RichTextBox level into its FlowDocument.
             // For this purpose we set listeners for all these properties:
             HookupInheritablePropertyListeners();
+
+            ControlsTraceLogger.AddControl(TelemetryControls.RichTextBox);
         }
 
         /// <summary>

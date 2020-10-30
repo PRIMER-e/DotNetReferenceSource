@@ -48,7 +48,7 @@ namespace System.Data.SqlTypes {
         private bool    m_fNotNull; // false if null
         private short   m_value;
 
-        private static readonly int O_MASKI2    = ~0x00007fff;
+        private const int O_MASKI2 = ~0x00007fff;
 
         // constructor
         // construct a Null

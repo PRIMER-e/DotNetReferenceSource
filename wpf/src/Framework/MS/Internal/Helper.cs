@@ -331,8 +331,8 @@ namespace MS.Internal
             // Issue a trace message if user defines both xxxStyle and xxxStyleSelector
             // (bugs 1007020, 1019240).  Only explicit local values or resource
             // references count;  data-bound or styled values don't count.
-            // Do not throw here (
-
+            // Do not throw here (bug 1434271), because it's very confusing if the
+            // user tries to continue from this exception.
             if (TraceData.IsEnabled)
             {
                 object styleSelector = d.ReadLocalValue(styleSelectorProperty);
@@ -363,8 +363,8 @@ namespace MS.Internal
             // Issue a trace message if user defines both xxxTemplate and xxxTemplateSelector
             // (bugs 1007020, 1019240).  Only explicit local values or resource
             // references count;  data-bound or templated values don't count.
-            // Do not throw here (
-
+            // Do not throw here (bug 1434271), because it's very confusing if the
+            // user tries to continue from this exception.
             if (TraceData.IsEnabled)
             {
                 if (IsTemplateSelectorDefined(templateSelectorProperty, d))
@@ -440,15 +440,15 @@ namespace MS.Internal
 
                     // Special case to display the selected item in a ComboBox, when
                     // the items are XmlNodes and the DisplayMemberPath is an XPath
-                    // that uses namespace prefixes (Dev10 
-
-
-
-
-
-
-
-
+                    // that uses namespace prefixes (Dev10 bug 459976).  We need an
+                    // XmlNamespaceManager to map prefixes to namespaces, and in this
+                    // special case we should use the ComboBox itself, rather than any
+                    // surrounding ItemsControl.  There's no elegant way to detect
+                    // this situation;  the following code is a child of necessity.
+                    // It relies on the fact that the "selection box" is implemented
+                    // by a ContentPresenter in the ComboBox's control template, and
+                    // any ContentPresenter whose TemplatedParent is a ComboBox is
+                    // playing the role of "selection box".
                     if (d is System.Windows.Controls.ContentPresenter)
                     {
                         System.Windows.Controls.ComboBox cb = element as System.Windows.Controls.ComboBox;
@@ -465,7 +465,7 @@ namespace MS.Internal
                     parent = VisualTreeHelper.GetParent(v);
 
                     // In ListView, we should rise through a GridView*RowPresenter
-                    // even though it is not the TemplatedParent (
+                    // even though it is not the TemplatedParent (bug 1937470)
                     element = parent as System.Windows.Controls.Primitives.GridViewRowPresenterBase;
                 }
                 else

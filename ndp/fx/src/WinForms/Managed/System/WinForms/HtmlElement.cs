@@ -610,10 +610,10 @@ namespace System.Windows.Forms
                                                    SafeNativeMethods.GetThreadLCID(), dispids);
                     if (NativeMethods.Succeeded(hr) && (dispids[0] != NativeMethods.ActiveX.DISPID_UNKNOWN))
                     {
-                        // Reverse the arg order below so that parms are read properly thru IDispatch. (
+                        // Reverse the arg order below so that parms are read properly thru IDispatch. (bug 187662)
                         if (parameter != null)
                         {
-                            // Reverse the parm order so that they read naturally after IDispatch. (
+                            // Reverse the parm order so that they read naturally after IDispatch. (bug 187662)
                             Array.Reverse(parameter);
                         }
                         dp.rgvarg = (parameter == null) ? IntPtr.Zero : HtmlDocument.ArrayToVARIANTVector(parameter);

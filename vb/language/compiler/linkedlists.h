@@ -838,7 +838,7 @@ public:
 
         if (m_ulCount == 0)
         {
-            // This is the suspected cause of 
+            // This is the suspected cause of bug VSW 584964
             VbThrow(E_FAIL);
         }
 

@@ -92,6 +92,10 @@ namespace System.Windows.Input
 
         protected override bool Purge(object source, object data, bool purgeAll)
         {
+            // Incremental cleanups (!purgeAll) are guaranteed to be on the right thread,
+            // but the final cleanup (purgeAll) can happen on a different thread.
+            bool isOnOriginalThread = !purgeAll || CheckAccess();
+
             ICommand command = source as ICommand;
             List<HandlerSink> list = data as List<HandlerSink>;
             List<HandlerSink> toRemove = null;
@@ -136,7 +140,7 @@ namespace System.Windows.Input
                 foreach (HandlerSink sink in toRemove)
                 {
                     EventHandler<EventArgs> handler = sink.Handler;
-                    sink.Detach();
+                    sink.Detach(isOnOriginalThread);
 
                     if (!removeList)    // if list is going away, no need to remove from it
                     {
@@ -233,7 +237,7 @@ namespace System.Windows.Input
                 if (sinkToRemove != null)
                 {
                     list.Remove(sinkToRemove);
-                    sinkToRemove.Detach();
+                    sinkToRemove.Detach(isOnOriginalThread:true);
                     RemoveHandlerFromCWT(handler, _cwt);
                 }
 
@@ -421,13 +425,19 @@ namespace System.Windows.Input
                         (_originalHandler != null && (EventHandler<EventArgs>)_originalHandler.Target == handler);
             }
 
-            public void Detach()
+            public void Detach(bool isOnOriginalThread)
             {
                 if (_source != null)
                 {
                     ICommand source = (ICommand)_source.Target;
-                    if (source != null)
+                    if (source != null && isOnOriginalThread)
                     {
+                        // some sources delegate the event to another weak-event
+                        // manager, using thread-static information (CurrentManager)
+                        // along the way;  e.g. all built-in RoutedCommands.
+                        // If we're on the wrong thread, bypass this step as it
+                        // would create a new WeakEventTable and Dispatcher on
+                        // the wrong thread, causing problems at shutdown (DDVSO 543980).
                         source.CanExecuteChanged -= _onCanExecuteChangedHandler;
                     }
 

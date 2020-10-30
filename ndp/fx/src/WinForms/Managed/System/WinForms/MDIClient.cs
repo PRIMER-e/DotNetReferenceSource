@@ -292,7 +292,7 @@ namespace System.Windows.Forms {
             NativeMethods.RECT rect = new NativeMethods.RECT();
             CreateParams cp = CreateParams;
 
-            SafeNativeMethods.AdjustWindowRectEx(ref rect, cp.Style, false, cp.ExStyle);
+            AdjustWindowRectEx(ref rect, cp.Style, false, cp.ExStyle);
 
             Rectangle bounds = Bounds;
             rgn1 = SafeNativeMethods.CreateRectRgn(0, 0, bounds.Width, bounds.Height);

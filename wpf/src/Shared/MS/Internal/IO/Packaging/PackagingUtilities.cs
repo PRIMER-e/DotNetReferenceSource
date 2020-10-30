@@ -495,7 +495,16 @@ namespace MS.Internal.IO.Packaging
             {
                 lock (IsolatedStorageFileLock)
                 {
-                    GetDefaultIsolatedStorageFile().IsoFile.DeleteFile(fileName);
+                    try
+                    {
+                        GetDefaultIsolatedStorageFile().IsoFile.DeleteFile(fileName);
+                    }
+                    catch (IsolatedStorageException)
+                    {
+                        // if IsolatedStorage can't delete the file, just abandon it.
+                        // This can happen when two different processes run the
+                        // same app (DDVSO 259773).
+                    }
                 }
             }
         }
@@ -753,20 +762,24 @@ namespace MS.Internal.IO.Packaging
                     {
                         lock (IsoStoreSyncRoot)
                         {
+                            // update state before calling ISF.Remove, in case it
+                            // throws an exception (DDVSO 259773)
+                            IsolatedStorageFile file = _file;
+                            _file = null;
+                            GC.SuppressFinalize(this);
+
                             if (!_disposed)
                             {
-                                using (_file)
+                                _disposed = true;
+                                using (file)
                                 {
                                     lock (IsolatedStorageFileLock)
                                     {
-                                        _file.Remove();
+                                        file.Remove();
                                     }
                                 }
-                                _disposed = true;
                             }
-                            _file = null;
                         }
-                        GC.SuppressFinalize(this);
                     }
                     else
                     {

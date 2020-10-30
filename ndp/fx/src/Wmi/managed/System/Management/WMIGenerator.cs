@@ -2006,7 +2006,7 @@ namespace System.Management
 
                     if(bZeroFieldInEnum == false)
                     {
-                        if( (System.Convert.ToInt64(BitMap[i],(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(System.UInt64))) == 0) )        // 
+                        if( (System.Convert.ToInt64(BitMap[i],(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(System.UInt64))) == 0) )        // Bug No: 121987
                         {
                             bZeroFieldInEnum = true;
                         }
@@ -3212,7 +3212,7 @@ namespace System.Management
 
                     cmie.Parameters.Add(new CodePrimitiveExpression(meth.Name));
                     cmie.Parameters.Add(new CodeVariableReferenceExpression(strInParams));
-                    cmie.Parameters.Add(new CodePrimitiveExpression(null));            // 
+                    cmie.Parameters.Add(new CodePrimitiveExpression(null));            // Bug NO: 108605
 
                     cmis = new CodeExpressionStatement(cmie);
                     cis.TrueStatements.Add(cmis);

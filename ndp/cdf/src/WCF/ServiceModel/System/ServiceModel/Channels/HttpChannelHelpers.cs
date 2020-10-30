@@ -2512,14 +2512,14 @@ namespace System.ServiceModel.Channels
 
                 if (action != null)
                 {
-                    //This code is calling UrlPathEncode due to MessageBus 
-
-
-
-
-
-
-
+                    //This code is calling UrlPathEncode due to MessageBus bug 53362.
+                    //After reviewing this decision, we
+                    //feel that this was probably the wrong thing to do because UrlPathEncode
+                    //doesn't escape some characters like '+', '%', etc.  The real issue behind 
+                    //bug 53362 may have been as simple as being encoded multiple times on the client
+                    //but being decoded one time on the server.  Calling UrlEncode would correctly
+                    //escape these characters, but since we don't want to break any customers and no
+                    //customers have complained, we will leave this as is for now...
                     action = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", UrlUtility.UrlPathEncode(action));
                 }
 

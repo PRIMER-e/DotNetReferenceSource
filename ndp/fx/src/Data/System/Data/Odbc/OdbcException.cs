@@ -66,7 +66,7 @@ namespace System.Data.Odbc {
             base.GetObjectData(si, context);
             }
 
-        // mdac 
+        // mdac bug 62559 - if we don't have it return nothing (empty string)
         override public string Source {
             get {
                 if (0 < Errors.Count) {

@@ -6779,10 +6779,10 @@ void BCSYM_NamedRoot::GetQualifiedNameHelper
             {
                 BCSYM_Container *CurrentContainer = pContextContainer;
 
-                // 
-
-
-
+                // Bug: VSWhidbey 111014
+                // For entities nested in generics, qualify all the way upto the top most enclosing
+                // generic irrespective of the ContextContainer. See bug 111014 for more details on
+                // why this is needed.
 
                 if (pGenericBindingContext && pNamedCurrent->HasGenericParent())
                 {
@@ -6810,7 +6810,7 @@ void BCSYM_NamedRoot::GetQualifiedNameHelper
             else
             {
             
-                // MQ 
+                // MQ Bug 885280 "Wrong AutoComplete while using key word as a project name"
            
                 // When a keyword is a project name, AutoComplete does not wrap it with "[" "]". 
                 // If a keyword after a dot, then "[" "]" are not need. But there is always a root namespace(UnnamedNamespace) 
@@ -7399,10 +7399,10 @@ void BCSYM_NamedRoot::ReportError
             if (IsGenericBadNamedRoot())
             {
 
-                // MQ 
-
-
-
+                // MQ Bug 891543
+                // If the current symbol is BCSYM_GenericBadNamedRoot and it is marked by ERRID_TypeRefFromMetadataToVBUndef, GetName() must defined.
+                // Since in GetTypeByName, after BCSYM_GenericBadNamedRoot is created, SetBadName is called. So if GetName() returns NULL, then we can use
+                // GetBadName()
                 
                 ThrowIfFalse(GetName() != NULL || GetBadName() != NULL);
                 
@@ -7624,18 +7624,18 @@ BCSYM_GenericParam::IsReferenceType
 {
     SymbolEntryFunction;
     // The logic of this function matches TypeVarTypeDesc::ConstrainedAsObjRef() in the CLR's
-    // redbits\ndp\clr\src\vm\typedesc.cpp (see devdiv 
-
-
-
-
-
-
-
-
-
-
-
+    // redbits\ndp\clr\src\vm\typedesc.cpp (see devdiv bug # 73604). The logic is as follows:
+    //
+    // The following must be true for a generic variable to be regarded as "constrained to be a reference type"
+    // (1) must have the reference type special constraint "As {..., Class, ...}"
+    // (2) or must have a base type constraint which is a reference type other than System.Object, System.ValueType, System.Enum,
+    //        "As {..., BaseRefType, ...}"
+    // (3) or must be constrained by another generic variable which is constrained to be a reference type
+    //        "(of T as U)(of U as BaseRefType)"
+    //     nb. for esoteric reasons, mentioned in redbits\...\typedesc.cpp, the case "(of T as U)(of U as Class)"
+    //     doesn't guarantee that T is a reference type. That's why checks 2 and 3 are delegated to a recursive
+    //     helper function.
+    //
 
     // check (1):
     GenericConstraint * Constraint = GetConstraints();

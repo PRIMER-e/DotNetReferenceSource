@@ -9,11 +9,13 @@ namespace MS.Win32 {
     using System;
     using System.Security.Permissions;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Text;
     using MS.Internal;
     using MS.Internal.Interop;
+    using MS.Utility;
     using Microsoft.Win32;
     using System.Security;
     // The SecurityHelper class differs between assemblies and could not actually be
@@ -24,6 +26,8 @@ namespace MS.Win32 {
     using MS.Internal.PresentationCore;
 #elif PRESENTATIONFRAMEWORK
     using MS.Internal.PresentationFramework;
+#elif UIAUTOMATIONTYPES
+    using MS.Internal.UIAutomationTypes;
 #elif DRT
     using MS.Internal.Drt;
 #else
@@ -277,7 +281,7 @@ namespace MS.Win32 {
                 // Note: ADVF_ONLYONCE and ADVF_PRIMEFIRST values now conform with objidl.dll but are backwards from
                 // Platform SDK documentation as of 07/21/2003.
         // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/com/htm/oen_a2z_8jxi.asp.
-        // See VSWhidbey 
+        // See VSWhidbey bug#96162.
 
         public const int BCM_GETIDEALSIZE = 0x1601;
 #endif
@@ -578,6 +582,7 @@ namespace MS.Win32 {
         E_NOINTERFACE = unchecked((int)0x80004002),
         E_FAIL = unchecked((int)0x80004005),
         E_ABORT = unchecked((int)0x80004004),
+        E_ACCESSDENIED = unchecked((int)0x80070005),
         E_UNEXPECTED = unchecked((int)0x8000FFFF),
         INET_E_DEFAULT_ACTION = unchecked((int)0x800C0011),
         ETO_OPAQUE = 0x0002,
@@ -1859,7 +1864,7 @@ namespace MS.Win32 {
         TTM_POP = (0x0400 + 28),
         TTM_ADJUSTRECT = (0x400 + 31),
         TTM_SETDELAYTIME = (0x0400+3),
-#if !DRT
+#if !DRT && !UIAUTOMATIONTYPES
         TTM_SETTITLEA           =((int)WindowMessage.WM_USER + 32),  // wParam = TTI_*, lParam = char* szTitle
         TTM_SETTITLEW           =((int)WindowMessage.WM_USER + 33), // wParam = TTI_*, lParam = wchar* szTitle
 #endif
@@ -2112,7 +2117,7 @@ namespace MS.Win32 {
         WA_CLICKACTIVE = 2;
 
         public const int WHEEL_DELTA = 120,
-#if !DRT
+#if !DRT && !UIAUTOMATIONTYPES
         WM_REFLECT = (int)WindowMessage.WM_USER + 0x1C00,
         WM_CHOOSEFONT_GETLOGFONT = (int)WindowMessage.WM_USER +1,
 #endif
@@ -3296,7 +3301,7 @@ namespace MS.Win32 {
         }
 #endif
 
-#if FRAMEWORK_NATIVEMETHODS || CORE_NATIVEMETHODS || BASE_NATIVEMETHODS || DRT_SEE_NATIVEMETHODS
+#if FRAMEWORK_NATIVEMETHODS || CORE_NATIVEMETHODS || BASE_NATIVEMETHODS || DRT_SEE_NATIVEMETHODS || UIAUTOMATIONTYPES
 
         [StructLayout(LayoutKind.Sequential)]
         public class SIZE {
@@ -3938,7 +3943,7 @@ namespace MS.Win32 {
         public const int CDN_SHAREVIOLATION = (CDN_FIRST - 0x0003);
         public const int CDN_FILEOK         = (CDN_FIRST - 0x0005);
 
-#if !DRT
+#if !DRT && !UIAUTOMATIONTYPES
         public const int CDM_FIRST          = (int)WindowMessage.WM_USER + 100;
 
         public const int CDM_GETSPEC        = (CDM_FIRST + 0x0000);
@@ -7060,6 +7065,490 @@ namespace MS.Win32 {
         public const int ULW_COLORKEY = 0x00000001;
         public const int ULW_ALPHA    = 0x00000002;
         public const int ULW_OPAQUE   = 0x00000004;
+
+        /// <summary>
+        /// Contains values that indicate the type of session information to retrieve 
+        /// in a call to the WTSQuerySessionInformation function.
+        /// </summary>
+        public enum WTS_INFO_CLASS
+        {
+            /// <summary>
+            /// A null-terminated string that contains the name of the initial program that Remote Desktop Services runs when the user logs on.
+            /// </summary>
+            WTSInitialProgram = 0,
+            /// <summary>
+            /// A null-terminated string that contains the published name of the application that the session is running.
+            /// </summary>
+            /// <remarks>
+            /// Windows Server 2008 R2, Windows 7, Windows Server 2008 and Windows Vista:  This value is not supported
+            /// </remarks>
+            WTSApplicationName = 1,
+            /// <summary>
+            /// A null-terminated string that contains the default directory used when launching the initial program.
+            /// </summary>
+            WTSWorkingDirectory = 2,
+            /// <summary>
+            /// This value is not used.
+            /// </summary>
+            WTSOEMId = 3,
+            /// <summary>
+            /// A ULONG value that contains the session identifier.
+            /// </summary>
+            WTSSessionId = 4,
+            /// <summary>
+            /// A null-terminated string that contains the name of the user associated with the session.
+            /// </summary>
+            WTSUserName = 5,
+            /// <summary>
+            /// A null-terminated string that contains the name of the Remote Desktop Services session.
+            /// </summary>
+            /// <remarks>
+            /// Despite its name, specifying this type does not return the window station name. Rather, it returns 
+            /// the name of the Remote Desktop Services session. Each Remote Desktop Services session is associated 
+            /// with an interactive window station. Because the only supported window station name for an interactive 
+            /// window station is "WinSta0", each session is associated with its own "WinSta0" window station. For more 
+            /// information, <see cref="https://msdn.microsoft.com/en-us/library/ms687096(v=vs.85).aspx">Window Stations</see>
+            /// </remarks>
+            WTSWinStationName = 6,
+            /// <summary>
+            /// A null-terminated string that contains the name of the domain to which the logged-on user belongs.
+            /// </summary>
+            WTSDomainName = 7,
+            /// <summary>
+            /// The session's current connection state. For more information, <see cref="WTS_CONNECTSTATE_CLASS"/> 
+            /// </summary>
+            WTSConnectState = 8,
+            /// <summary>
+            /// A ULONG value that contains the build number of the client.
+            /// </summary>
+            WTSClientBuildNumber = 9,
+            /// <summary>
+            /// A null-terminated string that contains the name of the client.
+            /// </summary>
+            WTSClientName = 10,
+            /// <summary>
+            /// A null-terminated string that contains the directory in which the client 
+            /// is installed.
+            /// </summary>
+            WTSClientDirectory = 11,
+            /// <summary>
+            /// A USHORT client-specific product identifier.
+            /// </summary>
+            WTSClientProductId = 12,
+            /// <summary>
+            /// A ULONG value that contains a client-specific hardware identifier. This option 
+            /// is reserved 
+            /// for future use. 
+            /// WTSQuerySessionInformation will always return a value of 0.
+            /// </summary>
+            WTSClientHardwareId = 13,
+            /// <summary>
+            /// The network type and network address of the client. For more information, 
+            /// see WTS_CLIENT_ADDRESS.
+            /// The IP address is offset by two bytes from the start of the Address member of the 
+            /// WTS_CLIENT_ADDRESS structure.
+            /// </summary>
+            WTSClientAddress = 14,
+            /// <summary>
+            /// Information about the display resolution of the client. For more information, 
+            /// see WTS_CLIENT_DISPLAY.
+            /// </summary>
+            WTSClientDisplay = 15,
+            /// <summary>
+            /// A USHORT value that specifies information about the protocol type for the session. 
+            /// This is one of the following values:
+            /// 0 : The console session.
+            /// 1 : This value is retained for legacy purposes.
+            /// 2 : The RDP protocol.
+            /// </summary>
+            WTSClientProtocolType = 16,
+            /// <summary>
+            /// This value returns FALSE. If you call GetLastError to get extended error information, 
+            /// GetLastError returns ERROR_NOT_SUPPORTED.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not used.</remarks>
+            WTSIdleTime = 17,
+            /// <summary>
+            /// This value returns FALSE. If you call GetLastError to get extended error information, 
+            /// GetLastError returns ERROR_NOT_SUPPORTED.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not used.</remarks>
+            WTSLogonTime = 18,
+            /// <summary>
+            /// This value returns FALSE. If you call GetLastError to get extended error information, 
+            /// GetLastError returns ERROR_NOT_SUPPORTED.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not used.</remarks>
+            WTSIncomingBytes = 19,
+            /// <summary>
+            /// This value returns FALSE. If you call GetLastError to get extended error information, 
+            /// GetLastError returns ERROR_NOT_SUPPORTED.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not used.</remarks>
+            WTSOutgoingBytes = 20,
+            /// <summary>
+            /// This value returns FALSE. If you call GetLastError to get extended error information, 
+            /// GetLastError returns ERROR_NOT_SUPPORTED.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not used.</remarks>
+            WTSIncomingFrames = 21,
+            /// <summary>
+            /// This value returns FALSE. If you call GetLastError to get extended error information, 
+            /// GetLastError returns ERROR_NOT_SUPPORTED.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not used.</remarks>
+            WTSOutgoingFrames = 22,
+            /// <summary>
+            /// Information about a Remote Desktop Connection (RDC) client. For more information, 
+            /// see WTSCLIENT.
+            /// </summary>
+            WTSClientInfo = 23,
+            /// <summary>
+            /// Information about a client session on a RD Session Host server. For more information, 
+            /// see WTSINFO.
+            /// </summary>
+            WTSSessionInfo = 24,
+            /// <summary>
+            /// Extended information about a session on a RD Session Host server. For more information, 
+            /// see WTSINFOEX.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not supported.</remarks>
+            WTSSessionInfoEx = 25,
+            /// <summary>
+            /// A WTSCONFIGINFO structure that contains information about the configuration of a RD 
+            /// Session Host server.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not supported.</remarks>
+            WTSConfigInfo = 26,
+            /// <summary>
+            /// This value is not supported.
+            /// </summary>
+            WTSValidationInfo = 27,
+            /// <summary>
+            /// A WTS_SESSION_ADDRESS structure that contains the IPv4 address assigned to the session. 
+            /// If the session does not have a virtual IP address, the WTSQuerySessionInformation function 
+            /// returns ERROR_NOT_SUPPORTED.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not supported.</remarks>
+            WTSSessionAddressV4 = 28,
+            /// <summary>
+            /// Determines whether the current session is a remote session. The WTSQuerySessionInformation 
+            /// function returns a value of TRUE to indicate that the current session is a remote session, 
+            /// and FALSE to indicate that the current session is a local session. This value can only be 
+            /// used for the local machine, so the hServer parameter of the WTSQuerySessionInformation 
+            /// function must contain WTS_CURRENT_SERVER_HANDLE.
+            /// </summary>
+            /// <remarks>Windows Server 2008 and Windows Vista:  This value is not supported.</remarks>
+            WTSIsRemoteSession = 29
+        }
+
+        /// <summary>
+        /// Specifies the connection state of a Remote Desktop Services session.
+        /// </summary>;
+        /// <remarks>
+        /// Only WTSActive represents a fully connected user session. All other
+        /// states represent a disconnected user session.
+        /// </remarks>
+        public enum WTS_CONNECTSTATE_CLASS
+        {
+            /// <summary>
+            /// A user is logged on to the WinStation.
+            /// </summary>
+            WTSActive = 0,
+            /// <summary>
+            /// The WinStation is connected to the client.
+            /// </summary>
+            WTSConnected = 1,
+            /// <summary>
+            /// The WinStation is in the process of connecting to the client.
+            /// </summary>
+            WTSConnectQuery = 2,
+            /// <summary>
+            /// The WinStation is shadowing another WinStation.
+            /// </summary>
+            WTSShadow = 3,
+            /// <summary>
+            /// The WinStation is active but the client is disconnected.
+            /// </summary>
+            WTSDisconnected = 4,
+            /// <summary>
+            /// The WinStation is waiting for a client to connect.
+            /// </summary>
+            WTSIdle = 5,
+            /// <summary>
+            /// The WinStation is listening for a connection. A listener session waits for requests for 
+            /// new client connections. 
+            /// No user is logged on a listener session. A listener session cannot be reset, shadowed, or 
+            /// changed to a regular client session.
+            /// </summary>
+            WTSListen = 6,
+            /// <summary>
+            /// The WinStation is being reset.
+            /// </summary>
+            WTSReset = 7,
+            /// <summary>
+            /// The WinStation is down due to an error.
+            /// </summary>
+            WTSDown = 8,
+            /// <summary>
+            /// The WinStation is initializing.
+            /// </summary>
+            WTSInit = 9
+        }
+
+        /// <summary>
+        /// Specifies the current server
+        /// </summary>
+        public static readonly IntPtr WTS_CURRENT_SERVER_HANDLE = IntPtr.Zero;
+
+        /// <summary>
+        /// Specifies the current session (SessionId)
+        /// </summary>
+        public const int WTS_CURRENT_SESSION = -1;
+
+        /// <summary>
+        /// Equivalent to Win32 PROCESS_DPI_AWARENESS
+        /// Identifies dots per inch (dpi) awareness values. DPI awareness
+        /// indicates how much scaling work an application performs for DPI
+        /// versus how much is done by the system.
+        /// </summary>
+        /// <remarks>
+        /// Currently, the DPI awareness is defined on an individual thread, 
+        /// window or process level and is indicated by the DPI_AWARENESS (
+        /// which is very similar to, but slightly different from, 
+        /// PROCESS_DPI_AWARENESS) returned by functions like 
+        /// GetThreadDpiAwareness or GetWindowDpiAwareness. 
+        /// 
+        /// The old recommendation was to define DPI awareness level in the
+        /// application manifest using the setting <i>dpiAware</i>. Now that
+        /// DPI awareness is tied to threads and windows instead of an entire
+        /// application, the new setting <i>dpiAwareness</i> is introduced, 
+        /// which will overridden any <i>dpiAware</i> entries in the application
+        /// manifest. 
+        /// 
+        /// While it is still recommended to use the manifest, the DPI awareness 
+        /// can be changed while the app is running by using 
+        /// SetThreadDpiAwarenessContext. Windows within the application that have
+        /// DPI_AWARENESS_PER_MONITOR_AWARE are the responsibility of the application
+        /// to update by keeping track of WM_DPICHANGED.
+        /// </remarks>
+        internal enum PROCESS_DPI_AWARENESS
+        {
+            /// <summary>
+            /// PROCESS_DPI_UNAWARE
+            /// This app does not scale for DPI changes and is 
+            /// always assumed to have a scale factor of 100% (96 DPI). It 
+            /// will be automatically scaled by the system on any other DPI
+            /// setting.
+            /// </summary>
+            PROCESS_DPI_UNAWARE = 0,
+
+            /// <summary>
+            /// PROCESS_SYSTEM_DPI_AWARE
+            /// The app does not scale for DPI changes. It will query for the DPI once
+            /// and use that value for the lifetime of the app. If the DPI changes, 
+            /// the app will not adjust to the new DPI value. It will be automatically scaled
+            /// up or down by the system when the DPI changes from the system value
+            /// </summary>
+            PROCESS_SYSTEM_DPI_AWARE = 1,
+
+            /// <summary>
+            /// PROCESS_PER_MONITOR_DPI_AWARE
+            /// This app checks for the DPI when it is created and adjusts the scale factor
+            /// whenever the DPI changes. These applications are not automatically scaled
+            /// by the system.
+            /// </summary>
+            PROCESS_PER_MONITOR_DPI_AWARE = 2,
+        }
+
+        /// <summary>
+        /// Identifies the dots per inch (dpi) setting for a thread, process
+        /// or window
+        /// </summary>
+        /// <remarks>DPI_AWARENESS  enumeration</remarks>
+        internal enum DPI_AWARENESS : int
+        {
+            /// <summary>
+            /// Invalid DPI awareness. This is an invalid DPI awareness value
+            /// </summary>
+            /// <remarks>DPI_AWARENESS_INVALID</remarks>
+            DPI_AWARENESS_INVALID = -1,
+
+            /// <summary>
+            /// DPI unaware. This process does not scale for DPI changes and 
+            /// is always assumed to have a scale factor of 100% (96 DPI). 
+            /// It will be automatically scaled by the system on any other DPI setting.
+            /// </summary>
+            /// <remarks>DPI_AWARENESS_UNAWARE</remarks>
+            DPI_AWARENESS_UNAWARE = 0,
+
+            /// <summary>
+            /// System DPI aware. This process does not scale for DPI changes. 
+            /// It will query for the DPI once and use that value for the lifetime 
+            /// of the process. If the DPI changes, the process will not adjust to 
+            /// the new DPI value. It will be automatically scaled up or down by 
+            /// the system when the DPI changes from the system value.
+            /// </summary>
+            /// <remarks>DPI_AWARENESS_SYSTEM_AWARE</remarks>
+            DPI_AWARENESS_SYSTEM_AWARE = 1,
+
+            /// <summary>
+            /// Per monitor DPI aware. This process checks for the DPI when it is 
+            /// created and adjusts the scale factor whenever the DPI changes.
+            /// These processes are not automatically scaled by the system.
+            /// </summary>
+            /// <remarks>DPI_AWARENESS_PER_MONITOR_AWARE</remarks>
+            DPI_AWARENESS_PER_MONITOR_AWARE = 2
+        }
+
+        /// <summary>
+        /// Identifies the DPI hosting behavior for a window. This behavior allows windows
+        /// created in the thread to host child windows with a different DPI_AWARENESS_CONTEXT
+        /// </summary>
+        internal enum DPI_HOSTING_BEHAVIOR : int
+        {
+            /// <summary>
+            /// Invalid DPI hosting behavior. This usually occurs if the
+            /// previous SetThreadDpiHostingBehavior call used an invalid parameter.
+            /// </summary>
+            DPI_HOSTING_BEHAVIOR_INVALID = -1,
+
+            /// <summary>
+            /// Default DPI hosting behavior. The associated window behaves as normal,
+            /// and cannot create or re-parent child windows with a different DPI_AWARENESS_CONTEXT.
+            /// </summary>
+            DPI_HOSTING_BEHAVIOR_DEFAULT = 0,
+
+            /// <summary>
+            /// Mixed DPI hosting behavior. This enables the creation and re-parenting of child
+            /// windows with different DPI_AWARENESS_CONTEXT. These child windows will be independently scaled by the OS.
+            /// </summary>
+            DPI_HOSTING_BEHAVIOR_MIXED = 1
+        }
+
+#if !DRT && !UIAUTOMATIONTYPES
+
+        /// <summary>
+        /// DPI unaware. This windows do not scale for DPI changes and
+        /// is always assumed to have a scale factor of 100% (96 DPI).
+        /// </summary>
+        /// <remarks>
+        /// <code><![CDATA[#define DPI_AWARENESS_CONTEXT_UNAWARE              ((DPI_AWARENESS_CONTEXT)-1)]]></code>
+        /// </remarks>
+        internal static readonly DpiAwarenessContextHandle DPI_AWARENESS_CONTEXT_UNAWARE = DpiAwarenessContextHandle.DPI_AWARENESS_CONTEXT_UNAWARE;
+
+        /// <summary>
+        /// System DPI aware. This window does not scale for DPI changes. It will 
+        /// query for the DPI once and use that value for the lifetime of the
+        /// process. If the DPI changes, the process will not adjust to the new DPI
+        /// value.
+        /// </summary>
+        /// <remarks>
+        /// <code><![CDATA[#define DPI_AWARENESS_CONTEXT_SYSTEM_AWARE         ((DPI_AWARENESS_CONTEXT)-2)]]></code>
+        /// </remarks>
+        internal static readonly DpiAwarenessContextHandle DPI_AWARENESS_CONTEXT_SYSTEM_AWARE = DpiAwarenessContextHandle.DPI_AWARENESS_CONTEXT_SYSTEM_AWARE;
+
+        /// <summary>
+        /// Per monitor DPI aware. This window checks for the DPI when it is created
+        /// and adjusts the scale factor whenever the DPI changes. These processes
+        /// are not automatically scaled by the system.
+        /// </summary>
+        /// <remarks>
+        /// <code><![CDATA[#define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE    ((DPI_AWARENESS_CONTEXT)-3)]]></code>
+        /// </remarks>
+        internal static readonly DpiAwarenessContextHandle DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE = DpiAwarenessContextHandle.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE;
+
+        /// <summary>
+        /// Also known as Per Monitor v2, this is an advancement over the original
+        /// per-monitor DPI awareness mode, which enables applications to access new DPI
+        /// related scaling behaviors on a per top-level window basis. Per Monitor v2 was
+        /// made available in the Creators Update of Windows 10 (v1703). The additional 
+        /// behaviors available are as follows:
+        /// - Child window DPI change notifications
+        /// - Automatic scaling of non-client area
+        /// - Scaling of Win32 menus
+        /// - Dialog scaling
+        /// - Improved scaling of ComCtl32 controls
+        /// - Improved theming behavior
+        /// </summary>
+        /// <remarks>
+        /// <code><![CDATA[#define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((DPI_AWARENESS_CONTEXT)-4)]]></code>
+        /// </remarks>
+        internal static readonly DpiAwarenessContextHandle DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = DpiAwarenessContextHandle.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2;
+
+#endif
+
+        /// <summary>
+        /// A MonitorEnumProc function is an application-defined callback function that
+        /// is called by the EnumDisplayMonitors function.
+        /// A value of type MONITORENUMPROC is a pointer to a MonitorEnumProc function.
+        /// </summary>
+        /// <param name="hMonitor">A handle to the display monitor. This value will always be non-NULL.</param>
+        /// <param name="hdcMonitor">
+        /// A handle to a device context.
+        /// 
+        /// The device context has color attributes that are appropriate for the display monitor identified
+        /// by hMonitor.The clipping area of the device context is set to the intersection of the visible
+        /// region of the device context identified by the hdc parameter of EnumDisplayMonitors, the
+        /// rectangle pointed to by the lprcClip parameter of EnumDisplayMonitors, and the display monitor
+        /// rectangle.
+        /// 
+        /// This value is NULL if the hdc parameter of EnumDisplayMonitors was NULL.
+        /// </param>
+        /// <param name="lprcMonitor">
+        /// A pointer to a RECT structure.
+        /// 
+        /// If hdcMonitor is non-NULL, this rectangle is the intersection of the clipping area of the device
+        /// context identified by hdcMonitor and the display monitor rectangle.The rectangle coordinates are
+        /// device-context coordinates.
+        /// 
+        /// If hdcMonitor is NULL, this rectangle is the display monitor rectangle. The rectangle coordinates
+        /// are virtual-screen coordinates.
+        /// </param>
+        /// <param name="dwData">
+        /// Application-defined data that EnumDisplayMonitors passes directly to
+        /// the enumeration function.
+        /// </param>
+        /// <returns>
+        /// To continue the enumeration, return true.
+        /// To stop the enumeration, return false.
+        /// </returns>
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+
+        /// <summary>
+        /// Identifies the dots per inch (dpi) setting for a monitor.
+        /// </summary>
+        internal enum MONITOR_DPI_TYPE : int
+        {
+            /// <summary>
+            /// The effective DPI. This value should be used when determining the
+            /// correct scale factor for scaling UI elements. This incorporates the
+            /// scale factor set by the user for this specific display.
+            /// </summary>
+            MDT_EFFECTIVE_DPI = 0,
+
+            /// <summary>
+            /// The angular DPI. This DPI ensures rendering at a compliant angular
+            /// resolution on the screen. This does not include the scale factor set
+            /// by the user for this specific display.
+            /// </summary>
+            MDT_ANGULAR_DPI = 1,
+
+            /// <summary>
+            /// The raw DPI. This value is the linear DPI of the screen as measured
+            /// on the screen itself. Use this value when you want to read the pixel
+            /// density and not the recommended scaling setting. This does not include
+            /// the scale factor set by the user for this specific display and is not
+            /// guaranteed to be a supported DPI value.
+            /// </summary>
+            MDT_RAW_DPI = 2,
+
+            /// <summary>
+            /// The default DPI setting for a monitor is MDT_EFFECTIVE_DPI.
+            /// </summary>
+            MDT_DEFAULT = MDT_EFFECTIVE_DPI
+        }
     }
 }
 

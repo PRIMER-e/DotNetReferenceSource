@@ -43,12 +43,14 @@ namespace System.Windows.Forms {
         /// </devdoc>
         private DialogResult dialogResult;
 
+        private const int InvalidDimensionValue = Int32.MinValue;
+
         /// <include file='doc\Button.uex' path='docs/doc[@for="Button.dialogResult"]/*' />
         /// <devdoc>
         ///     For buttons whose FaltStyle = FlatStyle.Flat, this property specifies the size, in pixels  
         ///     of the border around the button.
         /// </devdoc>
-        private Size systemSize = new Size(Int32.MinValue, Int32.MinValue);
+        private Size systemSize = new Size(InvalidDimensionValue, InvalidDimensionValue);
 
         /// <include file='doc\Button.uex' path='docs/doc[@for="Button.Button"]/*' />
         /// <devdoc>
@@ -117,13 +119,13 @@ namespace System.Windows.Forms {
                 return AutoSizeMode == AutoSizeMode.GrowAndShrink ? prefSize : LayoutUtils.UnionSizes(prefSize, Size);                
             }
 
-            if (systemSize.Width == Int32.MinValue) {
+            if (systemSize.Width == InvalidDimensionValue) {
                 Size requiredSize;
                 // Note: The result from the BCM_GETIDEALSIZE message isn't accurate if the font has been
                 // changed, because this method is called before the font is set into the device context.
-                // Commenting this line is the fix for 
-
-
+                // Commenting this line is the fix for bug VSWhidbey#228843.
+                //if(UnsafeNativeMethods.SendMessage(hWnd, NativeMethods.BCM_GETIDEALSIZE, 0, size) != IntPtr.Zero) {
+                //    requiredSize = size.ToSize(); ...
                 requiredSize = TextRenderer.MeasureText(this.Text, this.Font);
                 requiredSize = SizeFromClientSize(requiredSize);
 
@@ -279,7 +281,7 @@ namespace System.Windows.Forms {
         }
 
         protected override void OnFontChanged(EventArgs e) {
-            systemSize = new Size(Int32.MinValue, Int32.MinValue);
+            systemSize = new Size(InvalidDimensionValue, InvalidDimensionValue);
             base.OnFontChanged(e);
         }
 
@@ -313,8 +315,25 @@ namespace System.Windows.Forms {
         }
 
         protected override void OnTextChanged(EventArgs e) {
-            systemSize = new Size(Int32.MinValue, Int32.MinValue);
+            systemSize = new Size(InvalidDimensionValue, InvalidDimensionValue);
             base.OnTextChanged(e);
+        }
+
+        /// <summary>
+        /// When overridden in a derived class, handles rescaling of any magic numbers used in control painting.
+        /// Must call the base class method to get the current DPI values. This method is invoked only when 
+        /// Application opts-in into the Per-monitor V2 support, targets .NETFX 4.7 and has 
+        /// EnableDpiChangedMessageHandling and EnableDpiChangedHighDpiImprovements config switches turned on.
+        /// </summary>
+        /// <param name="deviceDpiOld">Old DPI value</param>
+        /// <param name="deviceDpiNew">New DPI value</param>
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                // reset cached boundary size - it needs to be recalculated for new DPI
+                systemSize = new Size(InvalidDimensionValue, InvalidDimensionValue);
+            }
         }
 
         /// <include file='doc\Button.uex' path='docs/doc[@for="Button.PerformClick"]/*' />

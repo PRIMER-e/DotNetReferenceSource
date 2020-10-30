@@ -736,8 +736,8 @@ namespace System.Xml.Schema {
                 if (baseType.ContentType == XmlSchemaContentType.TextOnly) {
                     if (simpleRestriction.BaseType == null) { 
                         datatype = baseType.Datatype; 
-                        //There is a 
-
+                        //There is a bug here. Need to check if simpleRestriction has facets.
+                        //If yes, Need tp apply these facets as well. 
                     }
                     else {
                         CompileSimpleType(simpleRestriction.BaseType);

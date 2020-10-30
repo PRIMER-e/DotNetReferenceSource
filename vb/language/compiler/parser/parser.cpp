@@ -513,12 +513,12 @@ Parser::SetLocation
             
             dim x = 1 + _
             EOL
-            REM This is 
+            REM This is bug 444553
 
-
-
-
-*/
+        In this case End will point to the REM.  Begin points to the EOL following the explicit line continuation.
+        When we backup, TokenWeBackedUpTo will be on the EOL as well.
+        This code treats the End token as non-inclusive as far as error reporting goes, so we need to look again at the condition
+        where the Begin token and End token are the same thing so we get the right span. */
         if (Beg == End )
         {
             SetLocationForSpanOfOneToken( Loc, Beg );
@@ -4212,9 +4212,9 @@ Parser::ParseStatementInMethodBody
             // Without this fix, an invalid identifier error will be reported, and the file will
             // not decompile far enough.  The task list error will incorrectly hang around.
             //
-            // Note: This 
-
-
+            // Note: This bug addresses the requirement that this method (ParseStatementInMethodBody)
+            //       should report ERRID_InvInsideEndsProc in exactly the same cases that FindEndProc
+            //       does
             if (!(Specifiers->HasSpecifier(ParseTree::Specifier::Dim | ParseTree::Specifier::Const)) &&
                 (m_CurrentToken->m_TokenType == tkSUB ||
                  m_CurrentToken->m_TokenType == tkFUNCTION ||
@@ -6245,8 +6245,8 @@ lbl_Conversion:
                 // Async, and Iterator as variable names, etc., continues to
                 // work correctly.
                 // 
-                // See 
-
+                // See Bug VSWhidbey 379914 for the original issue with CUSTOM.
+                //
                 if (TokenAsKeyword(m_CurrentToken) == tkCUSTOM)
                 {
                     Token *  pNext = m_CurrentToken->m_Next;
@@ -7077,7 +7077,7 @@ Parser::ParseInitializerList
                             break;
 
                         case ParseTree::Expression::Equal:
-                            // (
+                            // (Bug #27657 - DevDiv Bugs)
                             if(initExpr->AsBinary()->Left &&
                                 initExpr->AsBinary()->Left->Opcode == ParseTree::Expression::Name &&
                                 initExpr->AsBinary()->Left->AsName()->Name.Name)
@@ -7484,13 +7484,13 @@ Parser::ParseGenericArguments
         }
         else if (!m_InterpretationUnderIntelliSense)
         {
-            // 
-
-
-
-
-
-
+            // Bug VSWhidbey 157413
+            // Propagate badness in the type argument list to the last type argument.
+            // This is needed to avoid spurious binding errors in the other parts of the
+            // compiler during name binding. It is better to propagate this badness than
+            // trying to resync at the right paren in order to avoid spurious errors that
+            // could possibly result due to a bad resync in extremely bad parse scenarios.
+            //
             if (Type)
             {
                 Type->Opcode = ParseTree::Type::SyntaxError;
@@ -10697,8 +10697,8 @@ Parser::ParseDelegateStatement
             // Force the type char to always be none in this error case because by default we
             // are setting the delegate to be a Procedure and not a Function below. Type chars
             // are not allowed on Procedures because they do not have a return type.
-            // This prevents spurious errors later on in declared. See 
-
+            // This prevents spurious errors later on in declared. See Bug VSWhidbey 183964.
+            //
             Result->Name.TypeCharacter = chType_NONE;
 
             break;
@@ -19558,11 +19558,11 @@ Parser::ParseQualifiedExpr
                       "We shouldn't get here without .<eol> tokens");
 
             /* We know we are sitting on an EOL preceded by a tkDot.  What we need to catch is the
-               case where a tkDot following an EOL isn't preceded by a valid token.  
-
-
-
-*/
+               case where a tkDot following an EOL isn't preceded by a valid token.  Bug Dev10_429652  For example:
+               with i <eol>
+                 .  <-- this is bad.  This . follows an EOL and isn't preceded by a tkID.  Can't have it hanging out like this
+                 field = 42
+            */
             if ( m_CurrentToken->m_Prev->m_Prev == NULL || // make sure we can look back far enough.  We know we can look back once, but twice we need to test
                  m_CurrentToken->m_Prev->m_Prev->m_TokenType == tkEOL ) // Make sure there is something besides air before the '.' DEV10_486908
             {
@@ -21042,14 +21042,14 @@ Parser::ReportSyntaxError
         {
             ParseError Error;
 
-            // 
-
-
-
-
-
-
-
+            // Bug Devdiv 7000.
+            // When line continuation char is added without a
+            // preceding backspace or with comments following it,
+            // then a very unhelpful error indicating
+            // "Identifier Expected" is given. This fix is to give
+            // a better error in that scenario and also let pretty
+            // lister fix up the code.
+            //
             if (Beg->m_Error.m_errid == ERRID_ExpectedIdentifier &&
                 Beg->m_Error.m_IsTokenForInvalidLineContinuationChar &&
                 Beg->m_Next &&
@@ -22221,7 +22221,7 @@ Parser::IsValidStatementTerminator
         T->m_TokenType == tkEOF ||
         T->m_TokenType == tkREM ||
         T->m_TokenType == tkXMLDocComment ||
-        // (
+        // (bug 32704) "else" is a special case in the construct "if foo then resume else stmt"
         (m_IsLineIf && T->m_TokenType == tkELSE);
 }
 
@@ -23413,7 +23413,7 @@ Parser::ParseConditionalCompilationStatement
                 ERRID_ExpectedConditionalDirective,
                 ErrorInConstruct);
 
-            // Forced location adjustment: make all # line squigle (
+            // Forced location adjustment: make all # line squigle (bug #158394)
             TempStatement->TextSpan.m_lBegLine = Start->m_StartLine;
             TempStatement->TextSpan.m_lBegColumn = TokenColumnBeg(Start);
             LinkStatement(TempStatement);

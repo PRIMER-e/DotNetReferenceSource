@@ -26,7 +26,7 @@ namespace MS.Win32
         public const string Oleacc = "oleacc.dll";
         public const string Oleaut32 = "oleaut32.dll";
         public const string Olepro32 = "olepro32.dll";
-        public const string Penimc ="penimc.dll";
+        public const string Penimc ="penimc2_v0400.dll";
         public const string PresentationHostDll = "PresentationHost_v0400.dll";
         public const string PresentationNativeDll = "PresentationNative_v0400.dll";
         public const string Psapi = "psapi.dll";
@@ -41,6 +41,8 @@ namespace MS.Win32
         public const string Wininet = "wininet.dll";
         public const string Winmm = "winmm.dll";
         public const string Winspool = "winspool.drv";
+        public const string Wldp = "wldp.dll";
+        public const string WtsApi32 = "wtsapi32.dll";
     }
 }
 

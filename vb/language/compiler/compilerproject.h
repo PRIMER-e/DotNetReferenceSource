@@ -877,8 +877,8 @@ private:
 // CompilerProject so that they can be emitted after the manifest for the
 // CompilerProject is emitted. This is required so that any security attributes
 // defined in a project when used in the same project are emitted correctly.
-// 
-
+// Bug VSWhidbey 320892.
+//========================================================================
 struct SecAttrErrorInfo
 {
     STRING *pstrAttrName;                   // Name of the security attribute that was applied.
@@ -3097,7 +3097,7 @@ private:
     // These need to be saved and emitted after the manifest for this project
     // has been emitted. This is required so that any security attributes
     // defined in this project when used in this same project are emitted
-    // correctly. 
+    // correctly. Bug VSWhidbey 320892.
     CSingleList<SecAttrInfo> m_slAppliedSecurityAttributes;
 
 #if IDE 

@@ -196,7 +196,7 @@ namespace System.Globalization
         //Using a property so we avoid creating the dictionary untill we need it
         private static Dictionary<string, string> RegionNames
         {
-            get 
+            get
             {
                 if (s_RegionNames == null)
                 {
@@ -344,9 +344,9 @@ namespace System.Globalization
         //
         // We need an invariant instance, which we build hard-coded
         /////////////////////////////////////////////////////////////////////////
-        internal static CultureData Invariant  
+        internal static CultureData Invariant
         {
-            get 
+            get
             {
                 if (s_Invariant == null)
                 {
@@ -522,7 +522,7 @@ namespace System.Globalization
                 if (cultureName.Equals("iw", StringComparison.OrdinalIgnoreCase))
                 {
                     cultureName = "he";
-                } 
+                }
                 else if (cultureName.Equals("tl", StringComparison.OrdinalIgnoreCase))
                 {
                     cultureName = "fil";
@@ -1309,7 +1309,7 @@ namespace System.Globalization
 #if !FEATURE_CORECLR
                         if (IsIncorrectNativeLanguageForSinhala())
                         {
-                            // work around 
+                            // work around bug in Windows 7 for native name of Sinhala
                             this.sNativeDisplayName ="\x0dc3\x0dd2\x0d82\x0dc4\x0dbd (\x0DC1\x0DCA\x200D\x0DBB\x0DD3\x0020\x0DBD\x0D82\x0D9A\x0DCF)";
                         }
                         else
@@ -1438,7 +1438,7 @@ namespace System.Globalization
 #if !FEATURE_CORECLR
                     if (IsIncorrectNativeLanguageForSinhala())
                     {
-                        // work around 
+                        // work around bug in Windows 7 for native language of Sinhala
                         this.sNativeLanguage = "\x0dc3\x0dd2\x0d82\x0dc4\x0dbd";
                     }
                     else
@@ -1454,7 +1454,7 @@ namespace System.Globalization
 #if !FEATURE_CORECLR
         private bool IsIncorrectNativeLanguageForSinhala()
         {
-            return IsOsWin7OrPrior() 
+            return IsOsWin7OrPrior()
                 && (sName == "si-LK" || sName == "si")
                 && !IsReplacementCulture;
         }
@@ -2778,6 +2778,17 @@ namespace System.Globalization
         // Date separator (derived from short date format)
         internal String DateSeparator(int calendarId)
         {
+            if (calendarId == Calendar.CAL_JAPAN && !AppContextSwitches.EnforceLegacyJapaneseDateParsing)
+            {
+                // The date separator is derived from the default short date pattern. So far this pattern is using
+                // '/' as date separator when using the Japanese calendar which make the formatting and parsing work fine.
+                // changing the default pattern is likely will happen in the near future which can easily break formatting
+                // and parsing.
+                // We are forcing here the date separator to '/' to ensure the parsing is not going to break when changing
+                // the default short date pattern. The application still can override this in the code by DateTimeFormatInfo.DateSeparartor.
+                return "/";
+            }
+
             return GetDateSeparator(ShortDates(calendarId)[0]);
         }
 

@@ -310,7 +310,7 @@ namespace System.Management.Instrumentation
        [ResourceExposure(ResourceScope.None),ResourceConsumption(ResourceScope.Machine,ResourceScope.Machine)]
        public InstrumentedAssembly(Assembly assembly, SchemaNaming naming)
         {
-            SecurityHelper.UnmanagedCode.Demand(); // 
+            SecurityHelper.UnmanagedCode.Demand(); // Bug#112640 - Close off any potential use from anything but fully trusted code
             this.naming = naming;
 
             Assembly compiledAssembly = naming.PrecompiledAssembly;
@@ -350,7 +350,7 @@ namespace System.Management.Instrumentation
             mapTypeToConverter = (Hashtable)dynType.GetField("mapTypeToConverter").GetValue(null);
 
             // 
-            if(!MTAHelper.IsNoContextMTA())  // 
+            if(!MTAHelper.IsNoContextMTA())  // Bug#110141 - Checking for MTA is not enough.  We need to make sure we are not in a COM+ Context
             {
                 ThreadDispatch disp = new ThreadDispatch ( new ThreadDispatch.ThreadWorkerMethodWithParam ( InitEventSource ) ) ;
                 disp.Parameter = this ;
@@ -371,7 +371,7 @@ namespace System.Management.Instrumentation
 
 		public void Fire(Object o)
 		{
-			SecurityHelper.UnmanagedCode.Demand(); // 
+			SecurityHelper.UnmanagedCode.Demand(); // Bug#112640 - Close off any potential use from anything but fully trusted code
 			Fire(o.GetType(), o);
 		}
 
@@ -383,12 +383,12 @@ namespace System.Management.Instrumentation
         static int upcountId = 0x0EFF;
         public void Publish(Object o)
         {
-			SecurityHelper.UnmanagedCode.Demand(); // 
+			SecurityHelper.UnmanagedCode.Demand(); // Bug#112640 - Close off any potential use from anything but fully trusted code
 			try
             {
                 readerWriterLock.AcquireWriterLock(-1);
                 if(mapPublishedObjectToID.ContainsKey(o))
-                    return;// 
+                    return;// Bug#102932 - to make the same as IInstance, we do not throw new ArgumentException();
                 mapIDToPublishedObject.Add(upcountId.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(System.Int32))), o);
                 mapPublishedObjectToID.Add(o, upcountId);
                 upcountId++;
@@ -401,13 +401,13 @@ namespace System.Management.Instrumentation
 
         public void Revoke(Object o)
         {
-			SecurityHelper.UnmanagedCode.Demand(); // 
+			SecurityHelper.UnmanagedCode.Demand(); // Bug#112640 - Close off any potential use from anything but fully trusted code
 			try
             {
                 readerWriterLock.AcquireWriterLock(-1);
                 Object idObject = mapPublishedObjectToID[o];
                 if(idObject == null)
-                    return;// 
+                    return;// Bug#102932 - to make the same as IInstance, we do not throw new ArgumentException();
                 int id = (int)idObject;
                 mapPublishedObjectToID.Remove(o);
                 mapIDToPublishedObject.Remove(id.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(System.Int32))));

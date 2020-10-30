@@ -135,6 +135,10 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
         private   bool               lastPaintWithExplorerStyle = false;
 
+        private static Color InvertColor(Color color) {
+            return Color.FromArgb(color.A, (byte)~color.R, (byte)~color.G, (byte)~color.B);
+        }
+
         protected GridEntry(PropertyGrid owner, GridEntry peParent) {
             parentPE = peParent;
             ownerGrid = owner;
@@ -155,15 +159,39 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
+        /// <summary>
+        /// Outline Icon padding
+        /// </summary>
+        private int OutlineIconPadding {
+            get {
+                if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                    if (this.GridEntryHost != null) {
+                        return this.GridEntryHost.LogicalToDeviceUnits(OUTLINE_ICON_PADDING);
+                    }
+                }
+
+                return OUTLINE_ICON_PADDING;
+            }
+        }
+
+        private bool colorInversionNeededInHC {
+            get {
+                 return SystemInformation.HighContrast && !OwnerGrid.developerOverride && AccessibilityImprovements.Level1;
+            }
+        }
 
         public AccessibleObject AccessibilityObject {
 
             get {
                 if (accessibleObject == null) {
-                    accessibleObject = new GridEntryAccessibleObject(this);
+                    accessibleObject = GetAccessibilityObject();
                 }
                 return accessibleObject;
             }
+        }
+
+        protected virtual GridEntryAccessibleObject GetAccessibilityObject() {
+            return new GridEntryAccessibleObject(this);
         }
 
         /// <include file='doc\GridEntry.uex' path='docs/doc[@for="GridEntry.AllowMerge"]/*' />
@@ -425,6 +453,23 @@ namespace System.Windows.Forms.PropertyGridInternal {
                         SetFlag(FL_EXPAND,fMakeSure);
                     }
                 }
+
+                if (AccessibilityImprovements.Level1) {
+                    // Notify accessibility clients of expanded state change
+                    // StateChange requires NameChange, too - accessible clients won't see this, unless both events are raised
+
+                    // Root item is hidden and should not raise events
+                    if (GridItemType != GridItemType.Root) {
+                        int id = ((PropertyGridView)GridEntryHost).AccessibilityGetGridEntryChildID(this);
+                        if (id >= 0) {
+                            PropertyGridView.PropertyGridViewAccessibleObject gridAccObj =
+                                (PropertyGridView.PropertyGridViewAccessibleObject)((PropertyGridView)GridEntryHost).AccessibilityObject;
+
+                            gridAccObj.NotifyClients(AccessibleEvents.StateChange, id);
+                            gridAccObj.NotifyClients(AccessibleEvents.NameChange, id);
+                        }
+                    }
+                }
             }
         }
 
@@ -543,7 +588,11 @@ namespace System.Windows.Forms.PropertyGridInternal {
                                 (PropertyGridView.PropertyGridViewAccessibleObject)((PropertyGridView)GridEntryHost).AccessibilityObject;
                                 
                             gridAccObj.NotifyClients(AccessibleEvents.Focus, id);
-                            gridAccObj.NotifyClients(AccessibleEvents.Selection, id); 
+                            gridAccObj.NotifyClients(AccessibleEvents.Selection, id);
+
+                            if (AccessibilityImprovements.Level3) {
+                                AccessibilityObject.SetFocus();
+                            }
                         }
                     }
                 }
@@ -767,12 +816,12 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
-            /// <include file='doc\GridEntry.uex' path='docs/doc[@for="GridEntry.OutlineRect"]/*' />
-            /// <devdoc>
-            /// Returns rect that the outline icon (+ or - or arrow) will be drawn into, relative
-            /// to the upper left corner of the GridEntry.
-            /// </devdoc>
-            public Rectangle OutlineRect {
+        /// <include file='doc\GridEntry.uex' path='docs/doc[@for="GridEntry.OutlineRect"]/*' />
+        /// <devdoc>
+        /// Returns rect that the outline icon (+ or - or arrow) will be drawn into, relative
+        /// to the upper left corner of the GridEntry.
+        /// </devdoc>
+        public Rectangle OutlineRect {
             get {
                 if (!outlineRect.IsEmpty) {
                     return outlineRect;
@@ -780,11 +829,17 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 PropertyGridView gridHost = this.GridEntryHost;
                 Debug.Assert(gridHost != null, "No propEntryHost!");
                 int outlineSize = gridHost.GetOutlineIconSize();
-                int borderWidth = outlineSize + OUTLINE_ICON_PADDING;
-                int left = (propertyDepth * borderWidth) + (OUTLINE_ICON_PADDING) / 2;//+ 1;
-                int top = (gridHost.GetGridEntryHeight() - outlineSize) / 2;// - 1;  // figure out edit positioning.
+                int borderWidth = outlineSize + OutlineIconPadding;
+                int left = (propertyDepth * borderWidth) + (OutlineIconPadding) / 2;
+                int top = (gridHost.GetGridEntryHeight() - outlineSize) / 2;
                 outlineRect = new Rectangle(left, top, outlineSize, outlineSize);
                 return outlineRect;
+            }
+            set {
+                // set property is required to reset cached value when dpi changed.
+                if (value != outlineRect) {
+                    outlineRect = value;
+                }
             }
         }
 
@@ -986,7 +1041,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
-        
+
         /// <include file='doc\GridEntry.uex' path='docs/doc[@for="GridEntry.AddOnLabelClick"]/*' />
         /// <devdoc>
         /// Add an event handler to be invoked when the label portion of
@@ -1867,11 +1922,14 @@ namespace System.Windows.Forms.PropertyGridInternal {
             if (!Rectangle.Intersect(textRect, clipRect).IsEmpty)  {
                 Region oldClip = g.Clip;
                 g.SetClip(textRect);
-                
+                                               
+                //We need to Invert color only if in Highcontrast mode, targeting 4.7.1 and above, Gridcategory and not a developer override. This is required to achieve required contrast ratio.
+                var shouldInvertForHC = colorInversionNeededInHC && (fBold || (selected && !hasFocus));
+
                 // Do actual drawing
                 // A brush is needed if using GDI+ only (UseCompatibleTextRendering); if using GDI, only the color is needed.
-                Color textColor = (selected && hasFocus) ? gridHost.GetSelectedItemWithFocusForeColor() : g.GetNearestColor(this.LabelTextColor);
-
+                Color textColor = selected && hasFocus ? gridHost.GetSelectedItemWithFocusForeColor() : shouldInvertForHC ? InvertColor(ownerGrid.LineColor) : g.GetNearestColor(this.LabelTextColor);
+             
                 if( this.ownerGrid.UseCompatibleTextRendering ) {
                     using( Brush textBrush = new SolidBrush(textColor)){
                         StringFormat stringFormat = new StringFormat(StringFormatFlags.NoWrap);
@@ -1923,7 +1981,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     lastPaintWithExplorerStyle = true;
                 }
 
-                PaintOutlineWithExplorerTreeStyle(g, r);
+                PaintOutlineWithExplorerTreeStyle(g, r, (DpiHelper.EnableDpiChangedHighDpiImprovements && GridEntryHost!=null) ? this.GridEntryHost.HandleInternal: IntPtr.Zero);
             }
             // draw tree-view glyphs as +/-
             else {
@@ -1940,7 +1998,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
-        private void PaintOutlineWithExplorerTreeStyle(System.Drawing.Graphics g, Rectangle r) {
+        private void PaintOutlineWithExplorerTreeStyle(System.Drawing.Graphics g, Rectangle r, IntPtr handle) {
             if (this.Expandable) {
                 bool fExpanded = this.InternalExpanded;
                 Rectangle outline = this.OutlineRect;
@@ -1955,8 +2013,18 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 else
                     element = VisualStyleElement.ExplorerTreeView.Glyph.Closed;
                 
+                // Invert color if it is not overriden by developer.
+                if (colorInversionNeededInHC) {
+                    Color textColor = InvertColor(ownerGrid.LineColor);
+                    if (g != null) {
+                        Brush b = new SolidBrush(textColor);
+                        g.FillRectangle(b, outline);
+                        b.Dispose();
+                    }
+                }               
+
                 VisualStyleRenderer explorerTreeRenderer = new VisualStyleRenderer(element);
-                explorerTreeRenderer.DrawBackground(g, outline);
+                explorerTreeRenderer.DrawBackground(g, outline, handle);
             }
         }
 
@@ -1974,6 +2042,17 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 Brush b = this.GetBackgroundBrush(g);
                 Pen p;
                 Color penColor = GridEntryHost.GetTextColor();
+
+                // inverting text color to back ground to get required contrast ratio
+                if (colorInversionNeededInHC) {
+                    penColor = InvertColor(ownerGrid.LineColor);
+                }
+                else { 
+                    // Filling rectangle as it was in all cases where we do not invert colors.
+                    g.FillRectangle(b, outline); 
+                }
+                
+
                 if (penColor.IsSystemColor) {
                     p = SystemPens.FromSystemColor(penColor);
                 }
@@ -1981,7 +2060,6 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     p = new Pen(penColor);
                 }
 
-                g.FillRectangle(b, outline);
                 g.DrawRectangle(p, outline.X, outline.Y, outline.Width - 1, outline.Height - 1);
 
                 // draw horizontal line for +/-
@@ -2650,8 +2728,9 @@ namespace System.Windows.Forms.PropertyGridInternal {
         [ComVisible(true)]
         public class GridEntryAccessibleObject : AccessibleObject {
 
-            GridEntry owner = null;
+            protected GridEntry owner = null;
             private delegate void SelectDelegate(AccessibleSelection flags);
+            private int[] runtimeId = null; // Used by UIAutomation
 
             public GridEntryAccessibleObject(GridEntry owner) : base() {
                 Debug.Assert(owner != null, "GridEntryAccessibleObject must have a valid owner GridEntry");
@@ -2683,7 +2762,180 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     return owner.PropertyDescription;
                 }
             }
-            
+
+            public override string Help {
+                get {
+                    if (AccessibilityImprovements.Level1) {
+                        return owner.PropertyDescription;
+                    }
+                    else {
+                        return base.Help;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Request to return the element in the specified direction.
+            /// </summary>
+            /// <param name="direction">Indicates the direction in which to navigate.</param>
+            /// <returns>Returns the element in the specified direction.</returns>
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                if (AccessibilityImprovements.Level3) {
+                    switch(direction) {
+                        case UnsafeNativeMethods.NavigateDirection.Parent:
+                            var parentGridEntry = owner.ParentGridEntry;
+                            if (parentGridEntry != null) {
+                                if (parentGridEntry is SingleSelectRootGridEntry) {
+                                    return owner.OwnerGrid.GridViewAccessibleObject;
+                                }
+                                else {
+                                    return parentGridEntry.AccessibilityObject;
+                                }
+                            }
+
+                            return Parent;
+                        case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                            return Navigate(AccessibleNavigation.Previous);
+                        case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                            return Navigate(AccessibleNavigation.Next);
+                    }
+                }
+
+                return base.FragmentNavigate(direction);
+            }
+
+            /// <summary>
+            /// Return the element that is the root node of this fragment of UI.
+            /// </summary>
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                get {
+                    if (AccessibilityImprovements.Level3) {
+                        return (PropertyGridView.PropertyGridViewAccessibleObject)Parent;
+                    }
+
+                    return base.FragmentRoot;
+                }
+            }
+
+            #region IAccessibleEx - patterns and properties
+
+            internal override bool IsIAccessibleExSupported() {
+                if (owner.Expandable && AccessibilityImprovements.Level1) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+
+            internal override int[] RuntimeId {
+                get {
+                    if (runtimeId == null) {
+                        // we need to provide a unique ID
+                        // others are implementing this in the same manner
+                        // first item is static - 0x2a
+                        // second item can be anything, but it's good to supply HWND
+                        // third and others are optional, but in case of GridItem we need it, to make it unique
+                        // grid items are not controls, they don't have hwnd - we use hwnd of PropertyGridView
+
+                        runtimeId = new int[3];
+                        runtimeId[0] = 0x2a;
+                        runtimeId[1] = (int)(long)owner.GridEntryHost.Handle;
+                        runtimeId[2] = this.GetHashCode();
+                    }
+
+                    return runtimeId;
+                }
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                switch (propertyID) {
+                    case NativeMethods.UIA_NamePropertyId:
+                        return Name;
+                    case NativeMethods.UIA_ControlTypePropertyId:
+                        if (AccessibilityImprovements.Level3) {
+                            // In Level 3 the accessible hierarchy is changed so we cannot use Button type
+                            // for the grid items to not break automation logic that searches for the first
+                            // button in the PropertyGridView to show dialog/drop-down. In Level < 3 action
+                            // button is one of the first children of PropertyGridView.
+                            return NativeMethods.UIA_DataItemControlTypeId;
+                        }
+
+                        return NativeMethods.UIA_ButtonControlTypeId;
+                    case NativeMethods.UIA_IsExpandCollapsePatternAvailablePropertyId:
+                        return (Object)IsPatternSupported(NativeMethods.UIA_ExpandCollapsePatternId);
+                }
+
+                if (AccessibilityImprovements.Level3) {
+                    switch (propertyID) {
+                        case NativeMethods.UIA_AccessKeyPropertyId:
+                            return string.Empty;
+                        case NativeMethods.UIA_HasKeyboardFocusPropertyId:
+                            return owner.hasFocus;
+                        case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                            return (this.State & AccessibleStates.Focusable) == AccessibleStates.Focusable;
+                        case NativeMethods.UIA_IsEnabledPropertyId:
+                            return true;
+                        case NativeMethods.UIA_AutomationIdPropertyId:
+                            return GetHashCode().ToString();
+                        case NativeMethods.UIA_HelpTextPropertyId:
+                            return Help ?? string.Empty;
+                        case NativeMethods.UIA_IsPasswordPropertyId:
+                            return false;
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                            return (this.State & AccessibleStates.Offscreen) == AccessibleStates.Offscreen;
+                        case NativeMethods.UIA_LegacyIAccessibleRolePropertyId:
+                            return Role;
+                        case NativeMethods.UIA_LegacyIAccessibleDefaultActionPropertyId:
+                            return DefaultAction;
+                        default:
+                            return base.GetPropertyValue(propertyID);
+                    }
+                }
+
+                return null;
+            }
+
+            internal override bool IsPatternSupported(int patternId) {
+                if (owner.Expandable &&
+                    patternId == NativeMethods.UIA_ExpandCollapsePatternId) {
+                    return true;
+                }
+
+                if (AccessibilityImprovements.Level3 && (
+                    patternId == NativeMethods.UIA_InvokePatternId ||
+                    patternId == NativeMethods.UIA_LegacyIAccessiblePatternId)) {
+                    return true;
+                }
+
+                return false;
+            }
+
+            internal override void Expand() {
+                if (owner.Expandable && owner.Expanded == false) {
+                    owner.Expanded = true;
+                }
+            }
+
+            internal override void Collapse() {
+                if (owner.Expandable && owner.Expanded == true) {
+                    owner.Expanded = false;
+                }
+            }
+
+            internal override UnsafeNativeMethods.ExpandCollapseState ExpandCollapseState {
+                get {
+                    if (owner.Expandable) {
+                        return owner.Expanded ? UnsafeNativeMethods.ExpandCollapseState.Expanded : UnsafeNativeMethods.ExpandCollapseState.Collapsed;
+                    }
+                    else {
+                        return UnsafeNativeMethods.ExpandCollapseState.LeafNode;
+                    }
+                }
+            }
+
+            #endregion
+
             [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
             public override void DoDefaultAction() {
                 owner.OnOutlineClick(EventArgs.Empty);
@@ -2710,6 +2962,18 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
             public override AccessibleRole Role {
                 get {
+                    if (AccessibilityImprovements.Level3) {
+                        return AccessibleRole.Cell;
+                    }
+                    else if (AccessibilityImprovements.Level1)  {
+                        if (owner.Expandable) {
+                            return AccessibleRole.ButtonDropDownGrid;
+                        }
+                        else {
+                            return AccessibleRole.Cell;
+                        }
+                    }
+
                     return AccessibleRole.Row;
                 }
             }
@@ -2842,6 +3106,13 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 }
             }
 
+            internal override void SetFocus() {
+                base.SetFocus();
+
+                if (AccessibilityImprovements.Level3) {
+                    RaiseAutomationEvent(NativeMethods.UIA_AutomationFocusChangedEventId);
+                }
+            }
         }
 
         public class DisplayNameSortComparer : IComparer {

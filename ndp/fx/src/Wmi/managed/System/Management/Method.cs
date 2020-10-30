@@ -130,7 +130,7 @@ namespace System.Management
             }
             else if ((status & 0x80000000) != 0)
             {
-                Marshal.ThrowExceptionForHR(status);
+                Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
             }
         }
 
@@ -219,7 +219,7 @@ namespace System.Management
                     else if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
                 return className;

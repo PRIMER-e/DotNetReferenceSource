@@ -1283,9 +1283,9 @@ namespace System.ServiceModel.Dispatcher
             return docContext.Evaluate(expr);
 
 #if NO
-            // PERF, Microsoft, I drafted this implementation before we found out that a 
-
-
+            // PERF, Microsoft, I drafted this implementation before we found out that a bug in the Fx implementation would 
+            //               prevent us from constructing an XPathNodeIterator that they would accept.  I'm keeping it
+            //               around in the hope that I will be able to use it by M5.4.  If not, it will be deleted.
             
             XPathNavigator basicNav = docContext.Clone();
             SeekableXPathNavigator nav = basicNav as SeekableXPathNavigator;

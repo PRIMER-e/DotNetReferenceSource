@@ -495,14 +495,20 @@ namespace MS.Internal.IO.Packaging
             _highWaterMark = 0;
             _readBuf = new byte[_bufferSize];
 
-            // open the stream for read and write with a retry count of 3 (we try 3 times before giving up on name
-            // collision)
-            // no need for mutex because this is guaranteed to be the first access (ByteRangeDownloader not yet created
-            // and BeginRead not yet started)
-            lock (PackagingUtilities.IsolatedStorageFileLock)
+            // DDVSO:609850
+            // This outer lock is required to prevent creating an inverted lock pattern between PackagingUtilities.IsoStoreSyncRoot
+            // and PackagingUtilities.IsolatedStorageFileLock further down in the code.
+            lock (PackagingUtilities.IsoStoreSyncRoot)
             {
-                _tempFileStream = PackagingUtilities.CreateUserScopedIsolatedStorageFileStreamWithRandomName(
-                    3, out _tempFileName);
+                // open the stream for read and write with a retry count of 3 (we try 3 times before giving up on name
+                // collision)
+                // no need for mutex because this is guaranteed to be the first access (ByteRangeDownloader not yet created
+                // and BeginRead not yet started)
+                lock (PackagingUtilities.IsolatedStorageFileLock)
+                {
+                    _tempFileStream = PackagingUtilities.CreateUserScopedIsolatedStorageFileStreamWithRandomName(
+                        3, out _tempFileName);
+                }
             }
 
             // initiate the data retrieval - must do this at least once to kick off the process

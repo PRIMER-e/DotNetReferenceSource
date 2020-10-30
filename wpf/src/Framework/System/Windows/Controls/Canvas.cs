@@ -13,6 +13,7 @@
 //---------------------------------------------------------------------------
 
 using MS.Internal;
+using MS.Internal.Telemetry.PresentationFramework;
 using MS.Utility;
 using System.ComponentModel;
 
@@ -49,6 +50,11 @@ namespace System.Windows.Controls
         //-------------------------------------------------------------------
 
         #region Constructors
+
+        static Canvas()
+        {
+            ControlsTraceLogger.AddControl(TelemetryControls.Canvas);
+        }
 
         /// <summary>
         ///     Default DependencyObject constructor

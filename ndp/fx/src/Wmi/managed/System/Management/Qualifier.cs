@@ -92,7 +92,7 @@ namespace System.Management
 			if ((status & 0xfffff000) == 0x80041000) //WMI error
 				ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 			else if ((status & 0x80000000) != 0) //any failure
-				Marshal.ThrowExceptionForHR(status);
+				Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 		}
 
 
@@ -194,7 +194,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else if ((status & 0x80000000) != 0)
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 
@@ -236,7 +236,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else if ((status & 0x80000000) != 0)
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 
@@ -289,7 +289,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else if ((status & 0x80000000) != 0)
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 
@@ -325,7 +325,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else if ((status & 0x80000000) != 0)
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 
@@ -361,7 +361,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else if ((status & 0x80000000) != 0)
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 

@@ -105,6 +105,9 @@ namespace System.Windows.Forms {
         NativeWindow previousWindow; // doubly linked list of subclasses.
         NativeWindow nextWindow;
         WeakReference weakThisPtr;
+        private DpiAwarenessContext windowDpiAwarenessContext = DpiHelper.EnableDpiChangedHighDpiImprovements ? 
+                                                                  CommonUnsafeNativeMethods.TryGetThreadDpiAwarenessContext() :
+                                                                  DpiAwarenessContext.DPI_AWARENESS_CONTEXT_UNSPECIFIED;
 
         static NativeWindow() {
             EventHandler shutdownHandler = new EventHandler(OnShutdown);
@@ -129,6 +132,15 @@ namespace System.Windows.Forms {
 
         public NativeWindow() {
             weakThisPtr = new WeakReference(this);
+        }
+
+        /// <summary>
+        /// Cache window DpiContext awareness information that helps to create handle with right context at the later time.
+        /// </summary>
+        internal DpiAwarenessContext DpiAwarenessContext {
+            get {
+                return windowDpiAwarenessContext;
+            }
         }
 
         /// <include file='doc\NativeWindow.uex' path='docs/doc[@for="NativeWindow.Finalize"]/*' />
@@ -581,6 +593,14 @@ namespace System.Windows.Forms {
 #endif
                 this.handle = handle;
 
+                // Synchronizing the handle DPiAwarenessContext with control DpiAwarenessContext. They can be out of sync in case control has a parent set before the handle was created.
+                if (DpiHelper.EnableDpiChangedHighDpiImprovements && windowDpiAwarenessContext != DpiAwarenessContext.DPI_AWARENESS_CONTEXT_UNSPECIFIED) {
+                    var handleDpiContext = CommonUnsafeNativeMethods.TryGetDpiAwarenessContextForWindow(this.handle);
+                    if (handleDpiContext!= DpiAwarenessContext.DPI_AWARENESS_CONTEXT_UNSPECIFIED && !CommonUnsafeNativeMethods.TryFindDpiAwarenessContextsEqual(windowDpiAwarenessContext, handleDpiContext)) {
+                        windowDpiAwarenessContext = handleDpiContext;
+                    }
+                }
+
                 if (userDefWindowProc == IntPtr.Zero) {
                     string defproc = (Marshal.SystemDefaultCharSize == 1 ? "DefWindowProcA" : "DefWindowProcW");
 
@@ -699,7 +719,7 @@ namespace System.Windows.Forms {
             }
 
             // 
-            lock (this) {
+            lock (this) { 
                 CheckReleased();
                 WindowClass windowClass = WindowClass.Create(cp.ClassName, cp.ClassStyle);
                 lock (createWindowSyncObject) {
@@ -709,44 +729,47 @@ namespace System.Windows.Forms {
                     // out the CLR will sometimes pump messages while we're waiting on the lock.  If
                     // a message comes through (say a WM_ACTIVATE for the parent) which causes the 
                     // handle to be created, we can try to create the handle twice for the same 
-                    // NativeWindow object. See 
+                    // NativeWindow object. See bug for more details.
 
                     if (this.handle != IntPtr.Zero) {
                         return;
                     }
                     windowClass.targetWindow = this;
-                    IntPtr modHandle = UnsafeNativeMethods.GetModuleHandle(null);
-
                     IntPtr createResult = IntPtr.Zero;
                     int lastWin32Error = 0;
 
-                    // Win98 apparently doesn't believe in returning E_OUTOFMEMORY.  They'd much
-                    // rather just AV.  So we catch this and then we re-throw an out of memory error.
-                    //
-                    try {
+                    // Parking window dpi awarness context need to match with dpi awarenss context of control being 
+                    // parented to this parkign window. Otherwise, reparenting of control will fail.
+                    using (DpiHelper.EnterDpiAwarenessScope(this.windowDpiAwarenessContext)) {
+                        IntPtr modHandle = UnsafeNativeMethods.GetModuleHandle(null);
 
-                        //(
+                        // Win98 apparently doesn't believe in returning E_OUTOFMEMORY.  They'd much
+                        // rather just AV.  So we catch this and then we re-throw an out of memory error.
+                        //
+                        try {
 
+                            //(bug 109840)
+                            //CreateWindowEx() is throwing because we're passing the WindowText arg with a string of length  > 32767.  
+                            //It looks like the Windows call (CreateWindowEx) will only work 
+                            //for string lengths no greater than the max length of a 16 bit int (32767).
 
+                            //We need to check the length of the string we're passing into CreateWindowEx().  
+                            //If it exceeds the max, we should take the substring....
 
+                            if (cp.Caption != null && cp.Caption.Length > Int16.MaxValue) {
+                                cp.Caption = cp.Caption.Substring(0, Int16.MaxValue);
+                            }
 
-                        //We need to check the length of the string we're passing into CreateWindowEx().  
-                        //If it exceeds the max, we should take the substring....
+                            createResult = UnsafeNativeMethods.CreateWindowEx(cp.ExStyle, windowClass.windowClassName,
+                                                                              cp.Caption, cp.Style, cp.X, cp.Y, cp.Width, cp.Height, new HandleRef(cp, cp.Parent), NativeMethods.NullHandleRef,
+                                                                              new HandleRef(null, modHandle), cp.Param);
 
-                        if (cp.Caption != null && cp.Caption.Length > Int16.MaxValue) {
-                            cp.Caption = cp.Caption.Substring(0, Int16.MaxValue);
+                            lastWin32Error = Marshal.GetLastWin32Error();
                         }
-
-                        createResult = UnsafeNativeMethods.CreateWindowEx(cp.ExStyle, windowClass.windowClassName,
-                                                                          cp.Caption, cp.Style, cp.X, cp.Y, cp.Width, cp.Height, new HandleRef(cp, cp.Parent), NativeMethods.NullHandleRef,
-                                                                          new HandleRef(null, modHandle), cp.Param);
-
-                        lastWin32Error = Marshal.GetLastWin32Error();
+                        catch (NullReferenceException e) {
+                            throw new OutOfMemoryException(SR.GetString(SR.ErrorCreatingHandle), e);
+                        }
                     }
-                    catch (NullReferenceException e) {
-                        throw new OutOfMemoryException(SR.GetString(SR.ErrorCreatingHandle), e);
-                    }
-
                     windowClass.targetWindow = null;
 
                     Debug.WriteLineIf(CoreSwitches.PerfTrack.Enabled, "Handle created of type '" + cp.ClassName + "' with caption '" + cp.Caption + "' from NativeWindow of type '" + GetType().FullName + "'");

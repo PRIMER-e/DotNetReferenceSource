@@ -467,7 +467,7 @@ namespace System.Windows.Forms {
             if (Application.UseVisualStyles) {
                 // CLR4.0 or later, shell32.dll needs to be loaded explicitly.
                 if (UnsafeNativeMethods.GetModuleHandle(ExternDll.Shell32) == IntPtr.Zero) {
-                    if (UnsafeNativeMethods.LoadLibrary(ExternDll.Shell32) == IntPtr.Zero) {
+                    if (UnsafeNativeMethods.LoadLibraryFromSystemPathIfAvailable(ExternDll.Shell32) == IntPtr.Zero) {
                         int lastWin32Error = Marshal.GetLastWin32Error();
                         throw new Win32Exception(lastWin32Error, SR.GetString(SR.LoadDLLError, ExternDll.Shell32));
                     }

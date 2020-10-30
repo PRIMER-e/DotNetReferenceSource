@@ -106,7 +106,7 @@ namespace System.Management.Instrumentation
              int hr = registrar.Register_(0, null, null, null, namespaceName, appName, this);
 
                 if(hr != 0)
-                    Marshal.ThrowExceptionForHR(hr);
+                    Marshal.ThrowExceptionForHR(hr, WmiNetUtilsHelper.GetErrorInfo_f());
 
                 // If we've gotten here, we were successful with the Register call
                 eventSources.Add(this);
@@ -289,7 +289,7 @@ namespace System.Management.Instrumentation
                                 if ((hresult & 0xfffff000) == 0x80041000)
                                     ManagementException.ThrowWithExtendedInfo((ManagementStatus)hresult);
                                 else
-                                    Marshal.ThrowExceptionForHR(hresult);
+                                    Marshal.ThrowExceptionForHR(hresult, WmiNetUtilsHelper.GetErrorInfo_f());
                             }
                         }
                     }
@@ -325,7 +325,7 @@ namespace System.Management.Instrumentation
                     if ((hresult & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)hresult);
                     else
-                        Marshal.ThrowExceptionForHR(hresult);
+                        Marshal.ThrowExceptionForHR(hresult, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
             else
@@ -460,8 +460,8 @@ namespace System.Management.Instrumentation
         {
             lock(mapQueryIdToQuery)
             {
-                // HACK: for 
-
+                // HACK: for bug where CancelQuery is not called correctly
+                // and we get a NewQuery where dwId is already in our hashtable
                 if(mapQueryIdToQuery.ContainsKey(dwId))
                     mapQueryIdToQuery.Remove(dwId);
                 mapQueryIdToQuery.Add(dwId, wszQuery);

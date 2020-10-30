@@ -22,6 +22,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using System.Windows.Markup;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -104,6 +105,8 @@ namespace System.Windows.Controls
                     FrameworkPropertyMetadataOptions.AffectsMeasure
                     )
                 );
+
+            ControlsTraceLogger.AddControl(TelemetryControls.MediaElement);
         }
 
         private static Style CreateDefaultStyles()

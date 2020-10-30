@@ -41,7 +41,7 @@ namespace System.Data.SqlTypes {
     [Serializable]
     [XmlSchemaProvider("GetXsdType")]
     public struct SqlGuid : INullable, IComparable, IXmlSerializable {
-        private static readonly int SizeOfGuid = 16;
+        private const int SizeOfGuid = 16;
 
         // Comparison orders.
         private static readonly int[] x_rgiGuidOrder = new int[16] 

@@ -123,6 +123,7 @@ namespace System.Windows.Forms {
             SetOwner(value);
             int retVal =  InnerList.Add(value);   
             if (itemsCollection &&  owner != null) {
+                owner.OnItemAddedInternal(value);
                 owner.OnItemAdded(new ToolStripItemEventArgs(value));                
             }           
             return retVal;
@@ -367,6 +368,7 @@ namespace System.Windows.Forms {
                     // next time we fetch the preferred size, recalc it.
                     CommonProperties.xClearPreferredSizeCache(owner);
                 }
+                owner.OnItemAddedInternal(value);
                 owner.OnItemAdded(new ToolStripItemEventArgs(value));                  
             }           
 
@@ -429,6 +431,8 @@ namespace System.Windows.Forms {
                 }
 
                 if (owner != null) {
+                    owner.OnItemRemovedInternal(item);
+
                     if (!owner.IsDisposingItems) {
                         ToolStripItemEventArgs e = new ToolStripItemEventArgs(item);
                         owner.OnItemRemoved(e);
@@ -441,8 +445,7 @@ namespace System.Windows.Forms {
                             parent.OnItemVisibleChanged(e, /*performLayout*/false);
                         }
                     }
-                }
-                
+                }                
             }
         }
         

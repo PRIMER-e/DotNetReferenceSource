@@ -179,7 +179,7 @@ namespace System.Windows
         /// Used before accessing services off Visual.
         /// </summary>
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         internal void UpdateLayout()
         {
             VerifyAccess();
@@ -317,10 +317,10 @@ namespace System.Windows
                             if(currentElement == null) break; //exit if no more Measure candidates
                             
                             currentElement.Measure(currentElement.PreviousConstraint);
-//dmitryt, 
-
-
-
+//dmitryt, bug 1150880: not clear why this is needed, remove for now
+//if the parent was just computed, the chidlren should be clean. If they are not clean and in the queue
+//that means that there is cross-tree dependency and they most likely shodul be updated by themselves.
+//                            MeasureQueue.RemoveOrphans(currentElement);
                         }
 
                         if (etwTracingEnabled)
@@ -387,10 +387,10 @@ namespace System.Windows
                             Rect finalRect = getProperArrangeRect(currentElement);
 
                             currentElement.Arrange(finalRect);
-//dmitryt, 
-
-
-
+//dmitryt, bug 1150880: not clear why this is needed, remove for now
+//if the parent was just computed, the chidlren should be clean. If they are not clean and in the queue
+//that means that there is cross-tree dependency and they most likely shodul be updated by themselves.
+//                            ArrangeQueue.RemoveOrphans(currentElement);
                         }
 
                         if (etwTracingEnabled)

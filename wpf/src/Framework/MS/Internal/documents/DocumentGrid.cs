@@ -205,7 +205,7 @@ namespace MS.Internal.Documents
         /// </summary>
         public void MouseWheelUp()
         {
-            if (_canVerticallyScroll)
+            if (CanMouseWheelVerticallyScroll)
             {
                 SetVerticalOffsetInternal(VerticalOffset - MouseWheelVerticalScrollAmount);
             }
@@ -220,7 +220,7 @@ namespace MS.Internal.Documents
         /// </summary>
         public void MouseWheelDown()
         {
-            if (_canVerticallyScroll)
+            if (CanMouseWheelVerticallyScroll)
             {
                 SetVerticalOffsetInternal(VerticalOffset + MouseWheelVerticalScrollAmount);
             }
@@ -235,7 +235,7 @@ namespace MS.Internal.Documents
         /// </summary>
         public void MouseWheelLeft()
         {
-            if (_canHorizontallyScroll)
+            if (CanMouseWheelHorizontallyScroll)
             {
                 SetHorizontalOffsetInternal(HorizontalOffset - MouseWheelHorizontalScrollAmount);
             }
@@ -250,7 +250,7 @@ namespace MS.Internal.Documents
         /// </summary>
         public void MouseWheelRight()
         {
-            if (_canHorizontallyScroll)
+            if (CanMouseWheelHorizontallyScroll)
             {
                 SetHorizontalOffsetInternal(HorizontalOffset + MouseWheelHorizontalScrollAmount);
             }
@@ -1327,6 +1327,26 @@ namespace MS.Internal.Documents
                 DocumentViewerOwner.IsSelectionEnabled = true;
             }
 
+        }
+
+        /// <summary>
+        /// DDVSO:494408
+        /// Reset the entire visual tree when the visual parent changes in order to ensure that
+        /// the HighlightVisuals associated with the FixedPages in the document are re-created
+        /// and added to the new AdornerLayer.
+        /// </summary>
+        /// <param name="oldParent">The old visual parent (not used)</param>
+        protected internal override void OnVisualParentChanged(DependencyObject oldParent)
+        {
+            base.OnVisualParentChanged(oldParent);
+
+            // No need for a reset if we don't have a parent since there is no AdornerLayer
+            // to add HighlightVisuals back to.
+            if (VisualTreeHelper.GetParent(this) != null)
+            {
+                // Do a full reset, we want to ensure even visible pages are reset.
+                ResetVisualTree(pruneOnly: false);
+            }
         }
 
         #endregion Protected Methods
@@ -3129,6 +3149,11 @@ namespace MS.Internal.Documents
             }
         }
 
+        private bool CanMouseWheelVerticallyScroll
+        {
+            get { return _canVerticallyScroll && SystemParameters.WheelScrollLines > 0; }
+        }
+
         /// <summary>
         /// Represents the number of pixels to scroll by when using the
         /// Mouse Wheel; based on System.Parameters.WheelScrollLines.
@@ -3142,6 +3167,11 @@ namespace MS.Internal.Documents
                 //our scroll amount to get the number of pixels to move.
                 return _horizontalLineScrollAmount * SystemParameters.WheelScrollLines;
             }
+        }
+
+        private bool CanMouseWheelHorizontallyScroll
+        {
+            get { return _canHorizontallyScroll && SystemParameters.WheelScrollLines > 0; }
         }
 
         /// <summary>

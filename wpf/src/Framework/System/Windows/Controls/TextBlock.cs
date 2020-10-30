@@ -37,6 +37,7 @@ using MS.Internal.Text;
 using MS.Internal.Documents;
 using MS.Internal.Controls;
 using MS.Internal.PresentationFramework;
+using MS.Internal.Telemetry.PresentationFramework;
 
 #pragma warning disable 1634, 1691  // suppressing PreSharp warnings
 
@@ -344,6 +345,8 @@ namespace System.Windows.Controls
 
             EventManager.RegisterClassHandler(typeof(TextBlock), RequestBringIntoViewEvent, new RequestBringIntoViewEventHandler(OnRequestBringIntoView));
             DefaultStyleKeyProperty.OverrideMetadata(typeof(TextBlock), new FrameworkPropertyMetadata(typeof(TextBlock)));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.TextBlock);
         }
 
         /// <summary>

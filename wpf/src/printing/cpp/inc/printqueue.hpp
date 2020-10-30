@@ -393,6 +393,26 @@ namespace Printing
             void
             );
 
+        ///<SecurityNote>
+        /// Critical    - Checks the registry to determine if XpsOM printing has been disabled
+        /// TreatAsSafe - Does not return critical data, does not change critical state, does not consume untrusted input
+        ///</SecurityNote>
+        [SecuritySafeCritical]
+        Boolean
+            IsXpsOMPrintingDisabled(
+            void
+            );
+
+        ///<SecurityNote>
+        /// Critical    - Calls native methods to determine if Print Document Package API Interfaces are available to use in XPS printing
+        /// TreatAsSafe - Does not return critical data, does not change critical state, does not consume untrusted input
+        ///</SecurityNote>
+        [SecuritySafeCritical]
+        Boolean
+            IsXpsOMPrintingSupported(
+            void
+            );
+
         static
         PrintQueue^
         Install(
@@ -656,7 +676,7 @@ namespace Printing
         {
             /// <SecurityNote>
             /// Critical     - Uses type from non-APTCA reachframework.dll (PrintTicket)
-            ///    Safe 	 - Type is safe exception object
+            ///    Safe      - Type is safe exception object
             /// <SecurityNote>
             [SecuritySafeCritical]
             PrintJobSettings^ get();
@@ -850,7 +870,7 @@ namespace Printing
 
             /// <SecurityNote>
             ///    Critical - Uses type from non-APTCA reachframework.dll (PrintTicket)
-            ///    Safe 	- Type is safe
+            ///    Safe     - Type is safe
             /// <SecurityNote>
             [SecuritySafeCritical]
             void set(PrintTicket^ newUserPrintTicket);
@@ -873,7 +893,7 @@ namespace Printing
 
             /// <SecurityNote>
             ///    Critical - Uses type from non-APTCA reachframework.dll (PrintTicket)
-            ///    Safe 	- Type is safe
+            ///    Safe     - Type is safe
             /// <SecurityNote>
             [SecuritySafeCritical]
             void set(PrintTicket^ newDefaultPrintTicket);
@@ -1646,7 +1666,7 @@ namespace Printing
 
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll (PrintTicket)
-        ///    Safe 	- Type is safe
+        ///    Safe     - Type is safe
         /// <SecurityNote>
         [SecuritySafeCritical]
         static
@@ -1772,6 +1792,17 @@ namespace Printing
         internal:
 
         ///<SecurityNote>
+        /// Critical    - When running in PT, we need to evelate to determine if the driver is Mxdw
+        /// TreatAsSafe - the driver name is not handed outside of the method, besides it's not considered to be critical in PT.
+        ///</SecurityNote>
+        [SecuritySafeCritical]
+        static
+        bool
+        IsMxdwLegacyDriver(
+            PrintQueue^ printQueue
+        );
+
+        ///<SecurityNote>
         /// Critical     - Returns type from non-APTCA reachframework.dll (PackageSerializationManager)
         ///</SecurityNote>
         [SecurityCritical]
@@ -1816,10 +1847,22 @@ namespace Printing
         [SecurityCritical]
         PackageSerializationManager^
         CreateAsyncSerializationManager(
-            bool    isBatchMode,
-            bool    mustSetJobIdentifier
+            bool         isBatchMode,
+            bool         mustSetJobIdentifier,
+            PrintTicket^ printTicket
             );
 
+        ///<SecurityNote>
+        /// Critical     - Returns type from non-APTCA reachframework.dll (PackageSerializationManager)
+        ///</SecurityNote>
+        [SecurityCritical]
+        PackageSerializationManager^
+            CreateXpsOMSerializationManager(
+            bool         isBatchMode,
+            bool         isAsync,
+            PrintTicket^ printTicket,
+            bool         mustSetPrintJobIdentifier
+            );
 
         ///<SecurityNote>
         /// Critical     - Uses types from non-APTCA reachframework.dll (PackageSerializationManager)
@@ -1839,8 +1882,25 @@ namespace Printing
             bool abort
             );
 
+        void
+            EnsureJobId(
+            PackageSerializationManager^ manager
+            );
+
         static
         String^         defaultXpsJobName;
+
+        
+        property
+        RCW::IXpsOMPackageWriter^
+        XpsOMPackageWriter
+        {
+            ///<SecurityNote>
+            /// Critical            - Modifies critical member XpsCompatiblePrinter
+            ///</SecurityNote>
+            [SecurityCritical]
+            void set(RCW::IXpsOMPackageWriter^ packageWriter);
+        }
 
         internal:
 
@@ -1926,7 +1986,7 @@ namespace Printing
 
         /// <SecurityNote>
         ///    Critical - Instantiates type from non-APTCA reachframework.dll (PrintTicket)
-        ///    Safe 	- Type is safe
+        ///    Safe     - Type is safe
         /// <SecurityNote>
         [SecuritySafeCritical]
         array<MulticastDelegate^>^
@@ -2099,7 +2159,7 @@ namespace Printing
 
             /// <SecurityNote>
             ///    Critical - Uses type from non-APTCA reachframework.dll (PrintTicket)
-            ///    Safe 	- Type is safe
+            ///    Safe     - Type is safe
             /// <SecurityNote>
             [SecuritySafeCritical]
             PartialTrustPrintTicketEventHandler(
@@ -2195,7 +2255,7 @@ namespace Printing
 
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
-        ///    Safe 	- Type is safe
+        ///    Safe     - Type is safe
         /// <SecurityNote>
         [SecuritySafeCritical]
         Exception^
@@ -2206,7 +2266,7 @@ namespace Printing
 
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
-        ///    Safe 	- Type is safe
+        ///    Safe     - Type is safe
         /// <SecurityNote>
         [SecuritySafeCritical]
         static
@@ -2475,6 +2535,8 @@ namespace Printing
         PrintSystemDispatcherObject^    accessVerifier;
 
         Object^                         _lockObject;
+
+        XpsCompatiblePrinter^           xpsCompatiblePrinter;
     };
 
     public ref class PrintQueueCollection :

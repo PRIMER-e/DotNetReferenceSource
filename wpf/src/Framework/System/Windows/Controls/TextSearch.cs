@@ -308,6 +308,66 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
+        /// Gets the length of the prefix (the prefix of matchedText matched by newText) and the rest of the string from the matchedText
+        /// It takes care of compressions or expansions in both matchedText and newText  which could be impacting the length of the string
+        /// For example: length of prefix would be 5 and the rest would be 2 if matchedText is "Grosses" and newText is ""Groﬂ"
+        /// length of prefix would be 4 and the rest would be 2 if matchedText is ""Groﬂes" and newText is "Gross" as "ﬂ" = "ss"
+        /// </summary>
+        /// /// <param name="matchedText">string that is assumed to contain prefix which matches newText</param>
+        /// <param name="newText">string that is assumed to match a prefix of matchedText</param>
+        private static void GetMatchingPrefixAndRemainingTextLength(string matchedText, string newText, CultureInfo cultureInfo,
+                                                                bool ignoreCase, out int matchedPrefixLength, out int textExcludingPrefixLength)
+        {
+            Debug.Assert(String.IsNullOrEmpty(matchedText) == false, "matchedText cannot be null or empty");
+            Debug.Assert(String.IsNullOrEmpty(newText) == false, "newText cannot be null or empty");
+            Debug.Assert(matchedText.StartsWith(newText, ignoreCase, cultureInfo), "matchedText should start with newText");
+            
+            matchedPrefixLength = 0;
+            textExcludingPrefixLength = 0;
+
+            if (matchedText.Length < newText.Length)
+            {
+                matchedPrefixLength = matchedText.Length;
+                textExcludingPrefixLength = 0;
+            }
+            else
+            {
+                // mostly compression or expansion is not involved. So start with length of newText
+                int i = newText.Length;
+                int j = i + 1;
+                
+                do
+                {
+                    string temp;
+
+                    if (i >= 1)
+                    {
+                        temp = matchedText.Substring(0, i);
+                        if (String.Compare(newText, temp, ignoreCase, cultureInfo) == 0)
+                        {
+                            matchedPrefixLength = i;
+                            textExcludingPrefixLength = matchedText.Length - i;
+                            break;
+                        }
+                    }
+                    if (j <= matchedText.Length)
+                    {
+                        temp = matchedText.Substring(0, j);
+                        if (String.Compare(newText, temp, ignoreCase, cultureInfo) == 0)
+                        {
+                            matchedPrefixLength = j;
+                            textExcludingPrefixLength = matchedText.Length - j;
+                            break;
+                        }
+                    }
+
+                    i--;
+                    j++;
+                } while (i >= 1 || j <= matchedText.Length);
+            }
+        }
+
+        /// <summary>
         ///     Searches through the given itemCollection for the first item matching the given prefix.
         /// </summary>
         /// <remarks>
@@ -459,12 +519,35 @@ namespace System.Windows.Controls
         /// <summary>
         ///     Helper function called by Editable ComboBox to search through items.
         /// </summary>
-        internal static int FindMatchingPrefix(ItemsControl itemsControl, string prefix)
+        internal static MatchedTextInfo FindMatchingPrefix(ItemsControl itemsControl, string prefix)
         {
+            MatchedTextInfo matchedTextInfo;
             bool wasNewCharUsed = false;
+            
+            int matchedItemIndex =  FindMatchingPrefix(itemsControl, GetPrimaryTextPath(itemsControl), prefix, String.Empty, 0, false, ref wasNewCharUsed);
 
-            return FindMatchingPrefix(itemsControl, GetPrimaryTextPath(itemsControl),
-                                      prefix, String.Empty, 0, false, ref wasNewCharUsed);
+            // DDVSO 208379: There could be compressions or expansions in either matched text or inputted text which means
+            // length of the prefix in the matched text and length of the inputted text could be different
+            // for example: "Grosses" would match for the input text "Groﬂ" where the prefix length in matched text is 5
+            // whereas the length of the inputted text is 4. Same matching rule applies for the other way as well with
+            // "Groﬂ" in matched text for the inputted text "Gross"
+            if (matchedItemIndex >= 0)
+            {
+                int matchedPrefixLength;
+                int textExcludingPrefixLength;
+                CultureInfo cultureInfo = GetCulture(itemsControl);
+                bool ignoreCase = itemsControl.IsTextSearchCaseSensitive;
+                string matchedText = GetPrimaryTextFromItem(itemsControl, itemsControl.Items[matchedItemIndex]);
+
+                GetMatchingPrefixAndRemainingTextLength(matchedText, prefix, cultureInfo, !ignoreCase, out matchedPrefixLength, out textExcludingPrefixLength);
+                matchedTextInfo = new MatchedTextInfo(matchedItemIndex, matchedText, matchedPrefixLength, textExcludingPrefixLength);
+            }
+            else
+            {
+                matchedTextInfo = MatchedTextInfo.NoMatch;
+            }
+
+            return matchedTextInfo;
         }
 
         private void ResetTimeout()

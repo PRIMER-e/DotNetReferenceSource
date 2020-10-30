@@ -60,7 +60,7 @@ namespace System.Windows.Controls
             TextBoxBase.SelectionBrushProperty.OverrideMetadata(typeof(FlowDocumentPageViewer),
                 new FrameworkPropertyMetadata(new PropertyChangedCallback(UpdateCaretElement)));
             TextBoxBase.SelectionOpacityProperty.OverrideMetadata(typeof(FlowDocumentPageViewer),
-                new FrameworkPropertyMetadata(new PropertyChangedCallback(UpdateCaretElement)));
+                new FrameworkPropertyMetadata(TextBoxBase.AdornerSelectionOpacityDefaultValue, new PropertyChangedCallback(UpdateCaretElement)));
 
             // Create our CommandBindings
             CreateCommandBindings();

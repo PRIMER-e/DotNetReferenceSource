@@ -70,7 +70,7 @@ namespace System.Activities.Presentation.Internal.PropertyEditing.FromExpression
 
         public static readonly DependencyProperty ComboBoxLoadingCursorProperty = DependencyProperty.Register("ComboBoxLoadingCursor", typeof(Cursor), typeof(ChoiceEditor), new PropertyMetadata(null));
 
-        // WORKAROUND this property is used in combination with a trigger to kick the combobox when it clears its bindings Avalon 
+        // WORKAROUND this property is used in combination with a trigger to kick the combobox when it clears its bindings Avalon bug: 1756023
         public static readonly DependencyProperty ForceBindingProperty = DependencyProperty.Register("ForceBinding", typeof(bool), typeof(ChoiceEditor), new FrameworkPropertyMetadata(false));
 
 
@@ -924,7 +924,7 @@ namespace System.Activities.Presentation.Internal.PropertyEditing.FromExpression
         protected override void OnTemplateChanged(ControlTemplate oldTemplate, ControlTemplate newTemplate)
         {
             this.BeginNoCommitInternalValueChangeBlock();
-            // WORKAROUND Turn off bindings on the internal combo while the template is udpating. This works around Avalon 
+            // WORKAROUND Turn off bindings on the internal combo while the template is udpating. This works around Avalon bug: 1756023
             this.ForceBinding = false;
             base.OnTemplateChanged(oldTemplate, newTemplate);
         }
@@ -932,7 +932,7 @@ namespace System.Activities.Presentation.Internal.PropertyEditing.FromExpression
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            // WORKAROUND Force the bindings on our internal combo (if there is one) to update. This works around Avalon 
+            // WORKAROUND Force the bindings on our internal combo (if there is one) to update. This works around Avalon bug: 1756023
             this.ForceBinding = true;
 
             this.EndNoCommitInternalValueChangeBlock();

@@ -455,8 +455,8 @@ namespace MS.Internal.AppModel
                 _progressPage.ApplicationName = args.ProductName;
 
                 // GetManifestCompletedEventArgs.PublisherName doesn't exist.
-                // DevDiv 
-
+                // DevDiv bug 166088 tracks this.
+                // The retrieval below takes surprisingly little time: < 1 ms.
                 XmlReader rdr = args.DeploymentManifest;
                 rdr.MoveToContent();
                 if (rdr.LocalName == "assembly")

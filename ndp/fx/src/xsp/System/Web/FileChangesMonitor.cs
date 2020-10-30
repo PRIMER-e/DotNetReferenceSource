@@ -1574,7 +1574,7 @@ namespace System.Web {
                     }
                 }
             }
-            // Dev10 
+            // Dev10 Bug 663511: Deletes, moves, and renames of the App_LocalResources folder may be ignored
             if (dirName.IndexOf(HttpRuntime.LocalResourcesDirectoryName, StringComparison.OrdinalIgnoreCase) > -1) {
                 return true;
             }

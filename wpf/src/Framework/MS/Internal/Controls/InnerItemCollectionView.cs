@@ -447,7 +447,7 @@ namespace MS.Internal.Controls
         public override bool MoveCurrentTo(object item)
         {
             // if already on item, don't do anything
-            if (Object.Equals(CurrentItem, item))
+            if (ItemsControl.EqualsEx(CurrentItem, item))
             {
                 // also check that we're not fooled by a false null CurrentItem
                 if (item != null || IsCurrentInView)
@@ -721,7 +721,7 @@ namespace MS.Internal.Controls
             return node;
         }
 
-        // NOTE: Only change the item's logical links if the host is a Visual (
+        // NOTE: Only change the item's logical links if the host is a Visual (bug 986386)
         void SetModelParent(object item)
         {
             // to avoid the unnecessary, expensive code in AddLogicalChild, check for DO first

@@ -294,7 +294,7 @@ namespace System.Xml.Xsl.XPath {
                 //    </xsl:template>
                 //</xsl:stylesheet>
 
-                // ToDo: remove this code when IlGen 
+                // ToDo: remove this code when IlGen bug will be fixed.
                 if (qilAxis.NodeType == QilNodeType.Filter) {
                     QilLoop filter = (QilLoop) qilAxis;
                     filter.Body = f.And(filter.Body, 

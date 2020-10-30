@@ -280,6 +280,8 @@ namespace MS.Internal.Automation
             new AutomationPropertyInfo( null,                            AutomationElement.FrameworkIdProperty,                  typeof(string),                ""                             ),
             new AutomationPropertyInfo( convertToBool,                   AutomationElement.IsRequiredForFormProperty,            typeof(bool),                  false                          ),
             new AutomationPropertyInfo( null,                            AutomationElement.ItemStatusProperty,                   typeof(string),                ""                             ),
+            new AutomationPropertyInfo( null,                            AutomationElement.SizeOfSetProperty,                    typeof(int),                   -1                             ),
+            new AutomationPropertyInfo( null,                            AutomationElement.PositionInSetProperty,                typeof(int),                   -1                             ),
 
             // Pattern Available properties            
             //                                                           PropertyID                                                  Type           Default value

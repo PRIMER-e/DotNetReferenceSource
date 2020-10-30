@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Security;
 using System.Security.Permissions;
 using System.Windows.Controls;
+using System.Windows.Diagnostics;
 using System.Windows.Media;
 using System.Windows.Markup;
 
@@ -124,9 +125,9 @@ namespace System.Windows
         }
 
         /// <summary>
-        /// Elements that arent connected to the tree do not receive theme change notifications. 
-        /// We leave it upto the app author to listen for such changes and invoke this method on 
-        /// elements that they know that arent connected to the tree. This method will update the 
+        /// Elements that arent connected to the tree do not receive theme change notifications.
+        /// We leave it upto the app author to listen for such changes and invoke this method on
+        /// elements that they know that arent connected to the tree. This method will update the
         /// DefaultStyle for the subtree starting at the current instance.
         /// </summary>
         public void UpdateDefaultStyle()
@@ -306,7 +307,7 @@ namespace System.Windows
             }
 
             // Logical Parent must first be dropped before you are attached to a newParent
-            // This mitigates illegal tree state caused by logical child stealing as illustrated in 
+            // This mitigates illegal tree state caused by logical child stealing as illustrated in bug 970706
             if (_parent != null && newParent != null && _parent != newParent)
             {
                 throw new System.InvalidOperationException(SR.Get(SRID.HasLogicalParent));
@@ -317,6 +318,9 @@ namespace System.Windows
             {
                 throw new System.InvalidOperationException(SR.Get(SRID.CannotBeSelfParent));
             }
+
+            // invalid during a VisualTreeChanged event
+            VisualDiagnostics.VerifyVisualTreeChange(this);
 
             // Logical Parent implies no InheritanceContext
             if (newParent != null)
@@ -396,7 +400,7 @@ namespace System.Windows
             internal void OnAncestorChangedInternal(TreeChangeInfo parentTreeState)
         {
             // Cache the IsSelfInheritanceParent flag
-            bool isSelfInheritanceParent = IsSelfInheritanceParent;
+            bool wasSelfInheritanceParent = IsSelfInheritanceParent;
 
             if (parentTreeState.Root != this)
             {
@@ -406,11 +410,11 @@ namespace System.Windows
 
             }
 
-            // If this is a tree add operation update the ShouldLookupImplicitStyles 
+            // If this is a tree add operation update the ShouldLookupImplicitStyles
             // flag with respect to your parent.
             if (parentTreeState.IsAddOperation)
             {
-                FrameworkObject fo = 
+                FrameworkObject fo =
 
                     new FrameworkObject(null, this);
                 fo.SetShouldLookupImplicitStyles();
@@ -427,7 +431,7 @@ namespace System.Windows
             // If parent is a FrameworkElement
             // This is also an operation that could change the style
             FrugalObjectList<DependencyProperty> currentInheritableProperties =
-            InvalidateTreeDependentProperties(parentTreeState, isSelfInheritanceParent);
+            InvalidateTreeDependentProperties(parentTreeState, IsSelfInheritanceParent, wasSelfInheritanceParent);
 
             // we have inherited properties that changes as a result of the above;
             // invalidation; push that list of inherited properties on the stack
@@ -455,7 +459,7 @@ namespace System.Windows
 
         // Invalidate all the properties that may have changed as a result of
         //  changing this element's parent in the logical (and sometimes visual tree.)
-        internal FrugalObjectList<DependencyProperty> InvalidateTreeDependentProperties(TreeChangeInfo parentTreeState, bool isSelfInheritanceParent)
+        internal FrugalObjectList<DependencyProperty> InvalidateTreeDependentProperties(TreeChangeInfo parentTreeState, bool isSelfInheritanceParent, bool wasSelfInheritanceParent)
         {
             AncestorChangeInProgress = true;
 
@@ -517,14 +521,14 @@ namespace System.Windows
                 }
                 else if (!IsSelfInheritanceParent)
                 {
-                    // Set IsSelfInheritanceParet on the root node at a tree boundary 
+                    // Set IsSelfInheritanceParet on the root node at a tree boundary
                     // so that all inheritable properties are cached on it.
                     SetIsSelfInheritanceParent();
                 }
 
                 // Loop through all cached inheritable properties for the parent to see if they should be invalidated.
                 return TreeWalkHelper.InvalidateTreeDependentProperties(parentTreeState, /* fe = */ null, /* fce = */ this, selfStyle, selfThemeStyle,
-                    ref childRecord, isChildRecordValid, hasStyleChanged, isSelfInheritanceParent);
+                    ref childRecord, isChildRecordValid, hasStyleChanged, isSelfInheritanceParent, wasSelfInheritanceParent);
             }
             finally
             {
@@ -633,10 +637,10 @@ namespace System.Windows
                 IsThemeStyleUpdateInProgress = true;
                 try
                 {
-                    StyleHelper.GetThemeStyle(/* fe = */ null, /* fce = */ this);                
+                    StyleHelper.GetThemeStyle(/* fe = */ null, /* fce = */ this);
 
                     // Update the ContextMenu and ToolTips separately because they aren't in the tree
-                    ContextMenu contextMenu = 
+                    ContextMenu contextMenu =
                             GetValueEntry(
                                     LookupEntry(ContextMenuProperty.GlobalIndex),
                                     ContextMenuProperty,
@@ -647,7 +651,7 @@ namespace System.Windows
                         TreeWalkHelper.InvalidateOnResourcesChange(contextMenu, null, ResourcesChangeInfo.ThemeChangeInfo);
                     }
 
-                    DependencyObject toolTip = 
+                    DependencyObject toolTip =
                             GetValueEntry(
                                     LookupEntry(ToolTipProperty.GlobalIndex),
                                     ToolTipProperty,
@@ -777,8 +781,8 @@ namespace System.Windows
             // a) the requested link uses VisualBrush.Visual or BitmapCacheBrush.TargetProperty
             // b) this element has no visual or logical parent
             // c) the context does not introduce a cycle
-            if ((property == VisualBrush.VisualProperty || property == BitmapCacheBrush.TargetProperty) 
-                && FrameworkElement.GetFrameworkParent(this) == null 
+            if ((property == VisualBrush.VisualProperty || property == BitmapCacheBrush.TargetProperty)
+                && FrameworkElement.GetFrameworkParent(this) == null
                  //!FrameworkObject.IsEffectiveAncestor(this, context, property))
                 && !FrameworkObject.IsEffectiveAncestor(this, context))
             {
@@ -1170,16 +1174,16 @@ namespace System.Windows
         internal bool PotentiallyHasMentees
         {
             get { return ReadInternalFlag(InternalFlags.PotentiallyHasMentees); }
-            set 
+            set
             {
-                Debug.Assert(value == true, 
-                    "This flag is set to true when a mentee attaches a listeners to either the " + 
-                    "InheritedPropertyChanged event or the ResourcesChanged event. It never goes " + 
-                    "back to being false because this would involve counting the remaining listeners " + 
-                    "for either of the aforementioned events. This seems like an overkill for the perf " + 
+                Debug.Assert(value == true,
+                    "This flag is set to true when a mentee attaches a listeners to either the " +
+                    "InheritedPropertyChanged event or the ResourcesChanged event. It never goes " +
+                    "back to being false because this would involve counting the remaining listeners " +
+                    "for either of the aforementioned events. This seems like an overkill for the perf " +
                     "optimization we are trying to achieve here.");
 
-                WriteInternalFlag(InternalFlags.PotentiallyHasMentees, value); 
+                WriteInternalFlag(InternalFlags.PotentiallyHasMentees, value);
             }
         }
 
@@ -1195,10 +1199,10 @@ namespace System.Windows
         /// </remarks>
         internal event EventHandler ResourcesChanged
         {
-            add 
-            { 
+            add
+            {
                 PotentiallyHasMentees = true;
-                EventHandlersStoreAdd(FrameworkElement.ResourcesChangedKey, value); 
+                EventHandlersStoreAdd(FrameworkElement.ResourcesChangedKey, value);
             }
             remove { EventHandlersStoreRemove(FrameworkElement.ResourcesChangedKey, value); }
         }
@@ -1215,10 +1219,10 @@ namespace System.Windows
         /// </remarks>
         internal event InheritedPropertyChangedEventHandler InheritedPropertyChanged
         {
-            add 
-            { 
+            add
+            {
                 PotentiallyHasMentees = true;
-                EventHandlersStoreAdd(FrameworkElement.InheritedPropertyChangedKey, value); 
+                EventHandlersStoreAdd(FrameworkElement.InheritedPropertyChangedKey, value);
             }
             remove { EventHandlersStoreRemove(FrameworkElement.InheritedPropertyChangedKey, value); }
         }

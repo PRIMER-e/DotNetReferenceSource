@@ -2707,7 +2707,7 @@ void Attribute::_----AllAttributesOnToken
                     (StrCmp(strName, NONSERIALIZEDATTRIBUTE) == 0 ||
                     StrCmp(strName, COMSOURCEINTERFACES) == 0)))
                 {
-                // NetCF 
+                // NetCF Bug: 18559
                     if (m_pcompilerhost->IsStarliteHost() && StrCmp(strName, COMSOURCEINTERFACES) == 0)
                     {
                     }
@@ -3028,7 +3028,7 @@ void Attribute::----ArgBlob
         // This also indicates 0 number of arguments for the constructors.
         // So if expected number of arguments for the constructor of this
         // well known attribute type is non-zero, don't treat the attribute
-        // as a well known attribute.  VS Everett Security 
+        // as a well known attribute.  VS Everett Security Bug #
         if (((BYTE *)pAttribute->m_sig)[1] != 0)
         {
             goto Error;
@@ -7132,7 +7132,7 @@ void Attribute::VerifyNonSerializedAttributeUsage(BCSYM_NamedRoot *ProcField, Er
 
     //Verify that non-serialized attribute can not be applied on custom event or any event in interfaces
     // The assumption is that if the backing field does not exist then the event is either a custom event or in an interface.
-    // 
+    // Bug 674331
     if (ProcField->IsEventDecl() && ProcField->PEventDecl()->GetDelegateVariable() == NULL)
     { 
         pErrorTable->CreateError(
@@ -8498,10 +8498,13 @@ bool WellKnownAttrVals::GetDispIdData(long *pDispId)
         return false;
     }
 
-// The warning 4302 is that we are casting from void * to long and losing information. Since we
+// The warnings are that we are casting from void * to long and losing information. Since we
 // stored a long for this key, we can suppress this warning.
-#pragma warning (suppress:4302)
-    long dispId = reinterpret_cast<long>(m_dataTable.GetValue(DispId_Key));
+#pragma warning (push)
+#pragma warning (disable:4311)
+#pragma warning (disable:4302)
+	long dispId = reinterpret_cast<long>(m_dataTable.GetValue(DispId_Key));
+#pragma warning (pop)
 
     // Set OUT params
     *pDispId = dispId;
@@ -8570,11 +8573,14 @@ bool WellKnownAttrVals::GetFieldOffsetData(int *pOffset)
     }
     if (pOffset)
     {
-// The warning 4302 is that we are casting from void * to int and losing information. Since we
+// The warnings are that we are casting from void * to int and losing information. Since we
 // stored a int for this key, we can suppress this warning.
-#pragma warning (suppress:4302)
-        *pOffset = reinterpret_cast<int>(m_dataTable.GetValue(FieldOffset_Key));
-    }
+#pragma warning (push)
+#pragma warning (disable:4311)
+#pragma warning (disable:4302)
+		*pOffset = reinterpret_cast<int>(m_dataTable.GetValue(FieldOffset_Key));
+#pragma warning (push)
+	}
     return true;
 }
 
@@ -8597,10 +8603,13 @@ bool WellKnownAttrVals::GetLCIDConversionData(int *pData)
     }
     if (pData)
     {
-// The warning 4302 is that we are casting from void * to int and losing information. Since we
+// The warnings are that we are casting from void * to int and losing information. Since we
 // stored a int for this key, we can suppress this warning.
-#pragma warning (suppress:4302)
-        *pData = reinterpret_cast<int>(m_dataTable.GetValue(LCIDConversion_Key));
+#pragma warning (push)
+#pragma warning (disable:4311)
+#pragma warning (disable:4302)
+		*pData = reinterpret_cast<int>(m_dataTable.GetValue(LCIDConversion_Key));
+#pragma warning (pop)
     }
     return true;
 }
@@ -8695,11 +8704,14 @@ bool WellKnownAttrVals::GetUnmanagedFunctionPointerData(long *pUfp)
 
     if (pUfp)
     {
-// The warning 4302 is that we are casting from void * to long and losing information. Since we
+// The warnings are that we are casting from void * to long and losing information. Since we
 // stored a long for this key, we can suppress this warning.
-#pragma warning (suppress:4302)
-        *pUfp = reinterpret_cast<long>(m_dataTable.GetValue(UnmanagedFunctionPointer_Key));
-    }
+#pragma warning (push)
+#pragma warning (disable:4311)
+#pragma warning (disable:4302)
+		*pUfp = reinterpret_cast<long>(m_dataTable.GetValue(UnmanagedFunctionPointer_Key));
+#pragma warning (pop)
+	}
     return true;
 }
 
@@ -8785,10 +8797,13 @@ bool WellKnownAttrVals::GetInterfaceTypeData
         return false;
     }
 
-// The warning 4302 is that we are casting from void * to long and losing information. Since we
+// The warnings are is that we are casting from void * to long and losing information. Since we
 // stored a long for this key, we can suppress this warning.
-#pragma warning (suppress:4302)
-    long interfaceType = reinterpret_cast<long>(m_dataTable.GetValue(InterfaceType_Key));
+#pragma warning (push)
+#pragma warning (disable:4311)
+#pragma warning (disable:4302)
+	long interfaceType = reinterpret_cast<long>(m_dataTable.GetValue(InterfaceType_Key));
+#pragma warning (pop)
 
     // Set OUT params
     *pInterfaceType = interfaceType;

@@ -36,6 +36,7 @@ using MS.Internal.Utility;
 using MS.Internal.KnownBoxes;
 using MS.Utility;
 using MS.Internal.Controls;
+using MS.Internal.Telemetry.PresentationFramework;
 using System.Collections.Generic;
 
 using SecurityHelper=MS.Internal.PresentationFramework.SecurityHelper;
@@ -139,6 +140,8 @@ namespace System.Windows.Controls
             NavigationService.NavigationServiceProperty.OverrideMetadata(
                     typeof(Frame),
                     new FrameworkPropertyMetadata(new PropertyChangedCallback(OnParentNavigationServiceChanged)));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.Frame);
         }
 
         private static object CoerceContent(DependencyObject d, object value)

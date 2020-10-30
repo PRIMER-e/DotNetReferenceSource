@@ -27,6 +27,11 @@ namespace System
                         {
                             LocalAppContext.DefineSwitchDefault("Switch.System.Drawing.DontSupportPngFramesInIcons", true);
                         }
+                        if (version <= 40701)
+                        {
+                             LocalAppContext.DefineSwitchDefault("Switch.System.Drawing.Text.DoNotRemoveGdiFontsResourcesFromFontCollection", true);
+                        }
+
                         break;
                     }
             }

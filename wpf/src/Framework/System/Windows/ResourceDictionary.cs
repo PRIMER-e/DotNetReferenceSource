@@ -20,6 +20,7 @@ using System.ComponentModel;
 using System.Security;
 using System.Windows.Threading;
 using System.Windows.Media;
+using System.Windows.Diagnostics;
 using System.IO.Packaging;
 using MS.Internal.IO.Packaging;         // for PackageCacheEntry
 using System.Globalization;
@@ -145,11 +146,34 @@ namespace System.Windows
                     throw new ArgumentException(SR.Get(SRID.ResourceDictionaryLoadFromFailure, value == null ? "''" : value.ToString()));
                 }
 
-                _source = value;
+                ResourceDictionaryDiagnostics.RemoveResourceDictionaryForUri(_source, this);
 
+                ResourceDictionarySourceUriWrapper uriWrapper = value as ResourceDictionarySourceUriWrapper;
+
+                Uri sourceUri;
+
+                // DDVSO 546550: If the Uri we received is a ResourceDictionarySourceUriWrapper it means
+                // that it is being passed down by the Baml parsing code, and it is trying to give us more
+                // information to avoid possible ambiguities in assembly resolving. Use the VersionedUri
+                // to resolve, and the set _source to the OriginalUri so we don't change the return of Source property.
+                // The versioned Uri is not stored, if the version info is needed while debugging, once this method 
+                // returns _reader should be set, from there BamlSchemaContext.LocalAssembly contains the version info.
+                if (uriWrapper == null)
+                {
+                    _source = value;
+                    sourceUri = _source;
+                }
+                else
+                {
+                    _source = uriWrapper.OriginalUri;
+                    sourceUri = uriWrapper.VersionedUri;
+                }
+                
                 Clear();
+                
+                
+                Uri uri = BindUriHelper.GetResolvedUri(_baseUri, sourceUri);
 
-                Uri uri = BindUriHelper.GetResolvedUri(_baseUri, _source);
                 WebRequest request = WpfWebRequestHelper.CreateRequest(uri);
                 WpfWebRequestHelper.ConfigCachePolicy(request, false);
                 ContentType contentType = null;
@@ -224,6 +248,12 @@ namespace System.Windows
                 // Copy over the HasImplicitStyles flag
                 HasImplicitStyles = loadedRD.HasImplicitStyles;
 
+                // Copy over the HasImplicitDataTemplates flag
+                HasImplicitDataTemplates = loadedRD.HasImplicitDataTemplates;
+
+                // Copy over the InvalidatesImplicitDataTemplateResources flag
+                InvalidatesImplicitDataTemplateResources = loadedRD.InvalidatesImplicitDataTemplateResources;
+
                 // Set inheritance context on the copied values
                 if (InheritanceContext != null)
                 {
@@ -238,6 +268,8 @@ namespace System.Windows
                         PropagateParentOwners(_mergedDictionaries[i]);
                     }
                 }
+
+                ResourceDictionaryDiagnostics.AddResourceDictionaryForUri(uri, this);
 
                 if (!IsInitializePending)
                 {
@@ -338,6 +370,19 @@ namespace System.Windows
         }
 
         /// <summary>
+        ///     Gets or sets a value indicating whether the invalidations fired
+        ///     by the ResourceDictionary when an implicit data template resource
+        ///     changes will cause ContentPresenters to re-evaluate their choice
+        ///     of template.
+        /// </summary>
+        [DefaultValue(false)]
+        public bool InvalidatesImplicitDataTemplateResources
+        {
+            get { return ReadPrivateFlag(PrivateFlags.InvalidatesImplicitDataTemplateResources); }
+            set { WritePrivateFlag(PrivateFlags.InvalidatesImplicitDataTemplateResources, value); }
+        }
+
+        /// <summary>
         ///     Gets or sets the value associated with the specified key.
         /// </summary>
         /// <remarks>
@@ -418,6 +463,9 @@ namespace System.Windows
 
                 // Update the HasImplicitStyles flag
                 UpdateHasImplicitStyles(key);
+
+                // Update the HasImplicitDataTemplates flag
+                UpdateHasImplicitDataTemplates(key);
 
                 // Notify owners of the change and fire invalidate if already initialized
                 NotifyOwners(new ResourcesChangeInfo(key));
@@ -588,6 +636,9 @@ namespace System.Windows
                 throw new InvalidOperationException(SR.Get(SRID.ResourceDictionaryIsReadOnly));
             }
 
+            // invalid during a VisualTreeChanged event
+            System.Windows.Diagnostics.VisualDiagnostics.VerifyVisualTreeChange(InheritanceContext);
+
             if( TraceResourceDictionary.IsEnabled )
             {
                 TraceResourceDictionary.Trace( TraceEventType.Start,
@@ -602,6 +653,9 @@ namespace System.Windows
 
             // Update the HasImplicitKey flag
             UpdateHasImplicitStyles(key);
+
+            // Update the HasImplicitDataTemplates flag
+            UpdateHasImplicitDataTemplates(key);
 
             // Notify owners of the change and fire invalidate if already initialized
             NotifyOwners(new ResourcesChangeInfo(key));
@@ -641,6 +695,9 @@ namespace System.Windows
             {
                 throw new InvalidOperationException(SR.Get(SRID.ResourceDictionaryIsReadOnly));
             }
+
+            // invalid during a VisualTreeChanged event
+            System.Windows.Diagnostics.VisualDiagnostics.VerifyVisualTreeChange(InheritanceContext);
 
             if (Count > 0)
             {
@@ -769,6 +826,9 @@ namespace System.Windows
             {
                 throw new InvalidOperationException(SR.Get(SRID.ResourceDictionaryIsReadOnly));
             }
+
+            // invalid during a VisualTreeChanged event
+            System.Windows.Diagnostics.VisualDiagnostics.VerifyVisualTreeChange(InheritanceContext);
 
             // We need to validate all the deferred references that refer
             // to the old resource before we remove it.
@@ -926,6 +986,11 @@ namespace System.Windows
 
         private void OnGettingValuePrivate(object key, ref object value, out bool canCache)
         {
+            // diagnostic agent may want to know when a StaticResource reference
+            // resolves.  Do this before calling out to OnGettingValue, as that
+            // can inflate deferred content and cause nested requests
+            ResourceDictionaryDiagnostics.RecordLookupResult(key, this);
+
             OnGettingValue(key, ref value, out canCache);
 
             if (key != null && canCache)
@@ -1159,6 +1224,9 @@ namespace System.Windows
 
                     // Update the HasImplicitStyles flag
                     UpdateHasImplicitStyles(value);
+
+                    // Update the HasImplicitDataTemplates flag
+                    UpdateHasImplicitDataTemplates(value);
 
                     if (keyRecord != null && keyRecord.HasStaticResources)
                     {
@@ -1591,6 +1659,11 @@ namespace System.Windows
             bool shouldInvalidate   = IsInitialized;
             bool hasImplicitStyles  = info.IsResourceAddOperation && HasImplicitStyles;
 
+            if (shouldInvalidate && InvalidatesImplicitDataTemplateResources)
+            {
+                info.SetIsImplicitDataTemplateChange();
+            }
+
             if (shouldInvalidate || hasImplicitStyles)
             {
                 // Invalidate all FE owners
@@ -1719,6 +1792,8 @@ namespace System.Windows
                         deferredResourceReference = new DeferredThemeResourceReference(this, resourceKey, canCacheAsThemeResource);
                     }
 
+                    ResourceDictionaryDiagnostics.RecordLookupResult(resourceKey, this);
+
                     return deferredResourceReference;
                 }
             }
@@ -1806,6 +1881,12 @@ namespace System.Windows
                         if (!HasImplicitStyles && mergedDictionary.HasImplicitStyles)
                         {
                             HasImplicitStyles = true;
+                        }
+
+                        // If the merged dictionary HasImplicitDataTemplates mark the outer dictionary the same.
+                        if (!HasImplicitDataTemplates && mergedDictionary.HasImplicitDataTemplates)
+                        {
+                            HasImplicitDataTemplates = true;
                         }
 
                         // If the parent dictionary is a theme dictionary mark the merged dictionary the same.
@@ -1983,6 +2064,23 @@ namespace System.Windows
             }
 
             return false;
+        }
+
+        // three properties used by ResourceDictionaryDiagnostics
+
+        internal WeakReferenceList FrameworkElementOwners
+        {
+            get { return _ownerFEs; }
+        }
+
+        internal WeakReferenceList FrameworkContentElementOwners
+        {
+            get { return _ownerFCEs; }
+        }
+
+        internal WeakReferenceList ApplicationOwners
+        {
+            get { return _ownerApps; }
         }
 
         #endregion HelperMethods
@@ -2295,6 +2393,16 @@ namespace System.Windows
             }
         }
 
+        // Sets the HasImplicitDataTemplates flag if the given key is of type DataTemplateKey.
+        private void UpdateHasImplicitDataTemplates(object key)
+        {
+            // Update the HasImplicitDataTemplates flag
+            if (!HasImplicitDataTemplates)
+            {
+                HasImplicitDataTemplates = (key is DataTemplateKey);
+            }
+        }
+
         private DependencyObject InheritanceContext
         {
             get
@@ -2344,6 +2452,12 @@ namespace System.Windows
         {
             get { return ReadPrivateFlag(PrivateFlags.HasImplicitStyles); }
             set { WritePrivateFlag(PrivateFlags.HasImplicitStyles, value); }
+        }
+
+        internal bool HasImplicitDataTemplates
+        {
+            get { return ReadPrivateFlag(PrivateFlags.HasImplicitDataTemplates); }
+            set { WritePrivateFlag(PrivateFlags.HasImplicitDataTemplates, value); }
         }
 
         internal bool CanBeAccessedAcrossThreads
@@ -2428,9 +2542,34 @@ namespace System.Windows
             IsThemeDictionary           = 0x08,
             HasImplicitStyles           = 0x10,
             CanBeAccessedAcrossThreads  = 0x20,
+            InvalidatesImplicitDataTemplateResources = 0x40,
+            HasImplicitDataTemplates    = 0x80,
+        }
 
-            // Unused bit = 0x40,
-            // Unused bit = 0x80,
+        /// <summary>
+        /// This wrapper class exists so SourceUriTypeConverterMarkupExtension can pass
+        /// a more complete Uri to help resolve to the correct assembly, while also passing 
+        /// the original Uri so that ResourceDictionary.Source still returns the original value.
+        /// </summary> 
+        internal class ResourceDictionarySourceUriWrapper : Uri
+        {
+            public ResourceDictionarySourceUriWrapper(Uri originalUri, Uri versionedUri) : base(originalUri.OriginalString, UriKind.RelativeOrAbsolute)
+            {
+                OriginalUri = originalUri;
+                VersionedUri = versionedUri;
+            }
+
+            internal Uri OriginalUri
+            {
+                get;
+                set;
+            }
+
+            internal Uri VersionedUri
+            {
+                get;
+                set;
+            }
         }
 
         #endregion PrivateDataStructures

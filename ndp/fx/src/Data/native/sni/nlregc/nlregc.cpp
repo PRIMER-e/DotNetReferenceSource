@@ -3531,10 +3531,10 @@ LONG NLregC::CSaddAlias( TCHAR    * szAliasName,
 		goto Exit;
 	}
 
-	// SQL BU DT 
-
-
-
+	// SQL BU DT bug 299087: 
+	// Reject blank server name as MDAC 2.8 Client Network Utility 
+	// (cliconfg) used to.  
+	//
 	if( pCSalias->szTarget[0] == 0x00 )
 	{
 		lResult = ERROR_INVALID_PARAMETER; 

@@ -37,10 +37,17 @@ namespace System.Windows.Automation.Peers
         ///
         override protected bool IsControlElementCore()
         {
-            // Return true if ScrollViewer is not part of a ControlTemplate
+            // Return false if ScrollViewer is part of a ControlTemplate, otherwise return the base method
             ScrollViewer sv = (ScrollViewer)Owner;
             DependencyObject templatedParent = sv.TemplatedParent;
-            return templatedParent == null || templatedParent is ContentPresenter; // If the templatedParent is a ContentPresenter, this ScrollViewer is generated from a DataTemplate
+
+            // If the templatedParent is a ContentPresenter, this ScrollViewer is generated from a DataTemplate
+            if (templatedParent == null || templatedParent is ContentPresenter)
+            {
+                return base.IsControlElementCore();
+            }
+
+            return false;
         }
 
         /// 

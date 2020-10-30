@@ -36,7 +36,6 @@ namespace System.Windows.Automation.Peers
                 throw new ArgumentNullException("dataGridPeer");
             }
 
-            _item = item;
             _dataGridAutomationPeer = dataGridPeer;
         }
 
@@ -57,7 +56,7 @@ namespace System.Windows.Automation.Peers
             if (wrapperPeer != null)
             {
                 // We need to update children manually since wrapperPeer is not in the Automation Tree
-                // When containers are recycled the visual (DataGridRow) will point to a new item. ForceEnsureChildren will just refresh children of this peer, 
+                // When containers are recycled the visual (DataGridRow) will point to a new item. ForceEnsureChildren will just refresh children of this peer,
                 // unlike UpdateSubtree which would raise property change events and recursively updates entire subtree.
                 // WrapperPeer's children are the peers for DataGridRowHeader, DataGridCells and DataGridRowDetails.
                 wrapperPeer.ForceEnsureChildren();
@@ -67,7 +66,7 @@ namespace System.Windows.Automation.Peers
 
             return GetCellItemPeers();
         }
-        
+
         ///
         protected override string GetClassNameCore()
         {
@@ -146,7 +145,7 @@ namespace System.Windows.Automation.Peers
                 }
             }
 
-            
+
             IList<DataGridColumn> columns = OwningDataGrid.Columns;
 
             if (columns != null && columns.Count > 0)
@@ -167,7 +166,7 @@ namespace System.Windows.Automation.Peers
                         throw new InvalidOperationException(SR.Get(SRID.InavalidStartItem));
                     }
 
-                    // To find the index of the item in items collection which occurs 
+                    // To find the index of the item in items collection which occurs
                     // immidiately after startAfterItem.Item
                     startIndex = columns.IndexOf(startAfterItem.Column) + 1;
                     if (startIndex == 0 || startIndex == columns.Count)
@@ -222,19 +221,20 @@ namespace System.Windows.Automation.Peers
         void IInvokeProvider.Invoke()
         {
             EnsureEnabled();
+            object item = Item;
 
             AutomationPeer wrapperPeer = GetWrapperPeer();
             if (wrapperPeer == null)
             {
-                this.OwningDataGrid.ScrollIntoView(_item);
+                this.OwningDataGrid.ScrollIntoView(item);
             }
-              
+
             bool success = false;
             UIElement owningRow = GetWrapper();
             if (owningRow != null)
             {
                 IEditableCollectionView iecv = (IEditableCollectionView)this.OwningDataGrid.Items;
-                if (iecv.CurrentEditItem == _item)
+                if (iecv.CurrentEditItem == item)
                 {
                     success = this.OwningDataGrid.CommitEdit();
                 }
@@ -242,7 +242,7 @@ namespace System.Windows.Automation.Peers
                 {
                     if (this.OwningDataGrid.Columns.Count > 0)
                     {
-                        DataGridCell cell = this.OwningDataGrid.TryFindCell(_item, this.OwningDataGrid.Columns[0]);
+                        DataGridCell cell = this.OwningDataGrid.TryFindCell(item, this.OwningDataGrid.Columns[0]);
                         if (cell != null)
                         {
                             this.OwningDataGrid.UnselectAll();
@@ -258,27 +258,27 @@ namespace System.Windows.Automation.Peers
             if (!success && !IsNewItemPlaceholder)
             {
                 throw new InvalidOperationException(SR.Get(SRID.DataGrid_AutomationInvokeFailed));
-            } 
+            }
         }
 
         #endregion
 
         #region IScrollItemProvider
-        
+
         void IScrollItemProvider.ScrollIntoView()
         {
-            this.OwningDataGrid.ScrollIntoView(_item);
+            this.OwningDataGrid.ScrollIntoView(Item);
         }
-        
+
         #endregion
 
         #region ISelectionItemProvider
-        
+
         bool ISelectionItemProvider.IsSelected
         {
             get
             {
-                return this.OwningDataGrid.SelectedItems.Contains(_item);
+                return this.OwningDataGrid.SelectedItems.Contains(Item);
             }
         }
 
@@ -298,22 +298,23 @@ namespace System.Windows.Automation.Peers
             }
 
             // If item is already selected - do nothing
-            if (this.OwningDataGrid.SelectedItems.Contains(_item))
+            object item = Item;
+            if (this.OwningDataGrid.SelectedItems.Contains(item))
             {
                 return;
             }
 
             EnsureEnabled();
-        
+
             if (this.OwningDataGrid.SelectionMode == DataGridSelectionMode.Single &&
                 this.OwningDataGrid.SelectedItems.Count > 0)
             {
                 throw new InvalidOperationException();
             }
 
-            if (this.OwningDataGrid.Items.Contains(_item))
+            if (this.OwningDataGrid.Items.Contains(item))
             {
-                this.OwningDataGrid.SelectedItems.Add(_item);
+                this.OwningDataGrid.SelectedItems.Add(item);
             }
         }
 
@@ -326,9 +327,10 @@ namespace System.Windows.Automation.Peers
 
             EnsureEnabled();
 
-            if (this.OwningDataGrid.SelectedItems.Contains(_item))
+            object item = Item;
+            if (this.OwningDataGrid.SelectedItems.Contains(item))
             {
-                this.OwningDataGrid.SelectedItems.Remove(_item);
+                this.OwningDataGrid.SelectedItems.Remove(item);
             }
         }
 
@@ -341,13 +343,13 @@ namespace System.Windows.Automation.Peers
 
             EnsureEnabled();
 
-            this.OwningDataGrid.SelectedItem = _item;
+            this.OwningDataGrid.SelectedItem = Item;
         }
-        
+
         #endregion
 
         #region ISelectionProvider
-        
+
         bool ISelectionProvider.CanSelectMultiple
         {
             get
@@ -372,17 +374,17 @@ namespace System.Windows.Automation.Peers
                 return null;
             }
 
-            int rowIndex = dataGrid.Items.IndexOf(_item);
+            int rowIndex = dataGrid.Items.IndexOf(Item);
 
             // If row has selection
-            if (rowIndex > -1 && dataGrid.SelectedCellsInternal.Intersects(rowIndex)) 
+            if (rowIndex > -1 && dataGrid.SelectedCellsInternal.Intersects(rowIndex))
             {
                 List<IRawElementProviderSimple> selectedProviders = new List<IRawElementProviderSimple>();
 
                 for (int i = 0; i < this.OwningDataGrid.Columns.Count; i++)
                 {
                     // cell is selected
-                    if (dataGrid.SelectedCellsInternal.Contains(rowIndex, i)) 
+                    if (dataGrid.SelectedCellsInternal.Contains(rowIndex, i))
                     {
                         DataGridColumn column = dataGrid.ColumnFromDisplayIndex(i);
                         DataGridCellItemAutomationPeer peer = GetOrCreateCellItemPeer(column);
@@ -413,8 +415,8 @@ namespace System.Windows.Automation.Peers
         internal List<AutomationPeer> GetCellItemPeers()
         {
             List<AutomationPeer> children = null;
-            ItemPeersStorage<DataGridCellItemAutomationPeer> newChildren = new ItemPeersStorage<DataGridCellItemAutomationPeer>(); 
-            
+            ItemPeersStorage<DataGridCellItemAutomationPeer> newChildren = new ItemPeersStorage<DataGridCellItemAutomationPeer>();
+
             IList childItems = null;
             bool usingItemsHost = false;
             DataGridRow row = GetWrapper() as DataGridRow;
@@ -475,7 +477,7 @@ namespace System.Windows.Automation.Peers
         /// one and adds the Handle and parent info by calling AddParentInfo.
         /// </summary>
         /// <SecurityNote>
-        /// Security Critical - Calls a Security Critical operation AddParentInfo which adds parent peer and provides 
+        /// Security Critical - Calls a Security Critical operation AddParentInfo which adds parent peer and provides
         ///                     security critical Hwnd value for this peer created asynchronously.
         /// SecurityTreatAsSafe - It's being called from this object which is real parent for the item peer.
         /// </SecurityNote>
@@ -500,13 +502,13 @@ namespace System.Windows.Automation.Peers
 
             if (peer == null)
             {
-                peer = new DataGridCellItemAutomationPeer(_item, column);
+                peer = new DataGridCellItemAutomationPeer(Item, column);
                 if (addParentInfo && peer != null)
                 {
                     peer.TrySetParentInfo(this);
                 }
             }
-            
+
             //perform hookup so the events sourced from wrapper peer are fired as if from the data item
             AutomationPeer wrapperPeer = peer.OwningCellPeer;
             if (wrapperPeer != null)
@@ -557,7 +559,7 @@ namespace System.Windows.Automation.Peers
                 throw new ElementNotEnabledException();
             }
         }
-        
+
         #endregion
 
         #region Private Properties
@@ -566,7 +568,7 @@ namespace System.Windows.Automation.Peers
         {
             get
             {
-                return (this.OwningDataGrid != null && 
+                return (this.OwningDataGrid != null &&
                     (this.OwningDataGrid.SelectionUnit == DataGridSelectionUnit.FullRow ||
                     this.OwningDataGrid.SelectionUnit == DataGridSelectionUnit.CellOrRowHeader));
             }
@@ -576,10 +578,11 @@ namespace System.Windows.Automation.Peers
         {
             get
             {
-                return (_item == CollectionView.NewItemPlaceholder) || (_item == DataGrid.NewItemPlaceholder);
+                object item = Item;
+                return (item == CollectionView.NewItemPlaceholder) || (item == DataGrid.NewItemPlaceholder);
             }
         }
-        
+
         internal AutomationPeer RowHeaderAutomationPeer
         {
             get
@@ -617,7 +620,6 @@ namespace System.Windows.Automation.Peers
 
         #region Data
 
-        private object _item;
         private AutomationPeer _dataGridAutomationPeer;
         private ItemPeersStorage<DataGridCellItemAutomationPeer> _dataChildren = new ItemPeersStorage<DataGridCellItemAutomationPeer>();
         private ItemPeersStorage<WeakReference> _weakRefElementProxyStorage = new ItemPeersStorage<WeakReference>();

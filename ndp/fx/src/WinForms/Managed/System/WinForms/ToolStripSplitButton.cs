@@ -398,7 +398,15 @@ namespace System.Windows.Forms {
         }
 
         protected override AccessibleObject CreateAccessibilityInstance() {
-           return new ToolStripSplitButtonAccessibleObject(this);
+            if (AccessibilityImprovements.Level3) {
+                return new ToolStripSplitButtonUiaProvider(this);
+            }
+            else if (AccessibilityImprovements.Level1) {
+                return new ToolStripSplitButtonExAccessibleObject(this);
+            }
+            else {
+                return new ToolStripSplitButtonAccessibleObject(this);
+            }
        }
 
         protected override ToolStripDropDown CreateDefaultDropDown() {
@@ -789,12 +797,129 @@ namespace System.Windows.Forms {
             public override void DoDefaultAction() {
                 owner.PerformButtonClick();
             }
-         
         }
-        
 
+        /// <include file='doc\ToolStripDropDownItem.uex' path='docs/doc[@for="ToolStripSplitButtonExAccessibleObject"]/*' /> 
+        internal class ToolStripSplitButtonExAccessibleObject: ToolStripSplitButtonAccessibleObject {
+
+            private ToolStripSplitButton ownerItem;
+
+            public ToolStripSplitButtonExAccessibleObject(ToolStripSplitButton item)
+                : base(item) {
+                ownerItem = item;
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_ButtonControlTypeId;
+                }
+                else {
+                    return base.GetPropertyValue(propertyID);
+                }
+            }
+
+            internal override bool IsIAccessibleExSupported() {
+                if (ownerItem != null) {
+                    return true;
+                }
+                else {
+                    return base.IsIAccessibleExSupported();
+                }
+            }
+
+            internal override bool IsPatternSupported(int patternId) {
+                if (patternId == NativeMethods.UIA_ExpandCollapsePatternId && ownerItem.HasDropDownItems) {
+                    return true;
+                }
+                else {
+                    return base.IsPatternSupported(patternId);
+                }
+            }
+
+            internal override void Expand() {
+                DoDefaultAction();
+            }
+
+            internal override void Collapse() {
+                if (ownerItem != null && ownerItem.DropDown != null && ownerItem.DropDown.Visible) {
+                    ownerItem.DropDown.Close();
+                }
+            }
+
+            internal override UnsafeNativeMethods.ExpandCollapseState ExpandCollapseState {
+                get {
+                    return ownerItem.DropDown.Visible ? UnsafeNativeMethods.ExpandCollapseState.Expanded : UnsafeNativeMethods.ExpandCollapseState.Collapsed;
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                switch (direction) {
+                    case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                        return DropDownItemsCount > 0 ? ownerItem.DropDown.Items[0].AccessibilityObject : null;
+                    case UnsafeNativeMethods.NavigateDirection.LastChild:
+                        return DropDownItemsCount > 0 ? ownerItem.DropDown.Items[ownerItem.DropDown.Items.Count - 1].AccessibilityObject : null;
+                }
+                return base.FragmentNavigate(direction);
+            }
+
+            private int DropDownItemsCount {
+                get {
+                    // Do not expose child items when the drop-down is collapsed to prevent Narrator from announcing
+                    // invisible menu items when Narrator is in item's mode (CAPSLOCK + Arrow Left/Right) or
+                    // in scan mode (CAPSLOCK + Space)
+                    if (AccessibilityImprovements.Level3 && ExpandCollapseState == UnsafeNativeMethods.ExpandCollapseState.Collapsed) {
+                        return 0;
+                    }
+
+                    return ownerItem.DropDownItems.Count;
+                }
+            }
+        }
+
+        internal class ToolStripSplitButtonUiaProvider : ToolStripDropDownItemAccessibleObject {
+            private ToolStripSplitButton _owner;
+            private ToolStripSplitButtonExAccessibleObject _accessibleObject;
+
+            public ToolStripSplitButtonUiaProvider(ToolStripSplitButton owner) : base(owner) {
+                _owner = owner;
+                _accessibleObject = new ToolStripSplitButtonExAccessibleObject(owner);
+            }
+
+            public override void DoDefaultAction() {
+                _accessibleObject.DoDefaultAction();
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                return _accessibleObject.GetPropertyValue(propertyID);
+            }
+
+            internal override bool IsIAccessibleExSupported() {
+                return true;
+            }
+
+            internal override bool IsPatternSupported(int patternId) {
+                return _accessibleObject.IsPatternSupported(patternId);
+            }
+
+            internal override void Expand() {
+                DoDefaultAction();
+            }
+
+            internal override void Collapse() {
+                _accessibleObject.Collapse();
+            }
+
+            internal override UnsafeNativeMethods.ExpandCollapseState ExpandCollapseState {
+                get {
+                    return _accessibleObject.ExpandCollapseState;
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                return _accessibleObject.FragmentNavigate(direction);
+            }
+        }
     }
-
 }
     
 

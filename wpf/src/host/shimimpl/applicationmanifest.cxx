@@ -74,10 +74,17 @@ STDMETHODIMP_(DWORD) CApplicationManifest::Release()
     }
 }
 
+/// <remarks> 
+/// Per documentation for ISAXContentHandler::startElement, 
+/// <paramref name="pwchLocalName" /> string might not be zero terminated. 
+/// The <paramref name="cchLocalName" /> parameter contains the length of 
+/// the local name, which we will use to extract the exact number of useful
+/// characters from <paramref name="pwchLocalName" />
+/// </remarks>
 IFACEMETHODIMP CApplicationManifest::startElement(
     __in_ecount(cchNamespaceUri) const wchar_t *pwchNamespaceUri,
     __in int cchNamespaceUri,
-    __in_ecount(cchLocalName) const wchar_t *pwchLocalName,
+    __in_ecount(cchLocalName) const wchar_t *pwchLocalName, // The local name string might not be zero terminated
     __in int cchLocalName,
     __in_ecount(cchQName) const wchar_t *pwchQName,
     __in int cchQName,
@@ -85,22 +92,26 @@ IFACEMETHODIMP CApplicationManifest::startElement(
 {
     HRESULT hr = S_OK;
 
-    const UINT BUFFER_LENGTH = 1024;
-    LPCWSTR pwzValue;
+    CString strLocalName;
+    CString strName, strVersion;
 
-    if (wcscmp(pwchLocalName, L"assemblyIdentity") == 0)
+    const wchar_t EMPTY[] = L"";
+    const wchar_t NAME[] = L"name";
+    const wchar_t VERSION[] = L"version";
+
+    CKHR(strLocalName.SetValue(pwchLocalName, cchLocalName));
+    if (strLocalName == L"assemblyIdentity")
     {
-        int nLength = BUFFER_LENGTH;
-        CKHR(pAttributes->getValueFromName(L"", 0, L"name", 4, &pwzValue, &nLength));
-        if (wcscmp(pwzValue, KEY_ASSEMBLY) == 0)
+        CKHR(GetXmlAttributeValue(pAttributes, EMPTY, strlit_len(EMPTY), NAME, strlit_len(NAME), strName));
+        if (strName == KEY_ASSEMBLY)
         {
-            CKHR(pAttributes->getValueFromName(L"", 0, L"version", 7, &pwzValue, &nLength));
-            SetRequestedVersion(pwzValue);
+            CKHR(GetXmlAttributeValue(pAttributes, EMPTY, strlit_len(EMPTY), VERSION, strlit_len(VERSION), strVersion));
+            SetRequestedVersion(strVersion.GetValue());
         }
-        else if (wcscmp(pwzValue, REQUESTED_CLR) == 0)
+        else if (strName == REQUESTED_CLR)
         {
-            CKHR(pAttributes->getValueFromName(L"", 0, L"version", 7, &pwzValue, &nLength));
-            SetRequestedClrVersion(pwzValue);
+            CKHR(GetXmlAttributeValue(pAttributes, EMPTY, strlit_len(EMPTY), VERSION, strlit_len(VERSION), strVersion));
+            SetRequestedClrVersion(strVersion.GetValue());
         }
 
         if (GetRequestedVersion() != NULL && GetRequestedClrVersion() != NULL)
@@ -160,7 +171,7 @@ HRESULT CApplicationManifest::Read()
     // stated in the SDK.
     CKHR(URLDownloadToCacheFile(NULL, GetUri(), wzCacheFileName, MAX_PATH, 0, this));
 
-    CKHR(CoCreateInstance(__uuidof(SAXXMLReader), NULL, CLSCTX_INPROC_SERVER, __uuidof(ISAXXMLReader), (void**)&pReader));
+    CKHR(CoCreateInstance(__uuidof(SAXXMLReader60), NULL, CLSCTX_INPROC_SERVER, __uuidof(ISAXXMLReader), (void**)&pReader));
     CKHR(pReader->putContentHandler(this));
     hr = pReader->parseURL(wzCacheFileName);
 

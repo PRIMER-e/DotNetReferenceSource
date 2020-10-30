@@ -6,6 +6,7 @@
 
 using MS.Internal;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 using MS.Utility;
 
 using System;
@@ -27,6 +28,11 @@ namespace System.Windows.Controls.Primitives
     // There is no need for this panel to be a StackPanel.
     public class ToolBarPanel : StackPanel
     {
+        static ToolBarPanel()
+        {
+            ControlsTraceLogger.AddControl(TelemetryControls.ToolBarPanel);
+        }
+
         /// <summary>
         ///     Instantiates a new instance of this class.
         /// </summary>

@@ -14,10 +14,10 @@
 //  05/19/2003: RogerCh: Port to WCP tree.
 //  05/28/2003: RogerCh: Added long name support
 //  06/20/2003: RogerCh: GetStreams() and GetSubStorages()
-//  08/11/2003: LGolding: Fix 
-
-
-
+//  08/11/2003: LGolding: Fix Bug 864168 (some of BruceMac's bug fixes were lost
+//                          in port to WCP tree).
+//
+//-----------------------------------------------------------------------------
 
 using System;
 using System.Collections;

@@ -63,7 +63,10 @@ namespace System.Windows.Automation.Peers
         /// </summary>
         protected override bool IsControlElementCore()
         {
-            return true;
+            // We only want this peer to show up in the Control view if it is visible
+            // For compat we allow falling back to legacy behavior (returning true always)
+            // based on AppContext flags, IncludeInvisibleElementsInControlView evaluates them.
+            return IncludeInvisibleElementsInControlView || IsTextViewVisible == true;
         }
 
         /// <summary>

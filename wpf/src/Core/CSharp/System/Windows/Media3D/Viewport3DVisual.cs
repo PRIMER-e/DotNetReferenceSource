@@ -45,7 +45,7 @@ namespace System.Windows.Media.Media3D
         ///     Default constructor
         /// </summary>
         public Viewport3DVisual() : base(DUCE.ResourceType.TYPE_VIEWPORT3DVISUAL)
-        {            
+        {
             _children = new Visual3DCollection(this);
         }
 
@@ -118,7 +118,7 @@ namespace System.Windows.Media.Media3D
         {
             get { return base.VisualBitmapEffectInput; }
             set { base.VisualBitmapEffectInput = value; }
-        }     
+        }
 
         /// <summary>
         /// Re-exposes the Visual base class's corresponding VisualTreeHelper implementation as public method.
@@ -159,7 +159,7 @@ namespace System.Windows.Media.Media3D
             set
             {
                 base.VisualTransform = value;
-            }            
+            }
         }
 
         /// <summary>
@@ -175,7 +175,7 @@ namespace System.Windows.Media.Media3D
             {
                 base.VisualOffset = value;
             }
-        }       
+        }
 
         /// <summary>
         /// DescendantBounds returns the union of all of the content bounding
@@ -189,7 +189,7 @@ namespace System.Windows.Media.Media3D
                 return base.VisualDescendantBounds;
             }
         }
-        
+
         #endregion Public Methods
 
         //------------------------------------------------------
@@ -231,7 +231,7 @@ namespace System.Windows.Media.Media3D
 
             owner.ContentsChanged(/* sender = */ owner, EventArgs.Empty);
         }
-        
+
         /// <summary>
         ///     Camera for this Visual3D.
         /// </summary>
@@ -265,11 +265,11 @@ namespace System.Windows.Media.Media3D
 
             Debug.Assert(!e.IsASubPropertyChange,
                 "How are we receiving sub property changes from a struct?");
-            
+
             owner.SetFlagsOnAllChannels(true, VisualProxyFlags.Viewport3DVisual_IsViewportDirty | VisualProxyFlags.IsContentDirty);
             owner.ContentsChanged(/* sender = */ owner, EventArgs.Empty);
         }
-        
+
         /// <summary>
         ///     Viewport for this Visual3D.
         /// </summary>
@@ -311,7 +311,7 @@ namespace System.Windows.Media.Media3D
         //  Protected Methods
         //
         //------------------------------------------------------
-        
+
         //------------------------------------------------------
         //
         //  Internal Methods
@@ -331,19 +331,22 @@ namespace System.Windows.Media.Media3D
         //        but slightly different because the parent is 2D here.
         void IVisual3DContainer.AddChild(Visual3D child)
         {
-            // It is invalid to modify the children collection that we 
+            // It is invalid to modify the children collection that we
             // might be iterating during a property invalidation tree walk.
             if (IsVisualChildrenIterationInProgress)
             {
                 throw new InvalidOperationException(SR.Get(SRID.CannotModifyVisualChildrenDuringTreeWalk));
             }
 
+            // invalid during a VisualTreeChanged event
+            VisualDiagnostics.VerifyVisualTreeChange(this);
+
             Debug.Assert(child != null);
             Debug.Assert(child.InternalVisualParent == null);
 
             child.SetParent(this);
 
-            // set the inheritance context so databinding, etc... work            
+            // set the inheritance context so databinding, etc... work
             if (_inheritanceContextForChildren != null)
             {
                 _inheritanceContextForChildren.ProvideSelfAsInheritanceContext(child, null);
@@ -355,12 +358,12 @@ namespace System.Windows.Media.Media3D
             // from the parent and from the child.
             Visual.PropagateFlags(
                 this,
-                VisualFlags.IsSubtreeDirtyForPrecompute, 
+                VisualFlags.IsSubtreeDirtyForPrecompute,
                 VisualProxyFlags.IsSubtreeDirtyForRender);
 
             Visual3D.PropagateFlags(
                 child,
-                VisualFlags.IsSubtreeDirtyForPrecompute, 
+                VisualFlags.IsSubtreeDirtyForPrecompute,
                 VisualProxyFlags.IsSubtreeDirtyForRender);
 
             // 
@@ -379,12 +382,15 @@ namespace System.Windows.Media.Media3D
         {
             int index = child.ParentIndex;
 
-            // It is invalid to modify the children collection that we 
+            // It is invalid to modify the children collection that we
             // might be iterating during a property invalidation tree walk.
             if (IsVisualChildrenIterationInProgress)
             {
                 throw new InvalidOperationException(SR.Get(SRID.CannotModifyVisualChildrenDuringTreeWalk));
             }
+
+            // invalid during a VisualTreeChanged event
+            VisualDiagnostics.VerifyVisualTreeChange(this);
 
             Debug.Assert(child != null);
             Debug.Assert(child.InternalVisualParent == this);
@@ -392,13 +398,13 @@ namespace System.Windows.Media.Media3D
             VisualDiagnostics.OnVisualChildChanged(this, child, false);
 
             child.SetParent(/* newParent = */ (Visual) null);  // CS0121: Call is ambigious without casting null to Visual.
-            
+
             // remove the inheritance context
             if (_inheritanceContextForChildren != null)
             {
                 _inheritanceContextForChildren.RemoveSelfAsInheritanceContext(child, null);
             }
-            
+
             //
             // Remove the child on all channels this visual is marshalled to.
             //
@@ -424,7 +430,7 @@ namespace System.Windows.Media.Media3D
 
             Visual.PropagateFlags(
                 this,
-                VisualFlags.IsSubtreeDirtyForPrecompute, 
+                VisualFlags.IsSubtreeDirtyForPrecompute,
                 VisualProxyFlags.IsSubtreeDirtyForRender);
 
             // 
@@ -478,7 +484,7 @@ namespace System.Windows.Media.Media3D
         {
             return Children[index];
         }
-        
+
         internal override HitTestResultBehavior HitTestPointInternal(
             HitTestFilterCallback filterCallback,
             HitTestResultCallback resultCallback,
@@ -488,11 +494,11 @@ namespace System.Windows.Media.Media3D
             {
                 double distanceAdjustment;
 
-                RayHitTestParameters rayParams = 
+                RayHitTestParameters rayParams =
                     Camera.RayFromViewportPoint(
-                        hitTestParameters.HitPoint, 
-                        Viewport.Size, 
-                        BBoxSubgraph, 
+                        hitTestParameters.HitPoint,
+                        Viewport.Size,
+                        BBoxSubgraph,
                         out distanceAdjustment);
 
                 HitTestResultBehavior result = Visual3D.HitTestChildren(filterCallback, rayParams, this);
@@ -543,7 +549,7 @@ namespace System.Windows.Media.Media3D
         }
 
         internal override Rect CalculateSubgraphBoundsInnerSpace(bool renderBounds)
-        {  
+        {
             Camera camera = Camera;
 
             if (camera == null)
@@ -566,7 +572,7 @@ namespace System.Windows.Media.Media3D
 
                 return Rect.Empty;
             }
-            
+
             Rect viewport = Viewport;
 
             // Common Case: Viewport3DVisual in a collasped UIElement.
@@ -644,22 +650,22 @@ namespace System.Windows.Media.Media3D
 
         internal override DUCE.ResourceHandle AddRefOnChannelCore(DUCE.Channel channel)
         {
-            DUCE.ResourceHandle handle = 
+            DUCE.ResourceHandle handle =
                 base.AddRefOnChannelCore(channel);
 
             bool created = _proxy3D.CreateOrAddRefOnChannel(this, channel, DUCE.ResourceType.TYPE_VISUAL3D);
 
             Debug.Assert(
-                _proxy.Count == _proxy3D.Count, 
+                _proxy.Count == _proxy3D.Count,
                 "Viewport has been marshalled to a different number of channels than the 3D content.");
 
             // If we are creating the Viewport3DVisual/Visual3D for the first
             // time on this channel we need to connect the 3D root.
-            
+
             if (created)
             {
                 DUCE.Viewport3DVisualNode.Set3DChild(
-                    handle, 
+                    handle,
                     _proxy3D.GetHandle(channel),
                     channel);
             }
@@ -670,7 +676,7 @@ namespace System.Windows.Media.Media3D
         internal override void ReleaseOnChannelCore(DUCE.Channel channel)
         {
             Debug.Assert(
-                _proxy.Count == _proxy3D.Count, 
+                _proxy.Count == _proxy3D.Count,
                 "Viewport has been marshalled to a different number of channels than the 3D content.");
 
             base.ReleaseOnChannelCore(channel);
@@ -718,7 +724,7 @@ namespace System.Windows.Media.Media3D
             DUCE.Channel channel = ctx.Channel;
 
             //
-            // At this point, the visual has to be marshalled. Force 
+            // At this point, the visual has to be marshalled. Force
             // marshalling of the camera and viewport in case we have
             // just created a new visual resource.
             //
@@ -731,10 +737,10 @@ namespace System.Windows.Media.Media3D
             // Make sure the camera resource is being marshalled properly.
             //
 
-            if ((flags & VisualProxyFlags.Viewport3DVisual_IsCameraDirty) != 0) 
+            if ((flags & VisualProxyFlags.Viewport3DVisual_IsCameraDirty) != 0)
             {
                 Camera camera = Camera;
-                if (camera != null) 
+                if (camera != null)
                 {
                     DUCE.Viewport3DVisualNode.SetCamera(
                         ((DUCE.IResource)this).GetHandle(channel),
@@ -756,38 +762,38 @@ namespace System.Windows.Media.Media3D
             // Set the viewport if it's dirty.
             //
 
-            if ((flags & VisualProxyFlags.Viewport3DVisual_IsViewportDirty) != 0) 
+            if ((flags & VisualProxyFlags.Viewport3DVisual_IsViewportDirty) != 0)
             {
                 DUCE.Viewport3DVisualNode.SetViewport(
                     ((DUCE.IResource)this).GetHandle(channel),
                     Viewport,
                     channel);
-                SetFlags(channel, false, VisualProxyFlags.Viewport3DVisual_IsViewportDirty);               
+                SetFlags(channel, false, VisualProxyFlags.Viewport3DVisual_IsViewportDirty);
             }
 
 
             //we only want to recurse in the children if the visual does not have a bitmap effect
             //or we are in the BitmapVisualManager render pass
-        
+
             // Visit children of this node -----------------------------------------------------------------------
-        
+
             Debug.Assert(!CheckFlagsAnd(channel, VisualProxyFlags.IsContentNodeConnected),
                 "Only HostVisuals are expected to have a content node.");
-            
+
             if (_children != null)
             {
                 for (uint i = 0; i < _children.InternalCount; i++)
                 {
                     Visual3D child = _children.InternalGetItem((int) i);
-            
+
                     if (child != null)
                     {
-                        if (child.CheckFlagsAnd(channel, VisualProxyFlags.IsSubtreeDirtyForRender) || // or the visual is dirty                                
+                        if (child.CheckFlagsAnd(channel, VisualProxyFlags.IsSubtreeDirtyForRender) || // or the visual is dirty
                             !(child.IsOnChannel(channel))) // or the child has not been marshalled yet.
                         {
                             child.RenderRecursive(ctx);
                         }
-            
+
                         if (child.IsOnChannel(channel))
                         {
                             if (!child.CheckFlagsAnd(channel, VisualProxyFlags.IsConnectedToParent))
@@ -797,13 +803,13 @@ namespace System.Windows.Media.Media3D
                                     ((DUCE.IResource)child).GetHandle(channel),
                                     /* iPosition = */ i,
                                     channel);
-            
+
                                 child.SetFlags(channel, true, VisualProxyFlags.IsConnectedToParent);
                             }
                         }
                     }
                 }
-            }            
+            }
         }
 
         /// <summary>
@@ -823,7 +829,7 @@ namespace System.Windows.Media.Media3D
 
                     SetFlagsOnAllChannels(true, VisualProxyFlags.Viewport3DVisual_IsCameraDirty);
                 }
-            }            
+            }
 
             if (_children != null)
             {
@@ -883,7 +889,7 @@ namespace System.Windows.Media.Media3D
         /// The 3D content root.
         /// </summary>
         /// <remarks>
-        /// Important! - Not readonly because CS will silently copy 
+        /// Important! - Not readonly because CS will silently copy
         /// for self-modifying methods. (C# Spec 14.5.4)
         /// </remarks>
         private VisualProxy _proxy3D;
@@ -893,7 +899,7 @@ namespace System.Windows.Media.Media3D
         private readonly Visual3DCollection _children;
 
         private DependencyObject _inheritanceContextForChildren;
-        
+
         #endregion Private Fields
     }
 }

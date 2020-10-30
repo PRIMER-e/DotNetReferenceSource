@@ -67,7 +67,7 @@ Semantics::InitializeAnonymousType
     BackupValue<TransientSymbolStore *> SymbolsCreatedDuringInterpretatio_Backup(&m_SymbolsCreatedDuringInterpretation);
     if (!m_SymbolsCreatedDuringInterpretation)
     {
-        m_SymbolsCreatedDuringInterpretation = &LocalTransients;    // 
+        m_SymbolsCreatedDuringInterpretation = &LocalTransients;    // Bug [30776] [31373] use a local transient symbols store for merging (binding)
     }
 
     ClassOrRecordType *AnonymousTypeTemplate =
@@ -2335,7 +2335,7 @@ MatchAnonymousType
         return false;   // Bad anonymous type
     }
 
-    // Devdiv 
+    // Devdiv Bug [26424] Anonymous Type is to support assembly level merging.
 #if 0
     // Allow method level merging only
     if (AnonymousClass->GetAnonymousTypeProc() != CurrentProcedure)
@@ -2412,7 +2412,7 @@ MatchAnonymousType
             return true;
         }
 
-#if 0   // Devdiv 
+#if 0   // Devdiv Bug [26424] Anonymous Type is merged at assembly level.
         // Allow method level merging only
         if (AnonymousType1->GetAnonymousTypeProc() != AnonymousType2->GetAnonymousTypeProc())
         {
@@ -2469,10 +2469,10 @@ GetAnonymousTypeHashCode
     bool CheckLocation
 )
 {
-    // Devdiv 
-
-
-
+    // Devdiv Bug [26424] Anonymous Type is merged at assembly level.
+    // NOTE method level anonymous type merging would require hashing anonymous type name to account for anonymous
+    // types of same shape but at different method levels.
+    // Since the final design is perform assembly level merging we are ok to return -1 instead.
     if (!MemberInfos || FieldCount == 0)
     {
         return -1;

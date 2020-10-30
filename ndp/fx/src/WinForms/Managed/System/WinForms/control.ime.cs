@@ -676,7 +676,7 @@ namespace System.Windows.Forms {
                 PropagatingImeMode = ImeMode.Off;
             }
 
-            if( ImeModeConversion.InputLanguageTable == ImeModeConversion.ChineseTable ) {
+            if( LocalAppContextSwitches.EnableLegacyChineseIMEIndicator && ImeModeConversion.InputLanguageTable == ImeModeConversion.ChineseTable ) {
                 IgnoreWmImeNotify = false;
             }
 
@@ -755,7 +755,10 @@ namespace System.Windows.Forms {
             //
             // If this is the first time here after conversion to chinese language, wait for WmInputLanguageChange 
             // before listening to WmImeNotifys.
-            if ((inputLanguageTable == ImeModeConversion.ChineseTable) && !lastLanguageChinese) IgnoreWmImeNotify = true;
+            if ( LocalAppContextSwitches.EnableLegacyChineseIMEIndicator && (inputLanguageTable == ImeModeConversion.ChineseTable) && !lastLanguageChinese) {
+                IgnoreWmImeNotify = true;
+            }
+
             lastLanguageChinese = (inputLanguageTable == ImeModeConversion.ChineseTable);
 
             if( ImeSupported && inputLanguageTable != ImeModeConversion.UnsupportedTable && !IgnoreWmImeNotify) {

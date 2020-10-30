@@ -4633,13 +4633,13 @@ HRESULT CompilerHost::LoadSpecifiedVBRuntimeLibrary
 #if IDE
         if (pVBRuntimeProject && pVBRuntimeProject->m_pTaskProvider)
         {
-            // Dev11 
-
-
-
-
-
-
+            // Dev11 Bug 370167 - shiqic
+            // InitWithMetaData will create a CompilerTaskProvider for each normal CompilerProject. 
+			// When vb runtime is added as a normal dll, a CompilerTaskProvider will be attached to vb runtime. 
+            // CompilerTaskProvider will hold  a ref on CompilerPackage. This creates a circular reference, 
+            //     CompilerPackage->CompilerHost->VBRuntime(CompilerProject)->CompilerTaskProvider->CompilerPackage
+            // Circular reference will cause memory leak. For default libraries(mscorlib or MS.VB.dll) CompilerTaskProvider is 
+            // not necessary(see InitWithMetaData), so we can safely remove TaskProvider from vb runtime.
 
             pVBRuntimeProject->m_pTaskProvider->UnregisterTaskProvider();
             RELEASE(pVBRuntimeProject->m_pTaskProvider);

@@ -1367,6 +1367,18 @@ namespace System.Windows
         }
 
         /// <summary>
+        /// Call Win32 UnsafeNativeMethods.ReleaseDC() with Win32 error checking.
+        /// </summary>
+        /// <SecurityNote>
+        /// Critical - pinvokes into native code with data supplied by the caller.
+        /// </SecurityNote>
+        [SecurityCritical]
+        private static void Win32ReleaseDC(HandleRef handleHWND, HandleRef handleDC)
+        {
+            UnsafeNativeMethods.ReleaseDC(handleHWND, handleDC);
+        }
+
+        /// <summary>
         /// Call Win32 UnsafeNativeMethods.BitBlt() with Win32 error checking.
         /// </summary>
         /// <SecurityNote>
@@ -1464,7 +1476,6 @@ namespace System.Windows
                 || IsFormatEqual(format, SystemBitmapSourceFormat)
                 || IsFormatEqual(format, SystemDrawingBitmapFormat))
             {
-
                 return new string[] {
                                         DataFormats.Bitmap,
                                         SystemDrawingBitmapFormat,
@@ -1634,6 +1645,9 @@ namespace System.Windows
                     // Clear the source and destination compatible DCs.
                     Win32DeleteDC(new HandleRef(this, sourceDC));
                     Win32DeleteDC(new HandleRef(this, destinationDC));
+
+                    // release the screen DC
+                    Win32ReleaseDC(new HandleRef(this, IntPtr.Zero), new HandleRef(this, hDC));
                 }
             }
             finally
@@ -2065,11 +2079,13 @@ namespace System.Windows
             else if (SystemDrawingHelper.IsBitmap(data))
             {
                 // Create BitmapSource instance from System.Drawing.Bitmap
+                IntPtr hbitmap = SystemDrawingHelper.GetHBitmapFromBitmap(data);
                 bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(
-                    SystemDrawingHelper.GetHBitmapFromBitmap(data),
+                    hbitmap,
                     IntPtr.Zero,
                     Int32Rect.Empty,
                     null);
+                Win32DeleteObject(new HandleRef(this, hbitmap));
             }
 
             Invariant.Assert(bitmapSource != null);
@@ -2516,11 +2532,13 @@ namespace System.Windows
                 if (autoConvert)
                 {
                     // Create BitmapSource instance from System.Drawing.Bitmap
+                    IntPtr hbitmap = SystemDrawingHelper.GetHBitmapFromBitmap(data);
                     bitmapData = Imaging.CreateBitmapSourceFromHBitmap(
-                        SystemDrawingHelper.GetHBitmapFromBitmap(data),
+                        hbitmap,
                         IntPtr.Zero,
                         Int32Rect.Empty,
                         null);
+                    Win32DeleteObject(new HandleRef(null, hbitmap));
                 }
                 else
                 {
@@ -3172,9 +3190,34 @@ namespace System.Windows
                     {
                         data = ReadBitmapSourceFromHandle(hglobal);
                     }
+                    // DDVSO 678471: Restrict deserialization to only primitives 
+                    // and strings here to prevent potentially malicious objects from
+                    // being deserialized as part of a "text" copy-paste or drag-drop.
+                    // The rest of the following formats are pre-defined in the OS, 
+                    // they are not managed objects so we shouldn't try to deserialize them as such,
+                    // allow primitives in a best effort for compat, but restrict other types.
+                    else if (!Clipboard.UseLegacyDangerousClipboardDeserializationMode())
+                    {
+                        bool restrictDeserialization =
+                          (IsFormatEqual(format, DataFormats.StringFormat) ||
+                           IsFormatEqual(format, DataFormats.Dib) ||
+                           IsFormatEqual(format, DataFormats.Bitmap) ||
+                           IsFormatEqual(format, DataFormats.EnhancedMetafile) ||
+                           IsFormatEqual(format, DataFormats.MetafilePicture) ||
+                           IsFormatEqual(format, DataFormats.SymbolicLink) ||
+                           IsFormatEqual(format, DataFormats.Dif) ||
+                           IsFormatEqual(format, DataFormats.Tiff) ||
+                           IsFormatEqual(format, DataFormats.Palette) ||
+                           IsFormatEqual(format, DataFormats.PenData) ||
+                           IsFormatEqual(format, DataFormats.Riff) ||
+                           IsFormatEqual(format, DataFormats.WaveAudio) ||
+                           IsFormatEqual(format, DataFormats.Locale));
+
+                        data = ReadObjectFromHandle(hglobal, restrictDeserialization);
+                    }
                     else
                     {
-                        data = ReadObjectFromHandle(hglobal);
+                        data = ReadObjectFromHandle(hglobal, restrictDeserialization: false);
                     }
 
                 }
@@ -3392,7 +3435,7 @@ namespace System.Windows
             /// Critical - directly reads from unmanaged memory
             /// </SecurityNote>
             [SecurityCritical]
-            private Object ReadObjectFromHandle(IntPtr handle)
+            private Object ReadObjectFromHandle(IntPtr handle, bool restrictDeserialization)
             {
                 object value;
                 bool isSerializedObject;
@@ -3407,7 +3450,18 @@ namespace System.Windows
                     BinaryFormatter formatter;
 
                     formatter = new BinaryFormatter();
-                    value = formatter.Deserialize(stream);
+                    if (restrictDeserialization)
+                    {
+                        formatter.Binder = new TypeRestrictingSerializationBinder();
+                    }
+                    try
+                    {
+                        value = formatter.Deserialize(stream);
+                    }
+                    catch (RestrictedTypeDeserializationException)
+                    {
+                        value = null;
+                    }
                 }
                 else
                 {
@@ -3673,6 +3727,30 @@ namespace System.Windows
             }
 
             #endregion Private Methods
+            
+            /// <summary>
+            /// This class is meant to restrict deserialization of managed objects during Ole conversion to only strings and arrays of primitives. 
+            /// A RestrictedTypeDeserializationException is thrown upon calling BinaryFormatter.Deserialized if a binder of this type is provided to the BinaryFormatter.
+            /// </summary>
+            private class TypeRestrictingSerializationBinder : SerializationBinder
+            {
+                public TypeRestrictingSerializationBinder()
+                {
+                }
+
+                public override Type BindToType(string assemblyName, string typeName)
+                {
+                    throw new RestrictedTypeDeserializationException();
+                }
+            }
+
+            /// <summary>
+            /// Private exception to signal when a restricted type was encountered during deserialization.
+            /// </summary>
+            private class RestrictedTypeDeserializationException : Exception
+            {
+
+            }
         }
 
         #endregion OleConverter Class

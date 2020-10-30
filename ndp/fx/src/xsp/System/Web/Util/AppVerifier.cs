@@ -568,9 +568,9 @@
                     assert(!isReentry, AppVerifierErrorCode.PendingProcessRequestNotificationStatusAfterCompletingNestedNotification);
                 }
                 else {
-                    // Completing synchronously with pending NotificationContext means a 
-
-
+                    // Completing synchronously with pending NotificationContext means a bug in either user code or the pipeline.
+                    // NotificationContext being null means we already completed asynchronously before completing synchronously.
+                    // Both cases indicate that we have some async operations we failed to account for.
                     assert(context.NotificationContext != null && !context.NotificationContext.PendingAsyncCompletion,
                             AppVerifierErrorCode.RequestNotificationCompletedSynchronouslyWithNotificationContextPending);
 

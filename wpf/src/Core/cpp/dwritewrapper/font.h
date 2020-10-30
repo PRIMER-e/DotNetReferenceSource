@@ -74,8 +74,8 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
             ///
             /// However, dwrite circa win7 has an issue aggressively consuming address space and
             /// therefore we need to be conservative holding on to font references.  Dev10
-            /// 
-
+            /// bug 759523 has details.
+            /// </remarks>
             static const int _fontFaceCacheSize = 4;
 
             /// <summary>

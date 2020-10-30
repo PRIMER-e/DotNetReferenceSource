@@ -4,6 +4,7 @@
 
 namespace System.Activities.Presentation.View
 {
+    using System.Activities.Presentation;
     using System.Activities.Presentation.View;
     using System.Activities.Presentation.Model;
     using System.Activities.Presentation.Services;
@@ -20,6 +21,7 @@ namespace System.Activities.Presentation.View
     using System.Reflection;
     using System.Runtime;
     using System.Windows;
+    using System.Windows.Automation;
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
     using System.Windows.Data;
@@ -187,6 +189,22 @@ namespace System.Activities.Presentation.View
                 this.scrollViewerPanner = new ScrollViewerPanner(this.ScrollViewer);
                 this.scrollViewerPanner.Hand = (Cursor)this.Resources["ReadyToPanCursor"];
                 this.scrollViewerPanner.DraggingHand = (Cursor)this.Resources["PanningCursor"];
+            }
+
+            if (this.zoomPicker != null && this.zoomPicker.Template != null)
+            {
+                var zoomPickerTextBox = this.zoomPicker.Template.FindName("PART_EditableTextBox", this.zoomPicker) as TextBox;
+                if (zoomPickerTextBox != null)
+                {
+                    if (!LocalAppContextSwitches.UseLegacyAccessibilityFeatures)
+                    {
+                        zoomPickerTextBox.SetValue(AutomationProperties.NameProperty, SR.ZoomPickerEditorAutomationName);
+                    }
+                    if (!LocalAppContextSwitches.UseLegacyAccessibilityFeatures3 && WorkflowDesignerColors.IsHighContrastEnabled)
+                    {
+                        zoomPickerTextBox.SetValue(TextBox.SelectionOpacityProperty, 0.0);
+                    }
+                }
             }
         }
 
@@ -550,19 +568,22 @@ namespace System.Activities.Presentation.View
                 while (modelItem != null)
                 {
                     bool shouldCheckIfCanBeMadeRoot = true;
-                    if (isFirstAdded)
+                    if (LocalAppContextSwitches.UseLegacyAccessibilityFeatures && isFirstAdded)
                     {
                         shouldCheckIfCanBeMadeRoot = checkIfCanBeMadeRoot;
                     }
                     if (viewService.ShouldAppearOnBreadCrumb(modelItem, shouldCheckIfCanBeMadeRoot))
                     {
-                        if (isFirstAdded)
+                        if (LocalAppContextSwitches.UseLegacyAccessibilityFeatures && isFirstAdded)
                         {
                             breadCrumbObjectConnector = new BreadCrumbObjectSeparator();
                             breadCrumbCollection.Insert(0, breadCrumbObjectConnector);
                         }
                         breadCrumbCollection.Insert(0, modelItem);
-                        isFirstAdded = true;
+                        if (LocalAppContextSwitches.UseLegacyAccessibilityFeatures)
+                        {
+                            isFirstAdded = true;
+                        }
                         if (selectionMap.ContainsKey(modelItem))
                         {
                             newSelectionMap.Add(modelItem, selectionMap[modelItem]);
@@ -784,6 +805,27 @@ namespace System.Activities.Presentation.View
             this.ShouldStillAllowRubberBandEvenIfMouseLeftButtonDownIsHandled = false;
         }
 
+        private void OnExpandAllCollapseAllButtonLoaded(object sender, RoutedEventArgs e)
+        {
+            if (!LocalAppContextSwitches.UseLegacyAccessibilityFeatures3)
+            {
+                ToggleButton toggleButton = sender as ToggleButton;
+                if (toggleButton != null && toggleButton.Template != null)
+                {
+                    TextBlock toggleButtonTextBlock = toggleButton.Template.FindName("collapseAllText", toggleButton) as TextBlock;
+                    if (toggleButtonTextBlock != null)
+                    {
+                        Binding toggleButtonHelpTextBinding = new Binding("Text");
+                        toggleButtonHelpTextBinding.Source = toggleButtonTextBlock;
+                        toggleButtonHelpTextBinding.Mode = BindingMode.OneWay;                        
+                        toggleButtonHelpTextBinding.Converter = new TextFormattingConverter();
+                        toggleButtonHelpTextBinding.ConverterParameter = SR.ExpandAllCollapseAllHelpTextFormat;
+                        BindingOperations.SetBinding(toggleButton, AutomationProperties.HelpTextProperty, toggleButtonHelpTextBinding);
+                    }
+                }
+            }
+        }
+        
         void OnDesignerSurfaceMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             //user clicked on designer surface, somwhere around actual designer - try to select root designer
@@ -1174,6 +1216,30 @@ namespace System.Activities.Presentation.View
         void OnArgumentsCollectionChanged(object sender, RoutedEventArgs e)
         {
             CheckButtonArguments();
+        }
+        
+        void OnZoompickerGotFocus(object sender, RoutedEventArgs e)
+        {
+            if (!LocalAppContextSwitches.UseLegacyAccessibilityFeatures3 && this.zoomPicker != null && this.zoomPicker.Template != null)
+            {
+                var zoomPickerTextBox = this.zoomPicker.Template.FindName("PART_EditableTextBox", zoomPicker) as TextBox;
+                if (zoomPickerTextBox != null)
+                {
+                    zoomPickerTextBox.SetValue(TextBlock.ForegroundProperty, this.Resources["ShellBarForegroundActiveColor"] as SolidColorBrush);
+                }
+            }
+        }
+
+        void OnZoompickerLostFocus(object sender, RoutedEventArgs e)
+        {
+            if (!LocalAppContextSwitches.UseLegacyAccessibilityFeatures3 && this.zoomPicker != null && this.zoomPicker.Template != null)
+            {
+                var zoomPickerTextBox = this.zoomPicker.Template.FindName("PART_EditableTextBox", zoomPicker) as TextBox;
+                if (zoomPickerTextBox != null)
+                {
+                    zoomPickerTextBox.SetValue(TextBlock.ForegroundProperty, this.Resources["ShellBarForegroundInactiveColor"] as SolidColorBrush);
+                }
+            }
         }
 
         void ApplyShellBarItemVisibility(ShellBarItemVisibility visibility)
@@ -1662,7 +1728,7 @@ namespace System.Activities.Presentation.View
         //BreadCrumbObjectSeparator - right now, this class has no functionality - object of this class is used as 
         //a separator between different breadcrumb elements. however, i can imagine scenario when additional functionality
         //is added here (i.e. similar to breadcrumb in Vista explorer)
-        sealed class BreadCrumbObjectSeparator
+        internal sealed class BreadCrumbObjectSeparator
         {
             //ItemType property - to avoid binding errors and make this object similar to ModelItem
             public Type ItemType

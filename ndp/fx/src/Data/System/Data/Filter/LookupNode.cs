@@ -92,7 +92,7 @@ namespace System.Data {
             if (parent == null)
                 return DBNull.Value;
 
-            return parent[column, parent.HasVersion(version) ? version : DataRowVersion.Current]; // Microsoft : 
+            return parent[column, parent.HasVersion(version) ? version : DataRowVersion.Current]; // Microsoft : Bug 76154
         }
 
         internal override object Eval(int[] recordNos) {

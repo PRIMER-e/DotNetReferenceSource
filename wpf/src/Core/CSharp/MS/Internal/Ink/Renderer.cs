@@ -175,9 +175,9 @@ namespace System.Windows.Ink
         {
             // Initialize the data members.
             // We intentionally don't use lazy initialization for the core members to avoid
-            // hidden 
-
-
+            // hidden bug situations when one thing has been created while another not.
+            // If the user is looking for lazy initialization, she should do that on her
+            // own and create Renderer only when there's a need for it.
 
             // Create visuals that'll be the containers for all other visuals
             // created by the Renderer. This visuals are created once and are

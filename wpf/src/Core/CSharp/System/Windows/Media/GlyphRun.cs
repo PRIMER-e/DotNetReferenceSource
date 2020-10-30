@@ -1410,19 +1410,19 @@ namespace System.Windows.Media
             BufferCache.ReleaseGlyphMetrics(glyphMetrics);
 
             //
-            // Work around for 
-
-
-
-
-
-
-
-
-
-
-
-
+            // Work around for bug Dev10 bug #741619. For some reason the assumptions
+            // we make here about calculating the ink bounding box are not true for
+            // display mode text as they are for ideal mode text. The bounding box
+            // calculated using Display metrics for a Display formatted text run are
+            // not large enough. This results in artifacts in rendering, and (slightly)
+            // inaccurate hit testing. Inflate the bounds for now as a work around
+            //
+            // This also occurs for Ideal mode, for certain font/fontsize combinations.
+            // See Dev11 bug 318363, and 327674.
+            //
+            // The amount of inflation depends on the fontsize, so that scaling
+            // the result doesn't cause false hit-testing far away from the text
+            // (see Dev11 483394).  But inflate by at most 1px.
             if (CoreCompatibilityPreferences.GetIncludeAllInkInBoundingBox())
             {
                 if (!bounds.IsEmpty)
@@ -1646,19 +1646,29 @@ namespace System.Windows.Media
         {
             CheckInitialized(); // This can only be called on fully initialized GlyphRun
 
-            if (IsLeftToRight)
+            // cache AdvanceWidth value in a local variable because it involves a loop
+            double advanceWidth = AdvanceWidth;
+
+            // AdvanceWidth could be negative, but Rect.Width cannot
+            // be negative.  Adjust for that (DDVSO 252835).
+            bool extendToRight = IsLeftToRight;
+            if (advanceWidth < 0.0)
+            {
+                extendToRight = !extendToRight;
+                advanceWidth = -advanceWidth;
+            }
+
+            if (extendToRight)
             {
                 return new Rect(
                     0,
                     -Ascent,
-                    AdvanceWidth,
+                    advanceWidth,
                     Height
                     );
             }
             else
             {
-                // cache AdvanceWidth value in a local variable because it involves a loop
-                double advanceWidth = AdvanceWidth;
                 return new Rect(
                     -advanceWidth,
                     -Ascent,
@@ -1675,7 +1685,12 @@ namespace System.Windows.Media
         /// </summary>
         internal void EmitBackground(DrawingContext dc, Brush backgroundBrush)
         {
-            if (backgroundBrush != null)
+            double advanceWidth;
+
+            // AdvanceWidth could be negative, but Rect.Width cannot
+            // be negative.  Adjust for that (DDVSO 252835).  Don't paint the
+            // background - it would paint over earlier glyphs.
+            if (backgroundBrush != null && (advanceWidth = AdvanceWidth) > 0.0)
             {
                 Rect backgroundRect;
 
@@ -1684,16 +1699,16 @@ namespace System.Windows.Media
                     backgroundRect = new Rect(
                         _baselineOrigin.X,
                         _baselineOrigin.Y - Ascent,
-                        AdvanceWidth,
+                        advanceWidth,
                         Height
                         );
                 }
                 else
                 {
                     backgroundRect = new Rect(
-                        _baselineOrigin.X - AdvanceWidth,
+                        _baselineOrigin.X - advanceWidth,
                         _baselineOrigin.Y - Ascent,
-                        AdvanceWidth,
+                        advanceWidth,
                         Height
                         );
                 }

@@ -75,25 +75,35 @@ namespace System.Windows.Forms {
         }
         protected override Padding DefaultGripMargin {
             get {
+                // MenuStrip control is scaled by Control::ScaleControl()
                 // VSWhidbey 448134 - ensure grip aligns properly when set visible.
-                return new Padding(2, 2, 0, 2);
+                return DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements ? 
+                       DpiHelper.LogicalToDeviceUnits(new Padding(2, 2, 0, 2), DeviceDpi) :
+                       new Padding(2, 2, 0, 2);
             }
         }
 
         /// <include file='doc\MenuStrip.uex' path='docs/doc[@for="MenuStrip.DefaultSize"]/*' />
         protected override Size DefaultSize {
             get {
-                return new Size(200, 24);
+                return DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements ?
+                       DpiHelper.LogicalToDeviceUnits(new Size(200, 24), DeviceDpi) :
+                       new Size(200, 24);
             }
         }
 
         protected override Padding DefaultPadding {
             get {
+                // MenuStrip control is scaled by Control::ScaleControl()
                 // VSWhidbey 448134: scoot the grip over when present
                 if (GripStyle == ToolStripGripStyle.Visible) {
-                    return new Padding(3, 2, 0, 2);
+                    return DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements ? 
+                           DpiHelper.LogicalToDeviceUnits(new Padding(3, 2, 0, 2), DeviceDpi) :
+                           new Padding(3, 2, 0, 2);
                 }
-                return new Padding(6, 2, 0, 2);
+                return DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements ? 
+                       DpiHelper.LogicalToDeviceUnits(new Padding(6, 2, 0, 2), DeviceDpi) :
+                       new Padding(6, 2, 0, 2);
             }
         }
 
@@ -178,6 +188,13 @@ namespace System.Windows.Forms {
             }
         }
 
+        internal override ToolStripItem GetNextItem(ToolStripItem start, ArrowDirection direction, bool rtlAware) {
+            ToolStripItem nextItem = base.GetNextItem(start, direction, rtlAware);
+            if (nextItem is MdiControlStrip.SystemMenuItem && AccessibilityImprovements.Level2) {
+                nextItem = base.GetNextItem(nextItem, direction, rtlAware);
+            }
+            return nextItem;
+        }
 
         protected virtual void OnMenuActivate(EventArgs e) {
             if (IsHandleCreated) {
@@ -278,6 +295,14 @@ namespace System.Windows.Forms {
                     }
                     return AccessibleRole.MenuBar;
                 }
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3 && propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_MenuBarControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
         }
 

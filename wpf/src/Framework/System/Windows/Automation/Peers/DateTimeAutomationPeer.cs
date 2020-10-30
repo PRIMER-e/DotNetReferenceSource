@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 //
 // Copyright (C) Microsoft Corporation.  All rights reserved.
 //
@@ -119,11 +119,11 @@ namespace System.Windows.Automation.Peers
 
                 if (IsDayButton)
                 {
-                    return OwningCalendar.MonthControl.GetCalendarDayButton(this.Date);
+                    return OwningCalendar.MonthControl?.GetCalendarDayButton(this.Date);
                 }
-                else 
+                else
                 {
-                    return OwningCalendar.MonthControl.GetCalendarButton(this.Date, ButtonMode);
+                    return OwningCalendar.MonthControl?.GetCalendarButton(this.Date, ButtonMode);
                 }
             }
         }
@@ -302,6 +302,21 @@ namespace System.Windows.Automation.Peers
             return null;
         }
 
+        protected override AutomationLiveSetting GetLiveSettingCore()
+        {
+            AutomationPeer wrapperPeer = WrapperPeer;
+            if (wrapperPeer != null)
+            {
+                return wrapperPeer.GetLiveSetting();
+            }
+            else
+            {
+                ThrowElementNotAvailableException();
+            }
+
+            return AutomationLiveSetting.Off;
+        }
+
         protected override string GetLocalizedControlTypeCore()
         {
             return IsDayButton ? SR.Get(SRID.CalendarAutomationPeer_DayButtonLocalizedControlType) : SR.Get(SRID.CalendarAutomationPeer_CalendarButtonLocalizedControlType);
@@ -400,6 +415,54 @@ namespace System.Windows.Automation.Peers
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Gets the position of a this DateTime element within a set.
+        /// </summary>
+        /// <remarks>
+        /// Forwards the call to the wrapperPeer.
+        /// </remarks>
+        /// <returns>
+        /// The PositionInSet property value from the wrapper peer
+        /// </returns>
+        protected override int GetPositionInSetCore()
+        {
+            AutomationPeer wrapperPeer = WrapperPeer;
+            if (wrapperPeer != null)
+            {
+                return wrapperPeer.GetPositionInSet();
+            }
+            else
+            {
+                ThrowElementNotAvailableException();
+            }
+
+            return AutomationProperties.AutomationPositionInSetDefault;
+        }
+
+        /// <summary>
+        /// Gets the size of a set that contains this DateTime element.
+        /// </summary>
+        /// <remarks>
+        /// Forwards the call to the wrapperPeer.
+        /// </remarks>
+        /// <returns>
+        /// The SizeOfSet property value from the wrapper peer
+        /// </returns>
+        protected override int GetSizeOfSetCore()
+        {
+            AutomationPeer wrapperPeer = WrapperPeer;
+            if (wrapperPeer != null)
+            {
+                return wrapperPeer.GetSizeOfSet();
+            }
+            else
+            {
+                ThrowElementNotAvailableException();
+            }
+
+            return AutomationProperties.AutomationSizeOfSetDefault;
         }
 
         internal override Rect GetVisibleBoundingRectCore()

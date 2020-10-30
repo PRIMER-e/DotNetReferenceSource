@@ -644,6 +644,8 @@ namespace System.Security.Cryptography.Xml {
             Debug.Assert(reference != null, "reference != null");
 
             if (VerboseLoggingEnabled) {
+                HashAlgorithm hashAlgorithm = Utils.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = String.Format(CultureInfo.InvariantCulture,
                                                   SecurityResources.GetResourceString("Log_SigningReference"),
                                                   GetObjectId(reference),
@@ -651,7 +653,7 @@ namespace System.Security.Cryptography.Xml {
                                                   reference.Id,
                                                   reference.Type,
                                                   reference.DigestMethod,
-                                                  CryptoConfig.CreateFromName(reference.DigestMethod).GetType().Name);
+                                                  hashAlgorithmName);
 
                 WriteLine(signedXml,
                           TraceEventType.Verbose,
@@ -767,11 +769,13 @@ namespace System.Security.Cryptography.Xml {
             Debug.Assert(expectedHash != null, "expectedHash != null");
 
             if (VerboseLoggingEnabled) {
+                HashAlgorithm hashAlgorithm = Utils.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = String.Format(CultureInfo.InvariantCulture,
                                                   SecurityResources.GetResourceString("Log_ReferenceHash"),
                                                   GetObjectId(reference),
                                                   reference.DigestMethod,
-                                                  CryptoConfig.CreateFromName(reference.DigestMethod).GetType().Name,
+                                                  hashAlgorithmName,
                                                   FormatBytes(actualHash),
                                                   FormatBytes(expectedHash));
 
@@ -963,11 +967,13 @@ namespace System.Security.Cryptography.Xml {
             Debug.Assert(reference != null, "reference != null");
 
             if (InformationLoggingEnabled) {
+                HashAlgorithm hashAlgorithm = Utils.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = String.Format(CultureInfo.InvariantCulture,
                                                     SecurityResources.GetResourceString("Log_SignedXmlRecursionLimit"),
                                                     GetObjectId(reference),
                                                     reference.DigestMethod,
-                                                    CryptoConfig.CreateFromName(reference.DigestMethod).GetType().Name);
+                                                    hashAlgorithmName);
 
                 WriteLine(signedXml,
                             TraceEventType.Information,

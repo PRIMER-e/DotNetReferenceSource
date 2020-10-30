@@ -139,7 +139,7 @@ namespace MS.Internal.AppModel
                     // To be saved, a DP should have the correct metadata and NOT be an expression or data bound.
                     // Since Bind inherits from Expression, the test for Expression will suffice.
                     // NOTE: we do not journal expression. So we should let parser restore it in BamlRecordReader.SetDependencyValue.
-                    // Please see Windows OS 
+                    // Please see Windows OS bug # 1852349 for details.
                     if (metadata.Journal && (!(localValueEntry.Value is Expression)))
                     {
                         // These properties should not be journaled.
@@ -199,9 +199,9 @@ namespace MS.Internal.AppModel
                 return;
             }
 
-            // Due to 
-
-
+            // Due to bug 1282529, PersistId can be null. Only XAML/BAML-loaded elements have it.
+            // Besides for PageFunctions journaled by type, the PersistId check below is needed
+            // because elements might have been added to the tree after loading from XAML/BAML.
 #pragma warning disable 618
             int persistId = element.PersistId;
 #pragma warning restore 618
@@ -325,7 +325,7 @@ namespace MS.Internal.AppModel
             int persistId = element.PersistId;
 #pragma warning restore 618
 
-            // Due to 
+            // Due to bug 1282529, PersistId can be null. Only XAML/BAML-loaded elements have it.
             if (persistId != 0)
             {
                 if (this.HasSubStreams(persistId))

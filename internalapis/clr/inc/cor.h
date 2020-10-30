@@ -23,7 +23,7 @@
 //*****************************************************************************
 
 #if defined(_MSC_VER) && !defined(USE_DEPRECATED_CLR_API_WITHOUT_WARNING)
-#define DEPRECATED_CLR_API_MESG "This API has been deprecated. Refer to http://go.microsoft.com/fwlink/?LinkId=143720 for more details."
+#define DEPRECATED_CLR_API_MESG "This API has been deprecated. Refer to https://go.microsoft.com/fwlink/?LinkId=143720 for more details."
 #define DECLARE_DEPRECATED __declspec(deprecated(DEPRECATED_CLR_API_MESG))
 #define DEPRECATED_CLR_STDAPI EXTERN_C DECLARE_DEPRECATED HRESULT STDAPICALLTYPE
 #define DEPRECATED_CLR_STDAPI_(type) EXTERN_C DECLARE_DEPRECATED type STDAPICALLTYPE
@@ -2511,7 +2511,7 @@ inline ULONG CorSigUncompressPointer(   // return number of bytes of that compre
     PCCOR_SIGNATURE pData,              // [IN] compressed data
     void **         ppvPointer)         // [OUT] the expanded *pData
 {
-    *ppvPointer = *(void * UNALIGNED *)pData;
+    *ppvPointer = *(void * const UNALIGNED *)pData;
     return sizeof(void *);
 }
 

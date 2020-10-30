@@ -359,15 +359,16 @@ namespace System.Windows.Forms {
             get {
                 // Check for library
                 if (moduleHandle == IntPtr.Zero) {
-                    moduleHandle = UnsafeNativeMethods.LoadLibrary(RichTextBoxConstants.DLL_RICHEDIT);
+                    string richEditControlDllVersion = LocalAppContextSwitches.DoNotLoadLatestRichEditControl ? RichTextBoxConstants.DLL_RICHEDIT : RichTextBoxConstants.DLL_RICHEDIT_41;
+                    moduleHandle = UnsafeNativeMethods.LoadLibraryFromSystemPathIfAvailable(richEditControlDllVersion);
 
                     int lastWin32Error = Marshal.GetLastWin32Error();
 
                     // This code has been here since the inception of the project, 
                     // we can’t determine why we have to compare w/ 32 here.
-                    // This fails on 3-GB mode, (once the dll is loaded above 3GB memory space) (see Dev10 
+                    // This fails on 3-GB mode, (once the dll is loaded above 3GB memory space) (see Dev10 bug#732388)
                     if ((ulong)moduleHandle < (ulong)32) {
-                        throw new Win32Exception(lastWin32Error, SR.GetString(SR.LoadDLLError,RichTextBoxConstants.DLL_RICHEDIT));
+                        throw new Win32Exception(lastWin32Error, SR.GetString(SR.LoadDLLError, richEditControlDllVersion));
                     }
 
                     //Determine whether we're Rich Edit 2.0 or 3.0: see 
@@ -395,10 +396,10 @@ namespace System.Windows.Forms {
 
                 CreateParams cp = base.CreateParams;
                 if (Marshal.SystemDefaultCharSize == 1) {
-                    cp.ClassName = RichTextBoxConstants.WC_RICHEDITA;
+                    cp.ClassName = LocalAppContextSwitches.DoNotLoadLatestRichEditControl ? RichTextBoxConstants.WC_RICHEDITA : RichTextBoxConstants.WC_RICHEDITA_41;
                 }
                 else {
-                    cp.ClassName = RichTextBoxConstants.WC_RICHEDITW;
+                    cp.ClassName = LocalAppContextSwitches.DoNotLoadLatestRichEditControl ? RichTextBoxConstants.WC_RICHEDITW : RichTextBoxConstants.WC_RICHEDITW_41;
                 }
 
                 if (Multiline) {
@@ -3119,8 +3120,8 @@ namespace System.Windows.Forms {
                 else {
                     result = Encoding.Default.GetString(bytes, 0, bytes.Length);
                 }
-                // workaround ??? for 
-
+                // workaround ??? for bug 117325. When the string is modified is can return 
+                // with an extra null termination (always?). If it does, get rid of it.
                 if(!String.IsNullOrEmpty(result) && (result[result.Length-1] == '\0')) {
                     result = result.Substring(0, result.Length-1);
                 }
@@ -3366,8 +3367,8 @@ namespace System.Windows.Forms {
             txrg.chrg = c;
             Debug.Assert((c.cpMax-c.cpMin)>0, "CHARRANGE was null or negative - can't do it!");
 
-            //Windows 
-
+            //Windows bug: 64-bit windows returns a bad range for us.  VSWhidbey 504502.  
+            //Putting in a hack to avoid an unhandled exception.
             if (c.cpMax > Text.Length || c.cpMax-c.cpMin <= 0) {
                 return string.Empty;
             }
@@ -3984,7 +3985,7 @@ namespace System.Windows.Forms {
 
                         // The below is the complete reverse of what the docs on MSDN suggest,
                         // but if we follow the docs, we would be firing OnDragDrop all the
-                        // time instead of OnDragOver (see 
+                        // time instead of OnDragOver (see bug 99294). MSDN seems to be wrong here.
                         
                         // drag - fDrag = false, grfKeyState != 0
                         // drop - fDrag = false, grfKeyState = 0

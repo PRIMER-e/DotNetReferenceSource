@@ -589,8 +589,8 @@ namespace System
                                     // Grow the list by exactly one element in this case to avoid null entries at the end.
                                     //
 
-                                    // DevDiv #339308 is fixed, but we are keeping this code here for Dev11 in case there are other instances of this 
-
+                                    // DevDiv #339308 is fixed, but we are keeping this code here for Dev11 in case there are other instances of this bug.
+                                    // Remove for Dev12.
 
                                     Contract.Assert(false);
 
@@ -3036,6 +3036,16 @@ namespace System
 
             return candidates;
         }
+
+        private class ConstructorInfoComparer : IComparer<ConstructorInfo>
+        {
+            internal static readonly ConstructorInfoComparer SortByMetadataToken = new ConstructorInfoComparer();
+
+            public Int32 Compare(ConstructorInfo x, ConstructorInfo y)
+            {
+                return x.MetadataToken.CompareTo(y.MetadataToken);
+            }
+        }  // private class ConstructorInfoComparer
         #endregion
 
         #region Get All XXXInfos
@@ -3047,7 +3057,31 @@ namespace System
 [System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
-            return GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
+            ConstructorInfo[] constructors = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
+
+            // Do not use the AppContextSwitch infrastructure as this method is called very early in 
+            // app domain creation.  Calling AppContextSwitch may lock the app domain into an undefined
+            // TargetFramework (eg. 4.0).
+            if (!IsDoNotForceOrderOfConstructorsSetImpl())
+            {
+                // do not consider array types as their MetadataTokens are all the same
+                // and Array.Sort is not a stable sort.  Skip types that are not part of
+                // ngen'd assemblies to minimize the risk
+                if (!IsArrayImpl() && IsZappedImpl())
+                {
+                    // By default sort the returned constructors based on MetadataToken
+                    // which aligns the sort order with MSIL.  Assemblies that are ngen'd 
+                    // can change the order of the constructors, assemblies that are ngen'd 
+                    // with IBC data have a higher chance of changing the order of constructors.
+
+                    // Avoid using public Array.Sort as that attempts to access BinaryCompatibility. Unfortunately GetConstructors gets called 
+                    // very early in the app domain creation, when _FusionStore is not set up yet, resulting in a null TargetFrameworkMoniker being
+                    // set. This then locks in the TargetFrameworkMoniker for the entire process as null.
+                    ArraySortHelper<ConstructorInfo>.IntrospectiveSort(constructors, 0, constructors.Length, ConstructorInfoComparer.SortByMetadataToken);
+                }
+            }
+
+            return constructors;
         }
 
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
@@ -3887,6 +3921,18 @@ namespace System
         protected override bool IsCOMObjectImpl() 
         {
             return RuntimeTypeHandle.IsComObject(this, false);
+        }
+
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        private bool IsZappedImpl() 
+        {
+            return RuntimeTypeHandle.IsZapped(this);
+        }
+
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        private bool IsDoNotForceOrderOfConstructorsSetImpl() 
+        {
+            return RuntimeTypeHandle.IsDoNotForceOrderOfConstructorsSet();
         }
 
 #if FEATURE_COMINTEROP

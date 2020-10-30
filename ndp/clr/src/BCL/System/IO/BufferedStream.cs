@@ -345,8 +345,8 @@ public sealed class BufferedStream : Stream {
         
         // We bring instance fields down as local parameters to this async method becasue BufferedStream is derived from MarshalByRefObject.
         // Field access would be from the async state machine i.e., not via the this pointer and would require runtime checking to see
-        // if we are talking to a remote object, whcih is currently very slow (Dev11 
-
+        // if we are talking to a remote object, whcih is currently very slow (Dev11 bug #365921).
+        // Field access from whithin Asserts is, of course, irrelevant.
         Contract.Assert(stream != null);        
         
         SemaphoreSlim sem = _this.EnsureAsyncActiveSemaphoreInitialized();

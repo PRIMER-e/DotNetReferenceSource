@@ -1660,8 +1660,8 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 		// Keep the connect string lying around - it may contain additional
 		// port,nic combinations. If we can't connect to the first combo, try others
 		// before giving up. 
-		// Note: See MDAC 
-
+		// Note: See MDAC bug 62905
+		// Get the server nic and port num
 		WCHAR * tokContextSvrInfoPort = NULL;
 		wszPort = wcstok_s(wszTmp, L",", &tokContextSvrInfoPort);
 		if(!wszPort)

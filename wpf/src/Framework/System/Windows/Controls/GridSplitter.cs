@@ -17,6 +17,7 @@ using System.Windows.Automation.Peers;
 
 using MS.Internal;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -99,6 +100,8 @@ namespace System.Windows.Controls
             
             // Cursor depends on ResizeDirection, ActualWidth, and ActualHeight 
             CursorProperty.OverrideMetadata(typeof(GridSplitter), new FrameworkPropertyMetadata(null, new CoerceValueCallback(CoerceCursor)));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.GridSplitter);
         }
 
         /// <summary>
@@ -928,7 +931,7 @@ namespace System.Windows.Controls
                 // (actualLength1 + actualLength2). This can cause a problem in the subsequent drag iteration where 
                 // this will be interpreted as the cancellation of the resize operation. To avoid this imprecision we use 
                 // make definition2LengthNew be a function of definition1LengthNew so that the precision or the loss 
-                // thereof can be counterbalanced. See DevDiv 
+                // thereof can be counterbalanced. See DevDiv bug#140228 for a manifestation of this problem.
                 
                 double definition1LengthNew = actualLength1 + delta;
                 //double definition2LengthNew = actualLength2 - delta;

@@ -22,14 +22,14 @@ using MS.Win32;
 namespace System.Windows.Automation.Peers
 {
 
-    /// 
+    ///
     public abstract class ItemsControlAutomationPeer : FrameworkElementAutomationPeer, IItemContainerProvider
     {
         ///
         protected ItemsControlAutomationPeer(ItemsControl owner): base(owner)
         {}
-    
-        /// 
+
+        ///
         override public object GetPattern(PatternInterface patternInterface)
         {
             if(patternInterface == PatternInterface.Scroll)
@@ -58,9 +58,9 @@ namespace System.Windows.Automation.Peers
 
         ///<summary>
         /// If grouping is enabled then return peers corresponding to all the items in container
-        /// otherwise sees VirtualizingStackPanel(itemsHost) and return peers corresponding to 
+        /// otherwise sees VirtualizingStackPanel(itemsHost) and return peers corresponding to
         /// items which are de-virtualized.
-        ///</summary> 
+        ///</summary>
         protected override List<AutomationPeer> GetChildrenCore()
         {
             List<AutomationPeer> children = null;
@@ -70,11 +70,17 @@ namespace System.Windows.Automation.Peers
             ItemCollection items = owner.Items;
             Panel itemHost = owner.ItemsHost;
             IList childItems = null;
-            
+            bool useNetFx472CompatibleAccessibilityFeatures = AccessibilitySwitches.UseNetFx472CompatibleAccessibilityFeatures;
+
             if (owner.IsGrouping)
             {
                 if (itemHost == null)
                     return null;
+
+                if (!useNetFx472CompatibleAccessibilityFeatures)
+                {
+                    _reusablePeers = oldChildren;
+                }
 
                 childItems = itemHost.Children;
                 children = new List<AutomationPeer>(childItems.Count);
@@ -86,18 +92,42 @@ namespace System.Windows.Automation.Peers
                     {
                         children.Add(peer);
 
-                        //
-                        // The AncestorsInvalid check is meant so that we do this call to invalidate the 
-                        // GroupItemPeers containing the realized item peers only when we arrive here from an 
-                        // UpdateSubtree call because that call does not otherwise descend into parts of the tree 
-                        // that have their children invalid as an optimization. 
-                        //
-                        if (_recentlyRealizedPeers != null && _recentlyRealizedPeers.Count > 0 && this.AncestorsInvalid)
+                        if (useNetFx472CompatibleAccessibilityFeatures)
                         {
-                            GroupItemAutomationPeer groupItemPeer = peer as GroupItemAutomationPeer;
-                            if (groupItemPeer != null)
+                            //
+                            // The AncestorsInvalid check is meant so that we do this call to invalidate the
+                            // GroupItemPeers containing the realized item peers only when we arrive here from an
+                            // UpdateSubtree call because that call does not otherwise descend into parts of the tree
+                            // that have their children invalid as an optimization.
+                            //
+                            if (_recentlyRealizedPeers != null && _recentlyRealizedPeers.Count > 0 && this.AncestorsInvalid)
                             {
-                                groupItemPeer.InvalidateGroupItemPeersContainingRecentlyRealizedPeers(_recentlyRealizedPeers);
+                                GroupItemAutomationPeer groupItemPeer = peer as GroupItemAutomationPeer;
+                                if (groupItemPeer != null)
+                                {
+                                    groupItemPeer.InvalidateGroupItemPeersContainingRecentlyRealizedPeers(_recentlyRealizedPeers);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            //
+                            // The AncestorsInvalid check is meant so that we do this call to invalidate the
+                            // GroupItemPeers only when we arrive here from an
+                            // UpdateSubtree call because that call does not otherwise descend into parts of the tree
+                            // that have their children invalid as an optimization.
+                            //
+                            if (this.AncestorsInvalid)
+                            {
+                                GroupItemAutomationPeer groupItemPeer = peer as GroupItemAutomationPeer;
+                                if (groupItemPeer != null)
+                                {
+                                    // invalidate all GroupItemAP children, so
+                                    // that the top-level ItemsControlAP's
+                                    // ItemPeers collection is repopulated.
+                                    groupItemPeer.AncestorsInvalid = true;
+                                    groupItemPeer.ChildrenValid = true;
+                                }
                             }
                         }
                     }
@@ -113,7 +143,7 @@ namespace System.Windows.Automation.Peers
                 {
                     if (itemHost == null)
                         return null;
-                    
+
                     childItems = itemHost.Children;
                 }
                 else
@@ -124,20 +154,30 @@ namespace System.Windows.Automation.Peers
 
                 foreach (object item in childItems)
                 {
-	                object dataItem = ((IsVirtualized && ((MS.Internal.Controls.IGeneratorHost)owner).IsItemItsOwnContainer(item)) ? owner.GetItemOrContainerFromContainer(item as UIElement) : item);
+                    object dataItem;
+                    if (IsVirtualized)
+                    {
+                        // 'item' is a container - get the corresponding data item
+                        DependencyObject d = item as DependencyObject;
+                        dataItem = (d != null) ? owner.ItemContainerGenerator.ItemFromContainer(d) : null;
+
+                        // ItemFromContainer can return {UnsetValue} if we're in a re-entrant
+                        // call while the generator is in the midst of unhooking the container.
+                        // Ignore such children.  (DDVSO 781853)
+                        if (dataItem == DependencyProperty.UnsetValue)
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // 'item' is a data item
+                        dataItem = item;
+                    }
 
                     // try to reuse old peer if it exists either in Current AT or in WeakRefStorage of Peers being sent to Client
                     ItemAutomationPeer peer = oldChildren[dataItem];
-                    if (peer == null)
-                    {
-                        peer = GetPeerFromWeakRefStorage(dataItem);
-                        if (peer != null)
-                        {
-                            // As cached peer is getting used it must be invalidated.
-                            peer.AncestorsInvalid = false;
-                            peer.ChildrenValid = false;
-                        }
-                    }
+                    peer = ReusePeerForItem(peer, dataItem);
 
                     if (peer == null)
                     {
@@ -169,8 +209,28 @@ namespace System.Windows.Automation.Peers
             return null;
         }
 
-        
-        
+        internal ItemAutomationPeer ReusePeerForItem(ItemAutomationPeer peer, object item)
+        {
+            if (peer == null)
+            {
+                peer = GetPeerFromWeakRefStorage(item);
+                if (peer != null)
+                {
+                    // As cached peer is getting used it must be invalidated.
+                    peer.AncestorsInvalid = false;
+                    peer.ChildrenValid = false;
+                }
+            }
+
+            if (peer != null)
+            {
+                peer.ReuseForItem(item);
+            }
+
+            return peer;
+        }
+
+
         internal void AddProxyToWeakRefStorage(WeakReference wr, ItemAutomationPeer itemPeer)
         {
             ItemsControl owner = this.Owner as ItemsControl;
@@ -221,9 +281,9 @@ namespace System.Windows.Automation.Peers
                         throw new InvalidOperationException(SR.Get(SRID.InavalidStartItem));
                     }
 
-                    // To find the index of the item in items collection which occurs 
+                    // To find the index of the item in items collection which occurs
                     // immidiately after startAfterItem.Item
-                    startIndex = items.IndexOf(startAfterItem.Item)+ 1; 
+                    startIndex = items.IndexOf(startAfterItem.Item)+ 1;
                     if (startIndex == 0 || startIndex == items.Count)
                         return null;
                 }
@@ -232,7 +292,7 @@ namespace System.Windows.Automation.Peers
                 {
                     for (int i = startIndex; i < items.Count; i++)
                     {
-                        // This is to handle the case of when dataItems are just plain strings and have duplicates, 
+                        // This is to handle the case of when dataItems are just plain strings and have duplicates,
                         // only the first occurence of duplicate Items will be returned. It has also been used couple more times below.
                         if (items.IndexOf(items[i]) != i)
                             continue;
@@ -281,7 +341,7 @@ namespace System.Windows.Automation.Peers
         /// <returns>true if property id is supported else false</returns>
         virtual internal bool IsPropertySupportedByControlForFindItem(int id)
         {
-            return ItemsControlAutomationPeer.IsPropertySupportedByControlForFindItemInternal(id);            
+            return ItemsControlAutomationPeer.IsPropertySupportedByControlForFindItemInternal(id);
         }
 
         internal static bool IsPropertySupportedByControlForFindItemInternal(int id)
@@ -305,12 +365,12 @@ namespace System.Windows.Automation.Peers
         /// <returns>returns the property value</returns>
         virtual internal object GetSupportedPropertyValue(ItemAutomationPeer itemPeer, int propertyId)
         {
-            return ItemsControlAutomationPeer.GetSupportedPropertyValueInternal(itemPeer, propertyId);              
+            return ItemsControlAutomationPeer.GetSupportedPropertyValueInternal(itemPeer, propertyId);
         }
 
         internal static object GetSupportedPropertyValueInternal(AutomationPeer itemPeer, int propertyId)
         {
-            return itemPeer.GetPropertyValue(propertyId);   
+            return itemPeer.GetPropertyValue(propertyId);
         }
 
         /// <summary>
@@ -318,7 +378,7 @@ namespace System.Windows.Automation.Peers
         /// one and does add the Handle and parent info by calling TrySetParentInfo.
         /// </summary>
         /// <SecurityNote>
-        /// Security Critical - Calls a Security Critical operation TrySetParentInfo which adds parent peer and provides 
+        /// Security Critical - Calls a Security Critical operation TrySetParentInfo which adds parent peer and provides
         ///                     security critical Hwnd value for this peer created asynchronously.
         /// SecurityTreatAsSafe - It's being called from this object which is real parent for the item peer.
         /// </SecurityNote>
@@ -366,7 +426,7 @@ namespace System.Windows.Automation.Peers
         internal RecyclableWrapper GetRecyclableWrapperPeer(object item)
         {
             ItemsControl itemsControl = (ItemsControl)Owner;
-            
+
             if (_recyclableWrapperCache == null)
             {
                 _recyclableWrapperCache = new RecyclableWrapper(itemsControl, item);
@@ -381,12 +441,15 @@ namespace System.Windows.Automation.Peers
 
         // UpdateChildrenIntenal is called with ItemsInvalidateLimit to ensure we don’t fire unnecessary structure change events when items are just scrolled in/out of view in case of
         // virtualized controls.
-        override internal void UpdateChildren()
+        override internal IDisposable UpdateChildren()
         {
             UpdateChildrenInternal(AutomationInteropProvider.ItemsInvalidateLimit);
             WeakRefElementProxyStorage.PurgeWeakRefCollection();
+            return AccessibilitySwitches.UseNetFx472CompatibleAccessibilityFeatures
+                    ? null
+                    : new UpdateChildrenHelper(this);
         }
-        
+
         // Provides Peer if exist in Weak Reference Storage
         internal ItemAutomationPeer GetPeerFromWeakRefStorage(object item)
         {
@@ -401,15 +464,15 @@ namespace System.Windows.Automation.Peers
                     if(returnPeer == null)
                         WeakRefElementProxyStorage.Remove(item);
                 }
-                else 
+                else
                     WeakRefElementProxyStorage.Remove(item);
 
             }
 
             return returnPeer;
         }
-        
-        // 
+
+        //
         internal AutomationPeer GetExistingPeerByItem(object item, bool checkInWeakRefStorage)
         {
             AutomationPeer returnPeer = null;
@@ -423,6 +486,26 @@ namespace System.Windows.Automation.Peers
             }
 
             return returnPeer;
+        }
+
+        internal ItemAutomationPeer ReusablePeerFor(object item)
+        {
+            if (_reusablePeers != null)
+            {
+                return _reusablePeers[item];
+            }
+            else
+            {
+                return ItemPeers[item];
+            }
+        }
+
+        private void ClearReusablePeers(ItemPeersStorage<ItemAutomationPeer> oldChildren)
+        {
+            if (_reusablePeers == oldChildren)
+            {
+                _reusablePeers = null;
+            }
         }
 
         protected virtual bool IsVirtualized
@@ -445,9 +528,10 @@ namespace System.Windows.Automation.Peers
             set { _WeakRefElementProxyStorage = value; }
         }
 
+        // *** DEAD CODE   Only call is from dead code when UseNetFx472CompatibleAccessibilityFeatures==true ***
         internal List<ItemAutomationPeer> RecentlyRealizedPeers
         {
-            get 
+            get
             {
                 if (_recentlyRealizedPeers == null)
                 {
@@ -459,9 +543,38 @@ namespace System.Windows.Automation.Peers
         }
 
         private ItemPeersStorage<ItemAutomationPeer> _dataChildren = new ItemPeersStorage<ItemAutomationPeer>();
+        private ItemPeersStorage<ItemAutomationPeer> _reusablePeers;
         private ItemPeersStorage<WeakReference> _WeakRefElementProxyStorage = new ItemPeersStorage<WeakReference>();
-        private List<ItemAutomationPeer> _recentlyRealizedPeers;
+        private List<ItemAutomationPeer> _recentlyRealizedPeers;    // *** DEAD CODE   Only use is from dead code when UseNetFx472CompatibleAccessibilityFeatures==true ***
         private RecyclableWrapper _recyclableWrapperCache;
+
+        // In a grouped ItemsControl, the item peers are held by the ItemsControlAP.
+        // Yet during UpdateSubtree the peers should be available for re-use by
+        // the GroupItemAPs at the leaf level.  Otherwise, the cost of creating new
+        // peers and raising events is a huge perf hit (DDVSO 104559).
+        // To achieve this, the ItemsControlAP retains its old children during the
+        // recursive UpdateSubtree work, in its "ReusablePeers" store.  When UpdateSubtree
+        // is done, it calls Dispose on this helper to release the temporary store.
+        private class UpdateChildrenHelper : IDisposable
+        {
+            internal UpdateChildrenHelper(ItemsControlAutomationPeer peer)
+            {
+                _peer = peer;
+                _oldChildren = peer.ItemPeers;
+            }
+
+            void IDisposable.Dispose()
+            {
+                if (_peer != null)
+                {
+                    _peer.ClearReusablePeers(_oldChildren);
+                    _peer = null;
+                }
+            }
+
+            ItemsControlAutomationPeer _peer;
+            ItemPeersStorage<ItemAutomationPeer> _oldChildren;
+        }
     }
 
     internal class ItemPeersStorage<T> where T : class
@@ -474,10 +587,10 @@ namespace System.Windows.Automation.Peers
         {
             _usesHashCode = false;
             _count = 0;
-            
+
             if (_hashtable != null)
                 _hashtable.Clear();
-            
+
             if (_list != null)
                 _list.Clear();
         }
@@ -491,7 +604,7 @@ namespace System.Windows.Automation.Peers
 
                 if (_usesHashCode)
                 {
-                    if (_hashtable == null)
+                    if (_hashtable == null || !_hashtable.ContainsKey(item))
                         return default(T);
 
                     return _hashtable[item] as T;
@@ -526,13 +639,13 @@ namespace System.Windows.Automation.Peers
                 if (_usesHashCode)
                 {
                     if (_hashtable == null)
-                        _hashtable = new Hashtable();
+                        _hashtable = new WeakDictionary<object,T>();
 
-                    if(!_hashtable.Contains(item) && value is T)
+                    if(!_hashtable.ContainsKey(item) && value is T)
                         _hashtable[item] = value;
                     else
                         Debug.Assert(false,"it must not add already present Item");
-                        
+
                 }
                 else
                 {
@@ -550,10 +663,10 @@ namespace System.Windows.Automation.Peers
         {
             if(_usesHashCode)
             {
-                if(item != null && _hashtable.Contains(item))
+                if(item != null && _hashtable.ContainsKey(item))
                 {
                     _hashtable.Remove(item);
-                    if(!_hashtable.Contains(item))
+                    if(!_hashtable.ContainsKey(item))
                         _count--;
                 }
             }
@@ -576,7 +689,7 @@ namespace System.Windows.Automation.Peers
                 }
             }
         }
-        
+
         // To purge the collection corresponding to WeakReference for dead references
         // 
         public void PurgeWeakRefCollection()
@@ -589,7 +702,7 @@ namespace System.Windows.Automation.Peers
             {
                 if(_hashtable == null)
                     return;
-                foreach(DictionaryEntry dictionaryEntry in _hashtable)
+                foreach(KeyValuePair<object,T> dictionaryEntry in _hashtable)
                 {
                     WeakReference weakRef = dictionaryEntry.Value as WeakReference;
                     if(weakRef == null)
@@ -645,7 +758,7 @@ namespace System.Windows.Automation.Peers
             get { return _count; }
         }
 
-        private Hashtable _hashtable = null;
+        private WeakDictionary<object, T> _hashtable = null;
         private List<KeyValuePair<object, T>> _list = null;
         private int _count = 0;
         private bool _usesHashCode = false;
@@ -657,7 +770,7 @@ namespace System.Windows.Automation.Peers
         {
             _itemsControl = itemsControl;
             _container = ((MS.Internal.Controls.IGeneratorHost)itemsControl).GetContainerForItem(item);
-            
+
             LinkItem(item);
         }
 
@@ -695,7 +808,6 @@ namespace System.Windows.Automation.Peers
         DependencyObject _container;
         object _item;
     }
-
 }
 
 

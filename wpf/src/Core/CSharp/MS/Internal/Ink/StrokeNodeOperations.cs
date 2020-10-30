@@ -449,16 +449,16 @@ namespace MS.Internal.Ink
             // the greater PressureFactor)
             if (quad.IsEmpty)
             {
-                // NTRAID#Window OS 
-
+                // NTRAID#Window OS bug-1029694-2004/10/15-xiaotu, refactor the code to make it a method
+                // to increase the maintainability of the program. FxCop bug.
                 
                 // Make a call to hit-test the biggest node the hitting contour.
                 return HitTestPolygonContourSegments(hitContour, beginNode, endNode);
             }
             else
             {
-                // NTRAID#Window OS 
-
+                // NTRAID#Window OS bug-1029694-2004/10/15-xiaotu, refactor the code to make it a method
+                // to increase the maintainability of the program. FxCop bug.
             
                 // HitTest the the hitting contour against the inking contour
                 return HitTestInkContour(hitContour, quad, beginNode, endNode);
@@ -587,8 +587,8 @@ namespace MS.Internal.Ink
 
             foreach (ContourSegment hitSegment in hitContour)
             {
-                // NTRAID#Window OS 
-
+                // NTRAID#Window OS bug-1029694-2004/10/19-xiaotu, refactor the code to make it a method
+                // to increase the maintainability of the program. FxCop bug.
 
                 // First, find out if hitSegment intersects with either of the ink nodes
                 bool isHit = HitTestStrokeNodes(hitSegment,beginNode,endNode, ref result);
@@ -627,8 +627,8 @@ namespace MS.Internal.Ink
 
                 isInside = false;
 
-                // NTRAID#Window OS 
-
+                // NTRAID#Window OS bug-1029694-2004/10/15-xiaotu, refactor the code to make it a new method
+                // CalculateClipLocation to increase the maintainability of the program. FxCop bug.
 
                 // If the begin node is not hit, find the begin findex on the ink segment to cut it at
                 if (!DoubleUtil.AreClose(result.BeginFIndex, StrokeFIndices.BeforeFirst))

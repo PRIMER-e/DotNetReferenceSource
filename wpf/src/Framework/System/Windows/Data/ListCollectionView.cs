@@ -770,7 +770,7 @@ namespace System.Windows.Data
                     if (!(SourceList is INotifyCollectionChanged))
                     {
                         // the index returned by IList.Add isn't always reliable
-                        if (!Object.Equals(newItem, SourceList[index]))
+                        if (!System.Windows.Controls.ItemsControl.EqualsEx(newItem, SourceList[index]))
                         {
                             index = SourceList.IndexOf(newItem);
                         }
@@ -780,7 +780,7 @@ namespace System.Windows.Data
                 },
                 true);
 
-            Debug.Assert(_newItemIndex != -2 && Object.Equals(newItem, _newItem), "AddNew did not raise expected events");
+            Debug.Assert(_newItemIndex != -2 && System.Windows.Controls.ItemsControl.EqualsEx(newItem, _newItem), "AddNew did not raise expected events");
 
             MoveCurrentTo(newItem);
 
@@ -1040,7 +1040,7 @@ namespace System.Windows.Data
 
         void SetNewItem(object item)
         {
-            if (!Object.Equals(item, _newItem))
+            if (!System.Windows.Controls.ItemsControl.EqualsEx(item, _newItem))
             {
                 _newItem = item;
 
@@ -1105,7 +1105,7 @@ namespace System.Windows.Data
 
                     // the pending changes may have moved (or even removed) the
                     // item.   Verify the index.
-                    if (index >= InternalCount || !Object.Equals(item, GetItemAt(index)))
+                    if (index >= InternalCount || !System.Windows.Controls.ItemsControl.EqualsEx(item, GetItemAt(index)))
                     {
                         index = InternalIndexOf(item);
                         if (index < 0)
@@ -1177,7 +1177,7 @@ namespace System.Windows.Data
 
             if (IsAddingNew)
             {
-                if (Object.Equals(item, _newItem))
+                if (System.Windows.Controls.ItemsControl.EqualsEx(item, _newItem))
                     return;     // EditItem(newItem) is a no-op
 
                 CommitNew();    // implicitly close a previous AddNew
@@ -1372,7 +1372,7 @@ namespace System.Windows.Data
 
         void SetEditItem(object item)
         {
-            if (!Object.Equals(item, _editItem))
+            if (!System.Windows.Controls.ItemsControl.EqualsEx(item, _editItem))
             {
                 _editItem = item;
 
@@ -1925,7 +1925,7 @@ namespace System.Windows.Data
                     // insert into private view
                     // (unless it's a special item - placeholder or new item)
                     bool isSpecialItem = (newItem == NewItemPlaceholder ||
-                                            (IsAddingNew && Object.Equals(_newItem, newItem)));
+                                            (IsAddingNew && System.Windows.Controls.ItemsControl.EqualsEx(_newItem, newItem)));
                     if (UsesLocalArray && !isSpecialItem)
                     {
                         InternalList.Insert(adjustedNewIndex - delta, newItem);
@@ -1963,7 +1963,7 @@ namespace System.Windows.Data
                         int localOldIndex = adjustedOldIndex - delta;
 
                         if (localOldIndex < InternalList.Count &&
-                            Object.Equals(ItemFrom(InternalList[localOldIndex]), oldItem))
+                            System.Windows.Controls.ItemsControl.EqualsEx(ItemFrom(InternalList[localOldIndex]), oldItem))
                         {
                             InternalList.RemoveAt(localOldIndex);
                         }
@@ -2016,7 +2016,7 @@ namespace System.Windows.Data
                 case NotifyCollectionChangedAction.Move:
                     // move within private view
 
-                    bool simpleMove = Object.Equals(oldItem, newItem);
+                    bool simpleMove = System.Windows.Controls.ItemsControl.EqualsEx(oldItem, newItem);
 
                     if (UsesLocalArray && (lsList == null || !lsList.IsRestoringLiveSorting))
                     {
@@ -2025,7 +2025,7 @@ namespace System.Windows.Data
 
                         // move the item to its new position, except in special cases
                         if (localOldIndex < InternalList.Count &&
-                            Object.Equals(InternalList[localOldIndex], oldItem))
+                            System.Windows.Controls.ItemsControl.EqualsEx(InternalList[localOldIndex], oldItem))
                         {
                             if (NewItemPlaceholder != newItem)
                             {
@@ -2199,7 +2199,7 @@ namespace System.Windows.Data
                         return InternalCount - 1;
                 }
             }
-            else if (IsAddingNew && Object.Equals(item, _newItem))
+            else if (IsAddingNew && System.Windows.Controls.ItemsControl.EqualsEx(item, _newItem))
             {
                 switch (NewItemPlaceholderPosition)
                 {
@@ -2683,7 +2683,7 @@ namespace System.Windows.Data
                         ? 0 : InternalCount - 1;
             }
             else if (IsAddingNew && NewItemPlaceholderPosition != NewItemPlaceholderPosition.None &&
-                        Object.Equals(item, _newItem))
+                        System.Windows.Controls.ItemsControl.EqualsEx(item, _newItem))
             {
                 // we should only get here when removing the AddNew item - i.e. from CancelNew -
                 // and only when the placeholder is active.
@@ -2710,7 +2710,7 @@ namespace System.Windows.Data
             {
                 if (index >= 0)
                 {
-                    if (!Object.Equals(item, ilFull[index]))
+                    if (!System.Windows.Controls.ItemsControl.EqualsEx(item, ilFull[index]))
                         throw new InvalidOperationException(SR.Get(SRID.AddedItemNotAtIndex, index));
                 }
                 else
@@ -2809,13 +2809,13 @@ namespace System.Windows.Data
 
             while (fullIndex < index && localIndex < InternalList.Count)
             {
-                if (Object.Equals(ilFull[fullIndex], ilPartial[localIndex]))
+                if (System.Windows.Controls.ItemsControl.EqualsEx(ilFull[fullIndex], ilPartial[localIndex]))
                 {
                     // match - current item passes filter.  Skip it.
                     ++fullIndex;
                     ++localIndex;
                 }
-                else if (Object.Equals(item, ilPartial[localIndex]))
+                else if (System.Windows.Controls.ItemsControl.EqualsEx(item, ilPartial[localIndex]))
                 {
                     // skip over an unmatched copy of the target item
                     // (this arises in a Move event)
@@ -2875,7 +2875,7 @@ namespace System.Windows.Data
         {
             if (oldIndex == CurrentPosition)
             {
-                // moving the current item - currency moves with the item (
+                // moving the current item - currency moves with the item (bug 1942184)
                 SetCurrent(GetItemAt(newIndex), newIndex);
             }
             else if (oldIndex < CurrentPosition && CurrentPosition <= newIndex)
@@ -3002,7 +3002,7 @@ namespace System.Windows.Data
                 object item = InternalList[k];
                 LiveShapingItem lsi = (lsList != null) ? lsList.ItemAt(k) : null;
 
-                if (!IsAddingNew || !Object.Equals(_newItem, item))
+                if (!IsAddingNew || !System.Windows.Controls.ItemsControl.EqualsEx(_newItem, item))
                 {
                     _group.AddToSubgroups(item, lsi, true /*loading*/);
                 }
@@ -3146,7 +3146,7 @@ namespace System.Windows.Data
                             if (oldIndex < newIndex)
                                 newIndex -= 1;
 
-                            ProcessCollectionChangedWithAdjustedIndex(
+                            ProcessLiveShapingCollectionChange(
                                 new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move,
                                                                         lsi.Item, oldIndex, newIndex),
                                 oldIndex, newIndex);
@@ -3158,7 +3158,7 @@ namespace System.Windows.Data
                 else
                 {
                     // when most elements are dirty, do a full InsertionSort
-                    list.RestoreLiveSortingByInsertionSort(ProcessCollectionChangedWithAdjustedIndex);
+                    list.RestoreLiveSortingByInsertionSort(ProcessLiveShapingCollectionChange);
                 }
 
                 Debug.Assert(list.VerifyLiveSorting(null), "live sorting not resotred");
@@ -3185,7 +3185,7 @@ namespace System.Windows.Data
                         {
                             // remove item from the main list
                             index = list.IndexOf(lsi);
-                            ProcessCollectionChangedWithAdjustedIndex(
+                            ProcessLiveShapingCollectionChange(
                                 new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove,
                                                                         item, index),
                                 index, -1);
@@ -3214,7 +3214,7 @@ namespace System.Windows.Data
                                 IList ilFull = (AllowsCrossThreadChanges ? ShadowCollection : SourceCollection) as IList;
                                 for (index = lsi.GetAndClearStartingIndex(); index < ilFull.Count; ++index)
                                 {
-                                    if (Object.Equals(item, ilFull[index]))
+                                    if (System.Windows.Controls.ItemsControl.EqualsEx(item, ilFull[index]))
                                         break;
                                 }
 
@@ -3225,7 +3225,7 @@ namespace System.Windows.Data
                                 index = MatchingSearch(item, index, ilFull, list);
                             }
 
-                            ProcessCollectionChangedWithAdjustedIndex(
+                            ProcessLiveShapingCollectionChange(
                                 new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add,
                                                                         item, index),
                                 -1, index);
@@ -3259,6 +3259,18 @@ namespace System.Windows.Data
 
 
             IsLiveShapingDirty = false;
+        }
+
+        // changes from the LiveShaping list need indices adjusted for NewItemPlaceholder
+        void ProcessLiveShapingCollectionChange(NotifyCollectionChangedEventArgs args, int oldIndex, int newIndex)
+        {
+            if (!IsGrouping && (NewItemPlaceholderPosition == NewItemPlaceholderPosition.AtBeginning))
+            {
+                if (oldIndex >= 0)  ++oldIndex;
+                if (newIndex >= 0)  ++newIndex;
+            }
+
+            ProcessCollectionChangedWithAdjustedIndex(args, oldIndex, newIndex);
         }
 
         internal bool IsLiveShapingDirty

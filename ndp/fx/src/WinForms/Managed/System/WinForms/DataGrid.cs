@@ -3914,10 +3914,12 @@
             protected override void OnHandleDestroyed(EventArgs e)
             {
                 base.OnHandleDestroyed(e);
-    
+
                 // toolTipping
-                toolTipProvider.Destroy();
-                toolTipProvider = null;
+                if (toolTipProvider != null) {
+                    toolTipProvider.Destroy();
+                    toolTipProvider = null;
+                }
                 toolTipId = 0;
             }
     
@@ -4766,7 +4768,7 @@
                         headerFont = this.HeaderFont;
                     else
                         headerFont = this.myGridTable.HeaderFont;
-                    size = (int) g.MeasureString(columnName, headerFont).Width + layout.ColumnHeaders.Height + 1; // This is not a 
+                    size = (int) g.MeasureString(columnName, headerFont).Width + layout.ColumnHeaders.Height + 1; // This is not a bug, the sort triangle's width is equal to it's height.
                     int rowCount = listManager.Count;
                     for (int row = 0; row < rowCount; ++row) {
                         object value = column.GetColumnValueAtRow(listManager, row);
@@ -5642,11 +5644,11 @@
                 int numRows = DataGridRowsLength;
     
                 // when minimizing the dataGrid window, we will get negative values for the
-                // layout.Data.Width and layout.Data.Height ( is this a 
-
-
-
-
+                // layout.Data.Width and layout.Data.Height ( is this a bug or not? if layout.Data.Height == 0 in that case,
+                // the old code would have worked )
+                //
+                // if this is the case, then set numVisibleRows = numTotallyVisibleRows = 0;
+                //
                 if (visibleHeight < 0)
                 {
                     numVisibleRows = numTotallyVisibleRows = 0;
@@ -8302,8 +8304,8 @@
     
                 int lastColumnMarkedVisible = 0;
                 int firstColumnMarkedVisible = cols.Count-1;
-                // 
-
+                // bug 70492: if we do not have any rows, then tab should move focus to the next control
+                //
                 if (localRows.Length == 0) {
                     EndEdit();
     
@@ -8454,7 +8456,7 @@
                         {
                             CurrentColumn = lastColumnMarkedVisible;
                         }
-                        if (!gridState[GRIDSTATE_childLinkFocused])             // 
+                        if (!gridState[GRIDSTATE_childLinkFocused])             // bug 86803
                             CurrentRow --;
                     } else if (gridState[GRIDSTATE_childLinkFocused] && CurrentColumn == lastColumnMarkedVisible) {
                         // part deux: when we hilite the childLink and then press shift-tab, we
@@ -9048,14 +9050,14 @@
                         return (DataGrid)Owner;
                     }
                 }
-    
-                private int ColumnCount {
+
+                private int ColumnCountPrivate {
                     get {
                         return ((DataGrid)Owner).myGridTable.GridColumnStyles.Count;
                     }
                 }
-    
-                private int RowCount {
+
+                private int RowCountPrivate {
                     get {
                         return ((DataGrid)Owner).dataGridRows.Length;
                     }
@@ -9095,8 +9097,8 @@
                 public override AccessibleObject GetChild(int index) {
                     DataGrid dataGrid = (DataGrid)Owner;
     
-                    int cols = ColumnCount;
-                    int rows = RowCount;
+                    int cols = ColumnCountPrivate;
+                    int rows = RowCountPrivate;
     
                     if (dataGrid.dataGridRows == null) {
                         dataGrid.CreateDataGridRows();
@@ -9150,7 +9152,7 @@
                 }
     
                 public override int GetChildCount() {
-                    int n = 1 + ColumnCount + ((DataGrid)Owner).DataGridRowsLength;
+                    int n = 1 + ColumnCountPrivate + ((DataGrid)Owner).DataGridRowsLength;
                     if (DataGrid.horizScrollBar.Visible) {
                         n++;
                     }
@@ -9175,7 +9177,7 @@
                     }
 
                     DataGridCell cell = DataGrid.CurrentCell;
-                    return GetChild(1 + ColumnCount + cell.RowNumber).GetChild(cell.ColumnNumber);
+                    return GetChild(1 + ColumnCountPrivate + cell.RowNumber).GetChild(cell.ColumnNumber);
                 }
              
                 public override AccessibleObject HitTest(int x, int y) {
@@ -9184,9 +9186,9 @@
     
                     switch (hti.Type) {
                         case HitTestType.RowHeader:
-                            return GetChild(1 + ColumnCount + hti.Row);
+                            return GetChild(1 + ColumnCountPrivate + hti.Row);
                         case HitTestType.Cell:
-                            return GetChild(1 + ColumnCount + hti.Row).GetChild(hti.Column);
+                            return GetChild(1 + ColumnCountPrivate + hti.Row).GetChild(hti.Column);
                         case HitTestType.ColumnHeader:
                             return GetChild(1 + hti.Column);
                         case HitTestType.ParentRows:
@@ -9505,7 +9507,7 @@
                             change = true;
                         AllowAdd= listManager.AllowAdd && !gridReadOnly && bl != null && bl.SupportsChangeNotification;
                         AllowEdit= listManager.AllowEdit && !gridReadOnly;
-                        AllowRemove = listManager.AllowRemove && !gridReadOnly && bl != null && bl.SupportsChangeNotification;     // 
+                        AllowRemove = listManager.AllowRemove && !gridReadOnly && bl != null && bl.SupportsChangeNotification;     // bug 86061
                     }
                     return change;
                 }

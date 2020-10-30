@@ -23,6 +23,8 @@ namespace MS.Internal.PresentationFramework
 namespace MS.Internal.PresentationCffRasterizer
 #elif PRESENTATIONUI
 namespace MS.Internal.PresentationUI
+#elif UIAUTOMATIONTYPES
+namespace MS.Internal.UIAutomationTypes
 #elif DRT
 namespace MS.Internal.Drt
 #elif SYSTEM_XAML

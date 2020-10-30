@@ -653,10 +653,10 @@ namespace MS.Internal.AutomationProxies
                     fScrollSuccess = Scroll(_hwnd, (IntPtr)dx, (IntPtr)dy);
 
                     // On occasion in the listview control the new position of the scroll bar is off by
-                    // one column/row. To deal with that 
-
-
-
+                    // one column/row. To deal with that bug in listview, we query the value we just set.
+                    // If it differs then we try a second time to scroll the content. It is a scroll by
+                    // just one column and this always succeeds.
+                    // It is done both on hz and vt as a safety measure.
                     if (fScrollSuccess && (((int)horizontalPercent != (int)ScrollPattern.NoScroll && (int)horizontalPercent != (int)WindowScroll.GetPropertyScroll(ScrollPattern.HorizontalScrollPercentProperty, _hwnd))
                     || ((int)verticalPercent != (int)ScrollPattern.NoScroll && (int)verticalPercent != (int)WindowScroll.GetPropertyScroll(ScrollPattern.VerticalScrollPercentProperty, _hwnd))))
                     {
@@ -1043,9 +1043,9 @@ namespace MS.Internal.AutomationProxies
             // as soon as pt.x is changed we know we jump to the different column and hence we know the number of rows
             // This is true except:
             // If user had Groups shown, and than changed to the List mode (List mode does not have groups)
-            // the List will not be snaking anymore (Windows Explorer LV 
-
-
+            // the List will not be snaking anymore (Windows Explorer LV bug on XP), hence after we come to the end of the first column
+            // the GetItemNext(,,LVNI_BELOW) will return -1. all other case list will snake
+            // Lucky for us at this point rowCount will contain the number of rows
             int columnCount = GetColumnCountOtherModes (hwnd);
 
             if (columnCount == 1)

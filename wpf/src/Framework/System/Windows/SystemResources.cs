@@ -14,6 +14,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Security;
 using System.Security.Permissions;
 using System.Windows.Threading;
@@ -25,6 +26,7 @@ using System.Windows.Diagnostics;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Resources;
 using MS.Win32;
 using MS.Internal;
@@ -57,7 +59,7 @@ namespace System.Windows
         /// </summary>
         /// <param name="key">The resource id to search for.</param>
         /// <returns>The resource if it exists, null otherwise.</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         internal static object FindThemeStyle(DependencyObjectType key)
         {
             // Find a cached theme style
@@ -102,7 +104,7 @@ namespace System.Windows
         /// </summary>
         /// <param name="key">The resource id to search for.</param>
         /// <returns>The resource if it exists, null otherwise.</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         internal static object FindResourceInternal(object key)
         {
             // Call Forwarded
@@ -269,7 +271,7 @@ namespace System.Windows
 
         #region Implementation
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         internal static void CacheResource(object key, object resource, bool isTraceEnabled)
         {
             // Thread safety handled by FindResourceInternal. Be sure to have locked _resourceCache.SyncRoot.
@@ -457,9 +459,9 @@ namespace System.Windows
         /// <param name="assembly">The desired assembly</param>
         /// <returns>The cache slot.</returns>
         /// <remarks>
-        ///     This method has exactly one caller (FindDictionaryResource) which in turn is called by 
-        ///     exactly one caller (FindResourceInternal(object,bool,bool). FindResourceInternal 
-        ///     synchronizes on ThemeDictionaryLock, which ensures that EnsureDictionarySlot always 
+        ///     This method has exactly one caller (FindDictionaryResource) which in turn is called by
+        ///     exactly one caller (FindResourceInternal(object,bool,bool). FindResourceInternal
+        ///     synchronizes on ThemeDictionaryLock, which ensures that EnsureDictionarySlot always
         ///     executes under that lock.
         /// </remarks>
         private static ResourceDictionaries EnsureDictionarySlot(Assembly assembly)
@@ -830,19 +832,27 @@ namespace System.Windows
             {
                 get
                 {
-                    if (_themedResourceName == null)
+                    // the race conditions described in UxThemeWrapper apply
+                    // here as well, and are solved with the same techniques
+                    string themedResourceName = _themedResourceName;
+
+                    while (themedResourceName == null)
                     {
-                        if (UxThemeWrapper.IsActive)
+                        themedResourceName = UxThemeWrapper.ThemedResourceName; // guaranteed not null
+
+                        // try to update the shared member
+                        string currentName = System.Threading.Interlocked.CompareExchange(ref _themedResourceName, themedResourceName, null);
+
+                        if (currentName != null && currentName != themedResourceName)
                         {
-                            _themedResourceName = "themes/" + UxThemeWrapper.ThemeName.ToLowerInvariant() + "." + UxThemeWrapper.ThemeColor.ToLowerInvariant();
-                        }
-                        else
-                        {
-                            _themedResourceName = ClassicResourceName;
+                            // another thread updated with a different value, which might
+                            // be stale.  To be safe, retry as if a fresh ThemeChange occurred
+                            _themedResourceName = null;
+                            themedResourceName = null;
                         }
                     }
 
-                    return _themedResourceName;
+                    return themedResourceName;
                 }
             }
 
@@ -851,12 +861,12 @@ namespace System.Windows
             /// by this <see cref="ResourceDictionaries"/> instance.
             /// </summary>
             /// <remarks>
-            /// It is possible that the ResourceDictionaryInfo instance returned here could be cached to improve performance. 
-            /// (i) Typical applicaitons will have O(1) RD instances, (ii) this property will be called only during development 
-            /// or debugging, (iii) caching will introduce some redundant storage of information (like _assembly, _genericDictionary) 
-            /// or require additional refactoring to eliminate those redundances, and (iv) caching would potentially introduce 
-            /// additional instances that would remain alive even in scenarios wherein a debugger is not attached. Given these 
-            /// factors, we are not caching the ResourceDictionaryInfo instances returned by this property's getter. 
+            /// It is possible that the ResourceDictionaryInfo instance returned here could be cached to improve performance.
+            /// (i) Typical applicaitons will have O(1) RD instances, (ii) this property will be called only during development
+            /// or debugging, (iii) caching will introduce some redundant storage of information (like _assembly, _genericDictionary)
+            /// or require additional refactoring to eliminate those redundances, and (iv) caching would potentially introduce
+            /// additional instances that would remain alive even in scenarios wherein a debugger is not attached. Given these
+            /// factors, we are not caching the ResourceDictionaryInfo instances returned by this property's getter.
             /// </remarks>
             internal ResourceDictionaryInfo GenericDictionaryInfo
             {
@@ -889,7 +899,7 @@ namespace System.Windows
             /// <param name="resourceName">The name of the desired theme resource.</param>
             /// <param name="isTraceEnabled">Whether tracing is enabled.</param>
             /// <param name="dictionarySourceUri">
-            ///     Returns the pack:// Uri of the baml from which the ResourceDictionary instance returned 
+            ///     Returns the pack:// Uri of the baml from which the ResourceDictionary instance returned
             ///     by this method was loaded. This Uri is captured for use with <see cref="ResourceDictionaryDiagnostics"/>.
             /// </param>
             /// <returns>The dictionary if found and loaded successfully, null otherwise.</returns>
@@ -902,7 +912,7 @@ namespace System.Windows
             private ResourceDictionary LoadDictionary(Assembly assembly, string assemblyName, string resourceName, bool isTraceEnabled, out Uri dictionarySourceUri)
             {
                 ResourceDictionary dictionary = null;
-                dictionarySourceUri = null; 
+                dictionarySourceUri = null;
 
                 // Create the resource manager that will load the byte array
                 ResourceManager rm = new ResourceManager(assemblyName + ".g", assembly);
@@ -943,7 +953,7 @@ namespace System.Windows
                     settings.LocalAssembly = assembly;
 
                     // For system themes, we don't seem to be passing the BAML Uri to the Baml2006Reader
-                    Baml2006Reader bamlReader = new Baml2006Reader(stream, new Baml2006SchemaContext(settings.LocalAssembly), settings);
+                    Baml2006Reader bamlReader = new Baml2006ReaderInternal(stream, new Baml2006SchemaContext(settings.LocalAssembly), settings);
 
                     System.Xaml.XamlObjectWriterSettings owSettings = XamlReader.CreateObjectWriterSettingsForBaml();
                     if (assembly != null)
@@ -1030,24 +1040,165 @@ namespace System.Windows
         // PreSharp will think that the hwndNotify is local and should be disposed.
 #pragma warning disable 6518
 
+        /// <summary>
+        /// Ensures that a a notify-window is created corresponding to <see cref="ProcessDpiAwarenessContextValue"/>
+        /// This is the default HWND used to listen for theme-change messages.
+        /// 
+        /// When <see cref="IsPerMonitorDpiScalingActive"/> is true, additional notification windows are created 
+        /// on-demand by <see cref="EnsureResourceChangeListener(DpiAwarenessContextValue)"/> or <see cref="EnsureResourceChangeListener(DpiUtil.HwndDpiInfo)"/>
+        /// as the need arises. For e.g., when <see cref="System.Windows.Interop.HwndHost"/> calls into <see cref="GetDpiAwarenessCompatibleNotificationWindow(HandleRef)"/>,
+        /// we would look for a notify-window that matches both (a) DPI Awareness Context and (b) DPI Scale factor of the foreign window from HwndHost to return. If none is found,
+        /// we would create one and add it to our list in <see cref="_hwndNotify"/> and return the newly created notify-window.
+        /// 
+        /// Over the lifetime of a DPI-aware application, unique notify-windows could be created for each combination 
+        /// of <see cref="DpiAwarenessContextValue"/> + DPI that is observed - i.e., for each unique <see cref="DpiUtil.HwndDpiInfo"/>. This
+        /// would be bounded by:
+        ///     #(valid DpiAwarenessContextValues) + 2*#(unique DPI values that are observed during calls to <see cref="GetDpiAwarenessCompatibleNotificationWindow(HandleRef)"/>)
+        /// The only DpiAwarenessContextValues for which unique DPI values would matter are <see cref="DpiAwarenessContextValue.PerMonitorAware"/> and 
+        /// <see cref="DpiAwarenessContextValue.PerMonitorAwareVersion2"/>. For <see cref="DpiAwarenessContextValue.SystemAware"/> and <see cref="DpiAwarenessContextValue.Unaware"/>,
+        /// the OS would never report back anything other than the System DPI and 96 respectively, and thus we would only ever maintain one entry for those
+        /// DpiAwarenessContextValues.
+        /// </summary>
         ///<SecurityNote>
-        ///     Critical - Creates an HwndWrapper and adds a hook.
-        ///     TreatAsSafe: The _hwndNotify window is critical and this function is safe to call
+        ///     Critical - Creates HwndWrappers and adds hooks.
+        ///     Safe: The _hwndNotify windows are critical and this function is safe to call
         ///</SecurityNote>
-        [SecurityCritical,SecurityTreatAsSafe]
+        [SecuritySafeCritical]
         private static void EnsureResourceChangeListener()
         {
-            // Create a new notify window if we haven't already created one for this thread.
-            if (_hwndNotify == null)
+            // Create a new notify window if we haven't already created any corresponding to ProcessDpiAwarenessContextValue for this thread.
+            if (_hwndNotify == null || 
+                _hwndNotifyHook == null || 
+                _hwndNotify.Count == 0 ||
+                _hwndNotify.Keys.FirstOrDefault((hwndDpiContext) => hwndDpiContext.DpiAwarenessContextValue == ProcessDpiAwarenessContextValue) == null)
+            {
+                _hwndNotify = new Dictionary<DpiUtil.HwndDpiInfo, SecurityCriticalDataClass<HwndWrapper>>();
+                _hwndNotifyHook = new Dictionary<DpiUtil.HwndDpiInfo, HwndWrapperHook>();
+                _dpiAwarenessContextAndDpis = new List<DpiUtil.HwndDpiInfo>();
+
+                var hwndDpiInfo = CreateResourceChangeListenerWindow(ProcessDpiAwarenessContextValue);
+                _dpiAwarenessContextAndDpis.Add(hwndDpiInfo);
+            }
+        }
+
+        /// <summary>
+        /// Ensures that the notify-window corresponding to a given <paramref name="dpiContextValue"/> has been
+        /// created.
+        /// </summary>
+        /// <param name="dpiContextValue">DPI Awareness Context for which notify-window has to be ensured</param>
+        /// <SecurityNote>
+        ///     Critical: Calls <see cref="CreateResourceChangeListenerWindow(DpiAwarenessContextValue)"/>, which is Critical
+        ///     Safe:   Does not expose any Critical resources to the caller
+        /// </SecurityNote>
+        [SecuritySafeCritical]
+        private static void EnsureResourceChangeListener(DpiAwarenessContextValue dpiContextValue)
+        {
+            EnsureResourceChangeListener();
+            
+            // Test if _hwndNotify has a key that contains dpiContextValue - otherwise create and add a notify-window with 
+            // this DPI Awareness Context
+            if (_hwndNotify.Keys.FirstOrDefault((hwndDpiContext) => hwndDpiContext.DpiAwarenessContextValue == dpiContextValue) == null)
+            {
+                var hwndDpiInfo = CreateResourceChangeListenerWindow(dpiContextValue);
+                if (!_dpiAwarenessContextAndDpis.Contains(hwndDpiInfo))
+                {
+                    _dpiAwarenessContextAndDpis.Add(hwndDpiInfo);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Ensures that a notify-window corresponding to a given HwndDpiInfo(=DpiAwarenessContextValue + DpiScale) has been
+        /// created.
+        /// </summary>
+        /// <param name="hwndDpiInfo">Represents a combination of <see cref="DpiAwarenessContextValue"/> and <see cref="DpiScale2"/></param>
+        /// <remarks>
+        /// Since we create the new window using the (left, top) screen coordinates of the monitor that contained the HWND
+        /// whose characteristics we are trying to match, we are guaranteed that the DPI Scale factor of the newly created HWND
+        /// would be identical to that of the reference HWND.
+        /// </remarks>
+        /// <SecurityNote>
+        ///     Critical:   Calls into Critical methods
+        ///     Safe: Does not return any Critical resources to the caller
+        /// </SecurityNote>
+        [SecuritySafeCritical]
+        private static void EnsureResourceChangeListener(DpiUtil.HwndDpiInfo hwndDpiInfo)
+        {
+            EnsureResourceChangeListener();
+            if (!_hwndNotify.ContainsKey(hwndDpiInfo))
+            {
+                var hwndDpiInfoKey = 
+                    CreateResourceChangeListenerWindow(
+                        hwndDpiInfo.DpiAwarenessContextValue, 
+                        hwndDpiInfo.ContainingMonitorScreenRect.left, 
+                        hwndDpiInfo.ContainingMonitorScreenRect.top);
+                Debug.Assert(hwndDpiInfo == hwndDpiInfoKey);
+
+                if (!_dpiAwarenessContextAndDpis.Contains(hwndDpiInfo))
+                {
+                    _dpiAwarenessContextAndDpis.Add(hwndDpiInfo);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates notify-window by switching the thread to <paramref name="dpiContextValue"/> temporarily, adds the 
+        /// corresponding <see cref="HwndWrapper"/> to <see cref="_hwndNotify"/>, and registers relevant hooks
+        /// </summary>
+        /// <param name="dpiContextValue">DPI Awareness Context for which notify-window has to be ensured</param>
+        /// <param name="x">x-coordinate position on the screen where the window is to be created</param>
+        /// <param name="y">y-coordinate position on the screen where the window is to be created</param>
+        /// <remarks>
+        /// Assumes that <see cref="_hwndNotify"/> and <see cref="_hwndNotifyHook"/> have been initialized. This method
+        /// must only be called by <see cref="EnsureResourceChangeListener"/> or <see cref="EnsureResourceChangeListener(DpiAwarenessContextValue)"/>
+        /// </remarks>
+        /// <returns><see cref="DpiUtil.HwndDpiInfo"/> of the newly created <see cref="HwndWrapper"/>, which is also a new key added into <see cref="_hwndNotify"/></returns>
+        /// <SecurityNote>
+        ///     Critical:   Creates HWND's and HwndWrapper
+        ///     Safe: Does not return Critical resources directly to the caller
+        /// </SecurityNote>
+        [SecurityCritical]
+        private static DpiUtil.HwndDpiInfo CreateResourceChangeListenerWindow(DpiAwarenessContextValue dpiContextValue, int x = 0, int y = 0, [System.Runtime.CompilerServices.CallerMemberName] string callerName = "")
+        {
+            Debug.Assert(_hwndNotify != null);
+            Debug.Assert(_hwndNotifyHook != null);
+            Debug.Assert(callerName.Equals(nameof(EnsureResourceChangeListener), StringComparison.InvariantCulture));
+
+            using (DpiUtil.WithDpiAwarenessContext(dpiContextValue))
             {
                 // Create a top-level, invisible window so we can get the WM_THEMECHANGE notification
                 // and for HwndHost to park non-visible HwndHosts.
-                HwndWrapper hwndNotify;
-                hwndNotify = new HwndWrapper(0, NativeMethods.WS_POPUP|NativeMethods.WS_DISABLED, 0, 0, 0, 0, 0, "SystemResourceNotifyWindow", IntPtr.Zero, null);
-                _hwndNotify = new SecurityCriticalDataClass<HwndWrapper>(hwndNotify);
-                _hwndNotify.Value.Dispatcher.ShutdownFinished += OnShutdownFinished;
-                _hwndNotifyHook = new HwndWrapperHook(SystemThemeFilterMessage);
-                _hwndNotify.Value.AddHook(_hwndNotifyHook);
+                var hwndNotify =
+                    new HwndWrapper(
+                    classStyle: 0,
+                    style: NativeMethods.WS_POPUP | NativeMethods.WS_DISABLED,
+                    exStyle: 0,
+                    x: x,
+                    y: y,
+                    width: 0,
+                    height: 0,
+                    name: "SystemResourceNotifyWindow",
+                    parent: IntPtr.Zero,
+                    hooks: null);
+
+                // Do not call into DpiUtil.GetExtendedDpiInfoForWindow()
+                // unless IsPerMonitorDpiscalingActive == true. DpiUtil.GetExtendedDpiInfoForWindow()
+                // in turn calls into methods that are only supported on platforms with high DPI
+                // support (for e.g., not supported on Windows 7). 
+                var hwndDpiInfo = 
+                    IsPerMonitorDpiScalingActive ?
+                    DpiUtil.GetExtendedDpiInfoForWindow(hwndNotify.Handle):
+                    new DpiUtil.HwndDpiInfo(dpiContextValue, GetDpiScaleForUnawareOrSystemAwareContext(dpiContextValue));
+
+                Debug.Assert(!_hwndNotify.ContainsKey(hwndDpiInfo));
+                Debug.Assert(hwndDpiInfo.DpiAwarenessContextValue == dpiContextValue);
+
+                _hwndNotify[hwndDpiInfo] = new SecurityCriticalDataClass<HwndWrapper>(hwndNotify);
+                _hwndNotify[hwndDpiInfo].Value.Dispatcher.ShutdownFinished += OnShutdownFinished;
+                _hwndNotifyHook[hwndDpiInfo] = new HwndWrapperHook(SystemThemeFilterMessage);
+                _hwndNotify[hwndDpiInfo].Value.AddHook(_hwndNotifyHook[hwndDpiInfo]);
+
+                return hwndDpiInfo;
             }
         }
 
@@ -1055,19 +1206,53 @@ namespace System.Windows
         ///     Critical - Calls dispose on the critical hwnd wrapper.
         ///     TreatAsSafe: It is safe to dispose the wrapper
         ///</SecurityNote>
-        [SecurityCritical, SecurityTreatAsSafe]
+        [SecuritySafeCritical]
         private static void OnShutdownFinished(object sender, EventArgs args)
         {
-            if (_hwndNotify != null)
-                _hwndNotify.Value.Dispose();
+            if (_hwndNotify != null && _hwndNotify.Count != 0)
+            {
+                foreach (var hwndDpiInfo in _dpiAwarenessContextAndDpis)
+                {
+                    _hwndNotify[hwndDpiInfo].Value.Dispose();
+                    _hwndNotifyHook[hwndDpiInfo] = null;
+                }
+            }
 
-            _hwndNotifyHook = null;
+            _hwndNotify?.Clear();
             _hwndNotify = null;
+
+            _hwndNotifyHook?.Clear();
+            _hwndNotifyHook = null;
+        }
+
+        /// <summary>
+        /// Obtains the DPI Scale factor value given the current non-Per Monitor Aware DPI Awareness Context Value
+        /// </summary>
+        /// <param name="dpiContextValue"></param>
+        /// <returns>DPI Scale value</returns>
+        /// <remarks>Defaults to System DPI if an invalid <paramref name="dpiContextValue"/> is supplied</remarks>
+        private static DpiScale2 GetDpiScaleForUnawareOrSystemAwareContext(DpiAwarenessContextValue dpiContextValue)
+        {
+            Debug.Assert(dpiContextValue == DpiAwarenessContextValue.Unaware || dpiContextValue == DpiAwarenessContextValue.SystemAware);
+
+            DpiScale2 dpiScale = null;
+            switch (dpiContextValue)
+            {
+                case DpiAwarenessContextValue.Unaware:
+                    dpiScale = DpiScale2.FromPixelsPerInch(DpiUtil.DefaultPixelsPerInch, DpiUtil.DefaultPixelsPerInch);
+                    break;
+                case DpiAwarenessContextValue.SystemAware:
+                default:
+                    dpiScale = DpiUtil.GetSystemDpi();
+                    break;
+            }
+
+            return dpiScale;
         }
 
 #pragma warning restore 6518
 
-        private static void OnThemeChanged()
+    private static void OnThemeChanged()
         {
             ResourceDictionaries.OnThemeChanged();
             UxThemeWrapper.OnThemeChanged();
@@ -1175,12 +1360,24 @@ namespace System.Windows
         [SecurityCritical]
         private static void InvalidateTabletDevices(WindowMessage msg, IntPtr wParam, IntPtr lParam)
         {
-            if ( _hwndNotify != null )
+            // DDVSO:221075
+            // Don't forward messages to tablets if the stack is turned off.
+            // DDVSO:633620
+            // If the StylusLogic for this thread has not been instantiated, do not attempt to forward
+            // tablet messages.  This stops potential instantiations of Dispatcher during process
+            // shutdown.  StylusLogic should be instantiated by <see cref="HwndSource.Initialize">.
+            if (StylusLogic.IsStylusAndTouchSupportEnabled
+                && StylusLogic.IsInstantiated
+                && _hwndNotify != null
+                && _hwndNotify.Count != 0)
             {
-                Dispatcher dispatcher = _hwndNotify.Value.Dispatcher;
-                if ( dispatcher != null && dispatcher.InputManager != null )
+                Dispatcher dispatcher = Hwnd.Dispatcher;
+                if (dispatcher?.InputManager != null)
                 {
-                    ((InputManager)dispatcher.InputManager).StylusLogic.HandleMessage(msg, wParam, lParam);
+                    // DDVSO:221075
+                    // Switch to using CurrentStylusLogic mechanism and guard against the stack
+                    // not being enabled.
+                    StylusLogic.CurrentStylusLogic.HandleMessage(msg, wParam, lParam);
                 }
             }
         }
@@ -1372,22 +1569,167 @@ namespace System.Windows
             get { return _resourceCache.SyncRoot; }
         }
 
-        // This is the internal accessor for the
-        // hwnd used to watch for messages.
-        //
-        // Currrently this is used by HwndHost as a place
-        // to parent Child hwnds when they are disconnected
-        internal static HwndWrapper Hwnd
+        /// <summary>
+        /// Returns the <see cref="DpiAwarenessContextValue"/> of the current process
+        /// as reported by <see cref="HwndTarget"/>
+        /// 
+        /// If <see cref="HwndTarget"/> has yet to initialize this information, the process
+        /// is queried directly for this information. 
+        /// </summary>
+        private static DpiAwarenessContextValue ProcessDpiAwarenessContextValue
+        {
+            get
+            {
+                if (HwndTarget.IsProcessUnaware == true)
+                {
+                    return DpiAwarenessContextValue.Unaware;
+                }
+
+                if (HwndTarget.IsProcessSystemAware == true)
+                {
+                    return DpiAwarenessContextValue.SystemAware;
+                }
+
+                if (HwndTarget.IsProcessPerMonitorDpiAware == true)
+                {
+                    return DpiAwarenessContextValue.PerMonitorAware;
+                }
+
+                // HwndTarget has not been initialized yet - ask the current process
+                // directly for its process DPI Awareness context value
+                return DpiUtil.GetProcessDpiAwarenessContextValue(IntPtr.Zero);
+            }
+        }
+
+        /// <summary>
+        /// Reports whether per-monitor DPI scaling is active - i.e., 
+        /// the process is (a) manifested for per-monitor DPI awareness, 
+        /// (b) WPF recognizes this and has met the right preconditions (TFM, AppContext
+        /// switches, OS version etc.) to turn on the DPI processing capabilities.
+        /// </summary>
+        private static bool IsPerMonitorDpiScalingActive
+        {
+            get
+            {
+                return HwndTarget.IsPerMonitorDpiScalingEnabled && 
+                    (ProcessDpiAwarenessContextValue == DpiAwarenessContextValue.PerMonitorAware || 
+                    ProcessDpiAwarenessContextValue == DpiAwarenessContextValue.PerMonitorAwareVersion2);
+            }
+        }
+
+        /// <summary>
+        /// This used to be the internal accessor for the
+        /// HWND intended to watch for messages. It has since been changed
+        /// into a private accessor, and replaced with <see cref="GetDpiCompatibleNotificationWindow(HandleRef)"/>
+        /// 
+        /// This accessor now returns the notify-window corresponding to the current process
+        /// only. When a notify window corresponding to another HWND is needed (for e.g., to
+        /// re-parent that HWND under the said notify-window), use <see cref="GetDpiCompatibleNotificationWindow(HandleRef)"/>
+        /// to obtain a matching (w.r.t. DPI Awareness Context) notify-window.
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical:   <see cref="EnsureResourceChangeListener(DpiAwarenessContextValue)"/> is Critical
+        /// </SecurityNote>
+        private static HwndWrapper Hwnd
         {
             [SecurityCritical]
             get
             {
-                if (_hwndNotify == null)
-                {
-                    EnsureResourceChangeListener();
-                }
-                return _hwndNotify.Value;
+                EnsureResourceChangeListener();
+
+                var hwndDpiInfo = _hwndNotify.Keys.FirstOrDefault((hwndDpiContext) => hwndDpiContext.DpiAwarenessContextValue == ProcessDpiAwarenessContextValue);
+                Debug.Assert(hwndDpiInfo != null);
+
+                // will throw when a match is not found, which should never happen because we just called Ensure...()
+                return _hwndNotify[hwndDpiInfo].Value;
             }
+        }
+
+        /// <summary>
+        /// Returns a notify-window with a DPI Awareness Context and DPI Scale factor that matches
+        /// that of <paramref name="hwnd"/>
+        /// </summary>
+        /// <param name="hwnd">HWND to which DPI Awareness Context and DPI Scale factor is to be matched</param>
+        /// <returns>Appropriate notify-window</returns>
+        /// <remarks>
+        /// Currently, this is used by <see cref="HwndHost"/> as a place to parent
+        /// child HWND's when they are disconnected.
+        /// 
+        /// We attempt to select a notify-window that matches the DPI Awareness Context and DPI Scale factor
+        /// of <paramref name="hwnd"/>. If one is not found, then we create a new notify-window that matches
+        /// those two characteristics. 
+        /// 
+        /// Ensuring that the DPI Awareness contexts match is necessary to avoid unexpected behavior. The documentation
+        /// for (Win32 function) SetParent outlines the problems associated with re-parenting of HWND's with mismatched
+        /// DPI Awareness Contexts:
+        /// 
+        ///     Unexpected behavior or errors may occur if hWndNewParent and hWndChild are running in different DPI awareness modes. 
+        ///     The table below outlines this behavior:
+        ///     <list type="table">
+        ///         <!-- Heading -->
+        ///         <item>
+        ///             <term>Operation</term>
+        ///             <term>Windows 8.1</term>
+        ///             <term>Windows 10(1607 and earlier)</term>
+        ///             <term>Windows 10(1703 and later)</term>
+        ///         </item>
+        ///         <!-- In-proc behavior -->
+        ///         <item>
+        ///             <term>SetParent (In-Proc)</term>    
+        ///             <term>N/A</term>
+        ///             <term><b>Forced reset</b> (of current process)</term>            
+        ///             <term><b>Fail</b>(ERROR_INVALID_STATE)</term>
+        ///         </item>
+        ///         <!-- Cross-proc behaviror -->
+        ///         <item>
+        ///             <term>SetParent(Cross-Proc)</term>
+        ///             <term><b>Forced reset</b>(of child window's process)</term>
+        ///             <term><b>Forced reset</b>(of child window's process)</term>
+        ///             <term><b>Forced reset</b>(of child window's process)</term>
+        ///         </item>
+        ///     </list>
+        ///     
+        /// This sort of unexpected behavior is further complicated by the fact that the HWND presented by HwndHost might,
+        /// in turn, host WPF controls again. (Some real-world applications, notably Visual Studio, use HwndHost to host
+        /// native windows that in turn host WPF again). 
+        /// 
+        /// WPF does not make any allowances for changes to the DPI Awareness Context of an HWND/window after it has been created. Windows/Win32
+        /// does not have a consistent model for dealing with reparenting of HWND's (observe the "In-Proc" row in the above table) with 
+        /// mismatched DPI Awareness Contexts, nor is there any notification mechanism when this happens. 
+        /// 
+        /// Our data structures and book-keeping in the UI thread, as well as the render thread, could start deviating from reality in unexpected ways 
+        /// if this were to happen. We do in fact dynamically query the DPI of HWND's as often as possible, but we have not designed the DPI support with 
+        /// the assumption that the DPI Awareness Context of an HWND is mutable. The safest approach for us here is to avoid the problem before it is
+        /// created, and remove any potential for recharacterization of an HWND's DPI Awareness Context. 
+        /// 
+        /// Ensuring that the DPI Scale Factor of the notify-window matches that of the reference HWND is only necessary when
+        /// working with Per-Monitor Aware (or Per Monitor Aware v2) HWND's. Matching of DPI Scale factor ensures that the
+        /// child-window (the one being supplied by HwndHost, and likely created and owned by the application, sometimes out-of-proc)
+        /// does not receive WM_DPICHANGED, WM_DPICHANGED_AFTERPARENT, WM_DPICHANGED_BEFOREPARENT messages, and in turn, it is not
+        /// susceptible to unexpected (and sometimes ill-defined - note that these notify-windows are zero sized windows) size-change
+        /// requests.
+        /// </remarks>
+        /// <SecurityNote>
+        ///     Critical: 
+        ///         <see cref="EnsureResourceChangeListener(DpiAwarenessContextValue)"/>, 
+        ///         is Critical
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static HwndWrapper GetDpiAwarenessCompatibleNotificationWindow(HandleRef hwnd)
+        {
+            var processDpiAwarenessContextValue = ProcessDpiAwarenessContextValue;
+
+            // Do not call into DpiUtil.GetExtendedDpiInfoForWindow(), DpiUtil.GetWindowDpi etc.
+            // unless IsPerMonitorDpiscalingActive == true. DpiUtil.GetExtendedDpiInfoForWindow(), 
+            // DpiUtil.GetWindowDpi() etc.in turn call into methods that are only supported on platforms
+            // with high DPI support (for e.g., not supported on Windows 7). 
+            DpiUtil.HwndDpiInfo hwndDpiInfo =
+                IsPerMonitorDpiScalingActive ?
+                DpiUtil.GetExtendedDpiInfoForWindow(hwnd.Handle, fallbackToNearestMonitorHeuristic: true) :
+                new DpiUtil.HwndDpiInfo(processDpiAwarenessContextValue, GetDpiScaleForUnawareOrSystemAwareContext(processDpiAwarenessContextValue));
+
+            EnsureResourceChangeListener(hwndDpiInfo);
+            return _hwndNotify[hwndDpiInfo].Value;
         }
 
         /// <summary>
@@ -1396,7 +1738,7 @@ namespace System.Windows
         /// </summary>
         internal static void DelayHwndShutdown()
         {
-            if (_hwndNotify != null)
+            if (_hwndNotify != null && _hwndNotify.Count != 0)
             {
                 Dispatcher d = Dispatcher.CurrentDispatcher;
                 d.ShutdownFinished -= OnShutdownFinished;
@@ -1410,8 +1752,13 @@ namespace System.Windows
 
         [ThreadStatic] private static int _parsing;
 
-        [ThreadStatic] private static SecurityCriticalDataClass<HwndWrapper> _hwndNotify;
-        [ThreadStatic] [SecurityCritical] private static HwndWrapperHook _hwndNotifyHook;
+        /// <summary>
+        /// List of {<see cref="DpiAwarenessContextValue"/> , <see cref="DpiScale2"/>} combinations for which notify-windows are being maintained
+        /// </summary>
+        [ThreadStatic] private static List<DpiUtil.HwndDpiInfo> _dpiAwarenessContextAndDpis;
+
+        [ThreadStatic] private static Dictionary<DpiUtil.HwndDpiInfo, SecurityCriticalDataClass<HwndWrapper>> _hwndNotify;
+        [ThreadStatic] [SecurityCritical] private static Dictionary<DpiUtil.HwndDpiInfo, HwndWrapperHook> _hwndNotifyHook;
 
         private static Hashtable _resourceCache = new Hashtable();
         private static DTypeMap _themeStyleCache = new DTypeMap(100); // This is based upon the max DType.ID found in MSN scenario
@@ -1444,7 +1791,7 @@ namespace System.Windows
 
         #endregion
     }
-
+    
     internal class DeferredResourceReference : DeferredReference
     {
         #region Constructor

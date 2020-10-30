@@ -4,6 +4,7 @@
 //
 //---------------------------------------------------------------------------
 
+using MS.Internal;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -185,7 +186,13 @@ namespace Microsoft.Windows.Themes
                     CacheFreezable(arrowGeometry, ascending ? (int)ClassicFreezables.ArrowUpGeometry : (int)ClassicFreezables.ArrowDownGeometry);
                 }
 
-                dc.DrawGeometry(SystemColors.GrayTextBrush, null, arrowGeometry);
+                // DDVSO:447486
+                // In high contrast scenarios, don't draw as disabled text color as this is confusing.  Instead, draw the same color as the control text.
+                Brush sortArrowColor = 
+                    (!AccessibilitySwitches.UseNetFx47CompatibleAccessibilityFeatures && SystemParameters.HighContrast) 
+                    ? SystemColors.ControlTextBrush : SystemColors.GrayTextBrush;
+
+                dc.DrawGeometry(sortArrowColor, null, arrowGeometry);
 
                 dc.Pop(); // Position Transform
             }

@@ -15,7 +15,7 @@ namespace System.Data.Common {
 
     internal sealed class UInt16Storage : DataStorage {
 
-        private static readonly UInt16 defaultValue = UInt16.MinValue;
+        private const UInt16 defaultValue = UInt16.MinValue;
 
         private UInt16[] values;
 

@@ -952,7 +952,7 @@ void CodeGenerator::GenerateEpilogue
         m_MethodScope->OpenAddress.pcblk = m_cblkCodeList.GetFirst();
         m_MethodScope->OpenAddress.uOffset = 0;
         m_MethodScope->CloseAddress.pcblk = m_cblkCodeList.GetLast();
-        m_MethodScope->CloseAddress.uOffset = m_MethodScope->CloseAddress.pcblk->usCodeSize+CBytesOpcode(CEE_RET); // 
+        m_MethodScope->CloseAddress.uOffset = m_MethodScope->CloseAddress.pcblk->usCodeSize+CBytesOpcode(CEE_RET); // Bug 29305 - DevDiv Bugs: Make sure the last instruction is accounted for.
     }
 }
 

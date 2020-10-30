@@ -234,7 +234,7 @@ namespace System.Data.Linq {
                 }
                 edges = newEdges;
             }
-            throw new InvalidOperationException("Bug in ValidateTypeGraphAcyclic"); // Getting here means a 
+            throw new InvalidOperationException("Bug in ValidateTypeGraphAcyclic"); // Getting here means a bug.
         }
 
         private static Type GetIncludeTarget(MemberInfo mi) {

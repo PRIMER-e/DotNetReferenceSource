@@ -169,9 +169,9 @@ namespace System.Windows.Forms {
                 pop.pt = new NativeMethods.POINT(location.X, location.Y);
 
                 // ASURT 108580
-                // Looks like a windows 
-
-
+                // Looks like a windows bug causes the -1 value for clrBackground to not
+                // do the right thing for High Contrast Black color scheme (and probably others)
+                //
                 pop.clrBackground = Color.FromKnownColor(KnownColor.Window).ToArgb() & 0x00ffffff;
 
                 ShowHTML10Help(parent, null, HelpNavigator.Topic, pop);

@@ -677,8 +677,8 @@ public:
 
         // Need to ensure that the error table is only purged here i.e. at the end of a
         // state (i.e. CS_Declared, CS_Bound, etc.) transition and nowhere else.
-        // See 
-
+        // See Bug VSWhidbey 273696.
+        //
         m_CurrentErrorTable.DeleteAll();
     }
 

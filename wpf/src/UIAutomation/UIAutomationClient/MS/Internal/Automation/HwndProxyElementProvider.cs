@@ -763,7 +763,7 @@ namespace MS.Internal.Automation
                 }
 
                 // check to make sure SetWindowPlacement has not changed the size of our window
-                // There may be a 
+                // There may be a bug in SetWindowPlacement.
                 int currentHeight = currentRect.bottom - currentRect.top;
                 int currentWidth = currentRect.right - currentRect.left;
 

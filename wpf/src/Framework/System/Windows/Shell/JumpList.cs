@@ -1057,14 +1057,14 @@ namespace System.Windows.Shell
                     string resourcePath = _FullName;
                     if (!string.IsNullOrEmpty(jumpTask.IconResourcePath))
                     {
-                        // Shell 
-
-
-
-
-
-
-
+                        // Shell bug (Windows 7 595770): IShellLink doesn't correctly limit icon location path to MAX_PATH.
+                        // It's really too bad we have to enforce this here.  When the shortcut gets
+                        // serialized it streams the full string.  On deserialization it only retrieves
+                        // MAX_PATH for this field leaving junk behind for subsequent gets, leading to data corruption.
+                        // Because we don't want to allow the app to do create something that we know may
+                        // be corrupt we have to enforce this ourselves.  If Shell fixes this later then
+                        // we need to remove this check to let them handle this as they see fit.
+                        // If they fix it by supporting longer paths, then we're artificially constraining this value...
                         if (jumpTask.IconResourcePath.Length >= Win32Constant.MAX_PATH)
                         {
                             // we could throw the exception here, but we're already globally catching everything.

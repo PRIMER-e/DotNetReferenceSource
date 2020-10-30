@@ -490,8 +490,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 dataGridViewCell = (DataGridViewCheckBoxCell)System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -660,22 +660,22 @@ namespace System.Windows.Forms
                     {
                         value = CheckState.Indeterminate;
                     }
-                    /* Commenting out because of 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-*/
+                    /* Commenting out because of bug VSWhidbey 300778
+                    else if (this.DataGridView != null && 
+                             this.FormattedValueType != null &&
+                             !(value is System.DBNull) &&
+                             !this.FormattedValueType.IsAssignableFrom(value.GetType()))
+                    {
+                        DataGridViewDataErrorEventArgs dgvdee = new DataGridViewDataErrorEventArgs(
+                            new FormatException(SR.GetString(SR.DataGridViewCheckBoxCell_InvalidValueType)), this.ColumnIndex,
+                            rowIndex, context);
+                        RaiseDataError(dgvdee);
+                        if (dgvdee.ThrowException)
+                        {
+                            throw dgvdee.Exception;
+                        }
+                    }
+                    */
                 }
                 else
                 {
@@ -689,22 +689,22 @@ namespace System.Windows.Forms
                     {
                         value = false;
                     }
-                    /* Commenting out because of 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-*/
+                    /* Commenting out because of bug VSWhidbey 300778
+                    else if (this.DataGridView != null && 
+                             this.FormattedValueType != null &&
+                             !(value is System.DBNull) &&
+                             !this.FormattedValueType.IsAssignableFrom(value.GetType()))
+                    {
+                        DataGridViewDataErrorEventArgs dgvdee = new DataGridViewDataErrorEventArgs(
+                            new FormatException(SR.GetString(SR.DataGridViewCheckBoxCell_InvalidValueType)), this.ColumnIndex,
+                            rowIndex, context);
+                        RaiseDataError(dgvdee);
+                        if (dgvdee.ThrowException)
+                        {
+                            throw dgvdee.Exception;
+                        }
+                    }
+                    */
                 }
             }
 
@@ -1506,8 +1506,7 @@ namespace System.Windows.Forms
                                                                     layout,
                                                                     colors,
                                                                     colors.windowText,
-                                                                    colors.buttonFace,
-                                                                    true /*disabledColors*/);
+                                                                    colors.buttonFace);
                             }
                             resultBounds = layout.checkBounds;
                         }
@@ -1554,8 +1553,7 @@ namespace System.Windows.Forms
                                                                     layout,
                                                                     colors,
                                                                     colors.windowText,
-                                                                    colors.highlight,
-                                                                    true /*disabledColors*/);
+                                                                    colors.highlight);
                             }
                             resultBounds = layout.checkBounds;
                         }
@@ -1600,8 +1598,7 @@ namespace System.Windows.Forms
                                                                   layout,
                                                                   colors,
                                                                   colors.windowText,
-                                                                  colors.highlight,
-                                                                  true /*disabledColors*/);
+                                                                  colors.highlight);
                             }
                             resultBounds = layout.checkBounds;
                         }
@@ -1803,6 +1800,7 @@ namespace System.Windows.Forms
         /// <include file='doc\DataGridViewCheckBoxCell.uex' path='docs/doc[@for="DataGridViewCheckBoxCellAccessibleObject"]/*' />
         protected class DataGridViewCheckBoxCellAccessibleObject : DataGridViewCellAccessibleObject
         {
+            private int[] runtimeId = null; // Used by UIAutomation
 
             /// <include file='doc\DataGridViewCheckBoxCell.uex' path='docs/doc[@for="DataGridViewCheckBoxCellAccessibleObject.DataGridViewCheckBoxCellAccessibleObject"]/*' />
             public DataGridViewCheckBoxCellAccessibleObject(DataGridViewCell owner) : base (owner)
@@ -1922,6 +1920,70 @@ namespace System.Windows.Forms
             public override int GetChildCount()
             {
                 return 0;
+            }
+
+            internal override bool IsIAccessibleExSupported() {
+                if (AccessibilityImprovements.Level1) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+
+            internal override int[] RuntimeId {
+                get {
+                    if (runtimeId == null) {
+                        runtimeId = new int[2];
+                        runtimeId[0] = RuntimeIDFirstItem; // first item is static - 0x2a
+                        runtimeId[1] = this.GetHashCode();
+                    }
+
+                    return runtimeId;
+                }
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_IsTogglePatternAvailablePropertyId) {
+                    return (Object)IsPatternSupported(NativeMethods.UIA_TogglePatternId);
+                }
+                else if (propertyID == NativeMethods.UIA_ControlTypePropertyId && AccessibilityImprovements.Level2)
+                {
+                    return NativeMethods.UIA_CheckBoxControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
+            internal override bool IsPatternSupported(int patternId) {
+                if (patternId == NativeMethods.UIA_TogglePatternId) {
+                    return true;
+                }
+
+                return base.IsPatternSupported(patternId);
+            }
+
+            internal override void Toggle() {
+                DoDefaultAction();
+            }
+
+            internal override UnsafeNativeMethods.ToggleState ToggleState {
+                get {
+                    bool toggledState = true;
+                    object formattedValue = this.Owner.FormattedValue;
+
+                    if (formattedValue is System.Windows.Forms.CheckState) {
+                        toggledState = ((CheckState)formattedValue) == CheckState.Checked;
+                    }
+                    else if (formattedValue is bool) {
+                        toggledState = ((bool)formattedValue);
+                    }
+                    else {
+                        return UnsafeNativeMethods.ToggleState.ToggleState_Indeterminate;
+                    }
+
+                    return toggledState ? UnsafeNativeMethods.ToggleState.ToggleState_On : UnsafeNativeMethods.ToggleState.ToggleState_Off;
+                }
             }
         }
     }

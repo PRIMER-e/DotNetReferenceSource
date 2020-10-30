@@ -810,9 +810,9 @@ namespace MS.Internal.AutomationProxies
             {
                 case MenuType.System:
                     {
-                        // This is to take in count for a 
-
-
+                        // This is to take in count for a bug in GetMenuBarInfo().  It does not calculate the
+                        // rcBar correctly when the WS_EX_LAYOUTRTL extended style is set. GetMenuBarInfo()
+                        // assumes SYSMENU is always on the left of the title bar.
                         NativeMethods.MENUBARINFO mbi;
                         if (!GetMenuBarInfo(_hwnd, NativeMethods.OBJID_SYSMENU, 0, out mbi))
                         {

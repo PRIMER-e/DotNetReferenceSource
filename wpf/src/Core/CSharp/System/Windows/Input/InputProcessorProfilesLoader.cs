@@ -74,12 +74,12 @@ namespace System.Windows.Input
             Debug.Assert(Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "Load called on MTA thread!");
 
             //
-            // 
-
-
-
-
-
+            // Bug#1212202
+            //
+            // Presharp warn this though UnsafeNativeMethods.TF_CreateInputProcessorProfiles() does not have 
+            // SetLastError attribute.
+            // We think this is a false alarm of Presharp.
+            //
 #pragma warning suppress 6523
             if (UnsafeNativeMethods.TF_CreateInputProcessorProfiles(out obj) == NativeMethods.S_OK)
             {

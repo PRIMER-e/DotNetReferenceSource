@@ -855,7 +855,7 @@ namespace System.Data {
                     OnListChanged(ListChangedType.ItemAdded, newIndex, oldIndex);
                 }
                 else  if (newIndex == -1) { // its deleted
-                    // Do not fix this. see 
+                    // Do not fix this. see bug Bug 271076 for explanation.
                     OnListChanged(ListChangedType.ItemDeleted, oldIndex);
                 }
                 else {

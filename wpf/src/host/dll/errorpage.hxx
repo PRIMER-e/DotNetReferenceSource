@@ -34,6 +34,8 @@ private:
     static HWND s_hWnd, s_hRBW;
 
     static void DisplayOnAnyThread(__in_ecount(1) BSTR pErrorMsg);
+    static void DisplayOnAnyThreadImpl(__in_ecount(1) BSTR pErrorMsg);
+
     static HRESULT LoadAndFixUpHtmlTemplate(__out _bstr_t &htmlTemplate);
     static bool GetShowDetailsRegistryFlag();
     static void DisableTextAreaCloseTag(__inout wchar_t *str);

@@ -74,5 +74,32 @@ namespace System.Messaging
         ///    </para>
         /// </devdoc>
         Mac = NativeMethods.CALG_MAC,
+
+        /// <include file='doc\HashAlgorithm.uex' path='docs/doc[@for="HashAlgorithm.Sha256"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       SHA256 hashing algorithm.
+        ///    </para>
+        /// </devdoc>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
+        Sha256 = NativeMethods.CALG_SHA256,
+
+        /// <include file='doc\HashAlgorithm.uex' path='docs/doc[@for="HashAlgorithm.Sha384"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       SHA384 hashing algorithm.
+        ///    </para>
+        /// </devdoc>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
+        Sha384 = NativeMethods.CALG_SHA384,
+
+        /// <include file='doc\HashAlgorithm.uex' path='docs/doc[@for="HashAlgorithm.Sha512"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       SHA512 hashing algorithm.
+        ///    </para>
+        /// </devdoc>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
+        Sha512 = NativeMethods.CALG_SHA512,
     }
 }

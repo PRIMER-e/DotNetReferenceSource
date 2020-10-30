@@ -16,6 +16,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using MS.Utility;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 
 // Disable CS3001: Warning as Error: not CLS-compliant
 #pragma warning disable 3001
@@ -41,6 +42,8 @@ namespace System.Windows.Controls
             _dType = DependencyObjectType.FromSystemTypeInternal(typeof(CheckBox));
 
             KeyboardNavigation.AcceptsReturnProperty.OverrideMetadata(typeof(CheckBox), new FrameworkPropertyMetadata(BooleanBoxes.FalseBox));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.CheckBox);
         }
 
         /// <summary>

@@ -1,0 +1,581 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.20815</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{F8D7AB67-7637-4591-90D5-3E26F51A57B2}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>System.Activities.Core.Presentation</RootNamespace>
+    <AssemblyName>System.Activities.Core.Presentation</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\..\..\..\..\tools\devdiv\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <TargetFrameworkProfile />
+    <DefineConstants>$(DefineConstants);NONAPTCA</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>
+    </NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>
+    </NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Activities" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Management.Automation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\..\ExternalAPIs\Windows\PowerShell\v1.0\System.Management.Automation.dll</HintPath>
+      <SpecificVersion>True</SpecificVersion>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Runtime.DurableInstancing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Activities" />
+    <Reference Include="System.ServiceModel.Internals, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.ServiceModel.Internals.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Presentation" />
+    <Reference Include="System.Workflow.Runtime" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\..\..\..\..\Intermediate\adp\System.Activities.Core.Presentation.csproj__186292627\objc\x86\FxTrace.cs">
+      <Link>FxTrace.cs</Link>
+    </Compile>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="SR.Designer.cs" />
+    <Compile Include="System\Activities\Core\Presentation\ArgumentIdentifierTrimConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\AssignDesigner.xaml.cs">
+      <DependentUpon>AssignDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\CancellationScopeDesigner.xaml.cs">
+      <DependentUpon>CancellationScopeDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\CaseDesigner.xaml.cs">
+      <DependentUpon>CaseDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\CaseKeyBox.ViewInterface.cs" />
+    <Compile Include="System\Activities\Core\Presentation\CaseKeyBox.ViewModel.cs" />
+    <Compile Include="System\Activities\Core\Presentation\CaseKeyBox.xaml.cs">
+      <DependentUpon>CaseKeyBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\CaseKeyBoxIsEnabledConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\CaseLabelVisibilityConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\CatchDesigner.xaml.cs">
+      <DependentUpon>CatchDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\ComboBoxHelper.cs" />
+    <Compile Include="System\Activities\Core\Presentation\CompensableActivityDesigner.xaml.cs">
+      <DependentUpon>CompensableActivityDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\ConnectionPointType.cs" />
+    <Compile Include="System\Activities\Core\Presentation\DelegateArgumentsValueEditor.cs" />
+    <Compile Include="System\Activities\Core\Presentation\DesignerMetadata.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\DisplayNameConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\DoWhileDesigner.xaml.cs">
+      <DependentUpon>DoWhileDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\DynamicActivityPropertyChooser.xaml.cs">
+      <DependentUpon>DynamicActivityPropertyChooser.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\DynamicActivityPropertyChooserViewModel.cs" />
+    <Compile Include="System\Activities\Core\Presentation\DynamicActivityPropertyToTooltipConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\ExpandableItemShowExpandedMultiValueConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\ExpandableItemWrapper.cs" />
+    <Compile Include="System\Activities\Core\Presentation\ExpressionToExpressionTextConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\Factories\GenericForEachWithBodyFactory.cs" />
+    <Compile Include="System\Activities\Core\Presentation\Factories\GenericParallelForEachWithBodyFactory.cs" />
+    <Compile Include="System\Activities\Core\Presentation\Factories\PickWithTwoBranchesFactory.cs" />
+    <Compile Include="System\Activities\Core\Presentation\Factories\StateMachineWithInitialStateFactory.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FakeRoot.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FinalState.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartConnectionPointsAdorner.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartDesigner.Container.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartDesigner.Helpers.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartDesigner.ModelChangeReactions.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartDesigner.ModelChanges.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartDesigner.xaml.cs">
+      <DependentUpon>FlowchartDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\FlowchartDesignerCommands.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartExpressionAdorner.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartExpressionAutomationPeer.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartFreeFormPanel.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartResizeGrip.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowchartSizeFeature.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowDecisionDesigner.xaml.cs">
+      <DependentUpon>FlowDecisionDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\FlowDecisionLabelFeature.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowSwitchCaseEditorDialog.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowSwitchDefaultLinkFeature.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowSwitchDesigner.xaml.cs">
+      <DependentUpon>FlowSwitchDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\FlowSwitchLabelFeature.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowSwitchLink.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowSwitchLinkCasePropertyEditor.cs" />
+    <Compile Include="System\Activities\Core\Presentation\FlowSwitchLinkMultiValueConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\ForEachDesigner.xaml.cs">
+      <DependentUpon>ForEachDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\GenericFlowSwitchHelper.cs" />
+    <Compile Include="System\Activities\Core\Presentation\GenericTypeArgumentConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\HintTextConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\HintTextMaxWidthConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\IfElseDesigner.xaml.cs">
+      <DependentUpon>IfElseDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\IFlowSwitch.cs" />
+    <Compile Include="System\Activities\Core\Presentation\InteropDesigner.xaml.cs">
+      <DependentUpon>InteropDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\InvokeDelegateDesigner.xaml.cs">
+      <DependentUpon>InvokeDelegateDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\InvokeDelegateValidationFeature.cs" />
+    <Compile Include="System\Activities\Core\Presentation\InvokeMethodDesigner.xaml.cs">
+      <DependentUpon>InvokeMethodDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\IsLastSelectedItemConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\IsStateRootDesignerConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\LocationChangedEventArgs.cs" />
+    <Compile Include="System\Activities\Core\Presentation\MaxValueConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\MorphHelpers.cs" />
+    <Compile Include="System\Activities\Core\Presentation\NoPersistScopeDesigner.xaml.cs">
+      <DependentUpon>NoPersistScopeDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\NotConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\ParallelDesigner.xaml.cs">
+      <DependentUpon>ParallelDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\ParallelSeparator.xaml.cs">
+      <DependentUpon>ParallelSeparator.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\PickBranchDesigner.xaml.cs">
+      <DependentUpon>PickBranchDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\PickDesigner.xaml.cs">
+      <DependentUpon>PickDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\PickValidationErrorSourceLocator.cs" />
+    <Compile Include="System\Activities\Core\Presentation\PickValidationErrorSourceLocatorFeature.cs" />
+    <Compile Include="System\Activities\Core\Presentation\PropertyNames.cs" />
+    <Compile Include="System\Activities\Core\Presentation\RegisterMetadataDelayedWorker.cs" />
+    <Compile Include="System\Activities\Core\Presentation\ReorderableListEditor.xaml.cs">
+      <DependentUpon>ReorderableListEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\SelectedPropertyNameChangedEventArgs.cs" />
+    <Compile Include="System\Activities\Core\Presentation\SequenceDesigner.xaml.cs">
+      <DependentUpon>SequenceDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\StartNode.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StartSymbol.xaml.cs">
+      <DependentUpon>StartSymbol.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\StateConnectionPointToolTip.xaml.cs">
+      <DependentUpon>StateConnectionPointToolTip.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\StateContainerEditor.CompositeView.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateContainerEditor.ModelChangeReactions.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateContainerEditor.ModelChanges.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateContainerEditor.Utilities.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateContainerEditor.xaml.cs">
+      <DependentUpon>StateContainerEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\StateContainerResizeGrip.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateDesigner.xaml.cs">
+      <DependentUpon>StateDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\StateLinkButtonToolTipConverter.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateMachineConnetionPointsAdorner.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateMachineDesigner.xaml.cs">
+      <DependentUpon>StateMachineDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\StateMachineFreeFormPanel.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateMachineValidationErrorSourceLocator.cs" />
+    <Compile Include="System\Activities\Core\Presentation\StateMachineValidationErrorSourceLocatorFeature.cs" />
+    <Compile Include="System\Activities\Core\Presentation\SwitchDesigner.xaml.cs">
+      <DependentUpon>SwitchDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\SwitchTryCatchDesignerHelper.cs" />
+    <Compile Include="System\Activities\Core\Presentation\Themes\DesignerStyleDictionary.xaml.cs">
+      <DependentUpon>DesignerStyleDictionary.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\Themes\EditorCategoryTemplateDictionary.xaml.cs">
+      <DependentUpon>EditorCategoryTemplateDictionary.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\Themes\StringResourceDictionary.xaml.cs">
+      <DependentUpon>StringResourceDictionary.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\TransactionScopeDesigner.xaml.cs">
+      <DependentUpon>TransactionScopeDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\TransitionDesigner.xaml.cs">
+      <DependentUpon>TransitionDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\TransitionReorderChange.cs" />
+    <Compile Include="System\Activities\Core\Presentation\TryCatchDesigner.xaml.cs">
+      <DependentUpon>TryCatchDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\VerticalConnector.xaml.cs">
+      <DependentUpon>VerticalConnector.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\WhileDesigner.xaml.cs">
+      <DependentUpon>WhileDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Core\Presentation\WriteLineDesigner.xaml.cs">
+      <DependentUpon>WriteLineDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\ActivityDesignerHelper.cs" />
+    <Compile Include="System\Activities\Presentation\ActivityXRefPropertyEditor.cs" />
+    <Compile Include="System\Activities\Presentation\ArgumentCollectionPropertyEditor.cs" />
+    <Compile Include="System\Activities\Presentation\DynamicArgumentDesigner.xaml.cs">
+      <DependentUpon>DynamicArgumentDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DynamicArgumentDesignerOptions.cs" />
+    <Compile Include="System\Activities\Presentation\DynamicArgumentDialog.cs" />
+    <Compile Include="System\Activities\Presentation\TypeCollectionDesigner.xaml.cs">
+      <DependentUpon>TypeCollectionDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\TypeCollectionPropertyEditor.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\ActivityXRefConverter.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\BindingEditor.xaml.cs">
+      <DependentUpon>BindingEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\BindingPropertyValueEditor.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\ContentButtonTitleConverter.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\ContentCorrelationTypeExpander.xaml.cs">
+      <DependentUpon>ContentCorrelationTypeExpander.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\ContentDialogViewModel.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\Converters\ReceiveMessageContentSearchableStringConverter.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\Converters\ReceiveParametersContentSearchableStringConverter.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\Converters\SendMessageContentSearchableStringConverter.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\Converters\SendParametersContentSearchableStringConverter.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\Converters\XPathMessageQuerySearchableStringConverter.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\CorrelatesOnValueEditor.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\CorrelationDataDesigner.xaml.cs">
+      <DependentUpon>CorrelationDataDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\CorrelationInitializerDesigner.xaml.cs">
+      <DependentUpon>CorrelationInitializerDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\CorrelationInitializerValueEditor.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\CorrelationScopeDesigner.xaml.cs">
+      <DependentUpon>CorrelationScopeDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\EndpointDesigner.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\Factories\ReceiveAndSendReplyFactory.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\Factories\SendAndReceiveReplyFactory.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\InitializeCorrelationDesigner.xaml.cs">
+      <DependentUpon>InitializeCorrelationDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\MessageQueryEditor.xaml.cs">
+      <DependentUpon>MessageQueryEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\MessageQuerySetDesigner.xaml.cs">
+      <DependentUpon>MessageQuerySetDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\MessagingContentPropertyEditorResources.xaml.cs">
+      <DependentUpon>MessagingContentPropertyEditorResources.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\ReceiveContentDialog.xaml.cs">
+      <DependentUpon>ReceiveContentDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\ReceiveContentPropertyEditor.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\ReceiveDesigner.xaml.cs">
+      <DependentUpon>ReceiveDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\ReceiveReplyDesigner.xaml.cs">
+      <DependentUpon>ReceiveReplyDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\ReceiveReplyValidationFeature.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\SendContentDialog.xaml.cs">
+      <DependentUpon>SendContentDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\SendContentPropertyEditor.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\SendDesigner.xaml.cs">
+      <DependentUpon>SendDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\SendReplyDesigner.xaml.cs">
+      <DependentUpon>SendReplyDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\SendReplyValidationFeature.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\ServiceContractImporter.cs" />
+    <Compile Include="System\ServiceModel\Activities\Presentation\TransactedReceiveScope.xaml.cs">
+      <DependentUpon>TransactedReceiveScope.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\ServiceModel\Activities\Presentation\TypeToTreeConverter.cs" />
+    <Compile Include="System\ServiceModel\Presentation\ServiceDesigner.xaml.cs">
+      <DependentUpon>ServiceDesigner.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="SR.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="System\Activities\Core\Presentation\AssignDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\CancellationScopeDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\CaseDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\CaseKeyBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\CatchDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\CompensableActivityDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\DoWhileDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\DynamicActivityPropertyChooser.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\FlowchartDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\FlowDecisionDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\FlowSwitchDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\ForEachDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\IfElseDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\InteropDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\InvokeDelegateDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\InvokeMethodDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\NoPersistScopeDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\ParallelDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\ParallelSeparator.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\PickBranchDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\PickDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\ReorderableListEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\SequenceDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\StartSymbol.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\StateConnectionPointToolTip.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\StateContainerEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\StateDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\StateMachineDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\SwitchDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\Themes\DesignerStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\Themes\EditorCategoryTemplateDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\Themes\StringResourceDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\TransactionScopeDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\TransitionDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\TryCatchDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\VerticalConnector.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\WhileDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Core\Presentation\WriteLineDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\DynamicArgumentDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\TypeCollectionDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\BindingEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\ContentCorrelationTypeExpander.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\CorrelationDataDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\CorrelationInitializerDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\CorrelationScopeDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\InitializeCorrelationDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\MessageQueryEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\MessageQuerySetDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\MessagingContentPropertyEditorResources.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\ReceiveContentDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\ReceiveDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\ReceiveReplyDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\SendContentDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\SendDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\SendReplyDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Activities\Presentation\TransactedReceiveScope.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\ServiceModel\Presentation\ServiceDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="native.rc" />
+    <Content Include="Resources\Delete.png" />
+    <Content Include="Resources\DeleteDisabled.png" />
+    <Content Include="Resources\MoveDown.png" />
+    <Content Include="Resources\MoveDownDisabled.png" />
+    <Content Include="Resources\Moveup.png" />
+    <Content Include="Resources\MoveupDisabled.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\System.Activities.Presentation\System.Activities.Presentation.Dev.csproj">
+      <Project>{CAC2E0EB-3E5E-43EB-ACCC-E5999D3BA9BB}</Project>
+      <Name>System.Activities.Presentation.Dev</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

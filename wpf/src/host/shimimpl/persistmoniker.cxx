@@ -178,8 +178,8 @@ STDMETHODIMP CPersistMoniker::Load(BOOL fFullyAvailable,
             hr = S_FALSE;     // S_FALSE
         }
 
-        //Returning E_NOTIMPL for now to work around a urlmon 
-
+        //Returning E_NOTIMPL for now to work around a urlmon bug
+        //hr = E_NOTIMPL;
 
         //We will allow IPersistFile::Load only for local files. If IPersistMoniker::Load
         //fails for http urls, urlmon will then call IPersistFile::Load with the 

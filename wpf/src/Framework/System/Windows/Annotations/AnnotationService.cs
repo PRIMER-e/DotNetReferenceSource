@@ -1336,8 +1336,8 @@ namespace System.Windows.Annotations
         {
             Invariant.Assert(annotation != null, "Parameter 'annotation' is null.");
 
-            // if we already have an annotation in our map - then something is messed up (store has 
-
+            // if we already have an annotation in our map - then something is messed up (store has bug)
+            // we are getting an add event on something that already exists - throw an exception
             if (_annotationMap.GetAttachedAnnotations(annotation.Id).Count > 0)
                 throw new Exception(SR.Get(SRID.AnnotationAlreadyExistInService));
 

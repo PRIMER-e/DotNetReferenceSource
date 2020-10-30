@@ -1905,10 +1905,10 @@ namespace System.Windows.Forms {
             protected void WndProc(ref Message msg) {
                 switch (msg.Msg) {
                     case NativeMethods.WM_SETFOCUS:
-                        // 
-
-
-
+                        // bug 120872, the COMCTL StatusBar passes WM_SETFOCUS on to the DefWndProc, so
+                        // it will take keyboard focus.  We don't want it doing this, so we eat
+                        // the message.
+                        //
                         return;
                     default:
                         window.DefWndProc(ref msg);

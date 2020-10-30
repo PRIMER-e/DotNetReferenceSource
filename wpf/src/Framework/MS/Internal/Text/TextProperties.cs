@@ -305,7 +305,23 @@ namespace MS.Internal.Text
             return Typography.Default;
         }
 
+        /// <summary>
+        /// Set the BackgroundBrush
+        /// </summary>
+        /// <param name="backgroundBrush">The brush to set to</param>
+        internal void SetBackgroundBrush(Brush backgroundBrush)
+        {
+            _backgroundBrush = backgroundBrush;
+        }
 
+        /// <summary>
+        /// Set the ForegroundBrush
+        /// </summary>
+        /// <param name="foregroundBrush">The brush to set to</param>
+        internal void SetForegroundBrush(Brush foregroundBrush)
+        {
+            _foreground = foregroundBrush;
+        }
 
         // ------------------------------------------------------------------
         // Typeface.

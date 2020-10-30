@@ -40,7 +40,7 @@ namespace System.Windows.Media.TextFormatting
     /// </summary>
     /// <remarks>
     /// We do not want to make this class finalizable because its lifetime already ties
-    /// to TextFormatterImp which is finalizable. It is not efficient to have too many 
+    /// to TextFormatterImp which is finalizable. It is not efficient to have too many
     /// finalizable object around in the GC heap.
     /// </remarks>
 #if OPTIMALBREAK_API
@@ -56,7 +56,7 @@ namespace System.Windows.Media.TextFormatting
         private BreakStrategies                     _breaking;          // context's breaking strategy
         private static Dictionary<char,bool>        _specialCharacters; // special characters
 
-        
+
         /// <SecurityNote>
         /// Critical - as this calls the constructor for  SecurityCriticalDataForSet.
         /// Safe - as this just initializes it with the default value.
@@ -152,8 +152,8 @@ namespace System.Windows.Media.TextFormatting
                 IntPtr ppenaltyModule = IntPtr.Zero;
 
                 lserr = UnsafeNativeMethods.LoCreateContext(
-                    ref contextInfo, 
-                    ref lscbkRedef, 
+                    ref contextInfo,
+                    ref lscbkRedef,
                     out ploc
                     );
 
@@ -170,7 +170,7 @@ namespace System.Windows.Media.TextFormatting
                 _ploc.Value = ploc;
                 GC.KeepAlive(contextInfo);
 
-                //  There is a trick here to pass in this resolution as in twips 
+                //  There is a trick here to pass in this resolution as in twips
                 //  (1/1440 an inch).
                 //
                 //  LSCreateLine assumes the max width passed in is in twips so to
@@ -218,7 +218,7 @@ namespace System.Windows.Media.TextFormatting
         internal void Release()
         {
             this.CallbackException = null;
-            this.Owner = null;      
+            this.Owner = null;
         }
 
 
@@ -226,7 +226,7 @@ namespace System.Windows.Media.TextFormatting
         /// context's owner
         /// </summary>
         /// <SecurityNote>
-        /// Critical - Owner object is critical 
+        /// Critical - Owner object is critical
         /// </SecurityNote>
         internal object Owner
         {
@@ -241,11 +241,11 @@ namespace System.Windows.Media.TextFormatting
         /// Exception thrown during LS callback
         /// </summary>
         /// <SecurityNote>
-        /// Critical - Exception and its message are critical 
-        /// </SecurityNote>        
+        /// Critical - Exception and its message are critical
+        /// </SecurityNote>
         internal Exception CallbackException
         {
-            [SecurityCritical]        
+            [SecurityCritical]
             get { return _callbacks.Exception; }
             [SecurityCritical]
             set { _callbacks.Exception = value; }
@@ -320,7 +320,7 @@ namespace System.Windows.Media.TextFormatting
             {
                 Invariant.Assert(_ploc.Value != System.IntPtr.Zero);
                 LsErr lserr = UnsafeNativeMethods.LoSetBreaking(_ploc.Value, (int) breaking);
-                
+
                 if (lserr != LsErr.None)
                 {
                     ThrowExceptionFromLsError(SR.Get(SRID.SetBreakingFailure, lserr), lserr);
@@ -382,7 +382,7 @@ namespace System.Windows.Media.TextFormatting
             IntPtr          previousLineBreakRecord,
             IntPtr          ploparabreak,
             IntPtr          ptslinevariantRestriction,
-            ref LsBreaks    lsbreaks, 
+            ref LsBreaks    lsbreaks,
             out int         bestFitIndex
             )
         {
@@ -440,8 +440,8 @@ namespace System.Windows.Media.TextFormatting
         {
             Invariant.Assert(_ploc.Value != System.IntPtr.Zero);
             LsErr lserr = UnsafeNativeMethods.LoSetDoc(
-                _ploc.Value, 
-                isDisplay ? 1 : 0, 
+                _ploc.Value,
+                isDisplay ? 1 : 0,
                 isReferencePresentationEqual ? 1 : 0,
                 ref deviceInfo
                 );
@@ -488,11 +488,11 @@ namespace System.Windows.Media.TextFormatting
             throw new Exception(message);
         }
 
+
         static internal bool IsSpecialCharacter(char c)
         {
             return _specialCharacters.ContainsKey(c);
         }
-
 
         static private void SetSpecialCharacters(ref LsContextInfo contextInfo)
         {

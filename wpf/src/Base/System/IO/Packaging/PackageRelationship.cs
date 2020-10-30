@@ -171,7 +171,7 @@ namespace System.IO.Packaging
             if (id == null)
                 throw new ArgumentNullException("id");
             // The ID is guaranteed to be an XML ID by the caller (InternalRelationshipCollection).
-            // The following check is a precaution against future 
+            // The following check is a precaution against future bug introductions.
 #if DEBUG
             try 
             {

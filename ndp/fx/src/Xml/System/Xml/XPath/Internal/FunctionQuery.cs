@@ -62,7 +62,7 @@ namespace MS.Internal.Xml.XPath {
             object[] argVals = new object[args.Count];
             for (int i = 0; i < args.Count; i ++) {
                 argVals[i] = args[i].Evaluate(nodeIterator);
-                if (argVals[i] is XPathNodeIterator) {// ForBack Compat. To protect our queries from users. 
+                if (argVals[i] is XPathNodeIterator) {// ForBack Compat. To protect our queries from users. bug#372077 & 20006123 
                     argVals[i] = new XPathSelectionIterator(nodeIterator.Current, args[i]);
                 }
             }

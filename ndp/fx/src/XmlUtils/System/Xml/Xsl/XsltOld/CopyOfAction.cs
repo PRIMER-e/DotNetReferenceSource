@@ -48,8 +48,8 @@ namespace System.Xml.Xsl.XsltOld {
                 object result = query.Evaluate(frame.NodeSet);
 
                 if (result is XPathNodeIterator) {
-                    // we cash this query because otherwise current() works incorrectly. 
-
+                    // we cash this query because otherwise current() works incorrectly. Bug#382166.
+                    // To be perfect we should use frame.NewNodeSet here
                     processor.PushActionFrame(CopyNodeSetAction.GetAction(), new XPathArrayIterator(query));
                     frame.State = NodeSetCopied;
                     break;

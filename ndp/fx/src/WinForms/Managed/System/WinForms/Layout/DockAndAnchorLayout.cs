@@ -554,6 +554,12 @@ namespace System.Windows.Forms.Layout {
 
                 Rectangle bounds = GetCachedBounds(element);
                 
+                AnchorInfo oldAnchorInfo = new AnchorInfo();
+                oldAnchorInfo.Left = anchorInfo.Left;
+                oldAnchorInfo.Top = anchorInfo.Top;
+                oldAnchorInfo.Right = anchorInfo.Right;
+                oldAnchorInfo.Bottom = anchorInfo.Bottom;
+
                 anchorInfo.Left = element.Bounds.Left;
                 anchorInfo.Top = element.Bounds.Top;
                 anchorInfo.Right = element.Bounds.Right;
@@ -574,10 +580,17 @@ namespace System.Windows.Forms.Layout {
 
                 AnchorStyles anchor = GetAnchor(element);
                 if (IsAnchored(anchor, AnchorStyles.Right)) {
-                    anchorInfo.Right -= parentWidth;
-                    
-                    if (!IsAnchored(anchor, AnchorStyles.Left)) {
-                        anchorInfo.Left -= parentWidth;
+                    if (DpiHelper.EnableAnchorLayoutHighDpiImprovements && (anchorInfo.Right - parentWidth > 0) && (oldAnchorInfo.Right < 0)) {
+                        // parent was resized to fit its parent, or screen, we need to reuse old anchor info to prevent losing control beyond right edge
+                        anchorInfo.Right = oldAnchorInfo.Right;
+                        anchorInfo.Left = oldAnchorInfo.Right - bounds.Width;   // control might have been resized, update Left anchor
+                    }
+                    else {
+                        anchorInfo.Right -= parentWidth;
+
+                        if (!IsAnchored(anchor, AnchorStyles.Left)) {
+                            anchorInfo.Left -= parentWidth;
+                        }
                     }
                 }
                 else if (!IsAnchored(anchor, AnchorStyles.Left)) {
@@ -586,10 +599,17 @@ namespace System.Windows.Forms.Layout {
                 }
 
                 if (IsAnchored(anchor, AnchorStyles.Bottom)) {
-                    anchorInfo.Bottom -= parentHeight;
+                    if (DpiHelper.EnableAnchorLayoutHighDpiImprovements && (anchorInfo.Bottom - parentHeight > 0) && (oldAnchorInfo.Bottom < 0)) {
+                        // parent was resized to fit its parent, or screen, we need to reuse old anchor info to prevent losing control beyond bottom edge
+                        anchorInfo.Bottom = oldAnchorInfo.Bottom;
+                        anchorInfo.Top = oldAnchorInfo.Bottom - bounds.Height;   // control might have been resized, update Top anchor
+                    }
+                    else {
+                        anchorInfo.Bottom -= parentHeight;
 
-                    if (!IsAnchored(anchor, AnchorStyles.Top)) {
-                        anchorInfo.Top -= parentHeight;
+                        if (!IsAnchored(anchor, AnchorStyles.Top)) {
+                            anchorInfo.Top -= parentHeight;
+                        }
                     }
                 }
                 else if (!IsAnchored(anchor, AnchorStyles.Top)) {
@@ -675,6 +695,20 @@ namespace System.Windows.Forms.Layout {
              
             }
             Debug.Assert(GetDock(element) == value, "Error setting Dock value.");
+        }
+
+        public static void ScaleAnchorInfo(IArrangedElement element, SizeF factor) {
+            AnchorInfo anchorInfo = GetAnchorInfo(element);
+
+            // some controls don't have AnchorInfo, i.e. Panels
+            if (anchorInfo != null) {
+                anchorInfo.Left = (int)((float)anchorInfo.Left * factor.Width);
+                anchorInfo.Top = (int)((float)anchorInfo.Top * factor.Height);
+                anchorInfo.Right = (int)((float)anchorInfo.Right * factor.Width);
+                anchorInfo.Bottom = (int)((float)anchorInfo.Bottom * factor.Height);
+
+                SetAnchorInfo(element, anchorInfo);
+            }
         }
 
         private static Rectangle GetCachedBounds(IArrangedElement element) {

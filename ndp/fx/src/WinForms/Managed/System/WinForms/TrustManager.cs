@@ -1096,7 +1096,7 @@ namespace System.Security.Policy
             catch {
             }
             finally {
-                Application.ExitThread(); //explicitly call Dispose [DevDiv2 
+                Application.ExitThread(); //explicitly call Dispose [DevDiv2 bug 184375, OleUnitinialize not being called]
             }
         }
     }

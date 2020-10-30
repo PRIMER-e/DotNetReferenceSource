@@ -16,13 +16,9 @@
 #include "..\inc\registry.hxx"
 
 
-#define COMPATURL L"http://schemas.openxmlformats.org/markup-compatibility/2006"
-#define COMPATURL_LENGTH 63
-
-#define IGNORABLE L"Ignorable"
-#define IGNORABLE_LENGTH 9
-
-#define MAX_PREFIX_LENGTH 128
+static const wchar_t COMPATURL[] = L"http://schemas.openxmlformats.org/markup-compatibility/2006";
+static const wchar_t IGNORABLE[] = L"Ignorable";
+static const size_t MAX_PREFIX_LENGTH = 128;
 
 CMarkupVersion::CMarkupVersion(__in LPCWSTR pswzLocalMarkupPath)
 {
@@ -73,52 +69,66 @@ STDMETHODIMP_(DWORD) CMarkupVersion::Release()
     }
 }
 
+/// <remarks>
+/// Per documentation for ISAXContentHandler::startPrefixMapping, 
+/// <paramref name="cchPrefix" /> represents the length of the prefix 
+/// string <parameref name="pwchPrefix" />, and this value will be -1 
+/// if the prefix string is already a zero-terminated string.
+/// </remarks>
 IFACEMETHODIMP CMarkupVersion::startPrefixMapping(
-    __in const wchar_t*   pwchPrefix,
-    __in int              /*cchPrefix*/,
-    __in const wchar_t*   pwchUri,
-    __in int              /*cchUri*/)
+    __in const wchar_t* pwchPrefix,             // The prefix being mapped
+    __in int cchPrefix,                         // Length of the prefix string, or -1 (if zero terminated)
+    __in_ecount(cchUri) const wchar_t* pwchUri, // The namespace URI to which the prefix is mapped
+    __in int cchUri)                            // Length of the namespace URI string
 {
     HRESULT hr = S_OK;
+    CString strPrefix;
+    CString* pStrUri = nullptr;
+
+    const size_t lenPrefix = cchPrefix == -1 ? wcslen(pwchPrefix) : cchPrefix;
+    CKHR(strPrefix.SetValue(pwchPrefix, lenPrefix));
+
+    // CStringMap<CString*>::Add(LPCWSTR, CString*) requires
+    // a CString* instance. We should not free this memory 
+    // within this method
+    CK_ALLOC(pStrUri = CString::CreateOnHeap(nullptr));
+    CKHR(pStrUri->SetValue(pwchUri, cchUri));
 
     // Accumulate and record the namespaces
-
     // See if it is a namespace that we know.
-    CString* strVersion = NULL;
-    if (SUCCEEDED(m_mapNamespaceVersion.Find(pwchUri, &strVersion)))
+    CString* strVersion = nullptr;
+    if (SUCCEEDED(m_mapNamespaceVersion.Find(*pStrUri, &strVersion)))
     {
-        CString *pUriString = CString::CreateOnHeap(pwchUri);
-        CK_ALLOC(pUriString);
-        CKHR(m_mapPrefixNamespace.Add(pwchPrefix, pUriString));
+        hr = m_mapPrefixNamespace.Add(strPrefix, pStrUri);
     }
 
-Cleanup:
+Cleanup:    
     return hr;
 }
 
+/// <remarks> Per documentation for ISAXContentHandler::startElement, 
+/// the local name string might not be zero terminated. 
+/// </remarks>
 IFACEMETHODIMP CMarkupVersion::startElement(
-    __in_ecount(cchNamespaceUri) const wchar_t *pwchNamespaceUri,
+    __in_ecount(cchNamespaceUri) const wchar_t* /*pwchNamespaceUri*/,
     __in int cchNamespaceUri,
-    __in_ecount(cchLocalName) const wchar_t *pwchLocalName,
+    __in_ecount(cchLocalName) const wchar_t* /*pwchLocalName*/,
     __in int cchLocalName,
-    __in_ecount(cchQName) const wchar_t *pwchQName,
+    __in_ecount(cchQName) const wchar_t* /*pwchQName*/,
     __in int cchQName,
     __in ISAXAttributes *pAttributes)
 {
     HRESULT hr = S_OK;
-
-    const UINT BUFFER_LENGTH = 1024;
-    LPCWSTR pwzValue;
+    CString strValue;
 
     // This retrieves a space-delimited list of the ignorable prefices.
     // If there is some error finding the attribute, or if it wasn't there, we don't care.
     // Returning a failed HRESULT will stop the parsing. The namespaces have already been 
     // reported in startPrefixMapping.
-    int nLength = BUFFER_LENGTH;
-    CKHR(pAttributes->getValueFromName(COMPATURL, COMPATURL_LENGTH, IGNORABLE, IGNORABLE_LENGTH, &pwzValue, &nLength));
+    CKHR(GetXmlAttributeValue(pAttributes, COMPATURL, strlit_len(COMPATURL), IGNORABLE, strlit_len(IGNORABLE), strValue));
 
     WCHAR wzPrefix[MAX_PREFIX_LENGTH];
-    LPCWSTR pStart = pwzValue;
+    LPCWSTR pStart = strValue.GetValue();
     while (*pStart)
     {
         // Remove any leading spaces
@@ -167,7 +177,7 @@ HRESULT CMarkupVersion::Read()
 
     if (m_mapNamespaceVersion.GetCount() > 0)
     {
-        CKHR(CoCreateInstance(__uuidof(SAXXMLReader), NULL, CLSCTX_INPROC_SERVER, __uuidof(ISAXXMLReader), (void**)&pReader));
+        CKHR(CoCreateInstance(__uuidof(SAXXMLReader60), NULL, CLSCTX_INPROC_SERVER, __uuidof(ISAXXMLReader), (void**)&pReader));
         CKHR(pReader->putContentHandler(this));
         hr = pReader->parseURL(GetLocalMarkupPath());
 

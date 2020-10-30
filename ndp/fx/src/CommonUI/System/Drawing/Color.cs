@@ -1613,13 +1613,10 @@ namespace System.Drawing {
             return new Color(NotDefinedValue, StateNameValid, name, (KnownColor)0);
         }
 
-        /// <include file='doc\Color.uex' path='docs/doc[@for="Color.GetBrightness"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the Hue-Saturation-Brightness (HSB) brightness
+        /// <summary>
+        ///       Returns the Hue-Saturation-Lightness (HSL) lightness
         ///       for this <see cref='System.Drawing.Color'/> .
-        ///    </para>
-        /// </devdoc>
+        /// </summary>
         public float GetBrightness() {
             float r = (float)R / 255.0f;
             float g = (float)G / 255.0f;
@@ -1638,15 +1635,11 @@ namespace System.Drawing {
             return(max + min) / 2;
         }
 
-
-        /// <include file='doc\Color.uex' path='docs/doc[@for="Color.GetHue"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the Hue-Saturation-Brightness (HSB) hue
+        /// <summary>
+        ///       Returns the Hue-Saturation-Lightness (HSL) hue
         ///       value, in degrees, for this <see cref='System.Drawing.Color'/> .  
         ///       If R == G == B, the hue is meaningless, and the return value is 0.
-        ///    </para>
-        /// </devdoc>
+        /// </summary>
         public Single GetHue() {
             if (R == G && G == B)
                 return 0; // 0 makes as good an UNDEFINED value as any
@@ -1686,14 +1679,10 @@ namespace System.Drawing {
             return hue;
         }
 
-        /// <include file='doc\Color.uex' path='docs/doc[@for="Color.GetSaturation"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The Hue-Saturation-Brightness (HSB) saturation for this
+        /// <summary>
+        ///   The Hue-Saturation-Lightness (HSL) saturation for this
         ///    <see cref='System.Drawing.Color'/>
-        ///    .
-        /// </para>
-        /// </devdoc>
+        /// </summary>
         public float GetSaturation() {
             float r = (float)R / 255.0f;
             float g = (float)G / 255.0f;

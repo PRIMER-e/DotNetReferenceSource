@@ -57,7 +57,7 @@ namespace MS.Internal.FontCache
         private Text.TextInterface.FontCollection _fontCollection;
         private Uri                               _folderUri;
         private List<CompositeFontFamily>         _userCompositeFonts;
-        private const string                      _sxsFontsRelativeLocation = @"WPF\Fonts\";
+        private const string                      _sxsFontsRelativeLocation = @"WPF\";
         private static object                     _staticLock = new object();
 
         /// <SecurityNote>

@@ -1422,7 +1422,7 @@ bool MakePath
 
     // Yes, the unicode forms work, even on Win98
     // PathIsRelative doesn't seem to catch root-relative paths (like "\rootdir\subdir\file.txt" )
-    // See 
+    // See bug vSWhideby #64301
     if (PathIsURLW(lpFileName))
     {
         StringCchCopyW(lpBuffer, nBufferLength, lpFileName);

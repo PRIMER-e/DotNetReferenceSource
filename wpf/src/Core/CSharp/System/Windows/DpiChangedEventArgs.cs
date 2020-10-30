@@ -13,6 +13,7 @@ using System.ComponentModel;
 using System.Security;
 using System.Threading;
 using System.Windows.Interop;
+using MS.Internal;
 using MS.Internal.PresentationCore;
 using MS.Win32;
 
@@ -25,7 +26,7 @@ namespace System.Windows
     public sealed class HwndDpiChangedEventArgs : HandledEventArgs
     {
         /// <summary>
-        /// Constructs a HwndDpiChangedEventArgs instance.
+        /// Creates an instance of HwndDpiChangedEventArgs
         /// </summary>
         /// <param name="oldDpiX">
         /// The X-Axis DPI value before DPI changed.
@@ -46,12 +47,36 @@ namespace System.Windows
         ///     Critical: This code accesses critical function *PtrToStructure*
         /// </SecurityNote>
         [SecurityCritical]
+        [Obsolete]
         internal HwndDpiChangedEventArgs(double oldDpiX, double oldDpiY, double newDpiX, double newDpiY, IntPtr lParam) : base(false)
         {
             OldDpi = new DpiScale(oldDpiX / DpiUtil.DefaultPixelsPerInch, oldDpiY / DpiUtil.DefaultPixelsPerInch);
             NewDpi = new DpiScale(newDpiX / DpiUtil.DefaultPixelsPerInch, newDpiY / DpiUtil.DefaultPixelsPerInch);
             NativeMethods.RECT suggestedRect = (NativeMethods.RECT)UnsafeNativeMethods.PtrToStructure(lParam, typeof(NativeMethods.RECT));
             this.SuggestedRect = new Rect((double)suggestedRect.left, (double)suggestedRect.top, (double)suggestedRect.Width, (double)suggestedRect.Height);
+        }
+
+        /// <summary>
+        /// Creates an instance of HwndDpiChangedEventArgs
+        /// </summary>
+        /// <param name="oldDpi">X-Axis DPI value before DPI changed</param>
+        /// <param name="newDpi">Y-Axis DPI value before DPI changed</param>
+        /// <param name="suggestedRect">Suggested client rectangle, scaled for the new DPI</param>
+        /// <remarks>
+        /// If <paramref name="suggestedRect"/> is <see cref="Rect.Empty"/>, this constructor will act as if
+        /// no suggestion for the new client rectangle has been provided. 
+        /// When this happens, DPI-change processing logic in <see cref="HwndTarget.OnMonitorDPIChanged"/> will 
+        /// not attempt to resize the window. It will assume that the top-level WM_DPICHANGED resulted
+        /// in a cascaded set of changes that adjusted the client areas for all child-windows appropriately
+        /// in response to DPI changes. <see cref="HwndTarget.OnMonitorDPIChanged"/> will simply 
+        /// invalidate and repaint the window if this happens.
+        /// </remarks>
+        internal HwndDpiChangedEventArgs(DpiScale oldDpi, DpiScale newDpi, Rect suggestedRect) :
+            base(false)
+        {
+            OldDpi = oldDpi;
+            NewDpi = newDpi;
+            SuggestedRect = suggestedRect;
         }
 
         /// <summary>
@@ -68,6 +93,63 @@ namespace System.Windows
         /// Provides the size and position of the suggested window, scaled for the new DPI.
         /// </summary>
         public Rect SuggestedRect { get; private set; }
+    }
+
+    /// <summary>
+    /// Represents information relevant for handling WM_DPICHANGED_AFTERPARENT
+    /// Window Message. 
+    /// </summary>
+    /// <remarks>
+    /// This message is relevant only for child-windows. Top-level windows get 
+    /// WM_DPICHANGED, and the corresponding data is represented by 
+    /// <see cref="HwndDpiChangedEventArgs"/>. 
+    /// </remarks>
+    internal class HwndDpiChangedAfterParentEventArgs : HandledEventArgs
+    {
+        /// <summary>
+        /// Creates an instances of <see cref="HwndDpiChangedAfterParentEventArgs"/>
+        /// </summary>
+        /// <param name="oldDpi">DPI scale before the change</param>
+        /// <param name="newDpi">DPI scale after the change</param>
+        /// ><param name="suggestedRect">Suggested client rectangle, scaled for the new DPI</param>
+        internal HwndDpiChangedAfterParentEventArgs(DpiScale oldDpi, DpiScale newDpi, Rect suggestedRect)
+            : base(false)
+        {
+            OldDpi = oldDpi;
+            NewDpi = newDpi;
+            SuggestedRect = suggestedRect;
+        }
+
+        /// <summary>
+        /// Creates an instance of <see cref="HwndDpiChangedAfterParentEventArgs"/>
+        /// </summary>
+        internal HwndDpiChangedAfterParentEventArgs(HwndDpiChangedEventArgs e)
+            : this(e.OldDpi, e.NewDpi, e.SuggestedRect)
+        {}
+
+        /// <summary>
+        /// Dpi scale information before change
+        /// </summary>
+        internal DpiScale OldDpi { get; }
+
+        /// <summary>
+        /// Dpi scale information after change
+        /// </summary>
+        internal DpiScale NewDpi { get; }
+
+        /// <summary>
+        /// Provides the size and position of the suggested window, scaled for the new DPI.
+        /// </summary>
+        internal Rect SuggestedRect { get; }
+
+
+        /// <summary>
+        /// Conversion operator from <see cref="HwndDpiChangedAfterParentEventArgs"/> to <see cref="HwndDpiChangedEventArgs"/>
+        /// </summary>
+        public static explicit operator HwndDpiChangedEventArgs(HwndDpiChangedAfterParentEventArgs e)
+        {
+            return new HwndDpiChangedEventArgs(e.OldDpi, e.NewDpi, e.SuggestedRect);
+        }
     }
 
     /// <summary>

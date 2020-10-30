@@ -876,8 +876,34 @@ namespace MS.Internal.Ink
         /// <param name="args"></param>
         internal void OnInkCanvasDeviceUp(object sender, InputEventArgs args)
         {
+            MouseButtonEventArgs mouseButtonEventArgs = args as MouseButtonEventArgs;
+
+            StylusDevice stylusDevice = null;
+
+            // If this is a mouse event, store the StylusDevice
+            if(mouseButtonEventArgs != null)
+            {
+                stylusDevice = mouseButtonEventArgs.StylusDevice;
+            }
+
+            // DDVSO:290949
+            // In the new WM_POINTER based touch stack, we can have a mouse down promotion
+            // that fires after the stylus up (due to how WM_POINTER promotes).  In this case,
+            // we would capture the stylus on the down (since it understands mouse promotion)
+            // but we would never release capture here since this only checked args.Device.
+            // To ensure that we properly release capture, we need to test both the args.Device
+            // (which is a Win32MouseDevice on promoted messages) and the StylusDevice present in
+            // the mouse event (if it is one).  That allows us to release properly for post-stylus
+            // up promoted mouse events.  Note that we do not do this for Update handling as we don't 
+            // want promoted moves to change state there.
+            //
+            // WISP COMPAT NOTE:
+            // This does not affect WISP as it will release capture on the actual StylusUp, so no capture
+            // will exist to allow this to proceed when the promoted mouse up is received.
+
             // Make sure that the stylus is the one we captured previously.
-            if ( IsInputDeviceCaptured(args.Device) )
+            if (IsInputDeviceCaptured(args.Device) 
+                || (stylusDevice != null && IsInputDeviceCaptured(stylusDevice)))
             {
                 Debug.Assert(ActiveEditingBehavior == null || ActiveEditingBehavior is IStylusEditing,
                     "The ActiveEditingBehavior should be either null (The None mode) or type of IStylusEditing.");
@@ -885,7 +911,6 @@ namespace MS.Internal.Ink
                 // Make sure we only look at mouse left button events if watching mouse events. 
                 if ( _capturedMouse != null )
                 {
-                    MouseButtonEventArgs mouseButtonEventArgs = args as MouseButtonEventArgs;
                     if ( mouseButtonEventArgs != null )
                     {
                         if ( mouseButtonEventArgs.ChangedButton != MouseButton.Left )

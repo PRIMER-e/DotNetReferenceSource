@@ -40,6 +40,7 @@ namespace System.Windows.Forms {
         private int                         countDropDownItemsAssignedTo = 0; // the number of dropdown items using this as their dropdown..
         private BitVector32                 state               = new BitVector32();
         private Point                       displayLocation     = new Point(0,0);
+        private bool                        saveSourceControl   = false;
 
         private ToolStripDropDownDirection childDropDownDirection = ToolStripDropDownDirection.Default;
         private ToolStripDropDownCloseReason closeReason = ToolStripDropDownCloseReason.AppFocusChange;
@@ -55,6 +56,9 @@ namespace System.Windows.Forms {
         private static readonly object EventClosing                             = new object();
 
         private static readonly object ToolStripParkingWindowKey                = new object();
+
+        private static readonly Padding defaultPadding                          = new Padding(1, 2, 1, 2);
+        private Padding scaledDefaultPadding                                    = defaultPadding;
 
 #if DEBUG 
      	internal static TraceSwitch DropDownActivateDebug = new TraceSwitch("DropDownActivateDebug", "Debug activation code for dropDown controls");
@@ -97,6 +101,10 @@ namespace System.Windows.Forms {
         /// Summary of ToolStripDropDown.
         /// </devdoc>
         public ToolStripDropDown() {
+            if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding);
+            }
+
             // SECURITY NOTE: The IsRestrictedWindow check is done once and cached. We force it to happen here
             // since we want to ensure the check is done on the code that constructs the ToolStripDropDown.
             bool temp = IsRestrictedWindow;
@@ -153,7 +161,7 @@ namespace System.Windows.Forms {
                     state[stateLayered] = state[stateAllowTransparency];
 
                     UpdateStyles();
-
+                    
                     if (!value) {
                         if (Properties.ContainsObject(PropOpacity)) {
                             Properties.SetObject(PropOpacity, (object)1.0f);
@@ -353,7 +361,7 @@ namespace System.Windows.Forms {
 
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.DefaultPadding"]/*' />
         protected override Padding DefaultPadding {
-            get { return new Padding(1, 2, 1, 2); }
+            get { return scaledDefaultPadding; }
         }
 
 
@@ -823,7 +831,7 @@ namespace System.Windows.Forms {
             get {
                 if (ownerItem != null) {
                     ToolStrip owner = ownerItem.ParentInternal;
-                    if (owner != null) {
+                    if (owner != null) { 
                         return owner;
                     }
 
@@ -1283,8 +1291,12 @@ namespace System.Windows.Forms {
         }
 
         internal override void HandleItemClicked(ToolStripItem dismissingItem) {
-            // post processing after the click has happened.
-            SourceControlInternal = null;
+            // Only clear the SourceControl if this is the last click.
+            if (!LocalAppContextSwitches.UseLegacyContextMenuStripSourceControlValue &&
+                this.ActiveDropDowns.Count == 0) {
+                // post processing after the click has happened.
+                SourceControlInternal = null;
+            }
             base.HandleItemClicked(dismissingItem);
         }
         /// <devdoc>
@@ -1466,7 +1478,11 @@ namespace System.Windows.Forms {
 
             if (itemOnPreviousMenuToSelect != null) {
                 itemOnPreviousMenuToSelect.Select();
-      
+
+                if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                    KeyboardToolTipStateMachine.Instance.NotifyAboutGotFocus(itemOnPreviousMenuToSelect);
+                }
+
                 if (OwnerToolStrip != null) {
                     // make sure we send keyboard handling where we've just
                     // sent selection
@@ -1664,10 +1680,16 @@ namespace System.Windows.Forms {
               UnsafeNativeMethods.SetWindowLong(new HandleRef(this, Handle), NativeMethods.GWL_HWNDPARENT, ownerHandle);
           }
 
-          /// <devdoc>
-          ///     VERY similar to Form.ScaleCore
-          /// </devdoc>
-          [EditorBrowsable(EditorBrowsableState.Never)]
+          internal override void ResetScaling(int newDpi) {
+              base.ResetScaling(newDpi);
+              CommonProperties.xClearPreferredSizeCache(this);
+              scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding, newDpi);
+          }
+
+        /// <devdoc>
+        ///     VERY similar to Form.ScaleCore
+        /// </devdoc>
+        [EditorBrowsable(EditorBrowsableState.Never)]
           protected override void ScaleCore(float dx, float dy) {
               Debug.WriteLineIf(CompModSwitches.RichLayout.TraceInfo, GetType().Name + "::ScaleCore(" + dx + ", " + dy + ")");
               SuspendLayout();
@@ -1888,6 +1910,8 @@ namespace System.Windows.Forms {
                                 // close, closing event with reason AppFocusChange.  This is by 
                                 // design since the item wasnt clicked on that window.
                                 if (reason == ToolStripDropDownCloseReason.ItemClicked) {
+                                    // Preserve the SourceControl value up the chain.
+                                    this.saveSourceControl = true;
                                     DismissAll();   
                                     // make sure that when we roll up, our owner item's selection is cleared.
                                     ToolStripItem rootOwnerItem = GetToplevelOwnerItem();
@@ -1940,7 +1964,10 @@ namespace System.Windows.Forms {
                                 }
                                 
 
-                                if (reason != ToolStripDropDownCloseReason.ItemClicked) {
+                                if (!this.saveSourceControl) {
+                                    Debug.Assert(reason != ToolStripDropDownCloseReason.ItemClicked,
+                                        "Why are we resetting SourceControl on a click event?");
+
                                     // VSWhidbey 475650: If we're not about to fire a Click event, reset SourceControl.
                                     SourceControlInternal = null;
                                 }
@@ -1975,6 +2002,7 @@ namespace System.Windows.Forms {
             }
             finally {
               state[stateInSetVisibleCore] = false;
+              this.saveSourceControl = false;
             }
 
         }
@@ -2154,7 +2182,10 @@ namespace System.Windows.Forms {
            ToolStripDropDown toplevel = this.GetFirstDropDown();
            toplevel.closeReason = this.closeReason;
            toplevel.DismissActiveDropDowns();
-           toplevel.Visible = false;   
+            if (!LocalAppContextSwitches.UseLegacyContextMenuStripSourceControlValue) {
+                toplevel.saveSourceControl = this.saveSourceControl;
+            }
+            toplevel.Visible = false;
        }
        private void DismissActiveDropDowns() {
            Debug.WriteLineIf((DropDownActivateDebug.TraceVerbose && ActiveDropDowns.Count > 0), "Dismiss children called - COUNT " + ActiveDropDowns.Count + " \r\n" + new StackTrace().ToString());

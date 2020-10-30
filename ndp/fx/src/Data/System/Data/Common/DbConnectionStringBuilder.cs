@@ -382,7 +382,7 @@ namespace System.Data.Common {
                 }
 
                 // all keywords in Keys list that do not have strongly typed property, ODBC case
-                // ignore 'Workaround Oracle 
+                // ignore 'Workaround Oracle Bug 914652' via IsFixedSize
                 if (!IsFixedSize) {
                     attributes = null;
                     foreach(string keyword in Keys) {

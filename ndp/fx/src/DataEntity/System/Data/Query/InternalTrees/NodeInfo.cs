@@ -52,8 +52,8 @@ namespace System.Data.Query.InternalTrees
         internal void InitFrom(IEnumerable<Var> varSet, bool ignoreParameters)
         {
             m_keys.InitFrom(varSet, ignoreParameters);
-            // 
-
+            // Bug 434541: An empty set of keys is not the same as "no" keys.
+            // Caveat Emptor
             m_noKeys = false;
         }
         internal void InitFrom(KeyVec left, KeyVec right)

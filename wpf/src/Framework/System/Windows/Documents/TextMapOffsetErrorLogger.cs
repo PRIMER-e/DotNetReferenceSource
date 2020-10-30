@@ -119,8 +119,8 @@ namespace System.Windows.Documents
                     // cross-correlation would be dropped from the event.
                     var eventSourceOptions = new EventSourceOptions
                     {
-                        Keywords = TelemetryEventSource.MeasuresKeyword, 
-                        Tags     = TelemetryEventSource.DropPii
+                        Keywords = MS.Internal.Telemetry.PresentationFramework.TelemetryEventSource.MeasuresKeyword, 
+                        Tags     = MS.Internal.Telemetry.PresentationFramework.TelemetryEventSource.DropPii
                     };
 
                     logger?.Write<DebugInfo>(TextMapOffsetError, eventSourceOptions, _debugInfo);

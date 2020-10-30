@@ -702,19 +702,19 @@ namespace System.Security.Cryptography.Pkcs {
             }
         }
 
-        internal static CAPI.CMSG_SIGNER_ENCODE_INFO CreateSignerEncodeInfo (CmsSigner signer) {
-            return CreateSignerEncodeInfo(signer, false);
+        [SecuritySafeCritical]
+        internal static CAPI.CMSG_SIGNER_ENCODE_INFO CreateSignerEncodeInfo (CmsSigner signer, out SafeCryptProvHandle hProv) {
+            return CreateSignerEncodeInfo(signer, false, out hProv);
         }
 
         [ResourceExposure(ResourceScope.None)]
         [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
         [SecuritySafeCritical]
-        internal static unsafe CAPI.CMSG_SIGNER_ENCODE_INFO CreateSignerEncodeInfo (CmsSigner signer, bool silent) {
+        internal static unsafe CAPI.CMSG_SIGNER_ENCODE_INFO CreateSignerEncodeInfo (CmsSigner signer, bool silent, out SafeCryptProvHandle hProv) {
             CAPI.CMSG_SIGNER_ENCODE_INFO cmsSignerEncodeInfo = new CAPI.CMSG_SIGNER_ENCODE_INFO(Marshal.SizeOf(typeof(CAPI.CMSG_SIGNER_ENCODE_INFO)));
 
             SafeCryptProvHandle safeCryptProvHandle = SafeCryptProvHandle.InvalidHandle;
             uint keySpec = 0;
-            bool freeCsp = false;
 
             cmsSignerEncodeInfo.HashAlgorithm.pszObjId = signer.DigestAlgorithm.Value;
 
@@ -750,7 +750,7 @@ namespace System.Security.Cryptography.Pkcs {
                 }
 
                 cmsSignerEncodeInfo.hCryptProv = safeCryptProvHandle.DangerousGetHandle();
-                GC.SuppressFinalize(safeCryptProvHandle);
+                hProv = safeCryptProvHandle;
 
                 // Fake up the SignerId so our server can recognize it
                 // dwIdChoice
@@ -782,23 +782,14 @@ namespace System.Security.Cryptography.Pkcs {
             }
 
             SafeCertContextHandle safeCertContextHandle = X509Utils.GetCertContext(signer.Certificate);
+            int hr = GetCertPrivateKey(safeCertContextHandle, out safeCryptProvHandle, out keySpec);
 
-            if (!CAPI.CAPISafe.CryptAcquireCertificatePrivateKey(safeCertContextHandle,
-                    (silent?  
-                    CAPI.CRYPT_SILENT | CAPI.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG | CAPI.CRYPT_ACQUIRE_COMPARE_KEY_FLAG:
-                    CAPI.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG | CAPI.CRYPT_ACQUIRE_COMPARE_KEY_FLAG),
-                                                        IntPtr.Zero,
-                                                        ref safeCryptProvHandle,
-                                                        ref keySpec,
-                                                        ref freeCsp))
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+            if (hr != CAPI.S_OK)
+                throw new CryptographicException(hr);
 
             cmsSignerEncodeInfo.dwKeySpec = keySpec;
             cmsSignerEncodeInfo.hCryptProv = safeCryptProvHandle.DangerousGetHandle();
-
-            // Since we are storing only IntPtr in CMSG_SIGNER_ENCODE_INFO.hCryptProv, we MUST then 
-            // supress the finalizer, otherwise the GC can collect the resource underneath us!!!
-            GC.SuppressFinalize(safeCryptProvHandle);
+            hProv = safeCryptProvHandle;
 
             CAPI.CERT_CONTEXT pCertContext = *((CAPI.CERT_CONTEXT*) safeCertContextHandle.DangerousGetHandle());
             cmsSignerEncodeInfo.pCertInfo  = pCertContext.pCertInfo;
@@ -833,6 +824,81 @@ namespace System.Security.Cryptography.Pkcs {
             }
 
             return cmsSignerEncodeInfo;
+        }
+
+        [SecurityCritical]
+        internal static int GetCertPrivateKey(SafeCertContextHandle safeCertContextHandle, out SafeCryptProvHandle safeCryptProvHandle, out uint keySpec) {
+            bool freeCsp = false;
+
+            IntPtr hKey;
+            uint cbSize = (uint)IntPtr.Size;
+            safeCryptProvHandle = null;
+
+            if (CAPI.CAPISafe.CertGetCertificateContextProperty(
+                safeCertContextHandle,
+                CAPI.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                out hKey,
+                ref cbSize))
+            {
+                keySpec = 0;
+                safeCryptProvHandle = new SafeCryptProvHandle(hKey, safeCertContextHandle);
+                return CAPI.S_OK;
+            }
+
+            // Check to see if KEY_PROV_INFO contains "MS Base ..."
+            // If so, acquire "MS Enhanced..." or "MS Strong".
+            // if failed, then use CryptAcquireCertificatePrivateKey
+            CspParameters parameters = new CspParameters();
+            if (X509Utils.GetPrivateKeyInfo(safeCertContextHandle, ref parameters) == false)
+                throw new CryptographicException(Marshal.GetLastWin32Error());
+
+            if (String.Compare(parameters.ProviderName, CAPI.MS_DEF_PROV, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                SafeCryptProvHandle provHandle = SafeCryptProvHandle.InvalidHandle;
+
+                if (CAPI.CryptAcquireContext(ref provHandle, parameters.KeyContainerName, CAPI.MS_ENHANCED_PROV, CAPI.PROV_RSA_FULL, 0) ||
+                    CAPI.CryptAcquireContext(ref provHandle, parameters.KeyContainerName, CAPI.MS_STRONG_PROV, CAPI.PROV_RSA_FULL, 0))
+                {
+                    safeCryptProvHandle = provHandle;
+                }
+            }
+
+            keySpec = (uint)parameters.KeyNumber;
+            int hr = CAPI.S_OK;
+
+            uint flags = CAPI.CRYPT_ACQUIRE_COMPARE_KEY_FLAG | CAPI.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG;
+            if (parameters.ProviderType == 0)
+            {
+                //
+                // The ProviderType being 0 indicates that this cert is using a CNG key. Set the flag to tell CryptAcquireCertificatePrivateKey that it's okay to give
+                // us a CNG key.
+                //
+                // (This should be equivalent to passing CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG. But fixing it this way restricts the code path changes
+                // within Crypt32 to the cases that were already non-functional in 4.6.1. Thus, it is a "safer" way to fix it for a point release.)
+                //
+                flags |= CAPI.CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG;
+            }
+
+            if ((safeCryptProvHandle == null) || (safeCryptProvHandle.IsInvalid))
+            {
+                hKey = IntPtr.Zero;
+
+                if (CAPI.CAPISafe.CryptAcquireCertificatePrivateKey(safeCertContextHandle,
+                                                                    flags,
+                                                                    IntPtr.Zero,
+                                                                    ref hKey,
+                                                                    ref keySpec,
+                                                                    ref freeCsp))
+                {
+                    safeCryptProvHandle = new SafeCryptProvHandle(hKey, freeCsp);
+                }
+                else
+                {
+                    hr = Marshal.GetHRForLastWin32Error();
+                }
+            }
+
+            return hr;
         }
 
         [SecuritySafeCritical]

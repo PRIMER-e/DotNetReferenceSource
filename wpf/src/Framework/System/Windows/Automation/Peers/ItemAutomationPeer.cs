@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -12,6 +13,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using MS.Internal;
+using MS.Internal.Data;
 using MS.Win32;
 
 namespace System.Windows.Automation.Peers
@@ -27,7 +29,7 @@ namespace System.Windows.Automation.Peers
         ///
         protected ItemAutomationPeer(object item, ItemsControlAutomationPeer itemsControlAutomationPeer): base()
         {
-            _item = item;
+            Item = item;
             _itemsControlAutomationPeer = itemsControlAutomationPeer;
         }
 
@@ -93,10 +95,14 @@ namespace System.Windows.Automation.Peers
                 ItemsControl owner = (ItemsControl)(itemsControlAutomationPeer.Owner);
                 if (owner != null)
                 {
-                    if (((MS.Internal.Controls.IGeneratorHost)owner).IsItemItsOwnContainer(_item))
-                        wrapper = _item as UIElement;
-                    else
-                        wrapper = owner.ItemContainerGenerator.ContainerFromItem(_item) as UIElement;
+                    object item = RawItem;
+                    if (item != DependencyProperty.UnsetValue)
+                    {
+                        if (((MS.Internal.Controls.IGeneratorHost)owner).IsItemItsOwnContainer(item))
+                            wrapper = item as UIElement;
+                        else
+                            wrapper = owner.ItemContainerGenerator.ContainerFromItem(item) as UIElement;
+                    }
                 }
             }
             return wrapper;
@@ -223,6 +229,149 @@ namespace System.Windows.Automation.Peers
             return AutomationOrientation.None;
         }
 
+        /// <summary>
+        /// Gets the position of an item within a set.
+        /// </summary>
+        /// <remarks>
+        /// If <see cref="AutomationProperties.PositionInSetProperty"/> hasn't been set
+        /// this method will calculate the position of an item based on its parent ItemsControl,
+        /// if the ItemsControl is grouping the position will be relative to the group containing this item.
+        /// </remarks>
+        /// <returns>
+        /// The value of <see cref="AutomationProperties.PositionInSetProperty"/> if it has been set, or it's position relative to the parent ItemsControl or GroupItem.
+        /// </returns>
+        protected override int GetPositionInSetCore()
+        {
+            AutomationPeer wrapperPeer = GetWrapperPeer();
+            if (wrapperPeer != null)
+            {
+                int position = wrapperPeer.GetPositionInSet();
+
+                if (position == AutomationProperties.AutomationPositionInSetDefault)
+                {
+                    ItemsControl parentItemsControl = (ItemsControl)ItemsControlAutomationPeer.Owner;
+                    position = GetPositionInSetFromItemsControl(parentItemsControl, Item);
+                }
+
+                return position;
+            }
+            else
+            {
+                ThrowElementNotAvailableException();
+            }
+
+            return AutomationProperties.AutomationPositionInSetDefault;
+        }
+
+        /// <summary>
+        /// Gets the size of a set that contains this item.
+        /// </summary>
+        /// <remarks>
+        /// If <see cref="AutomationProperties.SizeOfSetProperty"/> hasn't been set
+        /// this method will calculate the size of the set containing this item based on its parent ItemsControl,
+        /// if the ItemsControl is grouping the value will be representative of the group containing this item.
+        /// </remarks>
+        /// <returns>
+        /// The value of <see cref="AutomationProperties.SizeOfSetProperty"/> if it has been set, or the size of the parent ItemsControl or GroupItem.
+        /// </returns>
+        protected override int GetSizeOfSetCore()
+        {
+            AutomationPeer wrapperPeer = GetWrapperPeer();
+            if (wrapperPeer != null)
+            {
+                int size = wrapperPeer.GetSizeOfSet();
+
+                if (size == AutomationProperties.AutomationSizeOfSetDefault)
+                {
+                    ItemsControl parentItemsControl = (ItemsControl)ItemsControlAutomationPeer.Owner;
+                    size = GetSizeOfSetFromItemsControl(parentItemsControl, Item);
+                }
+
+                return size;
+            }
+            else
+            {
+                ThrowElementNotAvailableException();
+            }
+
+            return AutomationProperties.AutomationSizeOfSetDefault;
+        }
+
+        internal static int GetPositionInSetFromItemsControl(ItemsControl itemsControl, object item)
+        {
+            int position = AutomationProperties.AutomationPositionInSetDefault;
+            ItemCollection itemCollection = itemsControl.Items;
+            position = itemCollection.IndexOf(item);
+
+            if (itemsControl.IsGrouping)
+            {
+                int sizeOfGroup;
+                position = FindPositionInGroup(itemCollection.Groups, position, out sizeOfGroup);
+            }
+
+            return position + 1;
+        }
+
+        internal static int GetSizeOfSetFromItemsControl(ItemsControl itemsControl, object item)
+        {
+            int size = AutomationProperties.AutomationSizeOfSetDefault;
+            ItemCollection itemCollection = itemsControl.Items;
+
+            if (itemsControl.IsGrouping)
+            {
+                int position = itemCollection.IndexOf(item);
+                FindPositionInGroup(itemCollection.Groups, position, out size);
+            }
+            else
+            {
+                size = itemCollection.Count;
+            }
+
+            return size;
+        }
+
+        /// <summary>
+        /// Based on the position of an item in the owner's item collection determine which group the item belongs to
+        /// and return the relative position, also provide the size of the group
+        /// </summary>
+        /// <param name="collection">The top-level collection of groups</param>
+        /// <param name="position">The position of the item in the flattened item collection</param>
+        /// <param name="sizeOfGroup">out parameter to return the size of the group we found</param>
+        /// <returns>The position of the item relative to the found group</returns>
+        private static int FindPositionInGroup(ReadOnlyObservableCollection<object> collection, int position, out int sizeOfGroup)
+        {
+            CollectionViewGroupInternal currentGroup = null;
+            ReadOnlyObservableCollection<object> newCollection = null;
+            sizeOfGroup = AutomationProperties.AutomationSizeOfSetDefault;
+            do
+            {
+                newCollection = null;
+                foreach (CollectionViewGroupInternal group in collection)
+                {
+                    if (position < group.ItemCount)
+                    {
+                        currentGroup = group;
+                        if (currentGroup.IsBottomLevel)
+                        {
+                            newCollection = null;
+                            sizeOfGroup = group.ItemCount;
+                        }
+                        else
+                        {
+                            newCollection = currentGroup.Items;
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        position -= group.ItemCount;
+                    }
+                }
+            } while ((collection = newCollection) != null);
+
+            return position;
+        }
+
         ///
         protected override string GetItemStatusCore()
         {
@@ -301,14 +450,15 @@ namespace System.Windows.Automation.Peers
         {
             AutomationPeer wrapperPeer = GetWrapperPeer();
             string id = null;
+            object item;
 
             if (wrapperPeer != null)
             {
                 id = wrapperPeer.GetAutomationId();
             }
-            else if (_item != null)
+            else if ((item = Item) != null)
             {
-                using (RecyclableWrapper recyclableWrapper = ItemsControlAutomationPeer.GetRecyclableWrapperPeer(_item))
+                using (RecyclableWrapper recyclableWrapper = ItemsControlAutomationPeer.GetRecyclableWrapperPeer(item))
                 {
                     id = recyclableWrapper.Peer.GetAutomationId();
                 }
@@ -322,28 +472,29 @@ namespace System.Windows.Automation.Peers
         {
             AutomationPeer wrapperPeer = GetWrapperPeer();
             string name = null;
+            object item = Item;
 
             if (wrapperPeer != null)
             {
                 name = wrapperPeer.GetName();
             }
-            else if (_item != null)
+            else if (item != null)
             {
-                using (RecyclableWrapper recyclableWrapper = ItemsControlAutomationPeer.GetRecyclableWrapperPeer(_item))
+                using (RecyclableWrapper recyclableWrapper = ItemsControlAutomationPeer.GetRecyclableWrapperPeer(item))
                 {
                     name = recyclableWrapper.Peer.GetName();
                 }
             }
 
-            if (string.IsNullOrEmpty(name) && _item != null)
+            if (string.IsNullOrEmpty(name) && item != null)
             {
                 // For FE we can't use ToString as that provides extraneous information than just the plain text
-                FrameworkElement fe = _item as FrameworkElement;
+                FrameworkElement fe = item as FrameworkElement;
                 if(fe != null)
                   name = fe.GetPlainText();
-                
+
                 if(string.IsNullOrEmpty(name))
-                  name = _item.ToString();
+                  name = item.ToString();
             }
 
             return name;
@@ -379,6 +530,18 @@ namespace System.Windows.Automation.Peers
                 ThrowElementNotAvailableException();
 
             return null;
+        }
+
+        ///
+        protected override AutomationLiveSetting GetLiveSettingCore()
+        {
+            AutomationPeer wrapperPeer = GetWrapperPeer();
+            if (wrapperPeer != null)
+                return wrapperPeer.GetLiveSetting();
+            else
+                ThrowElementNotAvailableException();
+
+            return AutomationLiveSetting.Off;
         }
 
         ///
@@ -449,7 +612,60 @@ namespace System.Windows.Automation.Peers
         {
             get
             {
-                return _item;
+                ItemWeakReference iwr = _item as ItemWeakReference;
+                return (iwr != null) ? iwr.Target : _item;
+            }
+            private set
+            {
+                if (value != null && !value.GetType().IsValueType &&
+                    !FrameworkAppContextSwitches.ItemAutomationPeerKeepsItsItemAlive)
+                {
+                    _item = new ItemWeakReference(value);
+                }
+                else
+                {
+                    _item = value;
+                }
+            }
+        }
+
+        private object RawItem
+        {
+            get
+            {
+                ItemWeakReference iwr = _item as ItemWeakReference;
+                if (iwr != null)
+                {
+                    object item = iwr.Target;
+                    return (item == null) ? DependencyProperty.UnsetValue : item;
+                }
+                else
+                {
+                    return _item;
+                }
+            }
+        }
+
+        // Rebuilding the "item" children of an ItemsControlAP or GroupItemAP re-uses
+        // ItemAutomationPeers for items that already had peers.  Usually this happens
+        // when the items are the same (the same object), but it can also happen
+        // when the items are different objects but are equal in the Object.Equals sense.
+        // In the latter case, we need to update the weak reference to point to
+        // the new item, as the old item has a different lifetime.  [DDVSO 774503]
+        internal void ReuseForItem(object item)
+        {
+            System.Diagnostics.Debug.Assert(Object.Equals(item, Item), "ItemPeer reuse for an unequal item is not supported");
+            ItemWeakReference iwr = _item as ItemWeakReference;
+            if (iwr != null)
+            {
+                if (!Object.ReferenceEquals(item, iwr.Target))
+                {
+                    iwr.Target = item;
+                }
+            }
+            else
+            {
+                _item = item;
             }
         }
 
@@ -482,12 +698,15 @@ namespace System.Windows.Automation.Peers
                 {
                     if (parent.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
                     {
-                        // Please note that this action must happen before the OnBringItemIntoView call because
-                        // that is a call that synchronously flushes out layout and we want these realized peers
-                        // cached before the UpdateSubtree kicks in OnLayoutUpdated.
-                        if (VirtualizingPanel.GetIsVirtualizingWhenGrouping(parent))
+                        if (AccessibilitySwitches.UseNetFx472CompatibleAccessibilityFeatures)
                         {
-                            itemsControlAutomationPeer.RecentlyRealizedPeers.Add(this);
+                            // Please note that this action must happen before the OnBringItemIntoView call because
+                            // that is a call that synchronously flushes out layout and we want these realized peers
+                            // cached before the UpdateSubtree kicks in OnLayoutUpdated.
+                            if (VirtualizingPanel.GetIsVirtualizingWhenGrouping(parent))
+                            {
+                                itemsControlAutomationPeer.RecentlyRealizedPeers.Add(this);
+                            }
                         }
 
                         parent.OnBringItemIntoView(Item);
@@ -498,12 +717,15 @@ namespace System.Windows.Automation.Peers
                         Dispatcher.BeginInvoke(DispatcherPriority.Loaded,
                             (DispatcherOperationCallback)delegate(object arg)
                             {
-                                // Please note that this action must happen before the OnBringItemIntoView call because
-                                // that is a call that synchronously flushes out layout and we want these realized peers
-                                // cached before the UpdateSubtree kicks in OnLayoutUpdated.
-                                if (VirtualizingPanel.GetIsVirtualizingWhenGrouping(parent))
+                                if (AccessibilitySwitches.UseNetFx472CompatibleAccessibilityFeatures)
                                 {
-                                    itemsControlAutomationPeer.RecentlyRealizedPeers.Add(this);
+                                    // Please note that this action must happen before the OnBringItemIntoView call because
+                                    // that is a call that synchronously flushes out layout and we want these realized peers
+                                    // cached before the UpdateSubtree kicks in OnLayoutUpdated.
+                                    if (VirtualizingPanel.GetIsVirtualizingWhenGrouping(parent))
+                                    {
+                                        itemsControlAutomationPeer.RecentlyRealizedPeers.Add(this);
+                                    }
                                 }
 
                                 parent.OnBringItemIntoView(arg);
@@ -515,8 +737,16 @@ namespace System.Windows.Automation.Peers
             }
         }
 
-        private object _item;
+        private object _item;   // for value-types: item;  for reference-types: IWR(item)
         private ItemsControlAutomationPeer _itemsControlAutomationPeer;
+
+        // a weak reference that is distinguishable from System.WeakReference
+        private class ItemWeakReference : WeakReference
+        {
+            public ItemWeakReference(object o)
+                : base(o)
+            {}
+        }
 
     }
 }

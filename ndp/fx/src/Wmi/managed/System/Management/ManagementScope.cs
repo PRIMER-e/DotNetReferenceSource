@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Configuration;
 using System.Runtime.InteropServices;
 using System.Threading;
 using WbemClient_v1;
@@ -9,13 +10,84 @@ using System.ComponentModel.Design.Serialization;
 using System.Runtime.Versioning;
 using System.Runtime.Serialization;
 using System.Security;
-
+using System.Security.Permissions;
+using Microsoft.Win32;
 
 namespace System.Management
 {
+    internal static class CompatSwitches
+    {
+        private const string DotNetVersion = "v4.0.30319";
+        private const string RegKeyLocation =@"SOFTWARE\Microsoft\.NETFramework\" + DotNetVersion;
+ 
+        private static readonly object s_syncLock = new object();
+        private static int s_allowManagementObjectQI;
+ 
+        private const string c_WMIDisableCOMSecurity = "WMIDisableCOMSecurity";
+
+        public static bool AllowIManagementObjectQI
+        {
+            get
+            {
+                if (s_allowManagementObjectQI == 0)
+                {
+                    lock (s_syncLock)
+                    {
+                       if (s_allowManagementObjectQI == 0)
+                       {
+                          s_allowManagementObjectQI = GetSwitchValueFromRegistry() == true ? 1 : -1;
+                       }
+                    }
+                }
+        
+                return s_allowManagementObjectQI == 1 ? true : false;
+            }
+        }
+ 
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        private static bool GetSwitchValueFromRegistry()
+        { 
+           RegistryKey s_switchesRegKey = null;
+           try
+           {
+              s_switchesRegKey = Registry.LocalMachine.OpenSubKey(RegKeyLocation);
+ 
+              if (s_switchesRegKey == null)
+              {
+                  return false;
+              }
+ 
+              return ((int)s_switchesRegKey.GetValue(c_WMIDisableCOMSecurity, -1 /* default */) == 1);
+           }
+          
+           // ---- exceptions so that we don't crash the process if we can't read the switch value
+           catch (Exception e)
+           {
+               if (e is StackOverflowException ||
+                   e is OutOfMemoryException ||
+                   e is System.Threading.ThreadAbortException ||
+                   e is AccessViolationException)
+                   throw;
+           }
+           finally
+           {
+               // dispose of the key
+               if (s_switchesRegKey != null)
+               {
+                   s_switchesRegKey.Dispose();
+               }
+           }
+ 
+           // if for any reason we cannot retrieve the value of the switch from the Registry,
+           // fallback to 'false' which is the secure behavior
+           return false;
+        }
+    }
+
     internal static class WmiNetUtilsHelper
     {
-         internal static string myDllPath ;
+        internal static string myDllPath ;
         internal delegate int ResetSecurity(IntPtr hToken);
         internal delegate int SetSecurity([In][Out] ref bool pNeedtoReset, [In][Out] ref IntPtr pHandle);    
         internal delegate int BlessIWbemServices([MarshalAs(UnmanagedType.Interface)] IWbemServices pIUnknown, 
@@ -30,7 +102,7 @@ namespace System.Management
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority,
                                                                         int impersonationLevel,
                                                                         int authenticationLevel);
-         
+
          internal delegate int GetPropertyHandle(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszPropertyName, [Out] out Int32 pType, [Out] out Int32 plHandle);
          internal delegate int WritePropertyValue(int vFunc, IntPtr pWbemClassObject, [In] Int32 lHandle, [In] Int32 lNumBytes, [In][MarshalAs(UnmanagedType.LPWStr)] string str);
          internal delegate int GetQualifierSet(int vFunc, IntPtr pWbemClassObject, [Out] out IntPtr ppQualSet);
@@ -67,7 +139,7 @@ namespace System.Management
          internal delegate int GetCurrentApartmentType(int vFunc, IntPtr pComThreadingInfo, [Out] out APTTYPE aptType);
          internal delegate void VerifyClientKey();  
          internal delegate int  GetDemultiplexedStub([In,MarshalAs(UnmanagedType.IUnknown)]object pIUnknown, [In]bool isLocal, [Out,MarshalAs(UnmanagedType.IUnknown)]out object ppIUnknown);         
-        internal delegate int CreateInstanceEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter, 
+         internal delegate int CreateInstanceEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter, 
                                                                                             [In] Int32 lFlags, 
                                                                                             [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, 
                                                                                             [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
@@ -78,7 +150,7 @@ namespace System.Management
                                                                                             [In]IntPtr   strPassword,
                                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority
                                                                                             );
-        internal delegate int CreateClassEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strSuperclass,
+         internal delegate int CreateClassEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strSuperclass,
                                                                                         [In] Int32 lFlags,
                                                                                         [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                                         [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
@@ -89,7 +161,7 @@ namespace System.Management
                                                                                         [In]IntPtr   strPassword,
                                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority
                                                                                         );
-        internal delegate int ExecQueryWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, 
+         internal delegate int ExecQueryWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, 
                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, 
                                                                             [In] Int32 lFlags, 
                                                                             [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, 
@@ -154,14 +226,15 @@ namespace System.Management
                                                                         [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                         [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices   ppNamespace,
                                                                         int impersonationLevel,
-                                                                        int authenticationLevel);      
-        
-        
-        
-        
-        
-        
-         
+                                                                        int authenticationLevel);
+
+        internal delegate IntPtr GetErrorInfo();
+
+        internal delegate int Initialize([In]bool AllowIManagementObjectQI);
+
+
+
+
         // 'Apartment Type' returned by IComThreadingInfo::GetCurrentApartmentType()         
          internal enum APTTYPE
         {
@@ -220,9 +293,10 @@ namespace System.Management
         internal static PutClassWmi PutClassWmi_f;
         internal static CloneEnumWbemClassObject CloneEnumWbemClassObject_f;
         internal static ConnectServerWmi ConnectServerWmi_f;
+        internal static GetErrorInfo GetErrorInfo_f;
+        internal static Initialize Initialize_f;
 
 
-        
         [ResourceExposure(ResourceScope.None), SuppressUnmanagedCodeSecurity, DllImport("kernel32.dll")] internal static extern IntPtr LoadLibrary(string fileName);
         [ResourceExposure(ResourceScope.None), SuppressUnmanagedCodeSecurity, DllImport("kernel32.dll")] internal static extern IntPtr GetProcAddress(IntPtr hModule, string procname);
         static WmiNetUtilsHelper()
@@ -478,7 +552,18 @@ namespace System.Management
                 {
                     ConnectServerWmi_f  =(ConnectServerWmi) Marshal.GetDelegateForFunctionPointer(procAddr, typeof(ConnectServerWmi));
                 }
-                
+                procAddr = GetProcAddress(loadLibrary, "GetErrorInfo");
+                if( procAddr != IntPtr.Zero)
+                {
+                    GetErrorInfo_f  =(GetErrorInfo) Marshal.GetDelegateForFunctionPointer(procAddr, typeof(GetErrorInfo));
+                }
+                procAddr = GetProcAddress(loadLibrary, "Initialize");
+                if( procAddr != IntPtr.Zero)
+                {
+                    Initialize_f  =(Initialize) Marshal.GetDelegateForFunctionPointer(procAddr, typeof(Initialize));
+                }
+
+		Initialize_f(CompatSwitches.AllowIManagementObjectQI);
             }
         }
 
@@ -585,37 +670,42 @@ namespace System.Management
         {
             IWbemServices localCopy = wbemServices;
             //IWbemServices is always created in MTA context. Only if call is made through non MTA context we need to use IWbemServices in right context.
-            // Lets start by assuming that we'll return the RCW that we already have
+            // Lets start by assuming that we'll return the RCW that we already have. When WMINet_Utils.dll wraps the real COM proxy, credentials don't get 
+            // lost when the CLR marshals the wrapped object to a different COM apartment. The wrap was added to prevent marshalling of IManagedObject from native
+            // to managed code.
 
-            // Get an IUnknown for this apartment
-            IntPtr pUnk = Marshal.GetIUnknownForObject(wbemServices);
-
-            // Get an 'IUnknown RCW' for this apartment
-            Object unknown = Marshal.GetObjectForIUnknown(pUnk);
-
-            // Release the ref count on the IUnknwon
-            Marshal.Release(pUnk);
-
-            // See if we are in the same apartment as where the original IWbemServices lived
-            // If we are in a different apartment, give the caller an RCW generated just for their
-            // apartment, and set the proxy blanket appropriately
-            if(!object.ReferenceEquals(unknown, wbemServices))
+            if (CompatSwitches.AllowIManagementObjectQI)
             {
-                // We need to set the proxy blanket on 'unknown' or else the QI for IWbemServices may
-                // fail if we are running under a local user account.  The QI has to be done by
-                // someone who is a member of the 'Everyone' group on the target machine, or DCOM
-                // won't let the call through.
-                SecurityHandler securityHandler = GetSecurityHandler ();
-                securityHandler.SecureIUnknown(unknown);
+                // Get an IUnknown for this apartment
+                IntPtr pUnk = Marshal.GetIUnknownForObject(wbemServices);
 
-                // Now, we can QI and secure the IWbemServices
-                localCopy = (IWbemServices)unknown;
+                // Get an 'IUnknown RCW' for this apartment
+                Object unknown = Marshal.GetObjectForIUnknown(pUnk);
 
-                // We still need to bless the IWbemServices in this apartment
-                securityHandler.Secure(localCopy);
+                // Release the ref count on the IUnknwon
+                Marshal.Release(pUnk);
+
+                // See if we are in the same apartment as where the original IWbemServices lived
+                // If we are in a different apartment, give the caller an RCW generated just for their
+                // apartment, and set the proxy blanket appropriately
+                if(!object.ReferenceEquals(unknown, wbemServices))
+                {
+                    // We need to set the proxy blanket on 'unknown' or else the QI for IWbemServices may
+                    // fail if we are running under a local user account.  The QI has to be done by
+                    // someone who is a member of the 'Everyone' group on the target machine, or DCOM
+                    // won't let the call through.
+                    SecurityHandler securityHandler = GetSecurityHandler ();
+                    securityHandler.SecureIUnknown(unknown);
+
+                    // Now, we can QI and secure the IWbemServices
+                    localCopy = (IWbemServices)unknown;
+
+                    // We still need to bless the IWbemServices in this apartment
+                    securityHandler.Secure(localCopy);
+                }
             }
-            return localCopy; // STRANGE: Why does it still work if I return 'wbemServices'?
 
+            return localCopy; // STRANGE: Why does it still work if I return 'wbemServices'?
         }
 
         /// <summary>
@@ -648,8 +738,9 @@ namespace System.Management
             if (null != path)
                 this.Path = path;
 
-            if (null != options)
+            if (null != options) {
                 this.Options = options;
+            }
 
             // We set this.wbemServices after setting Path and Options
             // because the latter operations can cause wbemServices to be NULLed.
@@ -684,7 +775,7 @@ namespace System.Management
 
                 scopeTmp.wbemServices = null;
                 scopeTmp.options = null;
-                //                scopeTmp.securityHelper = null;                    // 
+                //                scopeTmp.securityHelper = null;                    // BUGBUG : should this allocate a new object?
             }
             else
             {
@@ -704,7 +795,7 @@ namespace System.Management
                 scopeTmp.wbemServices = scope.wbemServices;
                 if (scope.options != null)
                     scopeTmp.options = ConnectionOptions._Clone(scope.options, new IdentifierChangedEventHandler(scopeTmp.HandleIdentifierChange));
-                //                scopeTmp.securityHelper = scope.securityHelper;    // 
+                //                scopeTmp.securityHelper = scope.securityHelper;    // BUGBUG : should this allocate a new one?
             }
 
             return scopeTmp;
@@ -814,7 +905,9 @@ namespace System.Management
                 this.prvpath = ManagementPath._Clone(null);
 
             if (null != options)
+            {
                 this.options = ConnectionOptions._Clone(options, new IdentifierChangedEventHandler(HandleIdentifierChange));
+            }
             else
                 this.options = null;
 
@@ -849,7 +942,7 @@ namespace System.Management
             get
             {
                 if (options == null)
-                    return options = ConnectionOptions._Clone(null);
+                    return options = ConnectionOptions._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
                 else
                     return options;
             }
@@ -989,7 +1082,7 @@ namespace System.Management
                     {
                         // The locator cannot be marshalled accross apartments, so we must create the locator
                         // and get the IWbemServices from an MTA thread
-                        if(!MTAHelper.IsNoContextMTA())  // 
+                        if(!MTAHelper.IsNoContextMTA())  // Bug#110141 - Checking for MTA is not enough.  We need to make sure we are not in a COM+ Context
                         {
                             //
                             // [marioh, RAID: 111108]
@@ -1024,8 +1117,10 @@ namespace System.Management
             IWbemLocator loc = (IWbemLocator) new WbemLocator();
             IntPtr punk = IntPtr.Zero;
 
-            if (null == options)
-                threadParam.Options = new ConnectionOptions ();
+            if (null == threadParam.options)
+            {
+                threadParam.Options = new ConnectionOptions();
+            }
 
             string nsPath = threadParam.prvpath.GetNamespacePath((int)tag_WBEM_GET_TEXT_FLAGS.WBEMPATH_GET_SERVER_AND_NAMESPACE_ONLY);
 
@@ -1059,7 +1154,7 @@ namespace System.Management
             } 
             catch (COMException e) 
             {
-                // 
+                // BUGBUG : securityHandler.Reset()?
                 ManagementException.ThrowWithExtendedInfo (e);
             } 
 
@@ -1071,7 +1166,7 @@ namespace System.Management
             }
             else if ((status & 0x80000000) != 0)
             {
-                Marshal.ThrowExceptionForHR(status);
+                Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
             }
         }
 
@@ -1161,19 +1256,38 @@ namespace System.Management
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( null != scope )
             {
-                IntPtr password = scope.Options.GetPassword();
-                status = WmiNetUtilsHelper.ConnectServerWmi_f(
-                    path,
-                    scope.Options.Username,
-                    password, 
-                    scope.Options.Locale,
-                    scope.Options.Flags,
-                    scope.Options.Authority,
-                    scope.Options.GetContext(),
-                    out pServices,
-                    (int)scope.Options.Impersonation,
-                    (int)scope.Options.Authentication);
-                System.Runtime.InteropServices.Marshal.ZeroFreeBSTR(password);
+                bool needToReset = false;
+                IntPtr handle = IntPtr.Zero;
+
+                try
+                {
+                    if (scope.Options.EnablePrivileges && !CompatSwitches.AllowIManagementObjectQI)
+                    {
+                        WmiNetUtilsHelper.SetSecurity_f(ref needToReset, ref handle);
+                    }
+
+                    IntPtr password = scope.Options.GetPassword();
+                    status = WmiNetUtilsHelper.ConnectServerWmi_f(
+                        path,
+                        scope.Options.Username,
+                        password, 
+                        scope.Options.Locale,
+                        scope.Options.Flags,
+                        scope.Options.Authority,
+                        scope.Options.GetContext(),
+                        out pServices,
+                        (int)scope.Options.Impersonation,
+                        (int)scope.Options.Authentication);
+                    System.Runtime.InteropServices.Marshal.ZeroFreeBSTR(password);
+                }
+                finally
+                {
+                    if (needToReset)
+                    {
+                        needToReset = false;
+                        WmiNetUtilsHelper.ResetSecurity_f(handle);
+                    }
+                }
             }
             return status;
         }
@@ -1481,7 +1595,7 @@ namespace System.Management
                 System.Runtime.InteropServices.Marshal.ZeroFreeBSTR(password);
                 if (status < 0)
                 {
-                    Marshal.ThrowExceptionForHR(status);
+                    Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }
@@ -1507,7 +1621,7 @@ namespace System.Management
                 System.Runtime.InteropServices.Marshal.ZeroFreeBSTR(password);
                 if (status < 0)
                 {
-                    Marshal.ThrowExceptionForHR(status);
+                    Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
         }

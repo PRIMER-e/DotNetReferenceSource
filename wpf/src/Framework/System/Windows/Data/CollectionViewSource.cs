@@ -671,7 +671,7 @@ namespace System.Windows.Data
             return GetOriginalView(GetDefaultCollectionView(source, true));
         }
 
-        // a version of the previous method that doesn't create the view (
+        // a version of the previous method that doesn't create the view (bug 108595)
         private static ICollectionView LazyGetDefaultView(object source)
         {
             return GetOriginalView(GetDefaultCollectionView(source, false));
@@ -1226,7 +1226,7 @@ namespace System.Windows.Data
         // view to a UI element (typically Window or Page), created when the
         // app adds a handler (belonging to the Window or Page) to the Filter
         // event.  This class uses a weak reference to the CollectionViewSource
-        // to break the chain and avoid a leak (
+        // to break the chain and avoid a leak (bug 123012)
         private class FilterStub
         {
             public FilterStub(CollectionViewSource parent)

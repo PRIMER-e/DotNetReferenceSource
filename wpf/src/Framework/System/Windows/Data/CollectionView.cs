@@ -108,7 +108,7 @@ namespace System.Windows.Data
             if (incc != null)
             {
                 // BindingListCollectionView already listens to IBindingList.ListChanged;
-                // Don't double-subscribe (
+                // Don't double-subscribe (bug 452474, 607512)
                 IBindingList ibl;
                 if (!(this is BindingListCollectionView) ||
                     ((ibl = collection as IBindingList) != null && !ibl.SupportsChangeNotification))
@@ -524,7 +524,7 @@ namespace System.Windows.Data
             VerifyRefreshNotDeferred();
 
             // if already on item, or item is the placeholder, don't do anything
-            if (Object.Equals(CurrentItem, item) || Object.Equals(NewItemPlaceholder, item))
+            if (System.Windows.Controls.ItemsControl.EqualsEx(CurrentItem, item) || System.Windows.Controls.ItemsControl.EqualsEx(NewItemPlaceholder, item))
             {
                 // also check that we're not fooled by a false null _currentItem
                 if (item != null || IsCurrentInView)
@@ -533,7 +533,7 @@ namespace System.Windows.Data
 
             int index = -1;
             IEditableCollectionView ecv = this as IEditableCollectionView;
-            bool isNewItem = (ecv != null && ecv.IsAddingNew && Object.Equals(item, ecv.CurrentAddItem));
+            bool isNewItem = (ecv != null && ecv.IsAddingNew && System.Windows.Controls.ItemsControl.EqualsEx(item, ecv.CurrentAddItem));
             if (isNewItem || PassesFilter(item))
             {
                 // if the item is not found IndexOf() will return -1, and
@@ -1403,7 +1403,7 @@ namespace System.Windows.Data
             else if ((array = _vmData as object[]) == null)
             {
                 // BindingListCollectionView appears in the table for both
-                // DataTable and DataView - keep both references (
+                // DataTable and DataView - keep both references (bug 1745899)
                 _vmData = new object[]{_vmData, value};
             }
             else

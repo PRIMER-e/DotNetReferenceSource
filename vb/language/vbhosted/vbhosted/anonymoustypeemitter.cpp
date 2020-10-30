@@ -284,7 +284,8 @@ void AnonymousTypeEmitter::EmitToString(array<PropertyAndField^>^ properties, Me
     PropertyAndField^ prop = nullptr;
     FieldBuilder^ field = nullptr;
     
-    for(int ind = 0 ; ind < properties->Length - 1; ind++)
+	int ind;
+    for(ind = 0 ; ind < properties->Length - 1; ind++)
     {
         prop = properties[ind];
         field = properties[ind]->Field;

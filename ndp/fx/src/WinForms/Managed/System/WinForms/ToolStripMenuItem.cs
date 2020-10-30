@@ -58,6 +58,12 @@ namespace System.Windows.Forms {
         private string cachedShortcutText;
         private Size cachedShortcutSize = Size.Empty;
 
+        private static readonly Padding defaultPadding = new Padding(4, 0, 4, 0);
+        private static readonly Padding defaultDropDownPadding = new Padding(0, 1, 0, 1);
+        private static readonly Size checkMarkBitmapSize = new Size(16, 16);
+        private Padding scaledDefaultPadding = defaultPadding;
+        private Padding scaledDefaultDropDownPadding = defaultDropDownPadding;
+        private Size scaledCheckMarkBitmapSize = checkMarkBitmapSize;
 
         private byte openMouseId = 0;
     
@@ -170,6 +176,12 @@ namespace System.Windows.Forms {
         }
 
         private void Initialize() {
+            if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding);
+                scaledDefaultDropDownPadding = DpiHelper.LogicalToDeviceUnits(defaultDropDownPadding);
+                scaledCheckMarkBitmapSize = DpiHelper.LogicalToDeviceUnits(checkMarkBitmapSize);
+            }
+
             this.Overflow                   = ToolStripItemOverflow.Never;
             this.MouseDownAndUpMustBeInSameItem = false;
             this.SupportsDisabledHotTracking = true;
@@ -182,7 +194,9 @@ namespace System.Windows.Forms {
         /// </devdoc>
         protected override Size DefaultSize {
             get {
-                return new Size(32, 19);
+                return DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements ?
+                       DpiHelper.LogicalToDeviceUnits(new Size(32, 19), DeviceDpi) :
+                       new Size(32, 19);
             }
         }
 
@@ -197,10 +211,10 @@ namespace System.Windows.Forms {
         protected override Padding DefaultPadding {
             get {
                 if (IsOnDropDown) {
-                    return new Padding(0, 1, 0, 1);
+                    return scaledDefaultDropDownPadding;
                 }
                 else {
-                    return new Padding(4, 0, 4, 0);
+                    return scaledDefaultPadding;
                 }
             }
         }
@@ -264,28 +278,38 @@ namespace System.Windows.Forms {
            
                 if (checkedState == CheckState.Indeterminate) {
                     if (indeterminateCheckedImage == null) {
-                        Bitmap indeterminateCheckedBmp = new Bitmap(typeof(ToolStripMenuItem), "IndeterminateChecked.bmp");
-                        if (indeterminateCheckedBmp != null) {
-                            // 
-                            indeterminateCheckedBmp.MakeTransparent(indeterminateCheckedBmp.GetPixel(1,1));
-                            if (DpiHelper.IsScalingRequired) {
-                                DpiHelper.ScaleBitmapLogicalToDevice(ref indeterminateCheckedBmp);
+                        if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                            indeterminateCheckedImage = GetBitmapFromIcon("IndeterminateChecked.ico", scaledCheckMarkBitmapSize);
+                        }
+                        else {
+                            Bitmap indeterminateCheckedBmp = new Bitmap(typeof(ToolStripMenuItem), "IndeterminateChecked.bmp");
+                            if (indeterminateCheckedBmp != null) {
+                                // 
+                                indeterminateCheckedBmp.MakeTransparent(indeterminateCheckedBmp.GetPixel(1, 1));
+                                if (DpiHelper.IsScalingRequired) {
+                                    DpiHelper.ScaleBitmapLogicalToDevice(ref indeterminateCheckedBmp);
+                                }
+                                indeterminateCheckedImage = indeterminateCheckedBmp;
                             }
-                            indeterminateCheckedImage = indeterminateCheckedBmp;
                         }
                     }
                     return indeterminateCheckedImage;
                 }
                 else if (checkedState == CheckState.Checked)  {
                     if (checkedImage == null) {
-                        Bitmap checkedBmp = new Bitmap(typeof(ToolStripMenuItem), "Checked.bmp");
-                         if (checkedBmp != null) {  
-                            // 
-                            checkedBmp.MakeTransparent(checkedBmp.GetPixel(1,1));
-                            if (DpiHelper.IsScalingRequired) {
-                                DpiHelper.ScaleBitmapLogicalToDevice(ref checkedBmp);
+                        if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                            checkedImage = GetBitmapFromIcon("Checked.ico", scaledCheckMarkBitmapSize);
+                        }
+                        else {
+                            Bitmap checkedBmp = new Bitmap(typeof(ToolStripMenuItem), "Checked.bmp");
+                            if (checkedBmp != null) {
+                                // 
+                                checkedBmp.MakeTransparent(checkedBmp.GetPixel(1, 1));
+                                if (DpiHelper.IsScalingRequired) {
+                                    DpiHelper.ScaleBitmapLogicalToDevice(ref checkedBmp);
+                                }
+                                checkedImage = checkedBmp;
                             }
-                            checkedImage = checkedBmp;
                         }
                     }
                     return checkedImage;
@@ -295,6 +319,44 @@ namespace System.Windows.Forms {
             }
         }
         
+        private static Bitmap GetBitmapFromIcon(string iconName, Size desiredIconSize)
+        {
+            Bitmap b = null;
+
+            Icon icon = new Icon(typeof(ToolStripMenuItem), iconName);
+            if (icon != null)
+            {
+                Icon desiredIcon = new Icon(icon, desiredIconSize);
+                if (desiredIcon != null)
+                {
+                    try
+                    {
+                        b = desiredIcon.ToBitmap();
+
+                        if (b != null)
+                        {
+                            b.MakeTransparent(b.GetPixel(1, 1));
+                            if (DpiHelper.IsScalingRequired && (b.Size.Width != desiredIconSize.Width || b.Size.Height != desiredIconSize.Height))
+                            {
+                                Bitmap scaledBitmap = DpiHelper.CreateResizedBitmap(b, desiredIconSize);
+                                if (scaledBitmap != null)
+                                {
+                                    b.Dispose();
+                                    b = scaledBitmap;
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        icon.Dispose();
+                        desiredIcon.Dispose();
+                    }
+                }
+            }
+
+            return b;
+        }
 
          /// <include file='doc\WinBarMenuItem.uex' path='docs/doc[@for="ToolStripMenuItem.CheckOnClick"]/*' />
          [
@@ -604,6 +666,22 @@ namespace System.Windows.Forms {
             return menuItem;
        }
 
+        internal override int DeviceDpi {
+            get {
+                return base.DeviceDpi;
+            }
+
+            // This gets called via ToolStripItem.RescaleConstantsForDpi.
+            // It's practically calling Initialize on DpiChanging with the new Dpi value.
+            // ToolStripItem.RescaleConstantsForDpi is already behind a quirk.
+            set {
+                base.DeviceDpi = value;
+                scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding, value);
+                scaledDefaultDropDownPadding = DpiHelper.LogicalToDeviceUnits(defaultDropDownPadding, value);
+                scaledCheckMarkBitmapSize = DpiHelper.LogicalToDeviceUnits(checkMarkBitmapSize, value);
+            }
+        }
+
         protected override void Dispose(bool disposing) {
             if (disposing) {
                 if (lastOwner != null) {
@@ -765,7 +843,7 @@ namespace System.Windows.Forms {
              return cachedShortcutSize;
         }
 
-        private string GetShortcutText() {
+        internal string GetShortcutText() {
             if (cachedShortcutText == null) {
                 cachedShortcutText = ShortcutToText(this.ShortcutKeys, this.ShortcutKeyDisplayString);                 
             }
@@ -775,6 +853,9 @@ namespace System.Windows.Forms {
         internal void HandleAutoExpansion() {
             if (Enabled && ParentInternal != null && ParentInternal.MenuAutoExpand && HasDropDownItems) {
                 ShowDropDown();
+                if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                    KeyboardToolTipStateMachine.Instance.NotifyAboutLostFocus(this);
+                }
                 DropDown.SelectNextToolStripItem(null, /*forward=*/true);
             }
         }
@@ -1085,6 +1166,11 @@ namespace System.Windows.Forms {
              if (HasDropDownItems) {
 				 Select();
                  ShowDropDown();
+
+                 if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                    KeyboardToolTipStateMachine.Instance.NotifyAboutLostFocus(this);
+                 }
+
                  DropDown.SelectNextToolStripItem(null, /*forward=*/true);
                  return true;
              }
@@ -1133,6 +1219,18 @@ namespace System.Windows.Forms {
             }
         }
 
+        internal override bool IsBeingTabbedTo() {
+            if (base.IsBeingTabbedTo()) {
+                return true;
+            }
+
+            if (ToolStripManager.ModalMenuFilter.InMenuMode) {
+                return true;
+            }
+
+            return false;
+        }
+
         /// <devdoc>
         /// An implementation of AccessibleChild for use with ToolStripItems        
         /// </devdoc>
@@ -1163,9 +1261,19 @@ namespace System.Windows.Forms {
                   return base.State;
                 }
             }
-
+                                                
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_MenuItemControlTypeId;
+                }
+                else if (AccessibilityImprovements.Level2 && propertyID == NativeMethods.UIA_AcceleratorKeyPropertyId) {
+                    return ownerItem.GetShortcutText();
+                }
+                else {
+                    return base.GetPropertyValue(propertyID);
+                }
+            }
         }
-
     }    
 
 
@@ -1323,7 +1431,7 @@ namespace System.Windows.Forms {
                 CurrentItem.OnMenuAutoExpand();
             }
         }
- 
+
 
     }
 

@@ -63,7 +63,7 @@ namespace MS.Internal.Data
             foreach (object o in enumerable)
             {
                 // skip over matching items
-                if (index < n && Object.Equals(o, list[index]))
+                if (index < n && System.Windows.Controls.ItemsControl.EqualsEx(o, list[index]))
                 {
                     ++ index;
                     continue;
@@ -73,7 +73,7 @@ namespace MS.Internal.Data
                 switch (change)
                 {
                     case Change.None:   // this is the first mismatch
-                        if (index + 1 < n && Object.Equals(o, list[index + 1]))
+                        if (index + 1 < n && System.Windows.Controls.ItemsControl.EqualsEx(o, list[index + 1]))
                         {
                             // enumerator matches the next list item,
                             // provisionally mark this as Remove (might be Move)
@@ -93,12 +93,12 @@ namespace MS.Internal.Data
                         break;
 
                     case Change.Add:    // previous mismatch was provisionally Add
-                        if (index + 1 < n && Object.Equals(o, list[index + 1]))
+                        if (index + 1 < n && System.Windows.Controls.ItemsControl.EqualsEx(o, list[index + 1]))
                         {
                             // enumerator matches next list item;  check current
                             // list item
 
-                            if (Object.Equals(target, list[index]))
+                            if (System.Windows.Controls.ItemsControl.EqualsEx(target, list[index]))
                             {
                                 // current matches "added" element from enumerator,
                                 // change this to Move
@@ -127,7 +127,7 @@ namespace MS.Internal.Data
                         break;
 
                     case Change.Remove: // previous mismatch was provisionally Remove
-                        if (Object.Equals(o, target))
+                        if (System.Windows.Controls.ItemsControl.EqualsEx(o, target))
                         {
                             // enumerator matches "removed" item from list;
                             // change this to Move
@@ -163,7 +163,7 @@ namespace MS.Internal.Data
                         break;
 
                     case Change.Add:        // provisional Add, might be Move or Replace
-                        if (Object.Equals(target, list[index]))
+                        if (System.Windows.Controls.ItemsControl.EqualsEx(target, list[index]))
                         {
                             // a single extra item matches the "added" item;  change this to Move
                             change = Change.Move;

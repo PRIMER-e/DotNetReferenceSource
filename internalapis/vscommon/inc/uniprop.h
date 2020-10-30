@@ -315,16 +315,16 @@ inline BOOL WINAPI IsIdeograph(WCHAR ch)
 // 
 // NOTE [micleh]: There is a very similar function called IsBidiChar() in 
 // env\msenv\textmgr\paint.h which is implemented slightly differently.  If you
-// suspect a 
-
-
-
-
-
-
-
-
-
+// suspect a bug in this function, take a look at IsBidiChar() to see if it
+// handles the situation differently.  Ideally, they should both be the same, 
+// but I'm not sure which is (more) correct.
+//
+// Determining the directionality of a character does not seem to be very
+// straightforward, and thus, this funciton is at best an approximation.  See
+// the following documents for details:
+//
+// UAX #9: The Bidirectional Algorithm: http://www.unicode.org/reports/tr9/
+// Unicode Character Database: http://www.unicode.org/ucd/
 inline BOOL WINAPI IsBidi(WCHAR ch)
 {
   char f = 0;

@@ -4,8 +4,8 @@
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-//#define TRACK_HDC
-//#define GDI_FINALIZATION_WATCH
+// #define TRACK_HDC
+// #define GDI_FINALIZATION_WATCH
 
 #if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
@@ -516,7 +516,7 @@ namespace System.Experimental.Gdi
             IntUnsafeNativeMethods.RestoreDC(new HandleRef(this, this.hDC), -1);
 #if TRACK_HDC
             // Note: Microsoft may call this method during app exit at which point the DC may have been finalized already causing this assert to popup.
-            Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("ret[0]=DC.RestoreHdc(hDc=0x{1:x8}, state={2})", result, unchecked((int) this.hDC), restoreState) ));
+            Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("ret[0]=DC.RestoreHdc(hDc=0x{1:x8})", result, unchecked((int) this.hDC)) ));
 #endif 
             Debug.Assert(contextStack != null, "Someone is calling RestoreHdc() before SaveHdc()");
 

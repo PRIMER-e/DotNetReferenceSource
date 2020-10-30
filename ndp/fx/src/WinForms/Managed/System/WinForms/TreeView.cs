@@ -1974,10 +1974,10 @@ namespace System.Windows.Forms {
 
             base.OnHandleCreated(e);
 
-            //ComCtl 5 has some 
-
-
-
+            //ComCtl 5 has some bug fixes that, to enable, require us to send the control
+            //a CCM_SETVERSION with 5 as the version. The one we want in particular is
+            //the fix for the node clipping issue when a font is set by means of CDRF_NEWFONT.
+            //The fix is not perfect, but the behavior is better than before.
             int version = unchecked((int)(long)SendMessage(NativeMethods.CCM_GETVERSION, 0, 0));
             if (version < 5) {
                 SendMessage(NativeMethods.CCM_SETVERSION, 5, 0);
@@ -2030,11 +2030,11 @@ namespace System.Windows.Forms {
                 SendMessage(NativeMethods.TVM_SETITEMHEIGHT, ItemHeight, 0);
             }
 
-            // Fix for 
-
-
-
-
+            // Fix for bug 331158.  Essentially we are setting the width to be infinite so that the 
+            // TreeView never thinks it needs a scrollbar when the first node is created
+            // during the first handle creation.  
+            //
+            // This is set back to the oldSize after the Realize method.
             int oldSize = 0;
             try
             {
@@ -2122,7 +2122,7 @@ namespace System.Windows.Forms {
             selectedNode = SelectedNode;
 
             // Unfortunately, to avoid the native tree view leaking it's State Image List, we need to 
-            // destroy it ourselves here. See DevDiv 
+            // destroy it ourselves here. See DevDiv Bug #307248.
             DestroyNativeStateImageList(true);
 
             // for the case when we are NOT being disposed, we'll be recreating the internal state imagelist
@@ -2846,8 +2846,8 @@ namespace System.Windows.Forms {
                                 }
                                 else
                                 {
-                                    // For Dev10 
-
+                                    // For Dev10 bug 478621: We need to draw the BackColor of
+                                    // nodes same as BackColor of treeview.
                                     using (Brush brush = new SolidBrush(BackColor))
                                     {
                                         g.FillRectangle(brush, bounds);
@@ -3372,7 +3372,7 @@ namespace System.Windows.Forms {
                         treeViewState[TREEVIEWSTATE_lastControlValidated] = false;
                         WmImeSetFocus();
                         DefWndProc(ref m);
-                        OnGotFocus(EventArgs.Empty);
+                        this.InvokeGotFocus(this, EventArgs.Empty);
                      }
                      else 
                      {

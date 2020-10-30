@@ -2199,7 +2199,7 @@ namespace System.Data.Common.Internal.Materialization
                     }
                     else if (typeof(Object) == type)
                     {
-                        // We assume that Object means we want DBNull rather than null. I believe this is a 
+                        // We assume that Object means we want DBNull rather than null. I believe this is a bug.
                         result = DbDataReader_GetValue;
                     }
                     else

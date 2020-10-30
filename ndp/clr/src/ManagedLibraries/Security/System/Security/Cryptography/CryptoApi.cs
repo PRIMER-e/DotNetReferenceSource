@@ -290,6 +290,7 @@ namespace System.Security.Cryptography {
         internal const uint CERT_RENEWAL_PROP_ID                        = 64;
         internal const uint CERT_ARCHIVED_KEY_HASH_PROP_ID              = 65;
         internal const uint CERT_FIRST_RESERVED_PROP_ID                 = 66;
+        internal const uint CERT_NCRYPT_KEY_HANDLE_PROP_ID              = 78;
 
         // This value shall be defined in wincrypt.h so we avoid conflicts
         internal const uint CERT_DELETE_KEYSET_PROP_ID                 = 101;
@@ -593,6 +594,9 @@ namespace System.Security.Cryptography {
         internal const string szOID_RSA_RC4            = "1.2.840.113549.3.4";
         internal const string szOID_RSA_DES_EDE3_CBC   = "1.2.840.113549.3.7";
         internal const string szOID_OIWSEC_desCBC      = "1.3.14.3.2.7";
+        internal const string szOID_NIST_AES128_CBC    = "2.16.840.1.101.3.4.1.2";
+        internal const string szOID_NIST_AES192_CBC    = "2.16.840.1.101.3.4.1.22";
+        internal const string szOID_NIST_AES256_CBC    = "2.16.840.1.101.3.4.1.42";
 
         // Key encryption algorithms
         internal const string szOID_RSA_SMIMEalg             = "1.2.840.113549.1.9.16.3";
@@ -809,6 +813,10 @@ namespace System.Security.Cryptography {
         internal const uint CRYPT_MACHINE_KEYSET    = 0x00000020;
         internal const uint CRYPT_SILENT            = 0x00000040;
         internal const uint CRYPT_USER_KEYSET       = 0x00001000;
+
+        // dwFlags for PFXImportCertStore which aren't also valid to CryptAcquireContext
+        internal const uint PKCS12_ALWAYS_CNG_KSP   = 0x00000200;
+        internal const uint PKCS12_NO_PERSIST_KEY   = 0x00008000;
 
         // dwFlag definitions for CryptGenKey
         internal const uint CRYPT_EXPORTABLE        = 0x00000001;
@@ -1572,10 +1580,8 @@ namespace System.Security.Cryptography {
 
             [SecuritySafeCritical]
             internal void Dispose() {
-                // Free hCryptProv
-                if (hCryptProv != IntPtr.Zero) {
-                    CryptReleaseContext(hCryptProv, 0);
-                }
+                // hCryptProv is freed elsewhere.
+                hCryptProv = IntPtr.Zero;
                 // Free SignerId.KeyId.pbData
                 if (SignerId.Value.KeyId.pbData != IntPtr.Zero) {
                     LocalFree(SignerId.Value.KeyId.pbData);
@@ -1877,6 +1883,15 @@ namespace System.Security.Cryptography {
                 [In,Out] SafeLocalAllocHandle  pvData,
                 [In,Out] ref uint              pcbData);
 
+            [DllImport(CRYPT32, CharSet = CharSet.Auto, SetLastError = true)]
+            [ResourceExposure(ResourceScope.None)]
+            internal extern static
+            bool CertGetCertificateContextProperty(
+                [In]     SafeCertContextHandle pCertContext,
+                [In]     uint                  dwPropId,
+                [Out]    out IntPtr            data,
+                [In,Out] ref uint              pcbData);
+
             [DllImport(CRYPT32, CharSet=CharSet.Auto, SetLastError=true)]
             [ResourceExposure(ResourceScope.None)]
             internal static extern 
@@ -1910,7 +1925,7 @@ namespace System.Security.Cryptography {
                 [In]     SafeCertContextHandle      pCert,
                 [In]     uint                       dwFlags,
                 [In]     IntPtr                     pvReserved,
-                [In,Out] ref SafeCryptProvHandle    phCryptProv,
+                [In,Out] ref IntPtr                 phCryptProv,
                 [In,Out] ref uint                   pdwKeySpec,
                 [In,Out] ref bool                   pfCallerFreeProv);
 
@@ -2938,7 +2953,12 @@ namespace System.Security.Cryptography {
         }
 
         internal static SafeLocalAllocHandle InvalidHandle {
-            get { return new SafeLocalAllocHandle(IntPtr.Zero); }
+            get {
+                SafeLocalAllocHandle invalidHandle = new SafeLocalAllocHandle(IntPtr.Zero);
+                // This is valid since we don't expose any way to replace the handle value
+                GC.SuppressFinalize(invalidHandle);
+                return invalidHandle;
+            }
         }
 
         [DllImport(CAPI.KERNEL32, SetLastError=true),
@@ -2956,6 +2976,8 @@ namespace System.Security.Cryptography {
 
     [SecurityCritical]
     internal sealed class SafeCryptProvHandle : SafeHandleZeroOrMinusOneIsInvalid {
+        private SafeHandle _parentHandle;
+
         private SafeCryptProvHandle() : base (true) {}
 
         // 0 is an Invalid Handle
@@ -2963,8 +2985,34 @@ namespace System.Security.Cryptography {
             SetHandle(handle);
         }
 
+        internal SafeCryptProvHandle(IntPtr handle, bool ownsHandle) : base (ownsHandle) {
+            SetHandle(handle);
+        }
+
+        internal SafeCryptProvHandle(IntPtr handle, SafeHandle parentHandle) : base (true) {
+            RuntimeHelpers.PrepareConstrainedRegions();
+            try
+            {
+            }
+            finally
+            {
+                bool addedRef = false;
+                parentHandle.DangerousAddRef(ref addedRef);
+
+                if (addedRef) {
+                    _parentHandle = parentHandle;
+                    SetHandle(handle);
+                }
+            }
+        }
+
         internal static SafeCryptProvHandle InvalidHandle {
-            get { return new SafeCryptProvHandle(IntPtr.Zero); }
+            get {
+                SafeCryptProvHandle invalidHandle = new SafeCryptProvHandle(IntPtr.Zero);
+                // This is valid since we don't expose any way to replace the handle value
+                GC.SuppressFinalize(invalidHandle);
+                return invalidHandle;
+            }
         }
 
         [DllImport("ncrypt.dll", SetLastError=true),
@@ -2989,7 +3037,15 @@ namespace System.Security.Cryptography {
         override protected bool ReleaseHandle()
         {
             IntPtr h = handle;
-            if (NCryptIsKeyHandle(h))
+
+            if (_parentHandle != null)
+            {
+                _parentHandle.DangerousRelease();
+                _parentHandle = null;
+                SetHandle(IntPtr.Zero);
+                return true;
+            }
+            else if (NCryptIsKeyHandle(h))
             {
                 int status = NCryptFreeObject(h);
                 bool success = (status == 0);
@@ -3013,7 +3069,12 @@ namespace System.Security.Cryptography {
         }
 
         internal static SafeCertContextHandle InvalidHandle {
-            get { return new SafeCertContextHandle(IntPtr.Zero); }
+            get {
+                SafeCertContextHandle invalidHandle = new SafeCertContextHandle(IntPtr.Zero);
+                // This is valid since we don't expose any way to replace the handle value
+                GC.SuppressFinalize(invalidHandle);
+                return invalidHandle;
+            }
         }
 
         [DllImport(CAPI.CRYPT32, SetLastError=true),
@@ -3039,7 +3100,12 @@ namespace System.Security.Cryptography {
         }
 
         internal static SafeCertStoreHandle InvalidHandle {
-            get { return new SafeCertStoreHandle(IntPtr.Zero); }
+            get {
+                SafeCertStoreHandle invalidHandle = new SafeCertStoreHandle(IntPtr.Zero);
+                // This is valid since we don't expose any way to replace the handle value
+                GC.SuppressFinalize(invalidHandle);
+                return invalidHandle;
+            }
         }
 
         [DllImport(CAPI.CRYPT32, SetLastError=true),
@@ -3064,7 +3130,12 @@ namespace System.Security.Cryptography {
         }
 
         internal static SafeCryptMsgHandle InvalidHandle {
-            get { return new SafeCryptMsgHandle(IntPtr.Zero); }
+            get {
+                SafeCryptMsgHandle invalidHandle = new SafeCryptMsgHandle(IntPtr.Zero);
+                // This is valid since we don't expose any way to replace the handle value
+                GC.SuppressFinalize(invalidHandle);
+                return invalidHandle;
+            }
         }
 
         [DllImport(CAPI.CRYPT32, SetLastError=true),
@@ -3089,7 +3160,12 @@ namespace System.Security.Cryptography {
         }
 
         internal static SafeCertChainHandle InvalidHandle {
-            get { return new SafeCertChainHandle(IntPtr.Zero); }
+            get {
+                SafeCertChainHandle invalidHandle = new SafeCertChainHandle(IntPtr.Zero);
+                // This is valid since we don't expose any way to replace the handle value
+                GC.SuppressFinalize(invalidHandle);
+                return invalidHandle;
+            }
         }
 
         [DllImport(CAPI.CRYPT32, SetLastError=true),

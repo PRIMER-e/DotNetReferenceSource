@@ -281,6 +281,11 @@ TransformBounds(
 *
 **************************************************************************/
 
+/// <SecurityNote>
+/// Safe: Does not expose any critical info
+/// Critical: SecAnnotate analyzer cannot verify all code in this function, so this must be marked Critical.
+/// </SecurityNote>
+[SecuritySafeCritical]
 bool IntersectRect(
     Int32Rect & prcSrc1,
     Int32Rect & prcSrc2
@@ -315,6 +320,11 @@ bool IntersectRect(
 *
 \**************************************************************************/
 
+/// <SecurityNote>
+/// Safe: Does not expose any critical info
+/// Critical: SecAnnotate analyzer cannot verify all code in this function, so this must be marked Critical.
+/// </SecurityNote>
+[SecuritySafeCritical]
 HRESULT MatrixRectangleTransform(Matrix & pmat, int width, int height, Rect & prcSrc)
 {
     if ((prcSrc.Width < Double::Epsilon) || (prcSrc.Height < Double::Epsilon))

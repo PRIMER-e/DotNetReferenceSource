@@ -667,7 +667,8 @@ internal:
         System::Int32 timeout,
         System::Boolean fParallel,
         System::Int32 transparentNetworkResolutionStateNo,
-        System::Int32 totalTimeout)
+        System::Int32 totalTimeout,
+        System::Boolean isAzureSqlServerEndpoint)
     {
         ::SNI_CLIENT_CONSUMER_INFO clientConsumerInfo;  // native SNI_CLIENT_CONSUMER_INFO
 
@@ -696,6 +697,8 @@ internal:
         clientConsumerInfo.fSynchronousConnection = fSync;
         clientConsumerInfo.timeout = timeout;
         clientConsumerInfo.fParallel = fParallel;
+        clientConsumerInfo.isAzureSqlServerEndpoint = isAzureSqlServerEndpoint;
+		
         switch (transparentNetworkResolutionStateNo)
         {
         case (0):

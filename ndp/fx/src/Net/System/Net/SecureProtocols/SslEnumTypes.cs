@@ -22,12 +22,13 @@ using System.Net;
     [Flags]
     public enum SslProtocols
     {
-        None          =0,
+        None          = 0,
         Ssl2          = SchProtocols.Ssl2,
         Ssl3          = SchProtocols.Ssl3,
         Tls           = SchProtocols.Tls10,
         Tls11         = SchProtocols.Tls11,
         Tls12         = SchProtocols.Tls12,
+        Tls13         = SchProtocols.Tls13,
         Default       = Ssl3 | Tls
     }
 
@@ -76,7 +77,13 @@ using System.Net;
 
         Md5         = (Alg.ClassHash | Alg.Any  | Alg.NameMD5),
 
-        Sha1        = (Alg.ClassHash | Alg.Any  | Alg.NameSHA)
+        Sha1        = (Alg.ClassHash | Alg.Any  | Alg.NameSHA),
+
+        Sha256      = (Alg.ClassHash | Alg.Any  | Alg.NameSHA256),
+
+        Sha384      = (Alg.ClassHash | Alg.Any  | Alg.NameSHA384),
+
+        Sha512      = (Alg.ClassHash | Alg.Any  | Alg.NameSHA512)
     }
 
 }

@@ -16,6 +16,7 @@ namespace System.Windows.Forms {
     using System.Runtime.InteropServices;
     using System.Windows.Forms.Layout;
     using System.Security.Permissions;
+    using System.Security;
     
     /// <include file='doc\StatusStrip.uex' path='docs/doc[@for="StatusStrip"]/*' />
     [ComVisible(true),
@@ -360,6 +361,11 @@ namespace System.Windows.Forms {
            
        }
   
+        internal override bool SupportsUiaProviders {
+            get {
+                return AccessibilityImprovements.Level3 && !DesignMode; ;
+            }
+        }
 
     
        protected override void SetDisplayedItems() {
@@ -636,6 +642,53 @@ namespace System.Windows.Forms {
                     }
                     return AccessibleRole.StatusBar;
                 }
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3 && propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_StatusBarControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                StatusStrip statusStrip = Owner as StatusStrip;
+                if (statusStrip == null || statusStrip.Items.Count == 0) {
+                    return null;
+                }
+
+                switch (direction) {
+                    case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                        AccessibleObject firstChild = null;
+                        for (int i = 0; i < GetChildCount(); i++) {
+                            firstChild = GetChild(i);
+                            if (firstChild != null && !(firstChild is ControlAccessibleObject)) {
+                                return firstChild;
+                            }
+                        }
+                        return null;
+
+                    case UnsafeNativeMethods.NavigateDirection.LastChild:
+                        AccessibleObject lastChild = null;
+                        for (int i = GetChildCount() - 1; i >= 0; i--) {
+                            lastChild = GetChild(i);
+                            if (lastChild != null && !(lastChild is ControlAccessibleObject)) {
+                                return lastChild;
+                            }
+                        }
+                        return null;
+                }
+
+                return base.FragmentNavigate(direction);
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment ElementProviderFromPoint(double x, double y) {
+                return HitTest((int)x, (int)y);
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment GetFocus() {
+                return GetFocused();
             }
         }
 

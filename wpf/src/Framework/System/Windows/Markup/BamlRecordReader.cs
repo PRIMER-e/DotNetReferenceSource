@@ -967,7 +967,7 @@ namespace System.Windows.Markup
             // If the metadata is not null here, we are skipping journaled properties (if the metadata requires it)
             // NOTE: we do not journal expression. So even when the property is journalable but the value is expression,
             // we still want to set the value from parser. See corresponding code for avoiding saving expression in DataStream.SaveSubStreams.
-            // Please see Windows OS 
+            // Please see Windows OS bug # 1852349 for details.
             if ((metadata == null) || (!metadata.Journal) || (value is Expression))
             {
                 SetDependencyValueCore(dependencyObject, dependencyProperty, value);
@@ -1023,7 +1023,7 @@ namespace System.Windows.Markup
         // Read the start of an element.  This involves creating a new object, and storing it
         // for later addition to the tree or setting as a property.  The base method does
         // not check for a serializer.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         internal void BaseReadElementStartRecord(
             BamlElementStartRecord bamlElementRecord)
         {
@@ -1055,7 +1055,7 @@ namespace System.Windows.Markup
                 // parent context, then we have to add this element to the rootlist
                 // by calling SetPropertyValueToParent.  For all other cases we don't want to
                 // call this here since we may be building a subtree bottom up and want
-                // to defer addition of elements.  This fixes 
+                // to defer addition of elements.  This fixes bug 943189 - Async parsing broken
                 if (null == ParentContext)
                 {
                     SetPropertyValueToParent(true);
@@ -1164,7 +1164,7 @@ namespace System.Windows.Markup
         // false if it was handled by the BamlRecordReader itself.  If a serializer has
         // been spun off, then the end record that matches this start record will NOT
         // get to this instance of the BamlRecordReader.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         protected virtual bool ReadElementStartRecord(BamlElementStartRecord bamlElementRecord)
         {
             // Check if the type of this element has a serializer associated with it.  If so then
@@ -1666,7 +1666,7 @@ namespace System.Windows.Markup
                         // dealing with strings.  Don't convert if we already have
                         // the correct types.  Not converting hides bugs in type converters
                         // such as BrushConverter that can't convert a Brush to a Brush
-                        // (See windows 
+                        // (See windows bug 1052541)
                         if (!paramInfo.ParameterType.IsAssignableFrom(param.GetType()))
                         {
                             convertedParam = converter.ConvertTo(TypeConvertContext,
@@ -3108,7 +3108,7 @@ namespace System.Windows.Markup
         }
 
         // End of the IList is reached.  Since this is a read only property, there is nothing
-        // to do 
+        // to do bug pop the reader stack.
         protected virtual void ReadPropertyIListEndRecord()
         {
             SetCollectionPropertyValue(CurrentContext);
@@ -3968,7 +3968,7 @@ namespace System.Windows.Markup
         // context stack.
         // NOTE:  Setting Xmlns information on a delay created type is not currently
         //        supported.  The type must have already been instantiated in order to
-        //        set the dictionary property on it.  See Windows 
+        //        set the dictionary property on it.  See Windows bug 1068961.
         protected void SetXmlnsOnCurrentObject(BamlXmlnsPropertyRecord xmlnsRecord)
         {
             DependencyObject e = CurrentContext.ObjectData as DependencyObject;
@@ -5276,7 +5276,7 @@ namespace System.Windows.Markup
         }
 
         // Helper method to creates an instance of the specified type
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         internal object CreateInstanceFromType(
             Type  type,
             short typeId,

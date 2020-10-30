@@ -481,7 +481,6 @@ namespace System.Windows.Documents
             int deltaStart = 0;
             char[] result = null;
             char[] composition = null;
-            int[] clauseInfo = null;
             byte[] attributes = null;
 
             if (IsReadingWindowIme())
@@ -558,22 +557,6 @@ namespace System.Windows.Documents
                     }
 
                     //
-                    // Get the clause information from hIMC.
-                    //
-                    if (((int)lParam & NativeMethods.GCS_COMPCLAUSE) != 0)
-                    {
-                        size = UnsafeNativeMethods.ImmGetCompositionString(new HandleRef(this, himc), NativeMethods.GCS_COMPCLAUSE, IntPtr.Zero, 0);
-                        if (size > 0)
-                        {
-                            clauseInfo = new int[size / Marshal.SizeOf(typeof(int))];
-                            // 3rd param is out and contains actual result of this call.
-                            // suppress Presharp 6031.
-#pragma warning suppress 6031
-                            UnsafeNativeMethods.ImmGetCompositionString(new HandleRef(this, himc), NativeMethods.GCS_COMPCLAUSE, clauseInfo, size);
-                        }
-                    }
-
-                    //
                     // Get the attribute information from hIMC.
                     //
                     if (((int)lParam & NativeMethods.GCS_COMPATTR) != 0)
@@ -591,7 +574,7 @@ namespace System.Windows.Documents
                 }
             }
 
-            UpdateCompositionString(result, composition, cursorPos, deltaStart, clauseInfo, attributes);
+            UpdateCompositionString(result, composition, cursorPos, deltaStart, attributes);
 
             UnsafeNativeMethods.ImmReleaseContext(new HandleRef(this, hwnd), new HandleRef(this, himc));
             handled = true;
@@ -960,7 +943,7 @@ namespace System.Windows.Documents
         //
         // update the composition string on the scope
         //
-        private void UpdateCompositionString(char[] resultChars, char[] compositionChars, int caretOffset, int deltaStart, int[] clauseInfo, byte[] attributes)
+        private void UpdateCompositionString(char[] resultChars, char[] compositionChars, int caretOffset, int deltaStart, byte[] attributes)
         {
             if (_handlingImeMessage)
             {
@@ -1047,7 +1030,7 @@ namespace System.Windows.Documents
 
                 if (_startComposition != null)
                 {
-                    SetCompositionAdorner(clauseInfo, attributes);
+                    SetCompositionAdorner(attributes);
                 }
             }
             finally
@@ -1320,14 +1303,22 @@ namespace System.Windows.Documents
         }
 
         // Decorates the composition with IME specified underlining.
-        private void SetCompositionAdorner(int[] clauseInfo, byte[] attributes)
+        private void SetCompositionAdorner(byte[] attributes)
         {
-            if ((clauseInfo != null) && (attributes != null))
+            if (attributes != null)
             {
-                for (int i = 0; i < clauseInfo.Length - 1; i++)
+                int startOffset = 0;
+                for (int i = 0; i < attributes.Length; i++)
                 {
-                    ITextPointer startClause = _startComposition.CreatePointer(clauseInfo[i], LogicalDirection.Backward);
-                    ITextPointer endClause = _startComposition.CreatePointer(clauseInfo[i + 1], LogicalDirection.Forward);
+                    if ((i + 1) < attributes.Length)
+                    {
+                        if (attributes[i] == attributes[i + 1])
+                        {
+                            continue;
+                        }
+                    }
+                    ITextPointer startAttribute = _startComposition.CreatePointer(startOffset, LogicalDirection.Backward);
+                    ITextPointer endAttribute = _startComposition.CreatePointer(i + 1, LogicalDirection.Forward);
 
                     if (_compositionAdorner == null)
                     {
@@ -1346,7 +1337,7 @@ namespace System.Windows.Documents
                     displayAttribute.lsStyle = UnsafeNativeMethods.TF_DA_LINESTYLE.TF_LS_NONE;
                     displayAttribute.fBoldLine = false;
 
-                    switch (attributes[clauseInfo[i]])
+                    switch (attributes[i])
                     {
                         case NativeMethods.ATTR_INPUT:
                             displayAttribute.lsStyle = UnsafeNativeMethods.TF_DA_LINESTYLE.TF_LS_DOT;
@@ -1358,7 +1349,7 @@ namespace System.Windows.Documents
                             break;
 
                         case NativeMethods.ATTR_CONVERTED:
-                            displayAttribute.lsStyle = UnsafeNativeMethods.TF_DA_LINESTYLE.TF_LS_SOLID;
+                            displayAttribute.lsStyle = UnsafeNativeMethods.TF_DA_LINESTYLE.TF_LS_DOT;
                             break;
 
                         case NativeMethods.ATTR_TARGET_NOTCONVERTED:
@@ -1386,7 +1377,8 @@ namespace System.Windows.Documents
                     TextServicesDisplayAttribute textServiceDisplayAttribute = new TextServicesDisplayAttribute(displayAttribute);
 
                     // Add the attribute range into CompositionAdorner.
-                    _compositionAdorner.AddAttributeRange(startClause, endClause, textServiceDisplayAttribute);
+                    _compositionAdorner.AddAttributeRange(startAttribute, endAttribute, textServiceDisplayAttribute);
+                    startOffset = i + 1;
                 }
 
 #if UNUSED_IME_HIGHLIGHT_LAYER
@@ -1575,7 +1567,7 @@ namespace System.Windows.Documents
                 {
                     case TextPointerContext.Text:
                         char[] buffer = new char[bufLength];
-                        int copied = ((TextPointer)navigator).GetTextInRun(LogicalDirection.Backward, buffer, 0, buffer.Length);
+                        int copied = navigator.GetTextInRun(LogicalDirection.Backward, buffer, 0, buffer.Length);
                         Invariant.Assert(copied != 0);
                         navigator.MoveByOffset(0 - copied);
                         bufLength -= copied;
@@ -1627,7 +1619,7 @@ namespace System.Windows.Documents
                 {
                     case TextPointerContext.Text:
                         char[] buffer = new char[bufLength];
-                        int copied = ((TextPointer)navigator).GetTextInRun(LogicalDirection.Forward, buffer, 0, buffer.Length);
+                        int copied = navigator.GetTextInRun(LogicalDirection.Forward, buffer, 0, buffer.Length);
                         navigator.MoveByOffset(copied);
                         bufLength -= copied;
                         surrounding += new string(buffer, 0, copied);

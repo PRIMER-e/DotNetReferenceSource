@@ -88,7 +88,6 @@ namespace System.Windows.Forms {
         private bool                           alreadyHooked  = false;
 
         private Size                           imageScalingSize;
-        private static bool                    isScalingInitialized     = false;
         private const int                      ICON_DIMENSION           = 16;
         private static int                     iconWidth                = ICON_DIMENSION;
         private static int                     iconHeight               = ICON_DIMENSION;
@@ -98,12 +97,17 @@ namespace System.Windows.Forms {
 
         private bool                           layoutRequired = false;
 
+        private static readonly Padding defaultPadding = new Padding(0, 0, 1, 0);
+        private static readonly Padding defaultGripMargin = new Padding(2);
+        private Padding scaledDefaultPadding                            = defaultPadding;
+        private Padding scaledDefaultGripMargin                         = defaultGripMargin;
 
 
         private Point                          mouseEnterWhenShown      = InvalidMouseEnter;
 
-        internal const int                     INSERTION_BEAM_WIDTH     = 6;
+        private const int                      INSERTION_BEAM_WIDTH     = 6;
         
+        internal static int                    insertionBeamWidth       = INSERTION_BEAM_WIDTH;
 
         private static readonly object EventPaintGrip                = new object();
         private static readonly object EventLayoutCompleted          = new object();
@@ -166,19 +170,32 @@ namespace System.Windows.Forms {
 #endif
 
         private delegate void BooleanMethodInvoker(bool arg);
+        internal Action<int, int> rescaleConstsCallbackDelegate;
 
         /// <include file='doc\ToolStrip.uex' path='docs/doc[@for="ToolStrip.ToolStrip"]/*' />
         /// <devdoc>
         /// Summary of ToolStrip.
         /// </devdoc>
         public ToolStrip() {
-            if (!isScalingInitialized) {
-                if (DpiHelper.IsScalingRequired) {
-                    iconWidth = DpiHelper.LogicalToDeviceUnitsX(ICON_DIMENSION);
-                    iconHeight = DpiHelper.LogicalToDeviceUnitsY(ICON_DIMENSION);
-                }
-                isScalingInitialized = true;
+            if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements) {
+                ToolStripManager.CurrentDpi = DeviceDpi;
+                defaultFont = ToolStripManager.DefaultFont;
+                iconWidth = DpiHelper.LogicalToDeviceUnits(ICON_DIMENSION, DeviceDpi);
+                iconHeight = DpiHelper.LogicalToDeviceUnits(ICON_DIMENSION, DeviceDpi);
+                insertionBeamWidth = DpiHelper.LogicalToDeviceUnits(INSERTION_BEAM_WIDTH, DeviceDpi);
+                scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding, DeviceDpi);
+                scaledDefaultGripMargin = DpiHelper.LogicalToDeviceUnits(defaultGripMargin, DeviceDpi);
             }
+            else if (DpiHelper.IsScalingRequired) {
+                iconWidth = DpiHelper.LogicalToDeviceUnitsX(ICON_DIMENSION);
+                iconHeight = DpiHelper.LogicalToDeviceUnitsY(ICON_DIMENSION);
+                if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                    insertionBeamWidth = DpiHelper.LogicalToDeviceUnitsX(INSERTION_BEAM_WIDTH);
+                    scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding);
+                    scaledDefaultGripMargin = DpiHelper.LogicalToDeviceUnits(defaultGripMargin);
+                }
+            }
+
             imageScalingSize = new Size(iconWidth, iconHeight);
 
             SuspendLayout();
@@ -206,8 +223,7 @@ namespace System.Windows.Forms {
             Size defaultSize = DefaultSize;
             SetAutoSizeMode(AutoSizeMode.GrowAndShrink);
             this.ShowItemToolTips = DefaultShowItemToolTips;
-            ResumeLayout(true);
-            
+            ResumeLayout(true);            
         }
 
         public ToolStrip(params ToolStripItem[] items) : this() {
@@ -634,7 +650,9 @@ namespace System.Windows.Forms {
         /// </devdoc>
         protected override Size DefaultSize {
             get {
-                return new Size(100, 25);
+                return DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements ?
+                       DpiHelper.LogicalToDeviceUnits(new Size(100, 25), DeviceDpi) :
+                       new Size(100, 25);
             }
         }
 
@@ -642,7 +660,7 @@ namespace System.Windows.Forms {
             get {
                 // one pixel from the right edge to prevent the right border from painting over the
                 // aligned-right toolstrip item.
-                return new Padding(0,0,1,0);
+                return scaledDefaultPadding;
             }
         }
 
@@ -662,7 +680,7 @@ namespace System.Windows.Forms {
                     return toolStripGrip.DefaultMargin;
                 }
                 else {
-                    return new Padding(2);
+                    return scaledDefaultGripMargin;
                 }
             }
         }
@@ -1269,6 +1287,13 @@ namespace System.Windows.Forms {
             }
         }
 
+        internal bool IsTopInDesignMode {
+            get {
+                var topLevelToolStrip = GetToplevelOwnerToolStrip();
+                return topLevelToolStrip != null && topLevelToolStrip.IsInDesignMode;
+            }
+        }
+
         internal bool IsSelectionSuspended {
             get { return GetToolStripState(STATE_LASTMOUSEDOWNEDITEMCAPTURE); }
         }
@@ -1629,6 +1654,12 @@ namespace System.Windows.Forms {
             }
         }
 
+        internal override bool SupportsUiaProviders {
+            get {
+                return AccessibilityImprovements.Level3 && !DesignMode && !IsTopInDesignMode;
+            }
+        }
+
         /// <include file='doc\ToolStrip.uex' path='docs/doc[@for="ToolStrip.Renderer"]/*' />
         /// <devdoc>
         /// The renderer is used to paint the hwndless winbar items.  If someone wanted to
@@ -1759,6 +1790,18 @@ namespace System.Windows.Forms {
                     showItemToolTips = value;
                     if (!showItemToolTips) {
                         UpdateToolTip(null);
+                    }
+
+                    if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                        ToolTip internalToolTip = this.ToolTip;
+                        foreach (ToolStripItem item in this.Items) {
+                            if (showItemToolTips) {
+                                KeyboardToolTipStateMachine.Instance.Hook(item, internalToolTip);
+                            }
+                            else {
+                                KeyboardToolTipStateMachine.Instance.Unhook(item, internalToolTip);
+                            }
+                        } 
                     }
 
                     // Fix for Dev10 889523
@@ -2212,7 +2255,11 @@ namespace System.Windows.Forms {
                 return null;
 
             if (start == null)  {
-                start = (forward) ? DisplayedItems[DisplayedItems.Count -1] : DisplayedItems[0];
+                // The navigation should be consistent when navigating in forward and
+                // backward direction entering the toolstrip, it means that for AI.Level3
+                // the first toolstrip item should be selected irrespectively TAB or SHIFT+TAB
+                // is pressed.
+                start = GetStartItem(forward);
             }
 
             int current = DisplayedItems.IndexOf(start);
@@ -2251,13 +2298,24 @@ namespace System.Windows.Forms {
             return null;
         }
 
+        private ToolStripItem GetStartItem(bool forward) {
+            if (forward) {
+                return DisplayedItems[DisplayedItems.Count - 1];
+            }
+            else if (AccessibilityImprovements.Level3 && !(this is ToolStripDropDown)) {
+                // For the drop-down up-directed loop should be preserved.
+                // So if the current item is topmost, then the bottom item should be selected on up-key press.
+                return DisplayedItems[DisplayedItems.Count > 1 ? 1 : 0];
+            }
+
+            return DisplayedItems[0];
+        }
 
 
-
-       // <devdoc>
-       //  Helper function for GetNextItem - do not directly call this.
-       // </devdoc>       
-       [SuppressMessage("Microsoft.Portability", "CA1902:AvoidTestingForFloatingPointEquality")]
+        // <devdoc>
+        //  Helper function for GetNextItem - do not directly call this.
+        // </devdoc>       
+        [SuppressMessage("Microsoft.Portability", "CA1902:AvoidTestingForFloatingPointEquality")]
        private ToolStripItem GetNextItemVertical(ToolStripItem selectedItem, bool down) {
      
                  ToolStripItem tanWinner = null;
@@ -3241,6 +3299,10 @@ namespace System.Windows.Forms {
        
         internal void OnDefaultFontChanged() {
             defaultFont = null;
+            if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements) {
+                ToolStripManager.CurrentDpi = DeviceDpi;
+                defaultFont = ToolStripManager.DefaultFont;
+            }
             if (!IsFontSet()) {
                 OnFontChanged(EventArgs.Empty);
             }
@@ -3249,7 +3311,7 @@ namespace System.Windows.Forms {
         protected override void OnFontChanged(EventArgs e) {
             base.OnFontChanged(e);
             for (int i = 0; i < this.Items.Count; i++) {
-                 Items[i].OnOwnerFontChanged(e);
+                Items[i].OnOwnerFontChanged(e);
             }
         }
 
@@ -3619,7 +3681,7 @@ namespace System.Windows.Forms {
                                 // them back onto the main toolstrip.
                                 for (int i = 0; i < DisplayedItems.Count; i++) {
                                    ToolStripItem item = DisplayedItems[i];
-                                   if (item != null)  { // 
+                                   if (item != null)  { // CONSIDER ! item is ToolStripControlHost
                                        Rectangle clippingRect = e.ClipRectangle;
                                        Rectangle bounds = item.Bounds;
 
@@ -3820,12 +3882,57 @@ namespace System.Windows.Forms {
             SetStyle(ControlStyles.Selectable, TabStop);
             base.OnTabStopChanged(e);
         }
+
+        /// <summary>
+        /// When overridden in a derived class, handles rescaling of any magic numbers used in control painting.
+        /// Must call the base class method to get the current DPI values. This method is invoked only when 
+        /// Application opts-in into the Per-monitor V2 support, targets .NETFX 4.7 and has 
+        /// EnableDpiChangedMessageHandling and EnableDpiChangedHighDpiImprovements config switches turned on.
+        /// </summary>
+        /// <param name="deviceDpiOld">Old DPI value</param>
+        /// <param name="deviceDpiNew">New DPI value</param>
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+            if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements) {
+                if (deviceDpiOld != deviceDpiNew) {
+                    ToolStripManager.CurrentDpi = deviceDpiNew;
+                    defaultFont = ToolStripManager.DefaultFont;
+
+                    // We need to take care of this control.
+                    ResetScaling(deviceDpiNew);
+
+                    // We need to scale the one Grip per ToolStrip as well (if present).
+                    if (toolStripGrip != null) {
+                        toolStripGrip.ToolStrip_RescaleConstants(deviceDpiOld, deviceDpiNew);
+                    }
+
+                    // We need to delegate this "event" to the Controls/Components, which are
+                    // not directly affected by this, but need to consume.
+                    rescaleConstsCallbackDelegate?.Invoke(deviceDpiOld, deviceDpiNew);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resets the scaling (only in PerMonitorV2 scenarios). 
+        /// Do only call from code which is quirked with PerMonitorV2 quirks for the ToolStrip.
+        /// </summary>
+        /// <param name="newDpi">The new DPI passed by WmDpiChangedBeforeParent.</param>
+        internal virtual void ResetScaling(int newDpi) {
+            iconWidth = DpiHelper.LogicalToDeviceUnits(ICON_DIMENSION, newDpi);
+            iconHeight = DpiHelper.LogicalToDeviceUnits(ICON_DIMENSION, newDpi);
+            insertionBeamWidth = DpiHelper.LogicalToDeviceUnits(INSERTION_BEAM_WIDTH, newDpi);
+            scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding, newDpi);
+            scaledDefaultGripMargin = DpiHelper.LogicalToDeviceUnits(defaultGripMargin, newDpi);
+            imageScalingSize = new Size(iconWidth, iconHeight);
+        }
+
         /// <devdoc>
         /// Paints the I beam when items are being reordered
         /// </devdoc>
         internal void PaintInsertionMark(Graphics g) {
             if (lastInsertionMarkRect != Rectangle.Empty)  {
-                int widthOfBeam = INSERTION_BEAM_WIDTH;
+                int widthOfBeam = insertionBeamWidth;
                 if (Orientation == Orientation.Horizontal) {
                    int start = lastInsertionMarkRect.X;
                    int verticalBeamStart = start + 2;
@@ -3848,7 +3955,7 @@ namespace System.Windows.Forms {
                 }
                 else {
 
-                    widthOfBeam = INSERTION_BEAM_WIDTH;
+                    widthOfBeam = insertionBeamWidth;
                     int start = lastInsertionMarkRect.Y;
                     int horizontalBeamStart = start + 2;
 
@@ -4141,7 +4248,7 @@ namespace System.Windows.Forms {
                 }
             }
             if (directed && correctParentActiveControl) {
-                SelectNextToolStripItem(null, forward);
+                 SelectNextToolStripItem(null, forward);
             }
         }
 
@@ -4492,7 +4599,10 @@ namespace System.Windows.Forms {
                     finally {
                          System.Security.CodeAccessPermission.RevertAssert();
                     }
-                    ToolTip.Active = false;
+
+                    if (AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                        ToolTip.Active = false;
+                    }
 
                     currentlyActiveTooltipItem = item;
 
@@ -4501,7 +4611,9 @@ namespace System.Windows.Forms {
                         Cursor currentCursor = Cursor.CurrentInternal;
 
                         if (currentCursor != null) {
-                            ToolTip.Active = true;
+                            if (AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                                ToolTip.Active = true;
+                            }
 
                             Point cursorLocation = Cursor.Position;
                             cursorLocation.Y += Cursor.Size.Height - currentCursor.HotSpot.Y;
@@ -4687,7 +4799,26 @@ namespace System.Windows.Forms {
             return new WindowsFormsUtils.ReadOnlyControlCollection(this, /* isReadOnly = */ !DesignMode);
         }
 
-      /// <include file='doc\ToolStrip.uex' path='docs/doc[@for="ToolStripAccessibleObject"]/*' />
+
+        internal void OnItemAddedInternal(ToolStripItem item) {
+            if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                if (this.ShowItemToolTips) {
+                    KeyboardToolTipStateMachine.Instance.Hook(item, this.ToolTip);
+                }
+            }
+        }
+
+        internal void OnItemRemovedInternal(ToolStripItem item) {
+            if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                KeyboardToolTipStateMachine.Instance.Unhook(item, this.ToolTip);
+            }
+        }
+
+        internal override bool AllowsChildrenToShowToolTips() {
+            return base.AllowsChildrenToShowToolTips() && this.ShowItemToolTips;
+        }
+
+        /// <include file='doc\ToolStrip.uex' path='docs/doc[@for="ToolStripAccessibleObject"]/*' />
         [System.Runtime.InteropServices.ComVisible(true)]
         public class ToolStripAccessibleObject : ControlAccessibleObject {
 
@@ -4790,15 +4921,149 @@ namespace System.Windows.Forms {
                         count++;
                     }
                 }
-                if (owner.Grip.Visible){
+                if (owner.Grip.Visible) {
                     count++;
                 }
                 if (owner.CanOverflow && owner.OverflowButton.Visible) {
                     count++;
                 }
                 return count;
+            }
 
+            internal AccessibleObject GetChildFragment(int fragmentIndex, bool getOverflowItem = false) {
 
+                var items = getOverflowItem ? owner.OverflowItems : owner.DisplayedItems;
+                int childFragmentCount = items.Count;
+
+                if (!getOverflowItem && owner.CanOverflow && owner.OverflowButton.Visible && fragmentIndex == childFragmentCount - 1) {
+                    return owner.OverflowButton.AccessibilityObject;
+                }
+
+                for (int index = 0; index < childFragmentCount; index++) {
+                    var item = items[index];
+                    if (item.Available && item.Alignment == ToolStripItemAlignment.Left && fragmentIndex == index) {
+                        var controlHostItem = item as ToolStripControlHost;
+                        if (controlHostItem != null) {
+                            return controlHostItem.ControlAccessibilityObject;
+                        }
+
+                        return item.AccessibilityObject;
+                    }
+                }
+
+                for (int index = 0; index < childFragmentCount; index++) {
+                    var item = owner.Items[index];
+                    if (item.Available && item.Alignment == ToolStripItemAlignment.Right && fragmentIndex == index) {
+                        var controlHostItem = item as ToolStripControlHost;
+                        if (controlHostItem != null) {
+                            return controlHostItem.ControlAccessibilityObject;
+                        }
+
+                        return item.AccessibilityObject;
+                    }
+                }
+
+                return null;
+            }
+
+            internal int GetChildOverflowFragmentCount() {
+                if (owner == null || owner.OverflowItems == null) {
+                    return -1;
+                }
+
+                return owner.OverflowItems.Count;
+            }
+
+            internal int GetChildFragmentCount() {
+                if (owner == null || owner.DisplayedItems == null) {
+                    return -1;
+                }
+
+                return owner.DisplayedItems.Count;
+            }
+
+            internal int GetChildFragmentIndex(ToolStripItem.ToolStripItemAccessibleObject child) {
+                if (owner == null || owner.Items == null) {
+                    return -1;
+                }
+
+                if (child.Owner == owner.Grip) {
+                    return 0;
+                }
+
+                ToolStripItemCollection items;
+                var placement = child.Owner.Placement;
+
+                if (owner is ToolStripOverflow) {
+                    // Overflow items in ToolStripOverflow host are in DisplayedItems collection.
+                    items = owner.DisplayedItems;
+                }
+                else {
+                    if (owner.CanOverflow && owner.OverflowButton.Visible && child.Owner == owner.OverflowButton) {
+                        return GetChildFragmentCount() - 1;
+                    }
+
+                    // Items can be either in DisplayedItems or in OverflowItems (if overflow)
+                    items = (placement == ToolStripItemPlacement.Main) ? owner.DisplayedItems : owner.OverflowItems;
+                }
+
+                // First we walk through the head aligned items.
+                for (int index = 0; index < items.Count; index++) {
+                    var item = items[index];
+                    if (item.Available && item.Alignment == ToolStripItemAlignment.Left && child.Owner == items[index]) {
+                        return index;
+                    }
+                }
+
+                // If we didn't find it, then we walk through the tail aligned items.
+                for (int index = 0; index < items.Count; index++) {
+                    var item = items[index];
+                    if (item.Available && item.Alignment == ToolStripItemAlignment.Right && child.Owner == items[index]) {
+                        return index;
+                    }
+                }
+
+                return -1;
+            }
+
+            internal int GetChildIndex(ToolStripItem.ToolStripItemAccessibleObject child) {
+                if ((owner == null) || (owner.Items == null)) {
+                    return -1;
+                }
+
+                int index = 0;
+                if (owner.Grip.Visible) {
+                    if (child.Owner == owner.Grip) {
+                        return 0;
+                    }
+                    index = 1;
+                }
+
+                if (owner.CanOverflow && owner.OverflowButton.Visible && child.Owner == owner.OverflowButton) {
+                    return owner.Items.Count + index; 
+                }
+
+                // First we walk through the head aligned items.
+                for (int i = 0; i < owner.Items.Count; ++i) {
+                    if (owner.Items[i].Available && owner.Items[i].Alignment == ToolStripItemAlignment.Left) {
+                        if (child.Owner == owner.Items[i]) {
+                            return index;
+                        }
+                        index++;
+                    }
+                }
+
+                // If we didn't find it, then we walk through the tail aligned items.
+                for (int i = 0; i < owner.Items.Count; ++i) {
+                    if (owner.Items[i].Available && owner.Items[i].Alignment == ToolStripItemAlignment.Right) {
+                        if (child.Owner == owner.Items[i]) {
+                            return index;
+                        }
+                        index++;
+                    }
+                }
+
+                return -1;
             }
 
             /// <include file='doc\ToolStrip.uex' path='docs/doc[@for="ToolStripAccessibleObject.Role"]/*' />
@@ -4810,6 +5075,48 @@ namespace System.Windows.Forms {
                     }
                     return AccessibleRole.ToolBar;
                 }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                get {
+                    return this;
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                if (AccessibilityImprovements.Level3) {
+                    switch (direction) {
+                        case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                            int childCount = GetChildFragmentCount();
+                            if (childCount > 0) {
+                                return this.GetChildFragment(0);
+                            }
+                            break;
+                        case UnsafeNativeMethods.NavigateDirection.LastChild:
+                            childCount = GetChildFragmentCount();
+                            if (childCount > 0) {
+                                return this.GetChildFragment(childCount - 1);
+                            }
+                            break;
+                    }
+                }
+
+                return base.FragmentNavigate(direction);
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3) {
+                    if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                        return NativeMethods.UIA_ToolBarControlTypeId;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
+            internal override bool IsIAccessibleExSupported()
+            {
+                return AccessibilityImprovements.Level3 && !owner.IsInDesignMode && !owner.IsTopInDesignMode;
             }
 
         }
@@ -4881,6 +5188,18 @@ namespace System.Windows.Forms {
               }
         }
 
+        internal override bool ShowsOwnKeyboardToolTip() {
+            bool hasVisibleSelectableItems = false;
+            int i = this.Items.Count;
+            while (i-- != 0 && !hasVisibleSelectableItems) {
+                ToolStripItem item = this.Items[i];
+                if (item.CanKeyboardSelect && item.Visible) {
+                    hasVisibleSelectableItems = true;
+                }
+            }
+
+            return !hasVisibleSelectableItems;
+        }
     }
 
  
@@ -5160,16 +5479,16 @@ namespace System.Windows.Forms {
                     Rectangle insertionRect = Rectangle.Empty;
                     switch (relativeLocation) {
                         case RelativeLocation.Above:
-                            insertionRect = new Rectangle(owner.Margin.Left, item.Bounds.Top, owner.Width - (owner.Margin.Horizontal) -1, ToolStrip.INSERTION_BEAM_WIDTH);
+                            insertionRect = new Rectangle(owner.Margin.Left, item.Bounds.Top, owner.Width - (owner.Margin.Horizontal) -1, ToolStrip.insertionBeamWidth);
                             break;
                         case RelativeLocation.Below:
-                            insertionRect = new Rectangle(owner.Margin.Left, item.Bounds.Bottom, owner.Width - (owner.Margin.Horizontal) -1, ToolStrip.INSERTION_BEAM_WIDTH);
+                            insertionRect = new Rectangle(owner.Margin.Left, item.Bounds.Bottom, owner.Width - (owner.Margin.Horizontal) -1, ToolStrip.insertionBeamWidth);
                             break;
                         case RelativeLocation.Right:
-                            insertionRect = new Rectangle(item.Bounds.Right, owner.Margin.Top, ToolStrip.INSERTION_BEAM_WIDTH, owner.Height- (owner.Margin.Vertical)-1);
+                            insertionRect = new Rectangle(item.Bounds.Right, owner.Margin.Top, ToolStrip.insertionBeamWidth, owner.Height- (owner.Margin.Vertical)-1);
                             break;
                         case RelativeLocation.Left:
-                            insertionRect = new Rectangle(item.Bounds.Left, owner.Margin.Top, ToolStrip.INSERTION_BEAM_WIDTH, owner.Height - (owner.Margin.Vertical) -1);
+                            insertionRect = new Rectangle(item.Bounds.Left, owner.Margin.Top, ToolStrip.insertionBeamWidth, owner.Height - (owner.Margin.Vertical) -1);
                             break;
                     }
 
@@ -5178,7 +5497,7 @@ namespace System.Windows.Forms {
                 }
                 else if (owner.Items.Count == 0) {
                     Rectangle insertionRect = owner.DisplayRectangle;
-                    insertionRect.Width = ToolStrip.INSERTION_BEAM_WIDTH;
+                    insertionRect.Width = ToolStrip.insertionBeamWidth;
                     owner.PaintInsertionMark(insertionRect);
                     return true;
                 }

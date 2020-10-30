@@ -986,8 +986,8 @@ namespace System.Windows.Forms {
                 newItem = new ListViewItem(clonedSubItems, this.ImageIndexer.Index);
             }
             else { 
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 newItem = (ListViewItem)Activator.CreateInstance(clonedType);
             }
             newItem.subItems = clonedSubItems;
@@ -1063,9 +1063,9 @@ namespace System.Windows.Forms {
 
                 listView.GetSubItemAt(x,y, out iItem, out iSubItem);
 
-                // 
-
-
+                // bug in commctl list view:
+                // if the user clicks to the RIGHT of the last subitem the commctl returns the index of the subitem which would have fit there
+                // we have to check if iSubItem falls in the sub item collection
                 if (iItem == this.Index && iSubItem != -1 && iSubItem < SubItems.Count) {
                     return SubItems[iSubItem];
                 } else {
@@ -1199,7 +1199,7 @@ namespace System.Windows.Forms {
                 }
                 SavedStateImageIndex = ((lvItem.state & NativeMethods.LVIS_STATEIMAGEMASK) >> 12) - 1;
 
-                // a-jegros: 
+                // a-jegros: bug 154131 - group needs to be updated, too!
                 group = null;
                 foreach (ListViewGroup lvg in ListView.Groups) {
                     if (lvg.ID == lvItem.iGroupId) {

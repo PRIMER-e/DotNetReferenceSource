@@ -567,6 +567,60 @@ namespace System.Windows.Data
         }
 
         #endif // LiveShapingInstrumentation
+
+        #region Exception logging
+        // For use when testing whether an exception is thrown, even though the
+        // exception is caught.  The catch-block logs the exception, and the
+        // test code can examine the log.
+
+        // Enable exception-logging.
+        // Test code uses the following pattern (suitably translated to reflection-based calls):
+        //      using (ExceptionLogger logger = BindingOperations.EnableExceptionLogging())
+        //      {
+        //          DoSomethingThatMightThrowACaughtException();
+        //          if (logger.Log.Count > 0)
+        //          {
+        //              // an exception was thrown - react appropriately
+        //          }
+        //      }
+        internal static IDisposable EnableExceptionLogging()
+        {
+            ExceptionLogger newLogger = new ExceptionLogger();
+            Interlocked.CompareExchange<ExceptionLogger>(ref _exceptionLogger, newLogger, null);
+            return _exceptionLogger;
+        }
+
+        // Log an exception, if logging is active (called from framework catch-blocks that opt-in)
+        internal static void LogException(Exception ex)
+        {
+            ExceptionLogger logger = _exceptionLogger;
+            if (logger != null)
+            {
+                logger.LogException(ex);
+            }
+        }
+
+        private static ExceptionLogger _exceptionLogger;
+
+        internal class ExceptionLogger : IDisposable
+        {
+            // Log an exception
+            internal void LogException(Exception ex)
+            {
+                _log.Add(ex);
+            }
+
+            // when the active logger is disposed, turn off logging
+            void IDisposable.Dispose()
+            {
+                Interlocked.CompareExchange<ExceptionLogger>(ref _exceptionLogger, null, this);
+            }
+
+            internal List<Exception> Log { get { return _log; } }
+
+            List<Exception> _log = new List<Exception>();
+        }
+        #endregion Exception logging
     }
 }
 

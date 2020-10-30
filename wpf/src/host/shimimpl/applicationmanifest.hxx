@@ -52,6 +52,9 @@ private:
         __in const wchar_t*  /*pwchPrefix*/,
         __in int             /*cchPrefix*/) {return S_OK; }    
     
+    /// <remarks> Per documentation for ISAXContentHandler::startElement, 
+    /// <paramref name="pwchLocalName" /> string might not be zero terminated. 
+    /// </remarks>
     IFACEMETHODIMP startElement(
         __in_ecount(cchNamespaceUri) const wchar_t *pwchNamespaceUri,
         __in int cchNamespaceUri,

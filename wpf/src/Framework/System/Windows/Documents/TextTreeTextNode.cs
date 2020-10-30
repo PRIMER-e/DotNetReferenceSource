@@ -507,7 +507,7 @@ namespace System.Windows.Documents
                 // The previous node must take the place of this one, since previous
                 // may still have references.
                 Remove();
-                // null _parentNode out so that if there's a 
+                // null _parentNode out so that if there's a bug and someone still references this node we'll hear about it.
                 _parentNode = null;
                 previousNode.Splay();
 
@@ -529,7 +529,7 @@ namespace System.Windows.Documents
                     // nextNode must take the place of previousNode, since nextNode
                     // may still have references.
                     previousNode.Remove();
-                    // null _parentNode out so that if there's a 
+                    // null _parentNode out so that if there's a bug and someone still references this node we'll hear about it.
                     previousNode._parentNode = null;
                     nextNode.Splay();
 
@@ -545,7 +545,7 @@ namespace System.Windows.Documents
                     // The previous node must take the place of next one, since previousNode
                     // may still have references.
                     nextNode.Remove();
-                    // null _parentNode out so that if there's a 
+                    // null _parentNode out so that if there's a bug and someone still references this node we'll hear about it.
                     nextNode._parentNode = null;
                     previousNode.Splay();
 

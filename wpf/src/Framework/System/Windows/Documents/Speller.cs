@@ -26,7 +26,7 @@ namespace System.Windows.Documents
 
     // Spell checking component for the TextEditor.
     // Class is marked as partial to allow for definition of TextMapOffsetLogger in a separate
-    // source file. When TextMapOffsetLogger is removed, the partial declaration can 
+    // source file. When TextMapOffsetLogger is removed, the partial declaration can
     // be removed. See doc comments in TextMapOffsetErrorLogger for more details.
     internal partial class Speller
     {
@@ -55,9 +55,9 @@ namespace System.Windows.Documents
             _defaultCulture = InputLanguageManager.Current != null ? InputLanguageManager.Current.CurrentInputLanguage :
                                                                      Thread.CurrentThread.CurrentCulture;
         }
- 
+
         #endregion Constructors
- 
+
         //------------------------------------------------------
         //
         //  Internal Methods
@@ -339,14 +339,14 @@ namespace System.Windows.Documents
         /// </summary>
         /// <param name="customLexiconPath"></param>
         /// <SecurityNote>
-        /// Critical - 
+        /// Critical -
         /// 1. Works with file paths.
         /// 2. Does file read/write operations.
-        /// Safe - 
+        /// Safe -
         /// 1. Does not return file path data to user.
         /// 2. Local file paths which this function works with are not discoverable in PartialTrust.
-        /// Trying to access a given path in PartialTrust will throw access permission related 
-        /// exceptions before reaching any file APIs. For PartialTrust case we're demanding FileIOAccess 
+        /// Trying to access a given path in PartialTrust will throw access permission related
+        /// exceptions before reaching any file APIs. For PartialTrust case we're demanding FileIOAccess
         /// to every local file path passed to this function. For more details <see cref="SpellerInterop.AddLexicon"/>
         /// and <see cref="SpellerInterop.LoadDictionary(string)"/>
         /// </SecurityNote>
@@ -357,7 +357,7 @@ namespace System.Windows.Documents
             {
                 return;
             }
-            
+
             //
             // Re-adding same dictionary URI first requires to unload previously loaded one with same URI
             //
@@ -386,7 +386,7 @@ namespace System.Windows.Documents
         /// <param name="uri"></param>
         /// <SecurityNote>
         /// Critical - works with critical member _spellerInterop.
-        /// Safe - 
+        /// Safe -
         /// 1. Does not disclose paht related information to caller, except the one which was passed in by user.
         /// 2. Unloading dictionary has no security effect.
         /// </SecurityNote>
@@ -406,7 +406,7 @@ namespace System.Windows.Documents
             {
                 _spellerInterop.UnloadDictionary(info.Lexicon);
             }
-            catch(Exception e) 
+            catch(Exception e)
             {
                 // we're catching exception only to dump debug data, then rethrow.
                 if (SecurityHelper.CheckUnmanagedCodePermission())//we're in full trust
@@ -438,7 +438,7 @@ namespace System.Windows.Documents
             UriMap.Clear();
             ResetErrors();
         }
-        
+
         #endregion Internal methods
 
         //------------------------------------------------------
@@ -852,7 +852,7 @@ namespace System.Windows.Documents
             // multi-word errors correctly.
             //
 
-            status = new ScanStatus(timeLimit);
+            status = new ScanStatus(timeLimit, start);
 
             XmlLanguage language;
             CultureInfo culture = GetCurrentCultureAndLanguage(start, out language);
@@ -909,7 +909,7 @@ namespace System.Windows.Documents
                             // otherwise we'll never finish checking the document.
                             if (status.TimeoutPosition.CompareTo(start) <= 0)
                             {
-                                // Diagnostic info for 
+                                // Diagnostic info for bug 1577085.
                                 string debugMessage = "Speller is not advancing! \n" +
                                                       "Culture = " + culture + "\n" +
                                                       "Start offset = " + start.Offset + " parent = " + start.ParentType.Name + "\n" +
@@ -964,7 +964,7 @@ namespace System.Windows.Documents
             if (sTextRange.Start >= data.TextMap.ContentEndOffset)
             {
                 // Following context, skip this segment and stop iterating any remainder.
-                return false; 
+                return false;
             }
 
             if (sTextRange.Length > 1) // Ignore single letter errors
@@ -1084,7 +1084,20 @@ namespace System.Windows.Documents
 
                     if (timeOutOffset > data.TextMap.ContentStartOffset)
                     {
-                        status.TimeoutPosition = data.TextMap.MapOffsetToPosition(timeOutOffset);
+                        ITextPointer timeoutPosition = data.TextMap.MapOffsetToPosition(timeOutOffset);
+
+                        // even if the offset has advanced past the content-start,
+                        // the text position may not have advanced past the original
+                        // starting position.  (This has been observed when resuming
+                        // a scan after a timeout near a Hyperlink.  The second scan
+                        // effectively repeats the work of the first, after backing
+                        // up the context, and times out in the same place as the
+                        // first, thus making no progress.  DDVSO 945462)
+                        // Ignore the time limit if no progress has been made.
+                        if (timeoutPosition.CompareTo(status.StartPosition) > 0)
+                        {
+                            status.TimeoutPosition = timeoutPosition;
+                        }
                     }
                 }
             }
@@ -1121,7 +1134,7 @@ namespace System.Windows.Documents
                 // We've found an error that start in the context and extends into
                 // the content.  This can happen as more text is revealed to the
                 // speller engine as the caret moves forward.
-                // E.g., while scanning "avalon's" we flag an error over "avalon", 
+                // E.g., while scanning "avalon's" we flag an error over "avalon",
                 // ignoring the "'s" because the caret is positioned within that segment.
                 // Then, the user hits space and now we analyze "'s" along with its
                 // preceding context "avalon".  In this final scan, "avalon's" as a while
@@ -1234,8 +1247,8 @@ namespace System.Windows.Documents
                     contentOffset = textMap.ContentStartOffset == leftWordBreak ? leftWordBreak : rightWordBreak;
                 }
 
-                // See <summary> section in the doc comments of TextMapOffsetErrorLogger for details on 
-                // what is being logged and why. 
+                // See <summary> section in the doc comments of TextMapOffsetErrorLogger for details on
+                // what is being logged and why.
                 var errorLogger = new TextMapOffsetErrorLogger(direction, textMap, segments, i, leftWordBreak, rightWordBreak, contentOffset);
                 errorLogger.LogDebugInfo();
 
@@ -1614,7 +1627,7 @@ namespace System.Windows.Documents
 
             return cultureInfo;
         }
-        
+
         /// <summary>
         /// If give Uri is relative, creates full path by appending current directory.
         /// </summary>
@@ -1637,7 +1650,7 @@ namespace System.Windows.Documents
 
         /// <summary>
         /// Loads dictionary specified by a pack URI.
-        /// Creates a temprorary file, copies dictionary data referenced by pack URI 
+        /// Creates a temprorary file, copies dictionary data referenced by pack URI
         /// into a temp file and loads the temp file as a dictionary.
         /// </summary>
         /// <param name="item"></param>
@@ -1677,7 +1690,7 @@ namespace System.Windows.Documents
 
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <SecurityNote>
         /// critical --
@@ -1711,7 +1724,7 @@ namespace System.Windows.Documents
         }
 
         /// <summary>
-        /// Creates a temp file and copies content of dictionary file referenced by the input 
+        /// Creates a temp file and copies content of dictionary file referenced by the input
         /// <paramref name="uri"/> to the temp file.
         /// The caller is responsible for deleting the file.
         /// </summary>
@@ -1724,49 +1737,17 @@ namespace System.Windows.Documents
         [SecurityCritical]
         private static Uri LoadPackFile(Uri uri)
         {
+            string tmpFilePath;
             Invariant.Assert(System.IO.Packaging.PackUriHelper.IsPackUri(uri));
-            string tmpFilePath = null;
-            string tempFolderPath = System.IO.Path.GetTempPath();
-            // Assert is needed for Partial Trust case for GetTempFileName() and FileStream to work.
-            new FileIOPermission(FileIOPermissionAccess.Read | FileIOPermissionAccess.Write, tempFolderPath).Assert();
-            try
+            Uri resolvedUri = MS.Internal.Utility.BindUriHelper.GetResolvedUri(BaseUriHelper.PackAppBaseUri, uri);
+            using (Stream sourceStream = WpfWebRequestHelper.CreateRequestAndGetResponseStream(resolvedUri))
             {
-                tmpFilePath = System.IO.Path.GetTempFileName();
-
-                using (FileStream outputStream = new FileStream(tmpFilePath, FileMode.Open, FileAccess.ReadWrite))
+                using (FileStream outputStream = FileHelper.CreateAndOpenTemporaryFile(out tmpFilePath, FileAccess.ReadWrite))
                 {
-                    Uri resolvedUri = MS.Internal.Utility.BindUriHelper.GetResolvedUri(BaseUriHelper.PackAppBaseUri, uri);
-                    using (Stream sourceStream = WpfWebRequestHelper.CreateRequestAndGetResponseStream(resolvedUri))
-                    {
-                        CopyStream(sourceStream, outputStream);
-                    }
+                    sourceStream.CopyTo(outputStream);
                 }
-            }
-            finally
-            {
-                FileIOPermission.RevertAssert();
             }
             return new Uri(tmpFilePath);
-        }
-        
-        /// <summary>
-        /// Copies data from src stream into dst stream
-        /// </summary>
-        /// <param name="src"></param>
-        /// <param name="dst"></param>
-        /// <param name="transferBuffer"></param>
-        private static void CopyStream(Stream source, FileStream destination)
-        {
-            byte[] transferBuffer = new byte[1024];
-            int bytesRead = 0;
-            do
-            {
-                bytesRead = source.Read(transferBuffer, 0, transferBuffer.Length);
-                if (bytesRead > 0)
-                {
-                    destination.Write(transferBuffer, 0, bytesRead);
-                }
-            } while (bytesRead > 0);
         }
 
         #endregion Private methods
@@ -1993,9 +1974,10 @@ namespace System.Windows.Documents
         {
             // Creates a new instance.  timeLimit is the maximum value of
             // DateTime.Now.Ticks at which the scan should end.
-            internal ScanStatus(long timeLimit)
+            internal ScanStatus(long timeLimit, ITextPointer startPosition)
             {
                 _timeLimit = timeLimit;
+                _startPosition = startPosition;
             }
 
             // Returns true if the scan has exceeded its time budget.
@@ -2025,8 +2007,17 @@ namespace System.Windows.Documents
                 set { _timeoutPosition = value; }
             }
 
+            // starting text position - scan must advance past this
+            internal ITextPointer StartPosition
+            {
+                get { return _startPosition; }
+            }
+
             // Budget for this scan, in 100 nanosecond intervals.
             private readonly long _timeLimit;
+
+            // starting text position - scan must advance past this
+            private readonly ITextPointer _startPosition;
 
             // If we've timed out, holds the position we left off -- the remainder
             // of the text run yet to be analyzed.
@@ -2081,9 +2072,9 @@ namespace System.Windows.Documents
             internal Uri PathUri
             {
                 [SecurityCritical]
-                get 
+                get
                 {
-                    return _pathUri; 
+                    return _pathUri;
                 }
             }
 
@@ -2108,7 +2099,7 @@ namespace System.Windows.Documents
             private readonly object _lexicon;
 
             /// <summary>
-            /// File location where custom dictionary is loaded from . 
+            /// File location where custom dictionary is loaded from .
             /// </summary>
             /// <SecurityNote>
             /// critical - a file paht dicitonary file.

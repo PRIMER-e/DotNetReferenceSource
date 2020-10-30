@@ -955,9 +955,9 @@ namespace System.Windows.Markup
         // Internal flags for efficient storage
         // NOTE: bits here are used by sub-classes also.
         // This BitVector32 field is shared by subclasses to save working set.  Sharing flags like this
-        // is easier in e.g. FrameworkElement, where the class hierarchy is linear, but can be 
-
-
+        // is easier in e.g. FrameworkElement, where the class hierarchy is linear, but can be bug-prone otherwise.  To make the 
+        // code less fragile, each class abstractly provides it's last section to subclasses(LastFlagsSection), which they can
+        // use in their call to CreateSection.
 
         internal BitVector32 _flags;
 

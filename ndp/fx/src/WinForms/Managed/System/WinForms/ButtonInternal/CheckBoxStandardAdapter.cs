@@ -28,23 +28,27 @@ namespace System.Windows.Forms.ButtonInternal {
                 LayoutData layout = Layout(e).Layout();
                 PaintButtonBackground(e, Control.ClientRectangle, null);
 
-                //minor adjustment to make sure the appearance is exactly the same as Win32 app.
-                int focusRectFixup = layout.focus.X & 0x1; // if it's odd, subtract one pixel for fixup.
-                if (!Application.RenderWithVisualStyles) {
-                    focusRectFixup = 1 - focusRectFixup;
-                }
-
                 if (!layout.options.everettButtonCompat) {
                     layout.textBounds.Offset(-1, -1); 
                 }
                 layout.imageBounds.Offset(-1, -1);
-                layout.focus.Offset(-(focusRectFixup+1), -2);
-                layout.focus.Width = layout.textBounds.Width + layout.imageBounds.Width - 1;
-                layout.focus.Intersect(layout.textBounds);
 
-                if( layout.options.textAlign != LayoutUtils.AnyLeft && layout.options.useCompatibleTextRendering && layout.options.font.Italic) {
-                    // fixup for GDI+ text rendering.  VSW#515164
-                    layout.focus.Width += 2;
+                AdjustFocusRectangle(layout);
+
+                if (!AccessibilityImprovements.Level2 || !String.IsNullOrEmpty(Control.Text)) {
+                    //minor adjustment to make sure the appearance is exactly the same as Win32 app.
+                    int focusRectFixup = layout.focus.X & 0x1; // if it's odd, subtract one pixel for fixup.
+                    if (!Application.RenderWithVisualStyles) {
+                        focusRectFixup = 1 - focusRectFixup;
+                    }
+                    layout.focus.Offset(-(focusRectFixup + 1), -2);
+                    layout.focus.Width = layout.textBounds.Width + layout.imageBounds.Width - 1;
+                    layout.focus.Intersect(layout.textBounds);
+
+                    if (layout.options.textAlign != LayoutUtils.AnyLeft && layout.options.useCompatibleTextRendering && layout.options.font.Italic) {
+                        // fixup for GDI+ text rendering.  VSW#515164
+                        layout.focus.Width += 2;
+                    }
                 }
 
                 PaintImage(e, layout);
@@ -80,6 +84,7 @@ namespace System.Windows.Forms.ButtonInternal {
                 using (Graphics measurementGraphics = WindowsFormsUtils.CreateMeasurementGraphics()) {
                     using (PaintEventArgs pe = new PaintEventArgs(measurementGraphics, new Rectangle())) {
                         LayoutOptions options = Layout(pe);
+                        
                         return options.GetPreferredSizeCore(proposedSize);
                     }
                 }
@@ -106,12 +111,17 @@ namespace System.Windows.Forms.ButtonInternal {
             // VSWhidbey 420870
             if (Application.RenderWithVisualStyles) {
                 using (Graphics g = WindowsFormsUtils.CreateMeasurementGraphics()) {
-                    layout.checkSize = CheckBoxRenderer.GetGlyphSize(g, CheckBoxRenderer.ConvertFromButtonState(GetState(), true, Control.MouseIsOver)).Width;
+                    layout.checkSize = CheckBoxRenderer.GetGlyphSize(g, CheckBoxRenderer.ConvertFromButtonState(GetState(), true, Control.MouseIsOver), Control.HandleInternal).Width;
                 }
             }
-            // Dev10 
+            // Dev10 bug 525537
             else {
-                layout.checkSize = (int)(layout.checkSize * GetDpiScaleRatio(e.Graphics));
+                if (DpiHelper.EnableDpiChangedMessageHandling) {
+                    layout.checkSize = Control.LogicalToDeviceUnits(layout.checkSize);
+                } 
+                else { 
+                    layout.checkSize = (int)(layout.checkSize * GetDpiScaleRatio(e.Graphics));
+                }
             }
 
             return layout;

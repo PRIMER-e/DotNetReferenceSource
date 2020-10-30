@@ -23,6 +23,7 @@ using System.Windows.Controls.Primitives;
 using System;
 using System.Security;
 using System.Security.Permissions;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -65,6 +66,8 @@ namespace System.Windows.Controls
             KeyboardNavigation.DirectionalNavigationProperty.OverrideMetadata(typeof(Menu), new FrameworkPropertyMetadata(KeyboardNavigationMode.Cycle));
 
             EventManager.RegisterClassHandler(typeof(Menu), AccessKeyManager.AccessKeyPressedEvent, new AccessKeyPressedEventHandler(OnAccessKeyPressed));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.Menu);
         }
 
         private static ItemsPanelTemplate GetDefaultPanel()

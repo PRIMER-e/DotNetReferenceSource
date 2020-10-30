@@ -187,7 +187,7 @@ namespace System.Data.Common {
 
         override public object ConvertXmlToObject(string s) {
             SqlMoney newValue = new SqlMoney();
-            string tempStr =string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader, 
+            string tempStr =string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader, bug 98767
             StringReader strReader = new  StringReader(tempStr);
 
             IXmlSerializable tmp = newValue;

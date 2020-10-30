@@ -293,15 +293,53 @@ namespace System.Windows.Controls
             base.OnPreviewGotKeyboardFocus(e);
             if (!e.Handled && e.NewFocus == this)
             {
-                if (!IsSelected && TabControlParent != null)
+                if (FrameworkAppContextSwitches.SelectionPropertiesCanLagBehindSelectionChangedEvent)
                 {
-                    SetCurrentValueInternal(IsSelectedProperty, BooleanBoxes.TrueBox);
-                    // If focus moved in result of selection - handle the event to prevent setting focus back on the new item
-                    if (e.OldFocus != Keyboard.FocusedElement)
+                    // old ("useless") behavior - retained for app-compat
+                    if (!IsSelected && TabControlParent != null)
                     {
-                        e.Handled = true;
+                        SetCurrentValueInternal(IsSelectedProperty, BooleanBoxes.TrueBox);
+                        // If focus moved in result of selection - handle the event to prevent setting focus back on the new item
+                        if (e.OldFocus != Keyboard.FocusedElement)
+                        {
+                            e.Handled = true;
+                        }
+                        else if (GetBoolField(BoolField.SetFocusOnContent))
+                        {
+                            TabControl parentTabControl = TabControlParent;
+                            if (parentTabControl != null)
+                            {
+                                // Save the parent and check for null to make sure that SetCurrentValue didn't have a change handler
+                                // that removed the TabItem from the tree.
+                                ContentPresenter selectedContentPresenter = parentTabControl.SelectedContentPresenter;
+                                if (selectedContentPresenter != null)
+                                {
+                                    parentTabControl.UpdateLayout(); // Wait for layout
+                                    bool success = selectedContentPresenter.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+
+                                    // If we successfully move focus inside the content then don't set focus to the header
+                                    if (success)
+                                        e.Handled = true;
+                                }
+                            }
+                        }
                     }
-                    else if (GetBoolField(BoolField.SetFocusOnContent))
+                }
+                else
+                {
+                    // new behavior (DDVSO 208019).  Fixes the case when selection
+                    // changes while focus is in the old SelectedContent
+                    if (!IsSelected && TabControlParent != null)
+                    {
+                        SetCurrentValueInternal(IsSelectedProperty, BooleanBoxes.TrueBox);
+                        // If focus moved in result of selection - handle the event to prevent setting focus back on the new item
+                        if (e.OldFocus != Keyboard.FocusedElement)
+                        {
+                            e.Handled = true;
+                        }
+                    }
+
+                    if (!e.Handled && GetBoolField(BoolField.SetFocusOnContent))
                     {
                         TabControl parentTabControl = TabControlParent;
                         if (parentTabControl != null)
@@ -435,7 +473,8 @@ namespace System.Windows.Controls
                 TabItem currentFocus = Keyboard.FocusedElement as TabItem;
 
                 // If current focus was another TabItem in the same TabControl - dont set focus on content
-                bool setFocusOnContent = ((currentFocus == this) || (currentFocus == null) || (currentFocus.TabControlParent != this.TabControlParent));
+                bool setFocusOnContent = (FrameworkAppContextSwitches.SelectionPropertiesCanLagBehindSelectionChangedEvent || !IsKeyboardFocusWithin)
+                                            && ((currentFocus == this) || (currentFocus == null) || (currentFocus.TabControlParent != this.TabControlParent));
                 SetBoolField(BoolField.SettingFocus, true);
                 SetBoolField(BoolField.SetFocusOnContent, setFocusOnContent);
                 try

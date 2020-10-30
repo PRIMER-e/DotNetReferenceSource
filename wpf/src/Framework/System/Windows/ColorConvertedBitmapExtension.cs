@@ -91,8 +91,8 @@ namespace System.Windows
                 throw new InvalidOperationException(SR.Get(SRID.ColorConvertedBitmapExtensionNoSourceProfile));
             }
             
-            // [BreakingChange] Dev10 
-
+            // [BreakingChange] Dev10 Bug #454108
+            // We really should throw an ArgumentNullException here for serviceProvider.
 
             // Save away the BaseUri.
             IUriContext uriContext = serviceProvider.GetService(typeof(IUriContext)) as IUriContext;

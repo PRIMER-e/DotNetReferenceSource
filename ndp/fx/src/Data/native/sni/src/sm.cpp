@@ -189,7 +189,7 @@ Sm::Terminate()
 // It is unlikely that SNAC is used against shiloh on local box, the perf hit might be ok.
 //
 
-DWORD Sm::LoadInstapiIfNeeded()
+DWORD Sm::LoadInstapiIfNeeded(const __in LPCSTR szSharedPathLocation, const __in LPCSTR szInstapidllname)
 {
 	DWORD dwError = ERROR_SUCCESS;	
 	INSTAPILIBSTRUCT* pInstapiStruct = NULL;
@@ -218,8 +218,7 @@ DWORD Sm::LoadInstapiIfNeeded()
 	
 	//	Temparorily load the DLL.
 
-	//1. Read registry value SharedCode under HKLM\Software\Microsoft\Microsoft SQL Server\90\Shared, 
-	const char szSharedPathLocation[]="Software\\Microsoft\\Microsoft SQL Server\\90";
+
 	HKEY  hKey;
 
 	dwError = static_cast<DWORD> (RegOpenKeyExA( HKEY_LOCAL_MACHINE,// handle to open key
@@ -264,9 +263,7 @@ DWORD Sm::LoadInstapiIfNeeded()
 	// Ensure NULL-termination.  
 	szSharedPath[cszSharedPath] = '\0';
 
-	//2. Load instapi.dll from the location where SharedCode points to
 
-	const char szInstapidllname[] ="instapi.dll";
 	char szInstapipath[MAX_PATH+sizeof(szInstapidllname)+1];
 	if(FAILED(StringCchPrintf_lA( szInstapipath,
 				CCH_ANSI_STRING(szInstapipath),
@@ -641,7 +638,9 @@ DWORD Sm::OpenWithFallback( __in SNI_CONSUMER_INFO *  pConsumerInfo,
 
 	//Load instapi and set global flag gdwfInstapidll
 	
-	(void) LoadInstapiIfNeeded();	
+	(void) LoadInstapiIfNeeded("Software\\Microsoft\\Microsoft SQL Server\\90", "instapi.dll" );
+	if( !gpInstapiStruct )
+		(void) LoadInstapiIfNeeded("Software\\Microsoft\\Microsoft SQL Server\\130", "instapi130.dll");
 
 	// Do not connect over shared memory to a clustered server
 	if( Sm::IsClustered(wszInstance) )

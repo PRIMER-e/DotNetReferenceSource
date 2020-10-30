@@ -269,7 +269,7 @@ STDMETHODIMP VbContext::SetOptions(/*[in]*/ IVbCompilerProject *pVbCompilerProje
             warningsLevelTable[i].WarningLevel = WARN_None;
         }
 
-        for(i = 0; i < cTreatWarningsAsErrors; ++i, ++ii)
+        for(int i = 0; i < cTreatWarningsAsErrors; ++i, ++ii)
         {
             warningsLevelTable[ii].dwWrnId = treatWarningsAsErrors[i];
             warningsLevelTable[ii].WarningLevel = WARN_AsError;

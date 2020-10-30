@@ -1916,9 +1916,9 @@ namespace System.Windows.Controls
         {
             // when the collection changes, the enumerator is no longer valid.
             // This should be detected by IndexedEnumerable, but isn't because
-            // of 
-
-
+            // of bug 1164689.  As a partial remedy (for bug 1163708), discard the
+            // enumerator here.
+            // 
             InvalidateEnumerableWrapper();
 
             // notify listeners on ItemsControl (like ItemContainerGenerator)

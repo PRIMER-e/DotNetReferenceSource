@@ -150,6 +150,20 @@ namespace System.Windows.Forms {
             SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters") // Using Graphics instead of IDeviceContext intentionally
         ]
         public static void DrawDropDownButton(Graphics g, Rectangle bounds, ComboBoxState state) {
+            DrawDropDownButtonForHandle(g, bounds, state, IntPtr.Zero);
+        }
+
+        /// <summary>
+        /// Renders a ComboBox drop-down button in per-monitor scenario.
+        /// </summary>
+        /// <param name="g">graphics object</param>
+        /// <param name="bounds">dropdown button bounds</param>
+        /// <param name="state"> state</param>
+        /// <param name="handle"> handle of the control</param>
+        [
+            SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters") // Using Graphics instead of IDeviceContext intentionally
+        ]
+        internal static void DrawDropDownButtonForHandle(Graphics g, Rectangle bounds, ComboBoxState state, IntPtr handle) {
             if (visualStyleRenderer == null) {
                 visualStyleRenderer = new VisualStyleRenderer(ComboBoxElement.ClassName, ComboBoxElement.Part, (int)state);
             }
@@ -157,7 +171,7 @@ namespace System.Windows.Forms {
                 visualStyleRenderer.SetParameters(ComboBoxElement.ClassName, ComboBoxElement.Part, (int)state);
             }
 
-            visualStyleRenderer.DrawBackground(g, bounds);
+            visualStyleRenderer.DrawBackground(g, bounds, handle);
         }
     }
 }

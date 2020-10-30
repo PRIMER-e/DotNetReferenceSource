@@ -181,7 +181,7 @@ namespace System.Windows.Forms {
 		// Note: ADVF_ONLYONCE and ADVF_PRIMEFIRST values now conform with objidl.dll but are backwards from
 		// Platform SDK documentation as of 07/21/2003.
         // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/com/htm/oen_a2z_8jxi.asp.
-        // See VSWhidbey 
+        // See VSWhidbey bug#96162.
 
         public const int BCM_GETIDEALSIZE = 0x1601,
         BI_RGB = 0,
@@ -470,6 +470,7 @@ namespace System.Windows.Forms {
         E_OUTOFMEMORY = unchecked((int)0x8007000E),
         E_INVALIDARG = unchecked((int)0x80070057),
         E_NOINTERFACE = unchecked((int)0x80004002),
+        E_POINTER = unchecked((int)0x80004003),
         E_FAIL = unchecked((int)0x80004005),
         E_ABORT = unchecked((int)0x80004004),
         E_UNEXPECTED = unchecked((int)0x8000FFFF),
@@ -1112,6 +1113,7 @@ namespace System.Windows.Forms {
         MCSC_TITLETEXT = 3,
         MCSC_MONTHBK = 4,
         MCSC_TRAILINGTEXT = 5,
+        MCN_VIEWCHANGE = (0 - 750), // MCN_SELECT -4  - give state of calendar view
         MCN_SELCHANGE = ((0-750)+1),
         MCN_GETDAYSTATE = ((0-750)+3),
         MCN_SELECT = ((0-750)+4),
@@ -1693,6 +1695,7 @@ namespace System.Windows.Forms {
         TTM_WINDOWFROMPOINT = (0x0400 + 16),
         TTM_GETDELAYTIME = (0x0400 + 21),
         TTM_SETMAXTIPWIDTH = (0x0400 + 24),
+        TTM_GETBUBBLESIZE = (0x0400 + 30),
         TTN_GETDISPINFOA = ((0 - 520) - 0),
         TTN_GETDISPINFOW = ((0 - 520) - 10),
         TTN_SHOW = ((0 - 520) - 1),
@@ -2087,6 +2090,10 @@ namespace System.Windows.Forms {
         WM_MDIREFRESHMENU = 0x0234,
         WM_MOUSEHOVER = 0x02A1,
         WM_MOUSELEAVE = 0x02A3,
+        WM_DPICHANGED = 0x02E0,
+        WM_GETDPISCALEDSIZE = 0x02e1,
+        WM_DPICHANGED_BEFOREPARENT = 0x02E2,
+        WM_DPICHANGED_AFTERPARENT = 0x02E3,
         WM_CUT = 0x0300,
         WM_COPY = 0x0301,
         WM_PASTE = 0x0302,
@@ -2416,6 +2423,9 @@ namespace System.Windows.Forms {
         public const int OBJID_QUERYCLASSNAMEIDX = unchecked(unchecked((int)0xFFFFFFF4));
         public const int OBJID_CLIENT            = unchecked(unchecked((int)0xFFFFFFFC));
         public const int OBJID_WINDOW            = unchecked(unchecked((int)0x00000000));
+
+        public const int UiaRootObjectId         = -25;
+        public const int UiaAppendRuntimeId      = 3;
 
         public const string uuid_IAccessible  = "{618736E0-3C3D-11CF-810C-00AA00389B71}";
         public const string uuid_IEnumVariant = "{00020404-0000-0000-C000-000000000046}";
@@ -3143,19 +3153,22 @@ namespace System.Windows.Forms {
             [MarshalAs(UnmanagedType.Struct)]
             public LOGFONT  lfStatusFont = null; 
             [MarshalAs(UnmanagedType.Struct)]
-            public LOGFONT  lfMessageFont = null; 
+            public LOGFONT  lfMessageFont = null;
+            // Added for Windows Vista.Since we are supporting >= Windows 7, 
+            // this is safe to add.
+            public int iPaddedBorderWidth = 0;
         }
-/*
-        [StructLayout(LayoutKind.Sequential)]
-        public class ICONMETRICS {
-            public int      cbSize = Marshal.SizeOf(typeof(ICONMETRICS));
-            public int      iHorzSpacing;
-            public int      iVertSpacing;
-            public int      iTitleWrap;
-            [MarshalAs(UnmanagedType.Struct)]
-            public LOGFONT  lfFont; 
-        }
-*/
+        /*
+                [StructLayout(LayoutKind.Sequential)]
+                public class ICONMETRICS {
+                    public int      cbSize = Marshal.SizeOf(typeof(ICONMETRICS));
+                    public int      iHorzSpacing;
+                    public int      iVertSpacing;
+                    public int      iTitleWrap;
+                    [MarshalAs(UnmanagedType.Struct)]
+                    public LOGFONT  lfFont; 
+                }
+        */
         [StructLayout(LayoutKind.Sequential)]
         [Serializable]
         public struct MSG {
@@ -5258,7 +5271,15 @@ namespace System.Windows.Forms {
             public int          cDayState = 0;
             public IntPtr       prgDayState;
         }
-        
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public class NMVIEWCHANGE
+        {
+            public NMHDR nmhdr;
+            public uint uOldView;
+            public uint uNewView;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct NMLVCUSTOMDRAW
         {
@@ -6403,6 +6424,27 @@ namespace System.Windows.Forms {
             OLERENDER_ASIS = 3 
         }
 
+        public enum PROCESS_DPI_AWARENESS
+        {
+            PROCESS_DPI_UNINITIALIZED = -1, 
+            PROCESS_DPI_UNAWARE = 0,
+            PROCESS_SYSTEM_DPI_AWARE = 1,
+            PROCESS_PER_MONITOR_DPI_AWARE = 2
+        }
+
+        public enum MONTCALENDAR_VIEW_MODE
+        {
+            MCMV_MONTH = 0,
+            MCMV_YEAR = 1,
+            MCMV_DECADE = 2,
+            MCMV_CENTURY = 3
+        }
+
+        public const int DPI_AWARENESS_CONTEXT_UNAWARE = -1;
+        public const int DPI_AWARENESS_CONTEXT_SYSTEM_AWARE = -2;
+        public const int DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE = -3;
+        public const int DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4;
+
         // Theming/Visual Styles stuff
         public const int STAP_ALLOW_NONCLIENT    =  (1 << 0);
         public const int STAP_ALLOW_CONTROLS     =  (1 << 1);
@@ -6419,6 +6461,317 @@ namespace System.Windows.Forms {
 
         // Threading stuff
         public const uint STILL_ACTIVE = 259;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct UiaRect {
+            public double left;
+            public double top;
+            public double width;
+            public double height;
+
+            public UiaRect(System.Drawing.Rectangle r) {
+                this.left = r.Left;
+                this.top = r.Top;
+                this.width = r.Width;
+                this.height = r.Height;
+            }
+        }
+
+        // UIAutomation IDs
+        // obtained from uiautomationclient.idl and uiautomationcore.idl
+
+        // UIA_PatternIds
+        internal const int UIA_InvokePatternId = 10000;
+        internal const int UIA_SelectionPatternId = 10001;
+        internal const int UIA_ValuePatternId = 10002;
+        internal const int UIA_RangeValuePatternId = 10003;
+        internal const int UIA_ScrollPatternId = 10004;
+        internal const int UIA_ExpandCollapsePatternId = 10005;
+        internal const int UIA_GridPatternId = 10006;
+        internal const int UIA_GridItemPatternId = 10007;
+        internal const int UIA_MultipleViewPatternId = 10008;
+        internal const int UIA_WindowPatternId = 10009;
+        internal const int UIA_SelectionItemPatternId = 10010;
+        internal const int UIA_DockPatternId = 10011;
+        internal const int UIA_TablePatternId = 10012;
+        internal const int UIA_TableItemPatternId = 10013;
+        internal const int UIA_TextPatternId = 10014;
+        internal const int UIA_TogglePatternId = 10015;
+        internal const int UIA_TransformPatternId = 10016;
+        internal const int UIA_ScrollItemPatternId = 10017;
+        internal const int UIA_LegacyIAccessiblePatternId = 10018;
+        internal const int UIA_ItemContainerPatternId = 10019;
+        internal const int UIA_VirtualizedItemPatternId = 10020;
+        internal const int UIA_SynchronizedInputPatternId = 10021;
+        internal const int UIA_ObjectModelPatternId = 10022;
+        internal const int UIA_AnnotationPatternId = 10023;
+        internal const int UIA_TextPattern2Id = 10024;
+        internal const int UIA_StylesPatternId = 10025;
+        internal const int UIA_SpreadsheetPatternId = 10026;
+        internal const int UIA_SpreadsheetItemPatternId = 10027;
+        internal const int UIA_TransformPattern2Id = 10028;
+        internal const int UIA_TextChildPatternId = 10029;
+        internal const int UIA_DragPatternId = 10030;
+        internal const int UIA_DropTargetPatternId = 10031;
+        internal const int UIA_TextEditPatternId = 10032;
+        internal const int UIA_CustomNavigationPatternId = 10033;
+
+        // UIA_EventIds
+        internal const int UIA_ToolTipOpenedEventId = 20000;
+        internal const int UIA_ToolTipClosedEventId = 20001;
+        internal const int UIA_StructureChangedEventId = 20002;
+        internal const int UIA_MenuOpenedEventId = 20003;
+        internal const int UIA_AutomationPropertyChangedEventId = 20004;
+        internal const int UIA_AutomationFocusChangedEventId = 20005;
+        internal const int UIA_AsyncContentLoadedEventId = 20006;
+        internal const int UIA_MenuClosedEventId = 20007;
+        internal const int UIA_LayoutInvalidatedEventId = 20008;
+        internal const int UIA_Invoke_InvokedEventId = 20009;
+        internal const int UIA_SelectionItem_ElementAddedToSelectionEventId = 20010;
+        internal const int UIA_SelectionItem_ElementRemovedFromSelectionEventId = 20011;
+        internal const int UIA_SelectionItem_ElementSelectedEventId = 20012;
+        internal const int UIA_Selection_InvalidatedEventId = 20013;
+        internal const int UIA_Text_TextSelectionChangedEventId = 20014;
+        internal const int UIA_Text_TextChangedEventId = 20015;
+        internal const int UIA_Window_WindowOpenedEventId = 20016;
+        internal const int UIA_Window_WindowClosedEventId = 20017;
+        internal const int UIA_MenuModeStartEventId = 20018;
+        internal const int UIA_MenuModeEndEventId = 20019;
+        internal const int UIA_InputReachedTargetEventId = 20020;
+        internal const int UIA_InputReachedOtherElementEventId = 20021;
+        internal const int UIA_InputDiscardedEventId = 20022;
+        internal const int UIA_SystemAlertEventId = 20023;
+        internal const int UIA_LiveRegionChangedEventId = 20024;
+        internal const int UIA_HostedFragmentRootsInvalidatedEventId = 20025;
+        internal const int UIA_Drag_DragStartEventId = 20026;
+        internal const int UIA_Drag_DragCancelEventId = 20027;
+        internal const int UIA_Drag_DragCompleteEventId = 20028;
+        internal const int UIA_DropTarget_DragEnterEventId = 20029;
+        internal const int UIA_DropTarget_DragLeaveEventId = 20030;
+        internal const int UIA_DropTarget_DroppedEventId = 20031;
+        internal const int UIA_TextEdit_TextChangedEventId = 20032;
+        internal const int UIA_TextEdit_ConversionTargetChangedEventId = 20033;
+        internal const int UIA_ChangesEventId = 20034;
+
+        // UIAutomation PropertyIds
+        internal const int UIA_RuntimeIdPropertyId = 30000;
+        internal const int UIA_BoundingRectanglePropertyId = 30001;
+        internal const int UIA_ProcessIdPropertyId = 30002;
+        internal const int UIA_ControlTypePropertyId = 30003;
+        internal const int UIA_LocalizedControlTypePropertyId = 30004;
+        internal const int UIA_NamePropertyId = 30005;
+        internal const int UIA_AcceleratorKeyPropertyId = 30006;
+        internal const int UIA_AccessKeyPropertyId = 30007;
+        internal const int UIA_HasKeyboardFocusPropertyId = 30008;
+        internal const int UIA_IsKeyboardFocusablePropertyId = 30009;
+        internal const int UIA_IsEnabledPropertyId = 30010;
+        internal const int UIA_AutomationIdPropertyId = 30011;
+        internal const int UIA_ClassNamePropertyId = 30012;
+        internal const int UIA_HelpTextPropertyId = 30013;
+        internal const int UIA_ClickablePointPropertyId = 30014;
+        internal const int UIA_CulturePropertyId = 30015;
+        internal const int UIA_IsControlElementPropertyId = 30016;
+        internal const int UIA_IsContentElementPropertyId = 30017;
+        internal const int UIA_LabeledByPropertyId = 30018;
+        internal const int UIA_IsPasswordPropertyId = 30019;
+        internal const int UIA_NativeWindowHandlePropertyId = 30020;
+        internal const int UIA_ItemTypePropertyId = 30021;
+        internal const int UIA_IsOffscreenPropertyId = 30022;
+        internal const int UIA_OrientationPropertyId = 30023;
+        internal const int UIA_FrameworkIdPropertyId = 30024;
+        internal const int UIA_IsRequiredForFormPropertyId = 30025;
+        internal const int UIA_ItemStatusPropertyId = 30026;
+        internal const int UIA_IsDockPatternAvailablePropertyId = 30027;
+        internal const int UIA_IsExpandCollapsePatternAvailablePropertyId = 30028;
+        internal const int UIA_IsGridItemPatternAvailablePropertyId = 30029;
+        internal const int UIA_IsGridPatternAvailablePropertyId = 30030;
+        internal const int UIA_IsInvokePatternAvailablePropertyId = 30031;
+        internal const int UIA_IsMultipleViewPatternAvailablePropertyId = 30032;
+        internal const int UIA_IsRangeValuePatternAvailablePropertyId = 30033;
+        internal const int UIA_IsScrollPatternAvailablePropertyId = 30034;
+        internal const int UIA_IsScrollItemPatternAvailablePropertyId = 30035;
+        internal const int UIA_IsSelectionItemPatternAvailablePropertyId = 30036;
+        internal const int UIA_IsSelectionPatternAvailablePropertyId = 30037;
+        internal const int UIA_IsTablePatternAvailablePropertyId = 30038;
+        internal const int UIA_IsTableItemPatternAvailablePropertyId = 30039;
+        internal const int UIA_IsTextPatternAvailablePropertyId = 30040;
+        internal const int UIA_IsTogglePatternAvailablePropertyId = 30041;
+        internal const int UIA_IsTransformPatternAvailablePropertyId = 30042;
+        internal const int UIA_IsValuePatternAvailablePropertyId = 30043;
+        internal const int UIA_IsWindowPatternAvailablePropertyId = 30044;
+        internal const int UIA_ValueValuePropertyId = 30045;
+        internal const int UIA_ValueIsReadOnlyPropertyId = 30046;
+        internal const int UIA_RangeValueValuePropertyId = 30047;
+        internal const int UIA_RangeValueIsReadOnlyPropertyId = 30048;
+        internal const int UIA_RangeValueMinimumPropertyId = 30049;
+        internal const int UIA_RangeValueMaximumPropertyId = 30050;
+        internal const int UIA_RangeValueLargeChangePropertyId = 30051;
+        internal const int UIA_RangeValueSmallChangePropertyId = 30052;
+        internal const int UIA_ScrollHorizontalScrollPercentPropertyId = 30053;
+        internal const int UIA_ScrollHorizontalViewSizePropertyId = 30054;
+        internal const int UIA_ScrollVerticalScrollPercentPropertyId = 30055;
+        internal const int UIA_ScrollVerticalViewSizePropertyId = 30056;
+        internal const int UIA_ScrollHorizontallyScrollablePropertyId = 30057;
+        internal const int UIA_ScrollVerticallyScrollablePropertyId = 30058;
+        internal const int UIA_SelectionSelectionPropertyId = 30059;
+        internal const int UIA_SelectionCanSelectMultiplePropertyId = 30060;
+        internal const int UIA_SelectionIsSelectionRequiredPropertyId = 30061;
+        internal const int UIA_GridRowCountPropertyId = 30062;
+        internal const int UIA_GridColumnCountPropertyId = 30063;
+        internal const int UIA_GridItemRowPropertyId = 30064;
+        internal const int UIA_GridItemColumnPropertyId = 30065;
+        internal const int UIA_GridItemRowSpanPropertyId = 30066;
+        internal const int UIA_GridItemColumnSpanPropertyId = 30067;
+        internal const int UIA_GridItemContainingGridPropertyId = 30068;
+        internal const int UIA_DockDockPositionPropertyId = 30069;
+        internal const int UIA_ExpandCollapseExpandCollapseStatePropertyId = 30070;
+        internal const int UIA_MultipleViewCurrentViewPropertyId = 30071;
+        internal const int UIA_MultipleViewSupportedViewsPropertyId = 30072;
+        internal const int UIA_WindowCanMaximizePropertyId = 30073;
+        internal const int UIA_WindowCanMinimizePropertyId = 30074;
+        internal const int UIA_WindowWindowVisualStatePropertyId = 30075;
+        internal const int UIA_WindowWindowInteractionStatePropertyId = 30076;
+        internal const int UIA_WindowIsModalPropertyId = 30077;
+        internal const int UIA_WindowIsTopmostPropertyId = 30078;
+        internal const int UIA_SelectionItemIsSelectedPropertyId = 30079;
+        internal const int UIA_SelectionItemSelectionContainerPropertyId = 30080;
+        internal const int UIA_TableRowHeadersPropertyId = 30081;
+        internal const int UIA_TableColumnHeadersPropertyId = 30082;
+        internal const int UIA_TableRowOrColumnMajorPropertyId = 30083;
+        internal const int UIA_TableItemRowHeaderItemsPropertyId = 30084;
+        internal const int UIA_TableItemColumnHeaderItemsPropertyId = 30085;
+        internal const int UIA_ToggleToggleStatePropertyId = 30086;
+        internal const int UIA_TransformCanMovePropertyId = 30087;
+        internal const int UIA_TransformCanResizePropertyId = 30088;
+        internal const int UIA_TransformCanRotatePropertyId = 30089;
+        internal const int UIA_IsLegacyIAccessiblePatternAvailablePropertyId = 30090;
+        internal const int UIA_LegacyIAccessibleChildIdPropertyId = 30091;
+        internal const int UIA_LegacyIAccessibleNamePropertyId = 30092;
+        internal const int UIA_LegacyIAccessibleValuePropertyId = 30093;
+        internal const int UIA_LegacyIAccessibleDescriptionPropertyId = 30094;
+        internal const int UIA_LegacyIAccessibleRolePropertyId = 30095;
+        internal const int UIA_LegacyIAccessibleStatePropertyId = 30096;
+        internal const int UIA_LegacyIAccessibleHelpPropertyId = 30097;
+        internal const int UIA_LegacyIAccessibleKeyboardShortcutPropertyId = 30098;
+        internal const int UIA_LegacyIAccessibleSelectionPropertyId = 30099;
+        internal const int UIA_LegacyIAccessibleDefaultActionPropertyId = 30100;
+        internal const int UIA_AriaRolePropertyId = 30101;
+        internal const int UIA_AriaPropertiesPropertyId = 30102;
+        internal const int UIA_IsDataValidForFormPropertyId = 30103;
+        internal const int UIA_ControllerForPropertyId = 30104;
+        internal const int UIA_DescribedByPropertyId = 30105;
+        internal const int UIA_FlowsToPropertyId = 30106;
+        internal const int UIA_ProviderDescriptionPropertyId = 30107;
+        internal const int UIA_IsItemContainerPatternAvailablePropertyId = 30108;
+        internal const int UIA_IsVirtualizedItemPatternAvailablePropertyId = 30109;
+        internal const int UIA_IsSynchronizedInputPatternAvailablePropertyId = 30110;
+        internal const int UIA_OptimizeForVisualContentPropertyId = 30111;
+        internal const int UIA_IsObjectModelPatternAvailablePropertyId = 30112;
+        internal const int UIA_AnnotationAnnotationTypeIdPropertyId = 30113;
+        internal const int UIA_AnnotationAnnotationTypeNamePropertyId = 30114;
+        internal const int UIA_AnnotationAuthorPropertyId = 30115;
+        internal const int UIA_AnnotationDateTimePropertyId = 30116;
+        internal const int UIA_AnnotationTargetPropertyId = 30117;
+        internal const int UIA_IsAnnotationPatternAvailablePropertyId = 30118;
+        internal const int UIA_IsTextPattern2AvailablePropertyId = 30119;
+        internal const int UIA_StylesStyleIdPropertyId = 30120;
+        internal const int UIA_StylesStyleNamePropertyId = 30121;
+        internal const int UIA_StylesFillColorPropertyId = 30122;
+        internal const int UIA_StylesFillPatternStylePropertyId = 30123;
+        internal const int UIA_StylesShapePropertyId = 30124;
+        internal const int UIA_StylesFillPatternColorPropertyId = 30125;
+        internal const int UIA_StylesExtendedPropertiesPropertyId = 30126;
+        internal const int UIA_IsStylesPatternAvailablePropertyId = 30127;
+        internal const int UIA_IsSpreadsheetPatternAvailablePropertyId = 30128;
+        internal const int UIA_SpreadsheetItemFormulaPropertyId = 30129;
+        internal const int UIA_SpreadsheetItemAnnotationObjectsPropertyId = 30130;
+        internal const int UIA_SpreadsheetItemAnnotationTypesPropertyId = 30131;
+        internal const int UIA_IsSpreadsheetItemPatternAvailablePropertyId = 30132;
+        internal const int UIA_Transform2CanZoomPropertyId = 30133;
+        internal const int UIA_IsTransformPattern2AvailablePropertyId = 30134;
+        internal const int UIA_LiveSettingPropertyId = 30135;
+        internal const int UIA_IsTextChildPatternAvailablePropertyId = 30136;
+        internal const int UIA_IsDragPatternAvailablePropertyId = 30137;
+        internal const int UIA_DragIsGrabbedPropertyId = 30138;
+        internal const int UIA_DragDropEffectPropertyId = 30139;
+        internal const int UIA_DragDropEffectsPropertyId = 30140;
+        internal const int UIA_IsDropTargetPatternAvailablePropertyId = 30141;
+        internal const int UIA_DropTargetDropTargetEffectPropertyId = 30142;
+        internal const int UIA_DropTargetDropTargetEffectsPropertyId = 30143;
+        internal const int UIA_DragGrabbedItemsPropertyId = 30144;
+        internal const int UIA_Transform2ZoomLevelPropertyId = 30145;
+        internal const int UIA_Transform2ZoomMinimumPropertyId = 30146;
+        internal const int UIA_Transform2ZoomMaximumPropertyId = 30147;
+        internal const int UIA_FlowsFromPropertyId = 30148;
+        internal const int UIA_IsTextEditPatternAvailablePropertyId = 30149;
+        internal const int UIA_IsPeripheralPropertyId = 30150;
+        internal const int UIA_IsCustomNavigationPatternAvailablePropertyId = 30151;
+        internal const int UIA_PositionInSetPropertyId = 30152;
+        internal const int UIA_SizeOfSetPropertyId = 30153;
+        internal const int UIA_LevelPropertyId = 30154;
+        internal const int UIA_AnnotationTypesPropertyId = 30155;
+        internal const int UIA_AnnotationObjectsPropertyId = 30156;
+        internal const int UIA_LandmarkTypePropertyId = 30157;
+        internal const int UIA_LocalizedLandmarkTypePropertyId = 30158;
+        internal const int UIA_FullDescriptionPropertyId = 30159;
+        internal const int UIA_FillColorPropertyId = 30160;
+        internal const int UIA_OutlineColorPropertyId = 30161;
+        internal const int UIA_FillTypePropertyId = 30162;
+        internal const int UIA_VisualEffectsPropertyId = 30163;
+        internal const int UIA_OutlineThicknessPropertyId = 30164;
+        internal const int UIA_CenterPointPropertyId = 30165;
+        internal const int UIA_RotationPropertyId = 30166;
+        internal const int UIA_SizePropertyId = 30167;
+
+        // UIA_ControlTypeIds
+        internal const int UIA_ButtonControlTypeId = 50000;
+        internal const int UIA_CalendarControlTypeId = 50001;
+        internal const int UIA_CheckBoxControlTypeId = 50002;
+        internal const int UIA_ComboBoxControlTypeId = 50003;
+        internal const int UIA_EditControlTypeId = 50004;
+        internal const int UIA_HyperlinkControlTypeId = 50005;
+        internal const int UIA_ImageControlTypeId = 50006;
+        internal const int UIA_ListItemControlTypeId = 50007;
+        internal const int UIA_ListControlTypeId = 50008;
+        internal const int UIA_MenuControlTypeId = 50009;
+        internal const int UIA_MenuBarControlTypeId = 50010;
+        internal const int UIA_MenuItemControlTypeId = 50011;
+        internal const int UIA_ProgressBarControlTypeId = 50012;
+        internal const int UIA_RadioButtonControlTypeId = 50013;
+        internal const int UIA_ScrollBarControlTypeId = 50014;
+        internal const int UIA_SliderControlTypeId = 50015;
+        internal const int UIA_SpinnerControlTypeId = 50016;
+        internal const int UIA_StatusBarControlTypeId = 50017;
+        internal const int UIA_TabControlTypeId = 50018;
+        internal const int UIA_TabItemControlTypeId = 50019;
+        internal const int UIA_TextControlTypeId = 50020;
+        internal const int UIA_ToolBarControlTypeId = 50021;
+        internal const int UIA_ToolTipControlTypeId = 50022;
+        internal const int UIA_TreeControlTypeId = 50023;
+        internal const int UIA_TreeItemControlTypeId = 50024;
+        internal const int UIA_CustomControlTypeId = 50025;
+        internal const int UIA_GroupControlTypeId = 50026;
+        internal const int UIA_ThumbControlTypeId = 50027;
+        internal const int UIA_DataGridControlTypeId = 50028;
+        internal const int UIA_DataItemControlTypeId = 50029;
+        internal const int UIA_DocumentControlTypeId = 50030;
+        internal const int UIA_SplitButtonControlTypeId = 50031;
+        internal const int UIA_WindowControlTypeId = 50032;
+        internal const int UIA_PaneControlTypeId = 50033;
+        internal const int UIA_HeaderControlTypeId = 50034;
+        internal const int UIA_HeaderItemControlTypeId = 50035;
+        internal const int UIA_TableControlTypeId = 50036;
+        internal const int UIA_TitleBarControlTypeId = 50037;
+        internal const int UIA_SeparatorControlTypeId = 50038;
+        internal const int UIA_SemanticZoomControlTypeId = 50039;
+        internal const int UIA_AppBarControlTypeId = 50040;
+
+        // If this value is used, %windows%\system32 is searched for the DLL 
+        // and its dependencies. Directories in the standard search path are not searched.
+        // Windows7, Windows Server 2008 R2, Windows Vista and Windows Server 2008:
+        // This value requires KB2533623 to be installed.
+        // Windows Server 2003 and Windows XP: This value is not supported.
+        internal const int LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
     }
 }
 

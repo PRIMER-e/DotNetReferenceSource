@@ -893,15 +893,14 @@ namespace System.Web.Management {
         }
 
         internal static String FormatResourceStringWithCache(String key) {
-            CacheInternal cacheInternal = HttpRuntime.CacheInternal;
-
             // HealthMonitoring, in some scenarios, can call into the cache hundreds of 
             // times during shutdown, after the cache has been disposed.  To improve 
             // shutdown performance, skip the cache when it is disposed.
-            if (cacheInternal.IsDisposed) {
+            if (HealthMonitoringManager.IsCacheDisposed) {
                 return SR.Resources.GetString(key, CultureInfo.InstalledUICulture);
             }
 
+            CacheStoreProvider cacheInternal = HttpRuntime.Cache.InternalCache;
             string s;
 
             string cacheKey = CreateWebEventResourceCacheKey(key);
@@ -913,7 +912,7 @@ namespace System.Web.Management {
 
             s = SR.Resources.GetString(key, CultureInfo.InstalledUICulture);
             if (s != null) {
-                cacheInternal.UtcInsert(cacheKey, s);
+                cacheInternal.Insert(cacheKey, s, null);
             }
 
             return s;
@@ -1341,7 +1340,7 @@ namespace System.Web.Management {
 
             Exception   ex = _exception;
 
-            // Please note we arbitrary pick a level limit per 
+            // Please note we arbitrary pick a level limit per bug VSWhidbey 143859
             for (int level = 0;
                   ex != null && level <= 2;
                   ex = ex.InnerException, level++)  {
@@ -1946,14 +1945,14 @@ namespace System.Web.Management {
 
                 _iprincipal = context.User;
 
-                // Dev11 #80084 - DTS 
-
-
-
-
-
-
-
+                // Dev11 #80084 - DTS Bug
+                // In integrated pipeline, we are very aggressive about disposing
+                // WindowsIdentity's.  If this WebRequestInformation is being used
+                // post-request (eg, while formatting data for an email provider
+                // that is reporting batched events), then the User.Identity is
+                // likely to be disposed.  So lets create a clone that will stick
+                // around.  This condition should vaguely match that found in
+                // HttpContext.DisposePrincipal().
                 if (_iprincipal is WindowsPrincipal
                     && _iprincipal != WindowsAuthenticationModule.AnonymousPrincipal
                     && (context.WorkerRequest is IIS7WorkerRequest)) {
@@ -2330,6 +2329,7 @@ namespace System.Web.Management {
         static bool             s_inited = false;
         static bool             s_initing = false;
         static object           s_lockObject = new object();
+        static bool             s_isCacheDisposed = false;
 
         // If this method returns null, it means we failed during configuration.
         internal static HealthMonitoringManager Manager() {
@@ -2380,6 +2380,8 @@ namespace System.Web.Management {
                 return manager._enabled;
             }
         }
+
+        internal static bool IsCacheDisposed { get { return s_isCacheDisposed; } set { s_isCacheDisposed = value; } }
 
         internal static void StartHealthMonitoringHeartbeat() {
             HealthMonitoringManager manager = Manager();

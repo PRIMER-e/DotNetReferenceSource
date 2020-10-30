@@ -58,7 +58,7 @@ namespace System.Windows.Controls
             TextBoxBase.SelectionBrushProperty.OverrideMetadata(typeof(FlowDocumentReader),
                 new FrameworkPropertyMetadata(new PropertyChangedCallback(UpdateCaretElement)));
             TextBoxBase.SelectionOpacityProperty.OverrideMetadata(typeof(FlowDocumentReader),
-                new FrameworkPropertyMetadata(new PropertyChangedCallback(UpdateCaretElement)));
+                new FrameworkPropertyMetadata(TextBoxBase.AdornerSelectionOpacityDefaultValue, new PropertyChangedCallback(UpdateCaretElement)));
 
             CreateCommandBindings();
 

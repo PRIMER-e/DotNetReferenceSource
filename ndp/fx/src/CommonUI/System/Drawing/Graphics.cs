@@ -55,8 +55,8 @@ namespace System.Drawing {
         private GraphicsContext previousContext;
 
         /// <devdoc>
-        ///     Object to lock on for static methods - DO NOT use the Type, see 
-
+        ///     Object to lock on for static methods - DO NOT use the Type, see bug#464117.
+        /// </devdoc>
         private static readonly object syncObject = new Object();
 
         /// <devdoc>
@@ -1180,13 +1180,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawLines(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                               new HandleRef(this, buf), points.Length);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawLines(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                                   new HandleRef(this, buf), points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
 
@@ -1233,13 +1236,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawLinesI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawLinesI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
                                                 new HandleRef(this, buf), points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // float version
@@ -1346,13 +1352,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawBeziers(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                 new HandleRef(this, buf), points.Length);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawBeziers(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                                     new HandleRef(this, buf), points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // int version
@@ -1380,12 +1389,15 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawBeziersI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                  new HandleRef(this, buf), points.Length);
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawBeziersI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                                      new HandleRef(this, buf), points.Length);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawRectangle"]/*' />
@@ -1453,13 +1465,16 @@ namespace System.Drawing {
             }
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertRectangleToMemory(rects);
-            int status = SafeNativeMethods.Gdip.GdipDrawRectangles(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                    new HandleRef(this, buf), rects.Length);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawRectangles(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                                        new HandleRef(this, buf), rects.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawRectangles1"]/*' />
@@ -1477,13 +1492,16 @@ namespace System.Drawing {
             }
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertRectangleToMemory(rects);
-            int status = SafeNativeMethods.Gdip.GdipDrawRectanglesI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                     new HandleRef(this, buf), rects.Length);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawRectanglesI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                                         new HandleRef(this, buf), rects.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // float version
@@ -1622,13 +1640,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawPolygon(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                 new HandleRef(this, buf), points.Length);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawPolygon(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                                     new HandleRef(this, buf), points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // int version
@@ -1644,13 +1665,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawPolygonI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                  new HandleRef(this, buf), points.Length);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawPolygonI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                                      new HandleRef(this, buf), points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawPath"]/*' />
@@ -1688,13 +1712,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawCurve(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawCurve(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawCurve1"]/*' />
@@ -1711,13 +1738,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawCurve2(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawCurve2(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                 points.Length, tension);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawCurve2"]/*' />
@@ -1743,14 +1773,17 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawCurve3(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawCurve3(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                 points.Length, offset, numberOfSegments,
                                                 tension);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // int version
@@ -1767,13 +1800,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawCurveI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawCurveI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                 points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawCurve5"]/*' />
@@ -1789,13 +1825,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawCurve2I(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawCurve2I(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                  points.Length, tension);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawCurve6"]/*' />
@@ -1812,14 +1851,17 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawCurve3I(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawCurve3I(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                  points.Length, offset, numberOfSegments,
                                                  tension);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // float version
@@ -1837,13 +1879,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawClosedCurve(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawClosedCurve(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                      points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawClosedCurve1"]/*' />
@@ -1860,13 +1905,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawClosedCurve2(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawClosedCurve2(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                       points.Length, tension);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // int version
@@ -1883,13 +1931,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawClosedCurveI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawClosedCurveI(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                       points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawClosedCurve3"]/*' />
@@ -1905,13 +1956,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipDrawClosedCurve2I(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawClosedCurve2I(new HandleRef(this, this.NativeGraphics), new HandleRef(pen, pen.NativePen), new HandleRef(this, buf),
                                                        points.Length, tension);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.Clear"]/*' />
@@ -2001,13 +2055,16 @@ namespace System.Drawing {
             }
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertRectangleToMemory(rects);
-            int status = SafeNativeMethods.Gdip.GdipFillRectangles(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipFillRectangles(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
                                                     new HandleRef(this, buf), rects.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.FillRectangles1"]/*' />
@@ -2025,13 +2082,16 @@ namespace System.Drawing {
             }
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertRectangleToMemory(rects);
-            int status = SafeNativeMethods.Gdip.GdipFillRectanglesI(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipFillRectanglesI(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
                                                      new HandleRef(this, buf), rects.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // float version
@@ -2059,13 +2119,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipFillPolygon(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipFillPolygon(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
                                                  new HandleRef(this, buf), points.Length, unchecked((int) fillMode));
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // int version
@@ -2092,13 +2155,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipFillPolygonI(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipFillPolygonI(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
                                                   new HandleRef(this, buf), points.Length, unchecked((int) fillMode));
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // float version
@@ -2248,13 +2314,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipFillClosedCurve(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
                                                                new HandleRef(this, buf), points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.FillClosedCurve1"]/*' />
@@ -2279,14 +2348,17 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve2(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipFillClosedCurve2(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
                                                       new HandleRef(this, buf), points.Length,
                                                       tension, unchecked((int) fillmode));
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // int version
@@ -2303,13 +2375,16 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipFillClosedCurveI(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipFillClosedCurveI(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
                                                      new HandleRef(this, buf), points.Length);
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.FillClosedCurve4"]/*' />
@@ -2331,14 +2406,17 @@ namespace System.Drawing {
                 throw new ArgumentNullException("points");
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve2I(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
+            try {
+                int status = SafeNativeMethods.Gdip.GdipFillClosedCurve2I(new HandleRef(this, this.NativeGraphics), new HandleRef(brush, brush.NativeBrush),
                                                       new HandleRef(this, buf), points.Length,
                                                       tension, unchecked((int) fillmode));
 
-            Marshal.FreeHGlobal(buf);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.FillRegion"]/*' />
@@ -2850,17 +2928,20 @@ namespace System.Drawing {
                 throw new ArgumentException(SR.GetString(SR.GdiplusDestPointsInvalidLength));
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(destPoints);
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePoints(new HandleRef(this, this.NativeGraphics),
-                                                     new HandleRef(image, image.nativeImage),
-                                                     new HandleRef(this, buf), count);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawImagePoints(new HandleRef(this, this.NativeGraphics),
+                                                         new HandleRef(image, image.nativeImage),
+                                                         new HandleRef(this, buf), count);
 
-            Marshal.FreeHGlobal(buf);
+                //ignore emf metafile error
+                IgnoreMetafileErrors(image, ref status);
 
-            //ignore emf metafile error
-            IgnoreMetafileErrors(image, ref status);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // int version
@@ -2880,17 +2961,20 @@ namespace System.Drawing {
                 throw new ArgumentException(SR.GetString(SR.GdiplusDestPointsInvalidLength));
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(destPoints);
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsI(new HandleRef(this, this.NativeGraphics),
-                                                      new HandleRef(image, image.nativeImage),
-                                                      new HandleRef(this, buf), count);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawImagePointsI(new HandleRef(this, this.NativeGraphics),
+                                                          new HandleRef(image, image.nativeImage),
+                                                          new HandleRef(this, buf), count);
 
-            Marshal.FreeHGlobal(buf);
+                //ignore emf metafile error
+                IgnoreMetafileErrors(image, ref status);
 
-            //ignore emf metafile error
-            IgnoreMetafileErrors(image, ref status);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /*
@@ -3037,28 +3121,30 @@ namespace System.Drawing {
                 throw new ArgumentException(SR.GetString(SR.GdiplusDestPointsInvalidLength));
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(destPoints);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(
+                                                            new HandleRef(this, this.NativeGraphics),
+                                                            new HandleRef(image, image.nativeImage),
+                                                            new HandleRef(this, buf),
+                                                            destPoints.Length,
+                                                            srcRect.X,
+                                                            srcRect.Y,
+                                                            srcRect.Width,
+                                                            srcRect.Height,
+                                                            unchecked((int)srcUnit),
+                                                            NativeMethods.NullHandleRef,
+                                                            null,
+                                                            NativeMethods.NullHandleRef);
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(
-                                                        new HandleRef(this, this.NativeGraphics),
-                                                        new HandleRef(image, image.nativeImage),
-                                                        new HandleRef(this, buf),
-                                                        destPoints.Length,
-                                                        srcRect.X,
-                                                        srcRect.Y,
-                                                        srcRect.Width,
-                                                        srcRect.Height,
-                                                        unchecked((int) srcUnit),
-                                                        NativeMethods.NullHandleRef,
-                                                        null,
-                                                        NativeMethods.NullHandleRef);
+                //ignore emf metafile error
+                IgnoreMetafileErrors(image, ref status);
 
-            Marshal.FreeHGlobal(buf);
-
-            //ignore emf metafile error
-            IgnoreMetafileErrors(image, ref status);
-
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.DrawImage15"]/*' />
@@ -3093,29 +3179,30 @@ namespace System.Drawing {
                 throw new ArgumentException(SR.GetString(SR.GdiplusDestPointsInvalidLength));
             
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(destPoints);
-            
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(
-                                                        new HandleRef(this, this.NativeGraphics),
-                                                        new HandleRef(image, image.nativeImage),
-                                                        new HandleRef(this, buf),
-                                                        destPoints.Length,
-                                                        srcRect.X,
-                                                        srcRect.Y,
-                                                        srcRect.Width,
-                                                        srcRect.Height,
-                                                        unchecked((int) srcUnit),
-                                                        new HandleRef(imageAttr, (imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero)),
-                                                        callback,
-                                                        new HandleRef(null, (IntPtr)callbackData));
-            
-            Marshal.FreeHGlobal(buf);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(
+                                                            new HandleRef(this, this.NativeGraphics),
+                                                            new HandleRef(image, image.nativeImage),
+                                                            new HandleRef(this, buf),
+                                                            destPoints.Length,
+                                                            srcRect.X,
+                                                            srcRect.Y,
+                                                            srcRect.Width,
+                                                            srcRect.Height,
+                                                            unchecked((int)srcUnit),
+                                                            new HandleRef(imageAttr, (imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero)),
+                                                            callback,
+                                                            new HandleRef(null, (IntPtr)callbackData));
 
-            //ignore emf metafile error
-            IgnoreMetafileErrors(image, ref status);
-            
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //ignore emf metafile error
+                IgnoreMetafileErrors(image, ref status);
 
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // int version
@@ -3158,29 +3245,30 @@ namespace System.Drawing {
                 throw new ArgumentException(SR.GetString(SR.GdiplusDestPointsInvalidLength));
             
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(destPoints);
-            
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(
-                                                        new HandleRef(this, this.NativeGraphics),
-                                                        new HandleRef(image, image.nativeImage),
-                                                        new HandleRef(this, buf),
-                                                        destPoints.Length,
-                                                        srcRect.X,
-                                                        srcRect.Y,
-                                                        srcRect.Width,
-                                                        srcRect.Height,
-                                                        unchecked((int) srcUnit),
-                                                        new HandleRef(imageAttr, (imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero)),
-                                                        callback,
-                                                        new HandleRef(null, (IntPtr)callbackData));
-            
-            Marshal.FreeHGlobal(buf);
-            
-            //ignore emf metafile error
-            IgnoreMetafileErrors(image, ref status);
+            try {
+                int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(
+                                                            new HandleRef(this, this.NativeGraphics),
+                                                            new HandleRef(image, image.nativeImage),
+                                                            new HandleRef(this, buf),
+                                                            destPoints.Length,
+                                                            srcRect.X,
+                                                            srcRect.Y,
+                                                            srcRect.Width,
+                                                            srcRect.Height,
+                                                            unchecked((int)srcUnit),
+                                                            new HandleRef(imageAttr, (imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero)),
+                                                            callback,
+                                                            new HandleRef(null, (IntPtr)callbackData));
 
-            //check error status sensitive to TS problems
-            CheckErrorStatus(status);
+                //ignore emf metafile error
+                IgnoreMetafileErrors(image, ref status);
 
+                //check error status sensitive to TS problems
+                CheckErrorStatus(status);
+            }
+            finally {
+                Marshal.FreeHGlobal(buf);
+            }
         }
 
         // float version

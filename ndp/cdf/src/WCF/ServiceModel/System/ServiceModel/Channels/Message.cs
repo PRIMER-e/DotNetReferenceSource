@@ -57,6 +57,29 @@ namespace System.ServiceModel.Channels
 
         public abstract MessageVersion Version { get; } // must never return null
 
+        internal virtual void SetProperty(string name, object value)
+        {
+            MessageProperties prop = Properties;
+
+            if (prop != null)
+            {
+                prop[name] = value;
+            }
+        }
+
+        internal virtual bool GetProperty(string name, out object result)
+        {
+            MessageProperties prop = Properties;
+
+            if (prop != null)
+            {
+                return prop.TryGetValue(name, out result);
+            }
+
+            result = null;
+            return false;
+        }
+
         internal virtual RecycledMessageState RecycledMessageState
         {
             get { return null; }
@@ -1018,6 +1041,30 @@ namespace System.ServiceModel.Channels
                 return properties;
             }
         }
+
+        internal override void SetProperty(string name, object value)
+        {
+            MessageProperties prop = this.properties;
+
+            if (prop != null)
+            {
+                prop[name] = value;
+            }
+        }
+
+        internal override bool GetProperty(string name, out object result)
+        {
+            MessageProperties prop = this.properties;
+
+            if (prop != null)
+            {
+                return prop.TryGetValue(name, out result);
+            }
+
+            result = null;
+            return false;
+        }
+
 
         public override MessageVersion Version
         {

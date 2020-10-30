@@ -169,7 +169,7 @@ namespace System.Windows.Interop
         {
             this.ParentHandle = hwndParent;
 
-            //BuildWindowCore should only be called if visible. 
+            //BuildWindowCore should only be called if visible. Bug 1236445 tracks this.
             TransitionUpTo(ActiveXHelper.ActiveXState.InPlaceActive);
 
             //The above call should have set this interface

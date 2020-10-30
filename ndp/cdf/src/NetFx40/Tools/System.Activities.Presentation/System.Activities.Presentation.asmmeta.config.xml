@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<root>
+    <assembly preserveInternals="1" publish="$(ADP_REF_PATH2)\System.Activities.Presentation.dll"/>
+    <features useAssemblyInfo="0" 
+              respectInternalsVisibleTo="0" 
+              mergableCustomAttributes="1" 
+              suppressUnneededQuotes="1"
+    />
+
+    <customAttribute name="System.Windows.Markup.ContentPropertyAttribute"/>
+    <customAttribute name="System.ComponentModel.ToolboxItemFilterAttribute"/>
+    <customAttribute name="System.ComponentModel.DesignerAttribute"/>
+    <customAttribute name="System.ComponentModel.Design.Serialization.DesignerSerializerAttribute"/>
+    <customAttribute name="System.ComponentModel.DefaultPropertyAttribute"/>
+
+</root>

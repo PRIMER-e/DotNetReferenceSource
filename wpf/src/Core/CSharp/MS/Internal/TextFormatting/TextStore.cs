@@ -673,7 +673,7 @@ namespace MS.Internal.TextFormatting
                 // encounter the first codepoint of the sequence, we need to make sure
                 // we have enough codepoints to determine the correct whole sequence.
                 // In an uncommon event, we may be forced to look ahead by fetching more
-                // runs. [wchao, PS 
+                // runs. [wchao, PS bug 910308]
 
                 int newlineLength = 1;  // most sequences take one cp
 

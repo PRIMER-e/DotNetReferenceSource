@@ -38,7 +38,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
         private TableLayoutPanel buttonTableLayoutPanel;
         private PictureBox pictureBox;
         private Label lblMessage;
-        private Button detailsBtn;
+        private DetailsButton detailsBtn;
         private Button cancelBtn;
         private Button okBtn;
         private TableLayoutPanel pictureLabelTableLayoutPanel;
@@ -48,7 +48,14 @@ namespace System.Windows.Forms.PropertyGridInternal {
         private Bitmap collapseImage = null;
         private PropertyGrid ownerGrid;
 
-        
+        private bool detailsButtonExpanded = false;
+
+        public bool DetailsButtonExpanded {
+            get {
+                return detailsButtonExpanded;
+            }
+        }
+
         public string Details {
             set {
                 this.details.Text = value;
@@ -97,7 +104,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             detailsBtn.Image = expandImage;
         }
 
-                /// <include file='doc\GridErrorDlg.uex' path='docs/doc[@for="GridErrorDlg.DetailsClick"]/*' />
+        /// <include file='doc\GridErrorDlg.uex' path='docs/doc[@for="GridErrorDlg.DetailsClick"]/*' />
         /// <devdoc>
         ///     Called when the details button is clicked.
         /// </devdoc>
@@ -106,15 +113,27 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
             if (details.Visible) {
                 detailsBtn.Image = expandImage;
+                detailsButtonExpanded = false;
                 Height -= delta;
             }
             else {
                 detailsBtn.Image = collapseImage;
+                detailsButtonExpanded = true;
                 details.Width = overarchingTableLayoutPanel.Width - details.Margin.Horizontal;
                 Height += delta;
             }
 
             details.Visible = !details.Visible;
+
+            if (AccessibilityImprovements.Level1) {
+                AccessibilityNotifyClients(AccessibleEvents.StateChange, -1);
+                AccessibilityNotifyClients(AccessibleEvents.NameChange, -1);
+                details.TabStop = !details.TabStop;
+
+                if (details.Visible) {
+                    details.Focus();
+                }
+            }
         }
 
         /// <devdoc>
@@ -132,7 +151,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 this.RightToLeft = RightToLeft.Yes;
             }
 
-            this.detailsBtn = new System.Windows.Forms.Button();
+            this.detailsBtn = new DetailsButton(this);
             this.overarchingTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.buttonTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.okBtn = new System.Windows.Forms.Button();
@@ -326,6 +345,77 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 }
             }
             okBtn.Focus();
+        }
+    }
+
+    internal class DetailsButton: Button {
+        private GridErrorDlg parent;
+        public DetailsButton(GridErrorDlg form){
+            parent = form;
+        }
+
+        public bool Expanded { 
+            get { 
+                return parent.DetailsButtonExpanded; 
+            } 
+        }
+        protected override AccessibleObject CreateAccessibilityInstance() {
+            if (AccessibilityImprovements.Level1) {
+                return new DetailsButtonAccessibleObject(this);
+            }
+            else {
+                return base.CreateAccessibilityInstance();
+            }
+        }
+    }
+
+    internal class DetailsButtonAccessibleObject: Control.ControlAccessibleObject {
+        
+        private DetailsButton ownerItem = null; 
+        
+        public DetailsButtonAccessibleObject(DetailsButton owner): base(owner) {
+            ownerItem = owner;
+        }
+
+        internal override bool IsIAccessibleExSupported() {
+            Debug.Assert(ownerItem != null, "AccessibleObject owner cannot be null");
+            return true;
+        }
+
+        internal override object GetPropertyValue(int propertyID) {
+            if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                return NativeMethods.UIA_ButtonControlTypeId;
+            }
+            else {
+                return base.GetPropertyValue(propertyID);
+            }
+        }
+
+        internal override bool IsPatternSupported(int patternId) {
+            if (patternId == NativeMethods.UIA_ExpandCollapsePatternId) {
+                return true;
+            }
+            else {
+                return base.IsPatternSupported(patternId);
+            }
+        }
+
+        internal override UnsafeNativeMethods.ExpandCollapseState ExpandCollapseState {
+            get {
+                return ownerItem.Expanded ? UnsafeNativeMethods.ExpandCollapseState.Expanded : UnsafeNativeMethods.ExpandCollapseState.Collapsed;
+            }
+        }
+
+        internal override void Expand() {
+            if (ownerItem !=null && !ownerItem.Expanded) {
+                DoDefaultAction();
+            }
+        }
+
+        internal override void Collapse() {
+            if (ownerItem != null && ownerItem.Expanded) {
+                DoDefaultAction();
+            }
         }
     }
 }

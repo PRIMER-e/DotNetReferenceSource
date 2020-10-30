@@ -22,6 +22,7 @@ using System.Windows.Shapes;
 
 using MS.Utility;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -80,6 +81,8 @@ namespace System.Windows.Controls
 
             EventManager.RegisterClassHandler(typeof(ToolBar), Mouse.MouseDownEvent, new MouseButtonEventHandler(OnMouseButtonDown), true);
             EventManager.RegisterClassHandler(typeof(ToolBar), ButtonBase.ClickEvent, new RoutedEventHandler(_OnClick));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.ToolBar);
         }
 
         /// <summary>

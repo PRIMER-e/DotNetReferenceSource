@@ -1103,7 +1103,7 @@ namespace System.Threading.Tasks
                                                      fromInclusive, toExclusive);
             }
 
-            ParallelForReplicatingTask rootTask = null; // eliminates "Use of unassigned local variable" compiler 
+            ParallelForReplicatingTask rootTask = null; // eliminates "Use of unassigned local variable" compiler bug below.
 
             try
             {
@@ -1418,7 +1418,7 @@ namespace System.Threading.Tasks
                                                      fromInclusive, toExclusive);
             }
 
-            ParallelForReplicatingTask rootTask = null; // eliminates "Use of unassigned local variable" compiler 
+            ParallelForReplicatingTask rootTask = null; // eliminates "Use of unassigned local variable" compiler bug below.
 
             try
             {

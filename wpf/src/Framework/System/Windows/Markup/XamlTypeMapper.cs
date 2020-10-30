@@ -582,7 +582,7 @@ namespace System.Windows.Markup
         /// An Object for the attribute value is returned.
         /// Null is returned if no TypeConverter for the Property type.
         ///</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         internal Object ParseProperty(
             object                 targetObject,
             Type                   propType,
@@ -1482,7 +1482,7 @@ namespace System.Windows.Markup
                                 // If we've found a property info, then the owner had better
                                 // be the same type as or a subclass of the objectType, or
                                 // they are in different inheritance hierarchies.  This
-                                // fixes windows 
+                                // fixes windows bug 920135.
                                 if (memberInfo != null)
                                 {
                                     if (owner != null &&

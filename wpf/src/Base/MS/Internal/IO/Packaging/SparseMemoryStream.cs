@@ -700,11 +700,17 @@ namespace MS.Internal.IO.Packaging
                 // if we are in Memory Stream mode we need to check the High Water Mark crossing
                 if (_trackingMemoryStreamFactory.CurrentMemoryConsumption > _highWaterMark)
                 {
-                    //copy data to isolated storage
-                    lock (PackagingUtilities.IsolatedStorageFileLock)
+                    // DDVSO:609850
+                    // This outer lock is required to prevent creating an inverted lock pattern between PackagingUtilities.IsoStoreSyncRoot
+                    // and PackagingUtilities.IsolatedStorageFileLock further down in the code.
+                    lock (PackagingUtilities.IsoStoreSyncRoot)
                     {
-                        EnsureIsolatedStoreStream();
-                        CopyMemoryBlocksToStream(_isolatedStorageStream);
+                        // Copy data to isolated storage
+                        lock (PackagingUtilities.IsolatedStorageFileLock)
+                        {
+                            EnsureIsolatedStoreStream();
+                            CopyMemoryBlocksToStream(_isolatedStorageStream);
+                        }
                     }
 
                     //switch mode

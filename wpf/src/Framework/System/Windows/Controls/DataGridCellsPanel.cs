@@ -2160,7 +2160,7 @@ namespace System.Windows.Controls
             // if the column widths aren't known, try again when they are
             if (parentDataGrid.InternalColumns.ColumnWidthsComputationPending)
             {
-                Dispatcher.BeginInvoke(DispatcherPriority.Render, (Action<int>)BringIndexIntoView, index);
+                Dispatcher.BeginInvoke(DispatcherPriority.Render, (Action<int>)RetryBringIndexIntoView, index);
                 return;
             }
 
@@ -2206,7 +2206,7 @@ namespace System.Windows.Controls
             if (parentDataGrid.RetryBringColumnIntoView(needRetry))
             {
                 DispatcherPriority priority = wasMeasureDirty ? DispatcherPriority.Background : DispatcherPriority.Loaded;
-                Dispatcher.BeginInvoke(priority, (Action<int>)BringIndexIntoView, index);
+                Dispatcher.BeginInvoke(priority, (Action<int>)RetryBringIndexIntoView, index);
 
                 // The idea is to run deferred bindings, already posted at
                 // Loaded priority.  This may add content to a cell, causing a
@@ -2229,6 +2229,17 @@ namespace System.Windows.Controls
                 // the old column widths, and again with the new.  But that's the
                 // best we can do given the arcane behavior of the layout system.
                 InvalidateMeasure();
+            }
+        }
+
+        private void RetryBringIndexIntoView(int index)
+        {
+            // if the app has changed the column collection since the retry was posted,
+            // don't throw - just ignore it (DDVSO 271673).
+            DataGrid parentDataGrid = ParentDataGrid;
+            if (parentDataGrid != null && 0 <= index && index < parentDataGrid.Columns.Count)
+            {
+                BringIndexIntoView(index);
             }
         }
 

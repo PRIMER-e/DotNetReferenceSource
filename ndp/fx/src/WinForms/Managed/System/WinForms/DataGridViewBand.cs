@@ -890,8 +890,8 @@ namespace System.Windows.Forms
         /// <include file='doc\DataGridViewBand.uex' path='docs/doc[@for="DataGridViewBand.Clone"]/*' />
         public virtual object Clone()
         {
-            // SECREVIEW : Late-binding does not represent a security thread, see 
-
+            // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+            //
             DataGridViewBand dataGridViewBand = (DataGridViewBand) System.Activator.CreateInstance(this.GetType());
             if (dataGridViewBand != null)
             {

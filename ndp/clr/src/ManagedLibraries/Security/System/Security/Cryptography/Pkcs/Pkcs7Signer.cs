@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.Pkcs {
         private X509Certificate2Collection      m_certificates;
         private X509IncludeOption                m_includeOption;
         private bool                             m_dummyCert;
+        private const string Sha256Oid = "2.16.840.1.101.3.4.2.1";
 
         //
         // Constructors.
@@ -65,7 +66,8 @@ namespace System.Security.Cryptography.Pkcs {
                 break;
             }
             this.Certificate = certificate;
-            this.DigestAlgorithm = Oid.FromOidValue(CAPI.szOID_OIWSEC_sha1, OidGroup.HashAlgorithm);
+            string oidValue = LocalAppContextSwitches.CmsUseInsecureHashAlgorithms ? CAPI.szOID_OIWSEC_sha1 : Sha256Oid;
+            this.DigestAlgorithm = Oid.FromOidValue(oidValue, OidGroup.HashAlgorithm);
 
             m_signedAttributes = new CryptographicAttributeObjectCollection();
             m_unsignedAttributes = new CryptographicAttributeObjectCollection();

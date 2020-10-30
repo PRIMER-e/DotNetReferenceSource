@@ -494,7 +494,15 @@ namespace System.Windows.Forms {
                         }
 
                     }
-                }    
+                }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3 && propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_SeparatorControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
+        }
         }
  }

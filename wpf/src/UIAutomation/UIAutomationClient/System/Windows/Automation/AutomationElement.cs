@@ -195,6 +195,18 @@ namespace System.Windows.Automation
         /// <summary>Property ID: ItemStatus - Identifies the status of the visual representation of a complex item</summary>
         public static readonly AutomationProperty ItemStatusProperty = AutomationElementIdentifiers.ItemStatusProperty;
 
+        /// <summary>
+        /// Property ID: SizeOfSet - Describes the count of automation elements in a group or set that are considered to be siblings.
+        /// Works in coordination with the PositionInSet property to describe the count of items in the set.
+        /// </summary>
+        public static readonly AutomationProperty SizeOfSetProperty = AutomationElementIdentifiers.SizeOfSetProperty;
+
+        /// <summary>
+        /// Property ID: PositionInSet - Describes the ordinal location of an automation element within a set of elements which are considered to be siblings.
+        /// Works in coordination with the SizeOfSet property to describe the ordinal location in the set.
+        /// </summary>
+        public static readonly AutomationProperty PositionInSetProperty = AutomationElementIdentifiers.PositionInSetProperty;
+
         #region IsNnnnPatternAvailable properties
         /// <summary>Property that indicates whether the DockPattern is available for this AutomationElement</summary>
         public static readonly AutomationProperty IsDockPatternAvailableProperty = AutomationElementIdentifiers.IsDockPatternAvailableProperty;

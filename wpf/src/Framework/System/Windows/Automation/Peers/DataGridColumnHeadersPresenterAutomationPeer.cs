@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Windows.Automation.Provider;
@@ -37,7 +37,7 @@ namespace System.Windows.Automation.Peers
         }
 
         /// <summary>
-        /// Called by GetClassName that gets a human readable name that, in addition to AutomationControlType, 
+        /// Called by GetClassName that gets a human readable name that, in addition to AutomationControlType,
         /// differentiates the control represented by this AutomationPeer.
         /// </summary>
         /// <returns>The string that contains the name.</returns>
@@ -48,12 +48,12 @@ namespace System.Windows.Automation.Peers
 
         ///<summary>
         /// Creates Children peers.
-        /// 
-        /// GetChildrenCore and FindItemByProperty are almost straight copies of the 
-        /// ItemControlAutomationPeer code; however since DataGridColumHeaderPresenter 
+        ///
+        /// GetChildrenCore and FindItemByProperty are almost straight copies of the
+        /// ItemControlAutomationPeer code; however since DataGridColumHeaderPresenter
         /// returns the Column.Header's as the items some specialized code was needed to
         /// create and store peers.
-        ///</summary> 
+        ///</summary>
         protected override List<AutomationPeer> GetChildrenCore()
         {
             List<AutomationPeer> children = null;
@@ -61,7 +61,7 @@ namespace System.Windows.Automation.Peers
             ItemPeers = new ItemPeersStorage<ItemAutomationPeer>();
             ItemsControl owner = (ItemsControl)Owner;
 
-            if (OwningDataGrid.Columns.Count > 0)
+            if (OwningDataGrid?.Columns.Count > 0)
             {
                 IList childItems = null;
                 Panel itemHost = owner.ItemsHost;
@@ -85,7 +85,7 @@ namespace System.Windows.Automation.Peers
                 {
                     DataGridColumn dataItem;
                     if (item is DataGridColumnHeader)
-                    {   
+                    {
                         dataItem = ((DataGridColumnHeader) item).Column;
                     }
                     else
@@ -98,7 +98,7 @@ namespace System.Windows.Automation.Peers
                     if (peer == null)
                     {
                         peer = GetPeerFromWeakRefStorage(dataItem);
-                        
+
                         // As cached peer is getting used it must be invalidated.
                         if (peer != null)
                         {
@@ -110,7 +110,7 @@ namespace System.Windows.Automation.Peers
                     // If the peer is null or dataItem.Header has changed, create a new peer.
                     object dataItemHeader = dataItem == null ? null : dataItem.Header;
                     if (peer == null ||
-                        !Object.Equals(peer.Item, dataItemHeader))
+                        !ItemsControl.EqualsEx(peer.Item, dataItemHeader))
                     {
                         peer = CreateItemAutomationPeer(dataItem);
                     }
@@ -143,12 +143,12 @@ namespace System.Windows.Automation.Peers
         ///<summary>
         /// Find Childrend Peers based on Automation Properties.
         /// Used to enable virtualization with automation.
-        /// 
-        /// GetChildrenCore and FindItemByProperty are almost straight copies of the 
-        /// ItemControlAutomationPeer code; however since DataGridColumHeaderPresenter 
+        ///
+        /// GetChildrenCore and FindItemByProperty are almost straight copies of the
+        /// ItemControlAutomationPeer code; however since DataGridColumHeaderPresenter
         /// returns the Column.Header's as the items some specialized code was needed to
         /// create and store peers.
-        ///</summary> 
+        ///</summary>
         IRawElementProviderSimple IItemContainerProvider.FindItemByProperty(IRawElementProviderSimple startAfter, int propertyId, object value)
         {
             ResetChildrenCache();
@@ -187,7 +187,7 @@ namespace System.Windows.Automation.Peers
                         throw new InvalidOperationException(SR.Get(SRID.InavalidStartItem));
                     }
 
-                    // To find the index of the column items collection which occurs 
+                    // To find the index of the column items collection which occurs
                     // immidiately after startAfterItem.Item
                     startIndex = items.IndexOf(startAfterItem.Column) + 1;
                     if (startIndex == 0 || startIndex == items.Count)
@@ -198,7 +198,7 @@ namespace System.Windows.Automation.Peers
                 {
                     for (int i = startIndex; i < items.Count; i++)
                     {
-                        // This is to handle the case of when dataItems are just plain strings and have duplicates, 
+                        // This is to handle the case of when dataItems are just plain strings and have duplicates,
                         // only the first occurence of duplicate Items will be returned. It has also been used couple more times below.
                         if (items.IndexOf(items[i]) != i)
                             continue;

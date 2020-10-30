@@ -1,0 +1,1262 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.20815</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{CAC2E0EB-3E5E-43EB-ACCC-E5999D3BA9BB}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>System.Activities.Presentation</RootNamespace>
+    <AssemblyName>System.Activities.Presentation</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\..\..\..\..\tools\devdiv\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <TargetFrameworkProfile />
+    <DefineConstants>$(DefineConstants);NONAPTCA</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>
+    </NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>
+    </NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="ReachFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Activities" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Printing" />
+    <Reference Include="System.Runtime.DurableInstancing" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Activities" />
+    <Reference Include="System.ServiceModel.Internals, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.ServiceModel.Internals.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="WindowsFormsIntegration" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\FrameworkNameConstants.cs">
+      <Link>Common\Microsoft\Activities\Presentation\FrameworkNameConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\LineColumnPair.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\LineColumnPair.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\MultiTargetingTypeResolver.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\MultiTargetingTypeResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ResolverCache.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ResolverCache.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ResolverResult.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ResolverResult.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\SourceTextScanner.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\SourceTextScanner.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\XamlObjectReaderWithSequence.cs">
+      <Link>Microsoft\Activities\Presentation\Xaml\XamlObjectReaderWithSequence.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\XamlTypeKind.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\XamlTypeKind.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\XamlTypeWithExtraPropertiesRemoved.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\XamlTypeWithExtraPropertiesRemoved.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\..\..\..\Intermediate\adp\System.Activities.Presentation.csproj_1959254326\objc\x86\FxTrace.cs">
+      <Link>FxTrace.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\FrameworkNameExtensions.cs">
+      <Link>Common\Microsoft\Activities\Presentation\FrameworkNameExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ActivityBuilderExtensions.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ActivityBuilderExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ActivityTemplateFactoryBuilderReader.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ActivityTemplateFactoryBuilderReader.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ActivityTemplateFactoryBuilderWriter.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ActivityTemplateFactoryBuilderWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ActivityTemplateFactoryBuilderXamlMembers.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ActivityTemplateFactoryBuilderXamlMembers.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\AttributeConverter.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\AttributeConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\AttributeInfo.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\AttributeInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\AttributeXamlType.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\AttributeXamlType.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\DefaultValueAttributeInfo.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\DefaultValueAttributeInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\DesignerAttributeInfo.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\DesignerAttributeInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\DesignTimeXamlWriter.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\DesignTimeXamlWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\EditorAttributeInfo.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\EditorAttributeInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ImportAttributeInfo.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ImportAttributeInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ImportManyAttributeInfo.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ImportManyAttributeInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\IWorkflowDesignerXamlHelperExecutionContext.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\IWorkflowDesignerXamlHelperExecutionContext.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\NameSpaces.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\NameSpaces.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ObjectReferenceEqualityComparer.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ObjectReferenceEqualityComparer.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ViewStateIdManager.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ViewStateIdManager.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\ViewStateXamlHelper.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\ViewStateXamlHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\WorkflowDesignerXamlHelper.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\WorkflowDesignerXamlHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\WorkflowDesignerXamlSchemaContext.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\WorkflowDesignerXamlSchemaContext.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\XamlNamespaceHelper.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\XamlNamespaceHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\XamlTypeWithExplicitNamespace.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\XamlTypeWithExplicitNamespace.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Activities\Presentation\Xaml\XamlWriterExtensions.cs">
+      <Link>Common\Microsoft\Activities\Presentation\Xaml\XamlWriterExtensions.cs</Link>
+    </Compile>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Microsoft\Activities\Presentation\SharedFx.cs" />
+    <Compile Include="Microsoft\Activities\Presentation\SharedSR.Designer.cs" />
+    <Compile Include="SR.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>SR.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Model\BackPointer.cs" />
+    <Compile Include="System\Activities\Presentation\Model\Edge.cs" />
+    <Compile Include="System\Activities\Presentation\Model\GraphManager.cs" />
+    <Compile Include="System\Activities\Presentation\Model\LinkBase.cs" />
+    <Compile Include="System\Activities\Presentation\Model\LinkType.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelTreeItemHelper.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelItemsAddedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelItemsRemovedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\View\OutlineView\HidePropertyInOutlineViewAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\View\OutlineView\ShowInOutlineViewAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\View\OutlineView\ShowPropertyInOutlineViewAsSiblingAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\View\OutlineView\ShowPropertyInOutlineViewAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\View\VisualBasicReferenceValidationFeature.cs" />
+    <Compile Include="System\Activities\Presentation\View\VisualBasicValueValidationFeature.cs" />
+    <Compile Include="System\Activities\Presentation\Validation\BackgroundValidationSynchronizer.cs" />
+    <Compile Include="System\Activities\Presentation\Validation\ForegroundValidationSynchronizer.cs" />
+    <Compile Include="System\Activities\Presentation\Validation\ValidationReason.cs" />
+    <Compile Include="System\Activities\Presentation\Validation\ValidationRoot.cs" />
+    <Compile Include="System\Activities\Presentation\Validation\ValidationState.cs" />
+    <Compile Include="System\Activities\Presentation\Validation\ValidationSynchronizer.cs" />
+    <Compile Include="System\Activities\Presentation\Xaml\MultiTargetingXamlSchemaContext.cs" />
+    <Compile Include="System\Activities\Presentation\ActivityDelegateInfo.cs" />
+    <Compile Include="System\Activities\Presentation\ActivityDelegateInfoPresenter.xaml.cs">
+      <DependentUpon>ActivityDelegateInfoPresenter.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\ActivityDelegatePresenter.cs" />
+    <Compile Include="System\Activities\Presentation\ActivityDelegateUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\ActivityDesigner.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\GenericActivityTypeDesigner.xaml.cs">
+      <DependentUpon>GenericActivityTypeDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\ActivityDesignerOptionsAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\AdornerLocation.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\Annotation.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\AnnotationAdorner.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\AnnotationAdornerService.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\AnnotationManager.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\AnnotationStatus.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\DockedAnnotationView.xaml.cs">
+      <DependentUpon>DockedAnnotationView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Annotations\FloatingAnnotationView.xaml.cs">
+      <DependentUpon>FloatingAnnotationView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Annotations\IAnnotationIndicator.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\IAnnotationVisualProvider.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\IDockedAnnotation.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\IFloatingAnnotation.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\NotifyArgumentVariableAnnotationTextChanged.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\UIElementToAnnotationIndicatorAdapter.cs" />
+    <Compile Include="System\Activities\Presentation\Annotations\WorkflowAnnotationAdornerService.cs" />
+    <Compile Include="System\Activities\Presentation\ArgumentAccessor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\ContextItem.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\ContextItemManager.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\EditingContext.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\EnumValidator.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\GenericTypeParameterConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\manifestimages.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\Metadata\AttributeData.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\Metadata\AttributeDataCache.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\Metadata\MutableAttributeTable.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\AutomatedChoiceEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\AutomatedComboBox.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\AutomatedListBox.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\AutomatedListBoxItemAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\CategoryContainerAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\CategoryListAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\HiddenUIElementAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\IAutomationFocusChangedEventSource.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\PropertyContainerAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\PropertyInspectorAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\SubPropertyEditorAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Automation\TextFormatConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\CategoryList.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\CategoryNameMap.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\CiderCategoryContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\CiderCategoryLayoutContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\CiderStandardCategoryLayout.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\ContainerGeneratedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\EditModeSwitchButtonKeyboardFix.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\BoolViewEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\EditorUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\FlagEditor.xaml.cs">
+      <DependentUpon>FlagEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\FlagPanel.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\FlagStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\ImageSourceToImageConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\NewItemFactoryTypeModelToDisplayNameConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\newitemfactorytypemodeltotypenameconverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\NonZeroToBoolConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\PropertyValueToDisplayNameConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\PropertyValueToStandardValuesConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\quickitemtemplateselector.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\RTLValueConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\SubPropertyEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\SubPropertyViewEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\ValueToToolTipConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\ExtensibilityAccessor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Diagnostics\AutomationId.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Controls\WorkaroundPopup.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\AppendSuffixConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\BoolToDoubleConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\BoolToVisibilityCollpasedConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\BoolToVisibilityHiddenConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\ComposingConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\DelegateCommand.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\EqualsConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\IntegerToVisibilityConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\IsNullConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\NotConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\NullToBoolConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\ObservableCollection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\SwitchConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\ValueConverters.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Data\VisibilityOrConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\ExceptionStringTable.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\IMessageLogger.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\MixedProperty.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\CategoryBase.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\CategoryContainer.xaml.cs">
+      <DependentUpon>CategoryContainer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\CategoryContainerCommands.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\CategoryLayoutContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\ExtensibilityMetadataHelper.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\IPropertyInspector.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\NewItemFactoryTypeModel.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\PropertyContainerPopupHelper.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\StandardCategoryLayout.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Tolerances.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\UIThreadDispatcher.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\UserInterface\FocusScopeManager.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\ValueEditors\ChoiceEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\ValueEditors\RenderUtils.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\ValueEditors\StringEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\ValueEditors\ValueEditorUtils.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\ValueEditors\ValueToIconConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\IStateContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\KeyboardEnabledRadioButton.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Metadata\PropertyInspectorMetadata.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelCategoryEntry.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelPropertyEntry.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelPropertyEntryBase.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelPropertyEntryCollection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelPropertyIndexer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelPropertyMerger.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelPropertyValue.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelPropertyValueCollection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\ModelUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\PropertyEntryNameComparer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Model\PropertyEntryPropertyOrderComparer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyInspector.xaml.cs">
+      <DependentUpon>PropertyInspector.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyInspectorFontAndColorDictionary.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyInspectorMergedResources.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyPanel.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertySelectionMode.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyToolBar.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyValueDialogControl.xaml.cs">
+      <DependentUpon>PropertyValueDialogControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyValueDialogHost.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyValueEditorCommandHandler.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\PropertyInspectorResources.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\ResourceUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\SearchDirection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\CategoryContainerSelectionPathInterpreter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\CategoryEditorSelectionPathInterpreter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\CategoryEditorSelectionStop.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\CategorySelectionStop.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\ISelectionPathInterpreter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\ISelectionStop.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\PropertySelection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\PropertySelectionPathInterpreter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\PropertySelectionStop.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\SelectionPath.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Selection\SelectionPathResolver.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\SharedPropertyValueColumnWidthContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\AggregateStateContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\CategoryState.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\CategoryStateContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\PersistedState.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\PersistedStateContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\PersistedStateUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\PropertyActiveEditModeStateContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\PropertyState.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\PropertyStateContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\State\PropertyViewManagerStateContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Views\AlphabeticalViewManager.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Views\ByCategoryViewManager.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Views\IPropertyViewManager.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\VisualTreeUtils.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Metadata\AttributeCallback.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Metadata\AttributeCallbackBuilder.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Metadata\AttributeTable.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Metadata\AttributeTableBuilder.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Metadata\AttributeTableValidationException.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Metadata\IRegisterMetadata.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Metadata\MetadataStore.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\OrderToken.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\OrderTokenConflictResolution.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\OrderTokenPrecedence.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\Properties\Resources.Designer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\CategoryEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\categoryentry.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\DependencyPropertyValueSource.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\DialogPropertyValueEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\EditModeSwitchButton.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\EditorReuseAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\EnumValidator.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\ExtendedPropertyValueEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\IPropertyFilterTarget.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\newitemfactory.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\newitemtypesattribute.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyContainer.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyContainerEditMode.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\propertyentry.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\propertyentrycollection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyFilter.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyFilterAppliedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyFilterPredicate.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyMarker.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyOrder.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyOrderAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyValue.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyValueCollection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyValueEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyValueEditorCommands.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyValueExceptionEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyValueExceptionSource.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PropertyEditing\PropertyValueSource.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\PublishServiceCallback.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\ServiceManager.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\SubscribeContextCallback.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Core\SubscribeServiceCallback.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Documents\ViewManager.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Documents\ViewManagerAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\CreateOptions.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\EnumValidator.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\ModelEditingScope.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\ModelFactory.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\ModelItem.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\ModelItemCollection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\ModelItemDictionary.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\ModelMemberCollection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\ModelProperty.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Model\ModelPropertyCollection.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Services\ModelChangedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Services\ModelChangeInfo.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Services\ModelChangeInfoImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Services\ModelChangeType.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Interaction\Services\ViewService.cs" />
+    <Compile Include="System\Activities\Presentation\Base\Shared\Internal\EqualityArray.cs" />
+    <Compile Include="System\Activities\Presentation\ContextMenuUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ActivityActionSearchableStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ArgumentSearchableStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ArgumentToExpressionConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ArgumentToExpressionModelItemConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\EmptySearchableStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\EncodingSearchableStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ModelItemToAnnotationEnabledConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ModelPropertyEntryToModelItemConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ModelPropertyEntryToOwnerActivityConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ModelToObjectValueConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\ObjectToModelValueConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\SearchableStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\SearchableStringConverterAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\OutlineViewTextConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\TypeSearchableStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\VBIdentifierTrimConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\VisualBasicValueSearchableStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Converters\XNameSearchableStringConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Debugger\AllowBreakpointAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\DesignerConfigurationService.cs" />
+    <Compile Include="System\Activities\Presentation\Debugger\BreakpointType.cs" />
+    <Compile Include="System\Activities\Presentation\DesignerConfigurationServiceUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\DesignTimeValidationFeature.cs" />
+    <Compile Include="System\Activities\Presentation\DialogWindow.cs" />
+    <Compile Include="System\Activities\Presentation\DockedAnnotationDecorator.cs" />
+    <Compile Include="System\Activities\Presentation\DynamicActivityPropertyUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\EditingContextUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\Expressions\CreateExpressionFromString.cs" />
+    <Compile Include="System\Activities\Presentation\Expressions\ExpressionActivityEditor.cs" />
+    <Compile Include="System\Activities\Presentation\Expressions\ExpressionMorphHelper.cs" />
+    <Compile Include="System\Activities\Presentation\Expressions\ExpressionMorphHelperAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\Expressions\TextualExpressionEditor.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\AutoConnectAdorner.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\AutoConnectDirections.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\AutoConnectHelper.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\AutoSplitAdorner.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\AutoSplitAlignment.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\AutoSplitHelper.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\Connector.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorWithoutStartDot.xaml.cs">
+      <DependentUpon>ConnectorWithoutStartDot.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorWithStartDot.xaml.cs">
+      <DependentUpon>ConnectorWithStartDot.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\IAutoConnectContainer.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\IAutoSplitContainer.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectionPoint.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectionPointConverter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectionPointKind.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectionPointsAdorner.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorCreationAdorner.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorEditor.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorIdentityConverter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorLabelMarginConverter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorLabelVisibilityConverter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorMovedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorMovedEventHandler.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorPointsToArrowMarginConverter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorPointsToArrowTransformConverter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorPointsToSegmentsConverter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorRouter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\ConnectorStartDotConverter.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\DesignerGeometryHelper.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\DoubleExtensions.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\FreeFormPanel.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\INestedFreeFormPanelContainer.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\LocationChangedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\LocationChangedEventHandler.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\PointExtensions.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\RequiredSizeChangedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\FreeFormEditing\RequiredSizeChangedEventHandler.cs" />
+    <Compile Include="System\Activities\Presentation\Hosting\MultiTargetingSupportService.cs" />
+    <Compile Include="System\Activities\Presentation\IActivityDelegateFactory.cs" />
+    <Compile Include="System\Activities\Presentation\IMultipleDragEnabledCompositeView.cs" />
+    <Compile Include="System\Activities\Presentation\Metadata\ActivityArgumentHelper.cs" />
+    <Compile Include="System\Activities\Presentation\Metadata\ActivityDelegateArgumentDirection.cs" />
+    <Compile Include="System\Activities\Presentation\Metadata\ActivityDelegateArgumentMetadata.cs" />
+    <Compile Include="System\Activities\Presentation\Metadata\ActivityDelegateMetadata.cs" />
+    <Compile Include="System\Activities\Presentation\Model\AttachablePropertyChange.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ImmediateEditingScope.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelItemHelper.cs" />
+    <Compile Include="System\Activities\Presentation\Model\IItemsCollection.cs" />
+    <Compile Include="System\Activities\Presentation\Model\PropertyReferenceChange.cs" />
+    <Compile Include="System\Activities\Presentation\Model\PropertyReferenceChangedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\Model\SearchableEntryOption.cs" />
+    <Compile Include="System\Activities\Presentation\NamespaceHelper.cs" />
+    <Compile Include="System\Activities\Presentation\NamespaceSettingsHandler.cs" />
+    <Compile Include="System\Activities\Presentation\NonTextualExpressionMorphHelper.cs" />
+    <Compile Include="System\Activities\Presentation\ObjectReferenceService.cs" />
+    <Compile Include="System\Activities\Presentation\PropertyEditing\VersionPropertyValueEditor.cs" />
+    <Compile Include="System\Activities\Presentation\PropertyReferenceUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\SourceLocationUpdatedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\TargetFrameworkPropertyFilter.cs" />
+    <Compile Include="System\Activities\Presentation\TaskDispatcher.cs" />
+    <Compile Include="System\Activities\Presentation\Toolbox\ActivityTemplateFactory.cs" />
+    <Compile Include="System\Activities\Presentation\Toolbox\ActivityTemplateFactory.Generic.cs" />
+    <Compile Include="System\Activities\Presentation\Toolbox\ActivityTemplateFactoryBuilder.cs" />
+    <Compile Include="System\Activities\Presentation\Toolbox\ActivityTemplateFactoryExtension.cs" />
+    <Compile Include="System\Activities\Presentation\TypeUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\Utility\IconHelper.cs" />
+    <Compile Include="System\Activities\Presentation\ValidationErrorSourceLocatorFeature.cs" />
+    <Compile Include="System\Activities\Presentation\Validation\IValidationErrorSourceLocator.cs" />
+    <Compile Include="System\Activities\Presentation\VerticalConnector.xaml.cs">
+      <DependentUpon>VerticalConnector.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\BookmarkUndoUnit.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\CachedResourceDictionaryExtension.cs" />
+    <Compile Include="System\Activities\Presentation\ClipboardData.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\CutCopyPasteHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Debugger\DebuggerService.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Debugger\IDesignerDebugView.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DefaultCommandExtensionCallback.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DefaultTypeArgumentAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\DeleteHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DesignerMetadata.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DesignerPerfEventProvider.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DesignerPerfEvents.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DesignObjectWrapper.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DictionaryItemsCollection.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DragDropHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\DropAnimation.xaml.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>DropAnimation.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\EditingScopeUndoUnit.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\EditorOptionAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\ErrorActivity.cs" />
+    <Compile Include="System\Activities\Presentation\ErrorItem.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\ErrorReporting.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\IModalService.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelSearchService.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelSearchServiceImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\SearchableEntry.cs" />
+    <Compile Include="System\Activities\Presentation\Model\TextImage.cs" />
+    <Compile Include="System\Activities\Presentation\SQM\ActivityUsageCounter.cs" />
+    <Compile Include="System\Activities\Presentation\SQM\DataPointIds.cs" />
+    <Compile Include="System\Activities\Presentation\SQM\IVSSqmService.cs" />
+    <Compile Include="System\Activities\Presentation\ViewModel.cs" />
+    <Compile Include="System\Activities\Presentation\ViewState\ViewStateData.cs" />
+    <Compile Include="System\Activities\Presentation\ViewState\ViewStateManager.cs" />
+    <Compile Include="System\Activities\Presentation\ViewState\WorkflowViewState.cs" />
+    <Compile Include="System\Activities\Presentation\View\AnnotationDialog.xaml.cs">
+      <DependentUpon>AnnotationDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ExpressionTextBox.xaml.cs">
+      <DependentUpon>ExpressionTextBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ExpressionTextBoxAutomationPeer.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\IVersionEditor.cs" />
+    <Compile Include="System\Activities\Presentation\View\NoContextMenuGrid.cs" />
+    <Compile Include="System\Activities\Presentation\View\RubberBandSelector.cs" />
+    <Compile Include="System\Activities\Presentation\View\ScrollViewerPanner.cs" />
+    <Compile Include="System\Activities\Presentation\View\SearchToolTipAdorner.cs" />
+    <Compile Include="System\Activities\Presentation\View\SpacerPlaceholder.xaml.cs">
+      <DependentUpon>SpacerPlaceholder.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\TreeView\ChangeNotificationTracker.cs" />
+    <Compile Include="System\Activities\Presentation\View\TreeView\DesignerTreeAutoExpandHelper.cs" />
+    <Compile Include="System\Activities\Presentation\View\TreeView\DesignerTreeView.xaml.cs">
+      <DependentUpon>DesignerTreeView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\TreeView\DesignerTreeViewItem.cs" />
+    <Compile Include="System\Activities\Presentation\View\TreeView\ITreeViewItemSelectionHandler.cs" />
+    <Compile Include="System\Activities\Presentation\View\TreeView\TreeViewItemKeyValuePairModelItemViewModel.cs" />
+    <Compile Include="System\Activities\Presentation\View\TreeView\TreeViewItemModelItemViewModel.cs" />
+    <Compile Include="System\Activities\Presentation\View\TreeView\TreeViewItemModelPropertyViewModel.cs" />
+    <Compile Include="System\Activities\Presentation\View\TreeView\TreeViewItemViewModel.cs" />
+    <Compile Include="System\Activities\Presentation\View\TreeView\UniqueModelItemHelper.cs" />
+    <Compile Include="System\Activities\Presentation\View\VersionEditor.xaml.cs">
+      <DependentUpon>VersionEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\VersionEditorViewModel.cs" />
+    <Compile Include="System\Activities\Presentation\View\ViewCreatedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\View\ViewChildAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\View\ViewIgnoreAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\View\ViewSiblingAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\View\ViewVisibleAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\View\VisualBasicEditor.xaml.cs">
+      <DependentUpon>VisualBasicEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\VisualBasicExpressionMorphHelper.cs" />
+    <Compile Include="System\Activities\Presentation\SQM\FeatureUsageCounter.cs" />
+    <Compile Include="System\Activities\Presentation\WorkflowDesigner.Debugger.cs" />
+    <Compile Include="System\Activities\Presentation\WorkflowDesigner.Helpers.cs" />
+    <Compile Include="System\Activities\Presentation\WorkflowDesigner.SerializationHelpers.cs" />
+    <Compile Include="System\Activities\Presentation\Xaml\ErrorTolerantObjectWriter.cs" />
+    <Compile Include="System\Activities\Presentation\ExpandButtonVisibilityConverter.cs" />
+    <Compile Include="System\Activities\Presentation\ExpandCollapseIsCheckedConverter.cs" />
+    <Compile Include="System\Activities\Presentation\ExpressionSelection.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Feature.cs" />
+    <Compile Include="System\Activities\Presentation\FeatureAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\FeatureManager.cs" />
+    <Compile Include="System\Activities\Presentation\GenericTypeParameterConverter.cs" />
+    <Compile Include="System\Activities\Presentation\HelpKeywords.cs" />
+    <Compile Include="System\Activities\Presentation\Hosting\ICommandService.cs" />
+    <Compile Include="System\Activities\Presentation\Hosting\IDocumentPersistenceService.cs" />
+    <Compile Include="System\Activities\Presentation\Hosting\IMultiTargetingSupportService.cs" />
+    <Compile Include="System\Activities\Presentation\Hosting\IWorkflowCommandExtensionCallback.cs" />
+    <Compile Include="System\Activities\Presentation\Hosting\WindowHelperService.cs" />
+    <Compile Include="System\Activities\Presentation\IActivityToolboxService.cs" />
+    <Compile Include="System\Activities\Presentation\ICompositeView.cs" />
+    <Compile Include="System\Activities\Presentation\ICompositeViewEvents.cs" />
+    <Compile Include="System\Activities\Presentation\IExpandChild.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\IIntegratedHelpService.cs" />
+    <Compile Include="System\Activities\Presentation\IUndoEngineOperations.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\IWorkflowDesignerStorageService.cs" />
+    <Compile Include="System\Activities\Presentation\IXamlLoadErrorService.cs" />
+    <Compile Include="System\Activities\Presentation\MiniMap\MiniMapControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\ModelItemKeyValuePair.cs" />
+    <Compile Include="System\Activities\Presentation\Model\AttachedPropertiesService.cs" />
+    <Compile Include="System\Activities\Presentation\Model\AttachedProperty.cs" />
+    <Compile Include="System\Activities\Presentation\Model\AttachedPropertyDescriptor.cs" />
+    <Compile Include="System\Activities\Presentation\Model\AttachedPropertyInfo.cs" />
+    <Compile Include="System\Activities\Presentation\Model\Change.cs" />
+    <Compile Include="System\Activities\Presentation\Model\CollectionChange.cs" />
+    <Compile Include="System\Activities\Presentation\Model\DictionaryChange.cs" />
+    <Compile Include="System\Activities\Presentation\Model\DictionaryEditChange.cs" />
+    <Compile Include="System\Activities\Presentation\Model\EditingScope.cs" />
+    <Compile Include="System\Activities\Presentation\Model\EditingScopeEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\Model\FakeModelItemImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\FakeModelPropertyImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\GenericArgumentsUpdater.cs" />
+    <Compile Include="System\Activities\Presentation\Model\IModelTreeItem.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelChange.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelChangedEventArgsImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelItemCollectionImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelItemDictionaryImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelItemExtensions.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelItemImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelPropertyCollectionImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelPropertyDescriptor.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelPropertyImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelService.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelServiceImpl.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelTreeManager.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelTypeConverter.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelTypeDescriptorContextWrapper.cs" />
+    <Compile Include="System\Activities\Presentation\Model\ModelUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\Model\MorphHelper.cs" />
+    <Compile Include="System\Activities\Presentation\Model\PropertyChange.cs" />
+    <Compile Include="System\Activities\Presentation\Model\WeakKeyDictionary.cs" />
+    <Compile Include="System\Activities\Presentation\Model\XamlUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\NamespaceListProperty.cs" />
+    <Compile Include="System\Activities\Presentation\NotConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\NullToBooleanConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\ReadOnlyState.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\RetriableClipboard.cs" />
+    <Compile Include="System\Activities\Presentation\ShowExpandedMultiValueConverter.cs" />
+    <Compile Include="System\Activities\Presentation\TextFormattingConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Toolbox\IActivityTemplateFactory.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Toolbox\ToolboxCategory.cs" />
+    <Compile Include="System\Activities\Presentation\Toolbox\ToolboxCategoryItems.cs" />
+    <Compile Include="System\Activities\Presentation\Toolbox\ToolboxControl.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Toolbox\ToolboxItemImageConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Toolbox\ToolboxItemLoader.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Toolbox\ToolboxItemWrapper.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Toolbox\ToolCreatedEventArgs.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Toolbox\ToolCreatedEventHandler.cs" />
+    <Compile Include="System\Activities\Presentation\Toolbox\TreeViewContainerStyleSelector.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Toolbox\TreeViewTemplateSelector.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\TypeNameConverter.cs" />
+    <Compile Include="System\Activities\Presentation\TypeNameHelper.cs" />
+    <Compile Include="System\Activities\Presentation\TypeResolvingOptionsAttribute.cs" />
+    <Compile Include="System\Activities\Presentation\UndoEngine.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\UndoUnit.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\UndoUnitEventArgs.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\UpdatableGenericsFeature.cs" />
+    <Compile Include="System\Activities\Presentation\Validation\IValidationErrorService.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Validation\ValidationErrorInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Validation\ValidationService.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\VariableExpressionConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\ViewStateAttachedPropertyFeature.cs" />
+    <Compile Include="System\Activities\Presentation\View\ActivityTypeDesigner.xaml.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>ActivityTypeDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ActivityTypeResolver.xaml.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>ActivityTypeResolver.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ArgumentDesigner.xaml.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>ArgumentDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\AssemblyContextControlItem.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\AutoScrollHelper.cs" />
+    <Compile Include="System\Activities\Presentation\View\BreadCrumbTextConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\CanExpandCollapseAllConverter.cs" />
+    <Compile Include="System\Activities\Presentation\View\DataGridHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\DesignerView.Commands.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\DesignerView.xaml.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>DesignerView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\DesignerWithHeader.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\EditorResources.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ErrorView.xaml.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>ErrorView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\ExpressionHelper.cs" />
+    <Compile Include="System\Activities\Presentation\View\VisualBasicEditorAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\View\ExpressionValueEditor.cs" />
+    <Compile Include="System\Activities\Presentation\View\ExtensionSurface.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ExtensionWindow.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ExtensionWindowClosingRoutedEventArgs.cs" />
+    <Compile Include="System\Activities\Presentation\View\ExtensionWindowHeader.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ExtensionWindowResizeGrip.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\FilterableData.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\HandleValueEditor.cs" />
+    <Compile Include="System\Activities\Presentation\View\IExpressionEditorInstance.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\IExpressionEditorService.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ImportDesigner.xaml.cs">
+      <DependentUpon>ImportDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ImportedNamespaceContextItem.cs" />
+    <Compile Include="System\Activities\Presentation\View\ModelPropertyPathExpanderConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\NamespaceDisplay.xaml.cs">
+      <DependentUpon>NamespaceDisplay.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\NamespaceDisplayAutomationPeer.cs" />
+    <Compile Include="System\Activities\Presentation\View\ParserContext.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\PropertyEntryToEditingContextConverter.cs" />
+    <Compile Include="System\Activities\Presentation\View\PropertyEntryToEditorOptionConverter.cs" />
+    <Compile Include="System\Activities\Presentation\View\QuadTree.cs" />
+    <Compile Include="System\Activities\Presentation\View\Selection.cs" />
+    <Compile Include="System\Activities\Presentation\View\TypeBrowser.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\TypeKeyValue.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\TypePresenter.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\TypePropertyEditor.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\TypeResolvingOptions.cs" />
+    <Compile Include="System\Activities\Presentation\View\TypeToArgumentTypeConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\TypeToStringValueConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\VariableDesigner.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\VBIdentifierDesigner.xaml.cs">
+      <DependentUpon>VBIdentifierDesigner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\VBIdentifierName.cs" />
+    <Compile Include="System\Activities\Presentation\View\VBIdentifierNameEditor.cs" />
+    <Compile Include="System\Activities\Presentation\View\ViewStateChangedEventArgs.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ViewStateChangedEventHandler.cs" />
+    <Compile Include="System\Activities\Presentation\View\ViewStateService.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\ViewUtilities.cs" />
+    <Compile Include="System\Activities\Presentation\View\VirtualizedContainerService.cs" />
+    <Compile Include="..\Microsoft.Tools.Common\Microsoft\Tools\Common\Win32Interop.cs">
+      <Link>Win32Interop.cs</Link>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\WindowExtensionMethods.cs" />
+    <Compile Include="System\Activities\Presentation\View\WorkflowViewManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\WorkflowViewService.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\View\WorkflowViewStateService.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\WorkflowDesigner.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\WorkflowDesignerColors.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\WorkflowElementDialog.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\WorkflowElementDialogWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\WorkflowFileItem.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\WorkflowItemPresenter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\WorkflowItemsPresenter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\WorkflowViewElement.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\XamlLoadErrorInfo.cs" />
+    <Compile Include="System\Activities\Presentation\Xaml\ActivityBuilderHelper.cs" />
+    <Compile Include="System\Activities\Presentation\Xaml\ShimAsPublicXamlType.cs" />
+    <Compile Include="System\Activities\Presentation\Xaml\ObjectToSourceLocationMapping.cs" />
+    <Compile Include="System\Activities\Presentation\Xaml\SourceLocationExtensions.cs" />
+    <Compile Include="System\Activities\Presentation\XNameConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="System\Activities\Presentation\Hosting\WorkflowCommandExtensionItem.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="System\Activities\Presentation\ActivityDelegateInfoPresenter.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Annotations\DockedAnnotationView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Annotations\FloatingAnnotationView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Editors\FlagEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\PropertyInspector\CategoryContainer.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyInspector.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\PropertyValueDialogControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\PropertyInspectorUnshareableResources.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.CategoryContainer.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.CategoryList.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.Constants.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.EditModeSwitchButton.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.Editors.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.PropertyContainer.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.PropertyInspector.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.PropertyToolBar.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.SubPropertyEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\StylesCore.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\ColorResources.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\DefaultColorResources.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\DropAnimation.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\FreeFormEditing\ConnectorWithoutStartDot.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\FreeFormEditing\ConnectorWithStartDot.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\HighContrastColorResources.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\MiniMap\MiniMapControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\VerticalConnector.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\ActivityTypeDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\ActivityTypeResolver.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\AnnotationDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\ArgumentDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\DataGridHelper.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\DesignerView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\EditorResources.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\ErrorView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\ExpressionTextBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\ImportDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\NamespaceDisplay.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\SpacerPlaceholder.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\TreeView\DesignerTreeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\TypeBrowser.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\TypePresenter.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\VariableDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\VBIdentifierDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\VersionEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\GenericActivityTypeDesigner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\View\VisualBasicEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="System\Activities\Presentation\WorkflowElementDesignerDefaultTemplate.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\WorkflowElementDialogWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="System\Activities\Presentation\WorkflowViewElementDefaultTemplate.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Themes\ExtensionWindowDefaultTemplate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\ExtensionWindowHeaderDefaultTemplate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\ExtensionWindowResizeGripDefaultTemplate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\GenericTypeParameterConverter.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\Icons.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\ModelPropertyPathExpanderConverter.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\NameConverter.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\StringResources.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\ToolboxDefaultTemplate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\TypeToArgumentTypeConverter.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="native.rc" />
+    <Content Include="Resources\Copy.png" />
+    <Content Include="Resources\Cut.png" />
+    <Content Include="Resources\Delete.png" />
+    <Content Include="Resources\Error.png" />
+    <Content Include="Resources\Panning.cur" />
+    <Content Include="Resources\Paste.png" />
+    <Content Include="Resources\ReadyToPan.cur" />
+    <Content Include="Resources\Warning.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Readme.txt" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\AlphaSort.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\CategorizedSort.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\Delete.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\MoveDown.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\MoveUp.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\MultiSelectionDifferentType.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\MultiSelectionSameType.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\NonDesignableSelection.png" />
+    <Content Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\Resources\Warning.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+    <Folder Include="System\Activities\Presentation\Base\Core\Internal\PropertyEditing\FromExpression\Framework\Icons\" />
+    <Folder Include="System\Activities\Presentation\Base\Interaction\Interaction\" />
+    <Folder Include="System\Activities\Presentation\Base\Interaction\Internal\Interaction\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Microsoft\Activities\Presentation\SharedSR.resx" />
+    <EmbeddedResource Include="SR.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>SR.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="System\Activities\Presentation\Base\Core\Properties\Resources.resx" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>C:\Windows\Microsoft.NET\Framework\v4.0.30319\gacutil.exe /i $(TargetPath)</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -84,7 +84,7 @@ namespace System.Windows.Markup
         /// </summary>
         /// <param name="stream">input as stream</param>
         /// <returns>object root generated after xml parsed</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         public static object Load(Stream stream)
         {
             if (stream == null)
@@ -101,7 +101,7 @@ namespace System.Windows.Markup
         /// </summary>
         /// <param name="reader">Reader of xml content.</param>
         /// <returns>object root generated after xml parsed</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         public static object Load(XmlReader reader)
         {
             if (reader == null)
@@ -119,7 +119,7 @@ namespace System.Windows.Markup
         /// <param name="stream">input as stream</param>
         /// <param name="parserContext">parser context</param>
         /// <returns>object root generated after xml parsed</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         public static object Load(Stream stream, ParserContext parserContext)
         {
             if (stream == null)
@@ -131,10 +131,7 @@ namespace System.Windows.Markup
                 parserContext = new ParserContext();
             }
 
-            XmlReader reader = XmlReader.Create(stream, null, parserContext);
-            object tree = Load(reader, parserContext, XamlParseMode.Synchronous);
-            stream.Close();
-            return tree;
+            return Load(stream, parserContext, useRestrictiveXamlReader: false);
         }
 
         /// <summary>
@@ -689,6 +686,48 @@ namespace System.Windows.Markup
 
         /// <summary>
         /// Reads XAML from the passed stream, building an object tree and returning the
+        /// root of that tree.
+        /// </summary>
+        /// <param name="stream">input as stream</param>
+        /// <param name="parserContext">parser context</param>
+        /// <returns>object root generated after xml parsed</returns>
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        internal static object Load(Stream stream, ParserContext parserContext, bool useRestrictiveXamlReader)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException("stream");
+            }
+            if (parserContext == null)
+            {
+                parserContext = new ParserContext();
+            }
+
+            XmlReader reader = XmlReader.Create(stream, null, parserContext);
+            object tree = Load(reader, parserContext, XamlParseMode.Synchronous, useRestrictiveXamlReader);
+            stream.Close();
+            return tree;
+        }
+
+        /// <summary>
+        /// Reads XAML using the passed XmlReader, building an object tree and returning the
+        /// root of that tree.
+        /// </summary>
+        /// <param name="reader">Reader of xml content.</param>
+        /// <returns>object root generated after xml parsed</returns>
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        internal static object Load(XmlReader reader, bool useRestrictiveXamlReader = false)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException("reader");
+            }
+
+            return Load(reader, null, XamlParseMode.Synchronous, useRestrictiveXamlReader);
+        }
+
+        /// <summary>
+        /// Reads XAML from the passed stream, building an object tree and returning the
         /// root of that tree.  Wrap a CompatibilityReader with another XmlReader that
         /// uses the passed reader settings to allow validation of xaml.
         /// </summary>
@@ -703,6 +742,27 @@ namespace System.Windows.Markup
             XmlReader reader,
             ParserContext parserContext,
             XamlParseMode parseMode)
+        {
+            return Load(reader, parserContext, parseMode, useRestrictiveXamlReader: false);
+        }
+
+        /// <summary>
+        /// Reads XAML from the passed stream, building an object tree and returning the
+        /// root of that tree.  Wrap a CompatibilityReader with another XmlReader that
+        /// uses the passed reader settings to allow validation of xaml.
+        /// </summary>
+        /// <param name="reader">XmlReader to use.  This is NOT wrapped by any
+        ///  other reader</param>
+        /// <param name="context">Optional parser context.  May be null </param>
+        /// <param name="parseMode">Sets synchronous or asynchronous parsing</param>
+        /// <param name="useRestrictiveXamlReader">Whether or not this method should use 
+        /// RestrictiveXamlXmlReader to restrict instantiation of potentially dangerous types</param>
+        /// <returns>object root generated after xml parsed</returns>
+        internal static object Load(
+        XmlReader reader,
+        ParserContext parserContext,
+        XamlParseMode parseMode,
+        bool useRestrictiveXamlReader)
         {
             if (parseMode == XamlParseMode.Uninitialized ||
                 parseMode == XamlParseMode.Asynchronous)
@@ -761,7 +821,8 @@ namespace System.Windows.Markup
 
                 XamlSchemaContext schemaContext = parserContext.XamlTypeMapper != null ?
                     parserContext.XamlTypeMapper.SchemaContext : GetWpfSchemaContext();
-                System.Xaml.XamlXmlReader xamlXmlReader = new System.Xaml.XamlXmlReader(reader, schemaContext, settings);
+                System.Xaml.XamlXmlReader xamlXmlReader = (useRestrictiveXamlReader) ? new RestrictiveXamlXmlReader(reader, schemaContext, settings):
+                                                                                       new System.Xaml.XamlXmlReader(reader, schemaContext, settings);
                 root = Load(xamlXmlReader, parserContext);
                 reader.Close();
             }
@@ -792,8 +853,8 @@ namespace System.Windows.Markup
             }
             return root;
         }
-
-        internal static object Load(
+        
+            internal static object Load(
             System.Xaml.XamlReader xamlReader,
             ParserContext parserContext)
         {
@@ -888,7 +949,7 @@ namespace System.Windows.Markup
         ///            SecurityCritical, but treated as safe.
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         internal static object LoadBaml(
             Stream stream,
             ParserContext parserContext,
@@ -940,7 +1001,7 @@ namespace System.Windows.Markup
                     readerSettings.BaseUri = BaseUriHelper.PackAppBaseUri;
                 }
 
-                var reader = new Baml2006Reader(stream, new Baml2006SchemaContext(readerSettings.LocalAssembly), readerSettings, parent);
+                var reader = new Baml2006ReaderInternal(stream, new Baml2006SchemaContext(readerSettings.LocalAssembly), readerSettings, parent);
 
                 // We don't actually use the GeneratedInternalTypeHelper any more.
                 // But for v3 compat, don't allow loading of internals in PT unless there is one.

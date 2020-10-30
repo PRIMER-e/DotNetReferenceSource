@@ -43,7 +43,7 @@ namespace System.Windows.Forms {
         /// <include file='doc\Timer.uex' path='docs/doc[@for="Timer.onTimer"]/*' />
         /// <devdoc>
         /// </devdoc>
-        private EventHandler onTimer;
+        internal EventHandler onTimer;
 
         /// <include file='doc\Timer.uex' path='docs/doc[@for="Timer.timerProcRoot"]/*' />
         /// <devdoc>

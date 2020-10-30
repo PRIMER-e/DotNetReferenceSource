@@ -9,9 +9,9 @@ namespace System.ServiceModel.Web
     // DO NOT EDIT THIS CODE. 
     //
     // All of the code from this class was taken from build 20717.00 
-    // of System.Net.HttpDateParse.  If there is a 
-
-
+    // of System.Net.HttpDateParse.  If there is a bug with this code 
+    // it should be fixed  in the original System.Net.HttpDateParse 
+    // and then ported here. [Microsoft]
 
     internal static class HttpDateParse
     {

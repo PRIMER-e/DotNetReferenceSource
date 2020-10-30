@@ -504,9 +504,9 @@ namespace MS.Internal.PtsHost
             // so it gets broken. PTS creates BR with delayed figure and broken para.
             // PTS will format the next page starting from delayed figure, which can produce MCS.
             // So when the next paragraph is continued from BR, it has MCS.
-            // This problem is currently investigated by PTS team: PTSLS 
-
-
+            // This problem is currently investigated by PTS team: PTSLS bug 915.
+            // For now, MCS gets ignored here.
+            //ErrorHandler.Assert(pbrkrecIn == IntPtr.Zero || mcs == null, ErrorHandler.BrokenParaHasMcs);
             if (mcs != null && pbrkrecIn != IntPtr.Zero)
             {
                 mcs = null;

@@ -51,13 +51,13 @@ namespace MS.Internal.IO.Packaging.CompoundFile
     {
         /// <summary>
         /// Utility function to update a grfMode value based on FileAccess.
-        /// 6/12/2002: Fixes 
-
-
-
-
-
-
+        /// 6/12/2002: Fixes bug #4938, 4960, 5096, 4858
+        /// </summary>
+        /// <param name="access">FileAccess we're translating</param>
+        /// <param name="grfMode">Mode flag parameter to modify</param>
+        // <SecurityNote>
+        //     SecurityTreatAsSafe:  Makes NO call to security suppressed unmanaged code
+        // </SecurityNote>
         internal static void UpdateModeFlagFromFileAccess( FileAccess access, ref int grfMode )
         {
             // Supporting write-only scenarios container-wide gets tricky and it 

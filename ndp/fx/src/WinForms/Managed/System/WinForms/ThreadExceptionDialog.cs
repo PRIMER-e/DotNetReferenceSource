@@ -7,15 +7,12 @@
 /*
  */
 namespace System.Windows.Forms {
-    using System.Threading;
-    using System.Runtime.Remoting;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System;
     using System.Text;
     using System.ComponentModel;
     using System.Drawing;
-    using System.Windows.Forms;
     using System.Reflection;
     using System.Security;
     using System.Security.Permissions;
@@ -37,10 +34,49 @@ namespace System.Windows.Forms {
         SecurityPermission(SecurityAction.LinkDemand, Flags=SecurityPermissionFlag.UnmanagedCode),
         UIPermission(SecurityAction.Assert, Window=UIPermissionWindow.AllWindows)]
     public class ThreadExceptionDialog : Form {
+
+        private const string DownBitmapName = "down.bmp";
+        private const string UpBitmapName = "up.bmp";
+
         private const int MAXWIDTH = 440;
         private const int MAXHEIGHT = 325;
+        private const int PADDINGWIDTH = 84;
+        private const int PADDINGHEIGHT = 26;
+        private const int MAXTEXTWIDTH = 180;
+        private const int MAXTEXTHEIGHT = 40;
+        private const int BUTTONTOPPADDING = 31;
+        private const int BUTTONDETAILS_LEFTPADDING = 8;
+        private const int MESSAGE_TOPPADDING = 8;
+        private const int HEIGHTPADDING = 8;
+        private const int BUTTONWIDTH = 100;
+        private const int BUTTONHEIGHT = 23;
+        private const int BUTTONALIGNMENTWIDTH = 105;
+        private const int BUTTONALIGNMENTPADDING = 5;
+        private const int DETAILSWIDTHPADDING = 16;
+        private const int DETAILSHEIGHT = 154;
+        private const int PICTUREWIDTH = 64;
+        private const int PICTUREHEIGHT = 64;
+        private const int EXCEPTIONMESSAGEVERTICALPADDING = 4;
 
-        // private const int IDI_ERROR = 32513;
+        private int scaledMaxWidth = MAXWIDTH;
+        private int scaledMaxHeight = MAXHEIGHT;
+        private int scaledPaddingWidth = PADDINGWIDTH;
+        private int scaledPaddingHeight = PADDINGHEIGHT;
+        private int scaledMaxTextWidth = MAXTEXTWIDTH;
+        private int scaledMaxTextHeight = MAXTEXTHEIGHT;
+        private int scaledButtonTopPadding = BUTTONTOPPADDING;
+        private int scaledButtonDetailsLeftPadding = BUTTONDETAILS_LEFTPADDING;
+        private int scaledMessageTopPadding = MESSAGE_TOPPADDING;
+        private int scaledHeightPadding = HEIGHTPADDING;
+        private int scaledButtonWidth = BUTTONWIDTH;
+        private int scaledButtonHeight = BUTTONHEIGHT;
+        private int scaledButtonAlignmentWidth = BUTTONALIGNMENTWIDTH;
+        private int scaledButtonAlignmentPadding = BUTTONALIGNMENTPADDING;
+        private int scaledDetailsWidthPadding = DETAILSWIDTHPADDING;
+        private int scaledDetailsHeight = DETAILSHEIGHT;
+        private int scaledPictureWidth = PICTUREWIDTH;
+        private int scaledPictureHeight = PICTUREHEIGHT;
+        private int scaledExceptionMessageVerticalPadding = EXCEPTIONMESSAGEVERTICALPADDING;
 
         private PictureBox pictureBox = new PictureBox();
         private Label message = new Label();
@@ -61,6 +97,28 @@ namespace System.Windows.Forms {
         ///    </para>
         /// </devdoc>
         public ThreadExceptionDialog(Exception t) {
+
+            if (DpiHelper.EnableThreadExceptionDialogHighDpiImprovements) {
+                scaledMaxWidth = LogicalToDeviceUnits(MAXWIDTH);
+                scaledMaxHeight = LogicalToDeviceUnits(MAXHEIGHT);
+                scaledPaddingWidth = LogicalToDeviceUnits(PADDINGWIDTH);
+                scaledPaddingHeight = LogicalToDeviceUnits(PADDINGHEIGHT);
+                scaledMaxTextWidth = LogicalToDeviceUnits(MAXTEXTWIDTH);
+                scaledMaxTextHeight = LogicalToDeviceUnits(MAXTEXTHEIGHT);
+                scaledButtonTopPadding = LogicalToDeviceUnits(BUTTONTOPPADDING);
+                scaledButtonDetailsLeftPadding = LogicalToDeviceUnits(BUTTONDETAILS_LEFTPADDING);
+                scaledMessageTopPadding = LogicalToDeviceUnits(MESSAGE_TOPPADDING);
+                scaledHeightPadding = LogicalToDeviceUnits(HEIGHTPADDING);
+                scaledButtonWidth = LogicalToDeviceUnits(BUTTONWIDTH);
+                scaledButtonHeight = LogicalToDeviceUnits(BUTTONHEIGHT);
+                scaledButtonAlignmentWidth = LogicalToDeviceUnits(BUTTONALIGNMENTWIDTH);
+                scaledButtonAlignmentPadding = LogicalToDeviceUnits(BUTTONALIGNMENTPADDING);
+                scaledDetailsWidthPadding = LogicalToDeviceUnits(DETAILSWIDTHPADDING);
+                scaledDetailsHeight = LogicalToDeviceUnits(DETAILSHEIGHT);
+                scaledPictureWidth = LogicalToDeviceUnits(PICTUREWIDTH);
+                scaledPictureHeight = LogicalToDeviceUnits(PICTUREHEIGHT);
+                scaledExceptionMessageVerticalPadding = LogicalToDeviceUnits(EXCEPTIONMESSAGEVERTICALPADDING);
+            }
 
             string messageRes;
             string messageText;
@@ -136,12 +194,12 @@ namespace System.Windows.Forms {
 
                     try {
                         
-                        // 
-
-
-
-
-
+                        // bug 113573 -- if there's a path with an escaped value in it 
+                        // like c:\temp\foo%2fbar, the AssemblyName call will unescape it to
+                        // c:\temp\foo\bar, which is wrong, and this will fail.   It doesn't look like the 
+                        // assembly name class handles this properly -- even the "CodeBase" property is un-escaped
+                        // so we can't circumvent this.
+                        //
                         if (name.EscapedCodeBase != null && name.EscapedCodeBase.Length > 0) {
                             Uri codeBase = new Uri(name.EscapedCodeBase);
                             if (codeBase.Scheme == "file") {
@@ -173,16 +231,26 @@ namespace System.Windows.Forms {
             string detailsText = detailsTextBuilder.ToString();
 
             Graphics g = message.CreateGraphicsInternal();
-            
-            Size textSize = Size.Ceiling(g.MeasureString(messageText, Font, MAXWIDTH - 84));
-            textSize.Height += 4;
+
+            Size textSize = new Size(scaledMaxWidth - scaledPaddingWidth, int.MaxValue);
+
+            if (DpiHelper.EnableThreadExceptionDialogHighDpiImprovements && (Label.UseCompatibleTextRenderingDefault == false)) {
+                // we need to measure string using API that matches the rendering engine - TextRenderer.MeasureText for GDI
+                textSize = Size.Ceiling(TextRenderer.MeasureText(messageText, Font, textSize, TextFormatFlags.WordBreak));
+            }
+            else {
+                // if HighDpi improvements are not enabled, or rendering mode is GDI+, use Graphics.MeasureString
+                textSize = Size.Ceiling(g.MeasureString(messageText, Font, textSize.Width));
+            }
+
+            textSize.Height += scaledExceptionMessageVerticalPadding;
             g.Dispose();
 
-            if (textSize.Width < 180) textSize.Width = 180;
-            if (textSize.Height > MAXHEIGHT) textSize.Height = MAXHEIGHT;
+            if (textSize.Width < scaledMaxTextWidth) textSize.Width = scaledMaxTextWidth;
+            if (textSize.Height > scaledMaxHeight) textSize.Height = scaledMaxHeight;
 
-            int width = textSize.Width + 84;
-            int buttonTop = Math.Max(textSize.Height, 40) + 26;
+            int width = textSize.Width + scaledPaddingWidth;
+            int buttonTop = Math.Max(textSize.Height, scaledMaxTextHeight) + scaledPaddingHeight;
 
             // SECREVIEW : We must get a hold of the parent to get at it's text
             //           : to make this dialog look like the parent.
@@ -207,12 +275,12 @@ namespace System.Windows.Forms {
             MinimizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
             Icon = null;
-            ClientSize = new Size(width, buttonTop + 31);
+            ClientSize = new Size(width, buttonTop + scaledButtonTopPadding);
             TopMost = true;
 
-            pictureBox.Location = new Point(0, 0);
-            pictureBox.Size = new Size(64, 64);
-            pictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+            pictureBox.Location = new Point(scaledPictureWidth/8, scaledPictureHeight/8);
+            pictureBox.Size = new Size(scaledPictureWidth*3/4, scaledPictureHeight*3/4);
+            pictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
             if (t is SecurityException) {
                 pictureBox.Image = SystemIcons.Information.ToBitmap();
             }
@@ -220,8 +288,8 @@ namespace System.Windows.Forms {
                 pictureBox.Image = SystemIcons.Error.ToBitmap();
             }
             Controls.Add(pictureBox);
-            message.SetBounds(64, 
-                              8 + (40 - Math.Min(textSize.Height, 40)) / 2,
+            message.SetBounds(scaledPictureWidth,
+                              scaledMessageTopPadding + (scaledMaxTextHeight - Math.Min(textSize.Height, scaledMaxTextHeight)) / 2,
                               textSize.Width, textSize.Height);
             message.Text = messageText;
             Controls.Add(message);
@@ -248,25 +316,30 @@ namespace System.Windows.Forms {
             if (detailAnchor) {
                 b = detailsButton;
 
-                expandImage = new Bitmap(this.GetType(), "down.bmp");
+                expandImage = new Bitmap(this.GetType(), DownBitmapName);
                 expandImage.MakeTransparent();
-                collapseImage = new Bitmap(this.GetType(), "up.bmp");
+                collapseImage = new Bitmap(this.GetType(), UpBitmapName);
                 collapseImage.MakeTransparent();
 
-                b.SetBounds( 8, buttonTop, 100, 23 );
+                if (DpiHelper.EnableThreadExceptionDialogHighDpiImprovements) {
+                    ScaleBitmapLogicalToDevice(ref expandImage);
+                    ScaleBitmapLogicalToDevice(ref collapseImage);
+                }
+
+                b.SetBounds(scaledButtonDetailsLeftPadding, buttonTop, scaledButtonWidth, scaledButtonHeight);
                 b.Image = expandImage;
                 b.ImageAlign = ContentAlignment.MiddleLeft;
                 Controls.Add(b);
                 startIndex = 1;
             }
             
-            int buttonLeft = (width - 8 - ((buttons.Length - startIndex) * 105 - 5));
+            int buttonLeft = (width - scaledButtonDetailsLeftPadding - ((buttons.Length - startIndex) * scaledButtonAlignmentWidth - scaledButtonAlignmentPadding));
             
             for (int i = startIndex; i < buttons.Length; i++) {
                 b = buttons[i];
-                b.SetBounds(buttonLeft, buttonTop, 100, 23);
+                b.SetBounds(buttonLeft, buttonTop, scaledButtonWidth, scaledButtonHeight);
                 Controls.Add(b);
-                buttonLeft += 105;
+                buttonLeft += scaledButtonAlignmentWidth;
             }
 
             details.Text = detailsText;
@@ -277,8 +350,31 @@ namespace System.Windows.Forms {
             details.TabStop = false;
             details.AcceptsReturn = false;
             
-            details.SetBounds(8, buttonTop + 31, width - 16,154);
+            details.SetBounds(scaledButtonDetailsLeftPadding, buttonTop + scaledButtonTopPadding, width - scaledDetailsWidthPadding, scaledDetailsHeight);
+            details.Visible = detailsVisible;
             Controls.Add(details);
+            if (DpiHelper.EnableThreadExceptionDialogHighDpiImprovements) {
+                DpiChanged += ThreadExceptionDialog_DpiChanged;
+            }
+        }
+
+        private void ThreadExceptionDialog_DpiChanged(object sender, DpiChangedEventArgs e) {
+            if (expandImage != null) {
+                expandImage.Dispose();
+            }
+            expandImage = new Bitmap(this.GetType(), DownBitmapName);
+            expandImage.MakeTransparent();
+
+            if (collapseImage != null) {
+                collapseImage.Dispose();
+            }
+            collapseImage = new Bitmap(this.GetType(), UpBitmapName);
+            collapseImage.MakeTransparent();
+
+            ScaleBitmapLogicalToDevice(ref expandImage);
+            ScaleBitmapLogicalToDevice(ref collapseImage);
+
+            detailsButton.Image = detailsVisible ? collapseImage : expandImage;
         }
 
         /// <include file='doc\ThreadExceptionDialog.uex' path='docs/doc[@for="ThreadExceptionDialog.AutoSize"]/*' />
@@ -321,10 +417,11 @@ namespace System.Windows.Forms {
         ///     Called when the details button is clicked.
         /// </devdoc>
         private void DetailsClick(object sender, EventArgs eventargs) {
-            int delta = details.Height + 8;
+            int delta = details.Height + scaledHeightPadding;
             if (detailsVisible) delta = -delta;
             Height = Height + delta;
             detailsVisible = !detailsVisible;
+            details.Visible = detailsVisible;
             detailsButton.Image = detailsVisible ? collapseImage : expandImage;
         }
 

@@ -26,8 +26,7 @@ namespace System.Windows.Forms
             get
             {
                 return !this.ShowHelp &&
-                        (Application.VisualStyleState == VisualStyles.VisualStyleState.ClientAreaEnabled ||
-                         Application.VisualStyleState == VisualStyles.VisualStyleState.ClientAndNonClientAreasEnabled);
+                        ((Application.VisualStyleState & VisualStyles.VisualStyleState.ClientAreaEnabled) == VisualStyles.VisualStyleState.ClientAreaEnabled);
             }
         }
 

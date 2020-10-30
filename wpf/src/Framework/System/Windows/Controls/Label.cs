@@ -17,6 +17,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.ComponentModel;
 using System.Xaml;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -55,6 +56,8 @@ namespace System.Windows.Controls
             // prevent label from being a tab stop and focusable
             IsTabStopProperty.OverrideMetadata(typeof(Label), new FrameworkPropertyMetadata(MS.Internal.KnownBoxes.BooleanBoxes.FalseBox));
             FocusableProperty.OverrideMetadata(typeof(Label), new FrameworkPropertyMetadata(MS.Internal.KnownBoxes.BooleanBoxes.FalseBox));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.Label);
         }
 
         /// <summary>

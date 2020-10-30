@@ -23,7 +23,7 @@
 #define WATSON_SUBPATH                  WATSON_INSTALLED_REG_SUBPATH_IA64
 #else
 #define WATSON_INSTALLED_REG_VAL_W      DW_Y(WATSON_INSTALLED_REG_VAL)
-#define WATSON_SUBPATH                  L"Software\\"DW_Y(DEFAULT_SUBPATH)L"\\Installed"
+#define WATSON_SUBPATH                  L"Software\\" DW_Y(DEFAULT_SUBPATH) L"\\Installed"
 #endif
 
 #ifdef FEATURE_CORESYSTEM

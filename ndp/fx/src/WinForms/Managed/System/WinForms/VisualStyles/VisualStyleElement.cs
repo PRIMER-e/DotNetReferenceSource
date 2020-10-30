@@ -134,7 +134,8 @@ namespace System.Windows.Forms.VisualStyles {
 
             public static class RadioButton {
                 private static readonly int part = 2;
-
+                // in Win10 RS3 a new part was added to BUTTONPARTS enum in vsstyle.h  - BP_RADIOBUTTON_HCDISABLED = 8
+                internal static readonly int HighContrastDisabledPart = 8;
 
                 private static VisualStyleElement uncheckednormal;
     
@@ -235,6 +236,8 @@ namespace System.Windows.Forms.VisualStyles {
 
             public static class CheckBox {
                 private static readonly int part = 3;
+                // in Win10 RS3 a new part was added to BUTTONPARTS enum in vsstyle.h  - BP_CHECKBOX_HCDISABLED = 9
+                internal static readonly int HighContrastDisabledPart = 9;
 
                 private static VisualStyleElement uncheckednormal;
     
@@ -383,6 +386,8 @@ namespace System.Windows.Forms.VisualStyles {
 
             public static class GroupBox {
                 private static readonly int part = 4;
+                // in Win10 RS3 a new part was added to BUTTONPARTS enum in vsstyle.h  - BP_GROUPBOX_HCDISABLED = 10
+                internal static readonly int HighContrastDisabledPart = 10;
 
                 private static VisualStyleElement normal;
     
@@ -4830,11 +4835,11 @@ namespace System.Windows.Forms.VisualStyles {
             }
         } // END TREEVIEW
 
-        // In Dev10, we replace outline +/- glyphs in PropertyGrid with triangle glyphs (Dev10 
-
-
-
-
+        // In Dev10, we replace outline +/- glyphs in PropertyGrid with triangle glyphs (Dev10 Bug 573429).
+        // Therefore, a new element ExplorerTreeView.Glyph is defined here.
+        // Due to limited resouce and schedule, we don't define all elements now, 
+        // and keep it internal use only.
+        // We'll consider to publish it later when we have enough resource.
         internal static class ExplorerTreeView {
             private static readonly string className = "Explorer::TreeView";
 

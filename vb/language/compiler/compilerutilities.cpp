@@ -1500,9 +1500,9 @@ HRESULT ParseCodeBlock(
                     if ( !pStatementList || !pStatementList->Element || !pStatementList->Element->IsMethodDefinition())
                     {
                         // wrong definition, discard it and do not report a method definition back.
-                        // This can be the result of an out of sync buffer due to a file change. See 
-
-
+                        // This can be the result of an out of sync buffer due to a file change. See bug 550393 and the linked bug.
+                        // Consider to add a much more elaborate check here, i.e names should match. Or, make sure the
+                        // file change is detected and decompilation triggered before we reach this code.
 
                         pStatementList = 0;
                     }
@@ -1652,8 +1652,8 @@ HRESULT GetDeclTrees(
                                   LineMarkerTableForConditionals));
 
 #if IDE
-		// 
-
+		// Bug 843894: we need to notify our package that it needs to start XML Schemas service. Otherwise, Xml literals
+		// support will not be available until Xml intellisense is invoked twice
         if(parse.GetSeenXmlLiterals())
         {
             if(pSourceFile && !pSourceFile->GetProject()->IsIntellisenseSchemasOpened())
@@ -2866,7 +2866,8 @@ unsigned VB_wtoi(
 
     if (InputStr)
     {
-        for(int i = 0; InputStr[i] != '\0'; i++)
+		int i;
+        for(i = 0; InputStr[i] != '\0'; i++)
         {
             WCHAR ch = InputStr[i];
 

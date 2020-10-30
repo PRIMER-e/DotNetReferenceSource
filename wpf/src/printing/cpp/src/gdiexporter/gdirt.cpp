@@ -1146,15 +1146,15 @@ HRESULT CGDIRenderTarget::StrokePath(
     }
 
     // 
-    // Fix 
-
-
-
-
-
-
-
-
+    // Fix bug 1394806: MGC: simple paths are widened inappropriately
+    //
+    // This is performance regression due to fix to emulate Avalon mitering behavior.
+    // Emulation is done by widening the path and filling it. On already complex paths,
+    // this can cause tremendous increase in complexity. To fix, we detect overly long
+    // paths and split into smaller paths.
+    //
+    // Fix bug 1531873: Update to use StreamGeometry instead of PathGeometry.
+    //
     if (hr == E_NOTIMPL)
     {
         // GetPointCount() should be called in CreateStrokePath and cached by GeometryProxy
@@ -1846,11 +1846,11 @@ HRESULT CGDIRenderTarget::RasterizeBrush(
     //
     // Transform geometry to rasterization bitmap.
     //
-    // Fix 
-
-
-
-
+    // Fix bug 1390129: MGC: Images have black edges along bottom and right sides
+    //
+    // Edges are caused due to rounding of geometry bounds, which results in rasterization not completely
+    // filling the rasterization bitmap. We use original geometry bounds to avoid rounding errors.
+    //
     Matrix transform = m_transform;
 
     Rect deviceBounds = geometryBounds;
@@ -1938,7 +1938,7 @@ HRESULT CGDIRenderTarget::RasterizeShape(
             GetLinearGradientAxisAligned(IN pLinear, OUT IsVertical, OUT IsHorizontal);
         }
 
-        // Fix 
+        // Fix bug 1390129: Pass original geometry bounds to avoid rounding errors during rasterization.
         Rect geometryBounds = geometry.GetBounds(nullptr);
     
         if (IsHorizontal || IsVertical)

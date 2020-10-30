@@ -269,7 +269,6 @@ namespace System.Runtime.Remoting.Channels.Ipc
                     throw e;
                 }
 
-                _bListening = true;
 
             }
         } // StartListening
@@ -291,9 +290,6 @@ namespace System.Runtime.Remoting.Channels.Ipc
         // Thread for listening
         void Listen()
         {
-            bool bOkToListen = true;
-        
-
             InternalRemotingServices.RemotingTrace( "Waiting to Accept a Connection on Port: " + _portName);
 
             //
@@ -305,31 +301,29 @@ namespace System.Runtime.Remoting.Channels.Ipc
             CommonSecurityDescriptor descriptor = _securityDescriptor;
 
             // Connect with exlusive flag the first time
-            if (bOkToListen)
-            {
-                try{
-                    // If the descriptor is not explicitly set through code use the _authorizedGroup config
-                    if (descriptor == null && _authorizedGroup != null)
-                    {
-                        NTAccount ntAccount = new NTAccount(_authorizedGroup);
-                        descriptor = IpcPort.CreateSecurityDescriptor((SecurityIdentifier)ntAccount.Translate(typeof(SecurityIdentifier)));
-                    }
+            try{
+                // If the descriptor is not explicitly set through code use the _authorizedGroup config
+                if (descriptor == null && _authorizedGroup != null)
+                {
+                    NTAccount ntAccount = new NTAccount(_authorizedGroup);
+                    descriptor = IpcPort.CreateSecurityDescriptor((SecurityIdentifier)ntAccount.Translate(typeof(SecurityIdentifier)));
+                }
 
-                    _port = IpcPort.Create(_portName, descriptor, _bExclusiveAddressUse);
-                }
-                catch (Exception e) {
-                    _startListeningException = e;
-                }
-                finally {
-                    _waitForStartListening.Set(); // allow main thread to continue now that we have tried to start the socket
-                }
-                if (_port != null){
-                    connected = _port.WaitForConnect(); 
-                    bOkToListen = _bListening;
-                }
+                _port = IpcPort.Create(_portName, descriptor, _bExclusiveAddressUse);
+            }
+            catch (Exception e) {
+                _startListeningException = e;
+            }
+            finally {
+                _bListening = (_startListeningException == null);
+                _waitForStartListening.Set(); // allow main thread to continue now that we have tried to start the socket
             }
 
-            while (bOkToListen && _startListeningException == null)
+            if (_port != null){
+                connected = _port.WaitForConnect(); 
+            }
+
+            while (_bListening)
             {
                 InternalRemotingServices.RemotingTrace("IpcChannel::Listen");
 
@@ -347,7 +341,6 @@ namespace System.Runtime.Remoting.Channels.Ipc
                 }
                 _port = port;
                 connected = _port.WaitForConnect(); 
-                bOkToListen = _bListening;
             }
        }
 

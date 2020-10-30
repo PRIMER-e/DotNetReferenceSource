@@ -35,13 +35,13 @@ namespace MS.Internal.YourAssemblyName
             Type[] types = new Type[] {
 #if WINDOWS_BASE
 #elif PRESENTATION_CORE
-                typeof(System.Windows.Media.CharacterMetrics),      // 
-                typeof(System.Windows.Ink.ExtendedProperty),        // 
-                typeof(System.Windows.Media.FamilyTypeface),        // 
-                typeof(System.Windows.Media.NumberSubstitution),    // 
+                typeof(System.Windows.Media.CharacterMetrics),      // bug 1612093
+                typeof(System.Windows.Ink.ExtendedProperty),        // bug 1612101
+                typeof(System.Windows.Media.FamilyTypeface),        // bug 1612103
+                typeof(System.Windows.Media.NumberSubstitution),    // bug 1612105
 #elif PRESENTATIONFRAMEWORK
-                typeof(System.Windows.Markup.Localizer.BamlLocalizableResource),    // 
-                typeof(System.Windows.ComponentResourceKey),        // 
+                typeof(System.Windows.Markup.Localizer.BamlLocalizableResource),    // bug 1612118
+                typeof(System.Windows.ComponentResourceKey),        // bug 1612119
 #endif
             };
 

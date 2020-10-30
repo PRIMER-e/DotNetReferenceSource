@@ -2676,7 +2676,7 @@ namespace System.Xml.Xsl {
                     }
                     break;
                 default:
-                    // MSXML has a 
+                    // MSXML has a bug, we should not allow whitespace after a minus sign
                     if (IsWhitespace(ch) && sign > 0) {
                         pch = SkipWhitespace(pch);
                         goto LRestart;

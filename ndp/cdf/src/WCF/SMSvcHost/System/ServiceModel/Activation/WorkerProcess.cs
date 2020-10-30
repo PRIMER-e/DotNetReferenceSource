@@ -125,6 +125,14 @@ namespace System.ServiceModel.Activation
                 {
                     throw;
                 }
+                
+                if (exception is FaultException && !AppSettings.FailOnConnectionDispatchFaults)
+                {
+                    // Something went wrong with establishing a connection from the duplicated handle on the service side
+                    // The communication between SMSvcHost and the service host is still good so no need to tear down the
+                    // connection because of a single bad connecting client.
+                    return false;
+                }
 
                 Close();
 
@@ -179,7 +187,7 @@ namespace System.ServiceModel.Activation
             this.connectionDuplicator = OperationContext.Current.GetCallbackChannel<IConnectionDuplicator>();
 
             // Prevent this duplicate operation from timing out, faulting the pipe, and stopping any further communication with w3wp
-            // we're gated by MaxPendingAccepts + MaxPendingConnection. see CSD Main 
+            // we're gated by MaxPendingAccepts + MaxPendingConnection. see CSD Main bug 193390 for details
             ((IContextChannel)this.connectionDuplicator).OperationTimeout = TimeSpan.MaxValue;
 
             ListenerExceptionStatus status = ListenerExceptionStatus.Success;

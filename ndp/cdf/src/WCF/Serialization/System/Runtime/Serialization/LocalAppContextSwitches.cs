@@ -1,4 +1,8 @@
-﻿namespace System.Runtime.Serialization
+﻿// <copyright>
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+#pragma warning disable 0436 //Disable the type conflict warning for the types used by LocalAppContext framework (Quirking)
+namespace System.Runtime.Serialization
 {
     using System;
     using System.Runtime.CompilerServices;
@@ -18,6 +22,19 @@
             get
             {
                 return LocalAppContext.GetCachedSwitchValue(DoNotUseTimeZoneInfoString, ref doNotUseTimeZoneInfoString);
+            }
+        }
+        
+        public static readonly string DoNotUseEcmaScriptV6EscapeControlCharacterKeyString = "Switch.System.Runtime.Serialization.DoNotUseECMAScriptV6EscapeControlCharacter";
+
+        private static int doNotUseEcmaScriptV6EscapeControlCharacter;
+
+        public static bool DoNotUseEcmaScriptV6EscapeControlCharacter
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return LocalAppContext.GetCachedSwitchValue(DoNotUseEcmaScriptV6EscapeControlCharacterKeyString, ref doNotUseEcmaScriptV6EscapeControlCharacter);
             }
         }
     }

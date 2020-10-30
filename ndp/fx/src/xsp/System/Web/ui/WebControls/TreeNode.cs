@@ -1213,7 +1213,7 @@ namespace System.Web.UI.WebControls {
                     if (imageToolTip.Length > 0) {
                         writer.AddAttribute(HtmlTextWriterAttribute.Alt,
                             String.Format(CultureInfo.CurrentCulture, imageToolTip, Text));
-			            //fix 
+			            //fix bug 1197460, quirk it so the fix will only be enabled on projects on 4.6.1 or later version of framework
 			            if (BinaryCompatibility.Current.TargetsAtLeastFramework461) {
                             writer.AddAttribute(HtmlTextWriterAttribute.Title,
                                 String.Format(CultureInfo.CurrentCulture, imageToolTip, Text));
@@ -1221,7 +1221,7 @@ namespace System.Web.UI.WebControls {
                     }
                     else {
                         writer.AddAttribute(HtmlTextWriterAttribute.Alt, String.Empty);
-			            //fix 
+			            //fix bug 1197460, quirk it so the fix will only be enabled on projects on 4.6.1 or later version of framework
 			            if (BinaryCompatibility.Current.TargetsAtLeastFramework461) {
                         	writer.AddAttribute(HtmlTextWriterAttribute.Title, String.Empty);
 			            }
@@ -1371,14 +1371,14 @@ namespace System.Web.UI.WebControls {
                 writer.AddStyleAttribute(HtmlTextWriterStyle.BorderWidth, "0");
                 if (ImageToolTip.Length > 0) {
                     writer.AddAttribute(HtmlTextWriterAttribute.Alt, ImageToolTip);
-		            //fix 
+		            //fix bug 1197460, quirk it so the fix will only be enabled on projects on 4.6.1 or later version of framework
 	                if (BinaryCompatibility.Current.TargetsAtLeastFramework461) {
                         writer.AddAttribute(HtmlTextWriterAttribute.Title, ImageToolTip);
 		            }
                 }
                 else {
                     writer.AddAttribute(HtmlTextWriterAttribute.Alt, String.Empty);
-		    	    //fix 
+		    	    //fix bug 1197460, quirk it so the fix will only be enabled on projects on 4.6.1 or later version of framework
 			        if (BinaryCompatibility.Current.TargetsAtLeastFramework461) {
 	                    writer.AddAttribute(HtmlTextWriterAttribute.Title, String.Empty);
 			        }

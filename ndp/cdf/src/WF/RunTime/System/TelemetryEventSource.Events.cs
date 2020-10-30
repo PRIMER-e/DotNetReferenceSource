@@ -13,11 +13,6 @@ namespace System
         /// </summary>
         private const string WfV1ProviderName = "Microsoft.DOTNET.WF.V1";
         
-        /// <summary>
-        /// ID for V1Runtime event
-        /// </summary>
-        private const int V1RuntimeEventId = 1;
-        
         /// <summary>  
         /// Constructs a new instance of the TelemetryEventSource class with the  
         /// specified name. Sets the EtwSelfDescribingEventFormat option and joins the  
@@ -31,10 +26,9 @@ namespace System
         /// <summary>
         /// Event fired if WFV1 runtime is used.
         /// </summary>
-        [Event(V1RuntimeEventId, Keywords = MeasuresKeyword)]  
         internal void V1Runtime() 
-        { 
-            WriteEvent(V1RuntimeEventId); 
+        {
+            WriteUsageEvent();
         }  
     }
 }

@@ -417,7 +417,7 @@ namespace System.Data {
                     }
                 }
             }
-//            Debug.Assert(this.linearExpression != null, "BuildLinearExpression : How come there is nothing to search linearly"); 
+//            Debug.Assert(this.linearExpression != null, "BuildLinearExpression : How come there is nothing to search linearly"); bug 97446
         }
 
         public DataRow[] SelectRows() {

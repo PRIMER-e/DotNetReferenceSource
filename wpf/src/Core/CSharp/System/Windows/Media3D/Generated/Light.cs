@@ -216,8 +216,8 @@ namespace System.Windows.Media.Media3D
             // We check our static default fields which are of type Freezable
             // to make sure that they are not mutable, otherwise we will throw
             // if these get touched by more than one thread in the lifetime
-            // of your app.  (Windows OS 
-
+            // of your app.  (Windows OS Bug #947272)
+            //
 
 
             // Initializations

@@ -244,8 +244,8 @@ namespace System.Data.SqlClient {
         }
 
         internal XmlReader ToXmlReader() {
-            // Dev11 
-
+            // Dev11 Bug #315513: Exception type breaking change from 4.0 RTM when calling GetChars on null xml
+            // We need to wrap all exceptions inside a TargetInvocationException to simulate calling CreateSqlReader via MethodInfo.Invoke
             return SqlTypes.SqlXml.CreateSqlXmlReader(this, closeInput: true, throwTargetInvocationExceptions: true);
         }
         

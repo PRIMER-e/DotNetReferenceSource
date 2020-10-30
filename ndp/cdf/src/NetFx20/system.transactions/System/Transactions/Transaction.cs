@@ -18,6 +18,7 @@ namespace System.Transactions
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
+    using System.Runtime.Remoting.Lifetime;
     using System.Runtime.Remoting.Messaging;
     using System.Security.Permissions;
     using System.Threading;
@@ -1509,7 +1510,7 @@ namespace System.Transactions
                 }
             }
         }
-        
+
         static public bool TryGetCurrentData(out ContextData currentData)
         {
             currentData = null;
@@ -1530,8 +1531,24 @@ namespace System.Transactions
     //
     class ContextKey : MarshalByRefObject
     {
+        // Set the lease lifetime according to the AppSetting Transactions:ContextKeyLeaseLifetimeInMinutes. Only change it if the value is greater than 0.
+        public override object InitializeLifetimeService()
+        {
+            ILease lease = (ILease)base.InitializeLifetimeService();
+            int leaseLifetime = AppSettings.ContextKeyRemotingLeaseLifetimeInMinutes;
+            // If the specified lease lifetime is less than 0, we don't change the value from the AppDomain.
+            // This is how you opt-out of this fix.
+            // A specified value of 0 was filtered out when initializing the AppSettings and it was mapped to
+            // the default value, treating it as if it wasn't specified.
+            if ((lease != null) && (lease.CurrentState == LeaseState.Initial) && (leaseLifetime > 0))
+            {
+                lease.InitialLeaseTime = TimeSpan.FromMinutes(leaseLifetime);
+                lease.RenewOnCallTime = TimeSpan.FromMinutes(leaseLifetime);
+            }
+            return lease;
+        }
     }
-    
+
     class ContextData
     {
         internal TransactionScope CurrentScope;

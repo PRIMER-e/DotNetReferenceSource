@@ -21,9 +21,6 @@
 
 #define _BIDLDR_INCLUDED
 
-#ifndef _BIDLDR_DEFAULT_DLL
-  #define _BIDLDR_DEFAULT_DLL       BID_T("BidLab.dll")
-#endif
 #ifndef _BIDLDR_DEFAULT_FLAGS
   #define _BIDLDR_DEFAULT_FLAGS     BID_APIGROUP_MASK_BID
 #endif
@@ -543,10 +540,8 @@ static void _bidLdrReadProfile( __out_ecount(dllPathCapacity) BID_PTSTR sDllPath
 
     if( lRet != ERROR_SUCCESS )
     {
-        //
-        //  Make sure that _BIDLDR_DEFAULT_DLL is defined using BID_T() macro.
-        //
-        BID_lstrcpyn( sDllPath, _BIDLDR_DEFAULT_DLL, dllPathCapacity-1 );
+        BID_lstrcpyn( sDllPath, sNotFound, dllPathCapacity-1 );
+        args.bEnabled = false;
     }
     else
     {
@@ -622,20 +617,10 @@ static void _bidLdrReadProfile( __out_ecount(dllPathCapacity) BID_PTSTR sDllPath
                     args.ValueName = _BIDLDR_PATH;
                     if( !_bidLdrReadStr( &args ) )
                     {
+                        //  4)  Default configuration wasn't found in the registry
                         args.ValueName = sNotFound;
-
-                        //  4)  Default configuration wasn't found in the registry;
-                        //      last chance will be the built-in default name.
-                        //      We'll do this if the interface is still enabled though.
-                        //
-                        if( args.bEnabled )
-                        {
-                            BID_lstrcpyn( sDllPath, _BIDLDR_DEFAULT_DLL, dllPathCapacity-1 );
-                        }
-                        else
-                        {
-                            BID_lstrcpyn( sDllPath, sNotFound, dllPathCapacity-1 );
-                        }
+                        BID_lstrcpyn( sDllPath, sNotFound, dllPathCapacity-1 );
+                        args.bEnabled = false;
                     }
                 }
 

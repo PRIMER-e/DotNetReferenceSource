@@ -334,7 +334,10 @@ namespace System.Windows.Automation.Peers
         ///
         override protected bool IsControlElementCore()
         {
-            return true;
+            // We only want this peer to show up in the Control view if it is visible
+            // For compat we allow falling back to legacy behavior (returning true always)
+            // based on AppContext flags, IncludeInvisibleElementsInControlView evaluates them.
+            return IncludeInvisibleElementsInControlView || _owner.IsVisible;
         }
 
         ///
@@ -361,6 +364,28 @@ namespace System.Windows.Automation.Peers
                 return AccessKeyManager.InternalGetAccessKeyCharacter(_owner);
 
             return string.Empty;
+        }
+
+        override protected AutomationLiveSetting GetLiveSettingCore()
+        {
+            return AutomationProperties.GetLiveSetting(_owner);
+        }
+
+        /// <summary>
+        /// Provides a value for UIAutomation's PositionInSet property
+        /// Reads <see cref="AutomationProperties.PositionInSetProperty"/> and returns the value.
+        /// </summary>
+        override protected int GetPositionInSetCore()
+        {
+            return AutomationProperties.GetPositionInSet(_owner);
+        }
+        /// <summary>
+        /// Provides a value for UIAutomation's SizeOfSet property
+        /// Reads <see cref="AutomationProperties.SizeOfSetProperty"/> and returns the value.
+        /// </summary>
+        override protected int GetSizeOfSetCore()
+        {
+            return AutomationProperties.GetSizeOfSet(_owner);
         }
 
         //

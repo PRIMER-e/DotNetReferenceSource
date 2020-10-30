@@ -232,7 +232,7 @@ namespace MS.Internal.Data
         public override bool MoveCurrentTo(object item)
         {
             // if already on item, don't do anything
-            if (Object.Equals(CurrentItem, item))
+            if (ItemsControl.EqualsEx(CurrentItem, item))
             {
                 // also check that we're not fooled by a false null CurrentItem
                 if (item != null || IsCurrentInView)
@@ -822,7 +822,7 @@ namespace MS.Internal.Data
         // determine whether the items have reliable hash codes
         internal override bool HasReliableHashCodes()
         {
-            // sample an item from each contained collection (
+            // sample an item from each contained collection (bug 1738297)
             for (int k=0, n=_collection.Count; k<n; ++k)
             {
                 CollectionContainer cc = _collection[k] as CollectionContainer;
@@ -899,7 +899,7 @@ namespace MS.Internal.Data
 
                 if (cc == null) // flat item
                 {
-                    if (Object.Equals(_collection[positionX], item))
+                    if (ItemsControl.EqualsEx(_collection[positionX], item))
                     {
                         break;
                     }
@@ -1166,7 +1166,7 @@ namespace MS.Internal.Data
             else
             {
                 object item = ((CollectionContainer)sender).ViewItem(_currentPositionY);
-                if (Object.Equals(CurrentItem, item))
+                if (ItemsControl.EqualsEx(CurrentItem, item))
                 {
                     flatIndex = CurrentPosition + 1;
                 }
@@ -1195,14 +1195,14 @@ namespace MS.Internal.Data
             }
             else
             {
-                if (Object.Equals(item, CurrentItem))
+                if (ItemsControl.EqualsEx(item, CurrentItem))
                 {
                     flatIndex = CurrentPosition;
                 }
                 else
                 {
                     object item2 = ((CollectionContainer)sender).ViewItem(_currentPositionY);
-                    if (Object.Equals(item, item2))
+                    if (ItemsControl.EqualsEx(item, item2))
                     {
                         flatIndex = CurrentPosition + 1;
                     }
@@ -1688,7 +1688,7 @@ namespace MS.Internal.Data
             if (IsCurrentInView)
             {
                 int x, y;
-                if (!Object.Equals(CurrentItem, GetItem(CurrentPosition, out x, out y)) && !_collection.HasRepeatedCollection())
+                if (!ItemsControl.EqualsEx(CurrentItem, GetItem(CurrentPosition, out x, out y)) && !_collection.HasRepeatedCollection())
                     Debug.Assert(false, "CurrentItem is not consistent with CurrentPosition");
             }
             else

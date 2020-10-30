@@ -207,9 +207,9 @@ namespace System.Windows.Documents
         private readonly int _symbolOffset;
 
         // Hash representing the state of the tree when the undo unit was
-        // created.  If the hash doesn't match when Do is called, there's a 
-
-
+        // created.  If the hash doesn't match when Do is called, there's a bug
+        // somewhere, and any TextContainer undo units on the stack are probably
+        // corrupted.
         private int _treeContentHashCode;
 
         #endregion Private Fields

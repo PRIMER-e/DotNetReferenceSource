@@ -394,7 +394,7 @@ namespace System.Windows.Interop
                     args = (object[])args.Clone();
 
                     // Reverse the argument order so that parameters read naturally after IDispatch.
-                    // This code was initially ported from Microsoft, see Microsoft 
+                    // This code was initially ported from Microsoft, see Microsoft bug 187662.
                     Array.Reverse(args);
 
                     // Unwrap arguments that were already promoted to DynamicScriptObject. This can happen

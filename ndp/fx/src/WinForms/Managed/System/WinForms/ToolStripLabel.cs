@@ -381,7 +381,20 @@ namespace System.Windows.Forms {
                     base.DoDefaultAction();
                 }
             }
-         
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3) {
+                    if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                        return NativeMethods.UIA_TextControlTypeId;
+                    }
+                    else if (propertyID == NativeMethods.UIA_LegacyIAccessibleStatePropertyId) {
+                        return this.State;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
             public override AccessibleRole Role {
                get {
                    AccessibleRole role = Owner.AccessibleRole;

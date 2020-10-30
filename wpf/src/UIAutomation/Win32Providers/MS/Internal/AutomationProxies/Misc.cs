@@ -2032,10 +2032,10 @@ namespace MS.Internal.AutomationProxies
             {
                 // Right to left mirroring style
 
-                // This is to take in count for a 
-
-
-
+                // This is to take in count for a bug in GetTitleBarInfo().  It does not calculate the
+                // rcTitleBar correctly when the WS_EX_LAYOUTRTL extended style is set.  It assumes
+                // SYSMENU is always on the left and removes its space from the wrong side of rcTitleBar.
+                // Use the bounding rectangle of the whole title bar to get the true left boundary.
                 leftEdge = (int)(Misc.GetTitleBarRect(hwnd).Left);
                 for (int i = NativeMethods.INDEX_TITLEBAR_MAC; i > NativeMethods.INDEX_TITLEBAR_SELF; i--)
                 {

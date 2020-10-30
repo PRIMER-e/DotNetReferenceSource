@@ -56,8 +56,8 @@ namespace System.Windows.Documents
             _adornedElement = adornedElement;
             _isClipEnabled = false;
 
-            // 
-
+            // Bug 1383424: We need to make sure our FlowDirection is always that of our adorned element.
+            // Need to allow derived class constructor to execute first
             Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Normal, new DispatcherOperationCallback(CreateFlowDirectionBinding), this);
         }
 

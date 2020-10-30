@@ -20,6 +20,7 @@ using System.Windows.Automation.Peers;
 using System;
 using MS.Internal.Commands; // CommandHelpers
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -77,6 +78,8 @@ namespace System.Windows.Controls
             EventManager.RegisterClassHandler(typeof(ListBox), Keyboard.GotKeyboardFocusEvent, new KeyboardFocusChangedEventHandler(OnGotKeyboardFocus));
 
             CommandHelpers.RegisterCommandHandler(typeof(ListBox), ListBox.SelectAllCommand, new ExecutedRoutedEventHandler(OnSelectAll), new CanExecuteRoutedEventHandler(OnQueryStatusSelectAll), KeyGesture.CreateFromResourceStrings(SR.Get(SRID.ListBoxSelectAllKey), SR.Get(SRID.ListBoxSelectAllKeyDisplayString)));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.ListBox);
 
         }
 

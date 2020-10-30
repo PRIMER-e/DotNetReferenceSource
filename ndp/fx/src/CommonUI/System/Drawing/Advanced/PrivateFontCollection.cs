@@ -17,12 +17,15 @@ namespace System.Drawing.Text {
     using System.Security.Permissions;
     using System.Globalization;
     using System.Runtime.Versioning;
+    using System.Collections.Generic;
 
     /// <include file='doc\PrivateFontCollection.uex' path='docs/doc[@for="PrivateFontCollection"]/*' />
     /// <devdoc>
     ///    Encapsulates a collection of <see cref='System.Drawing.Font'/> objecs.
     /// </devdoc>
     public sealed class PrivateFontCollection : FontCollection {
+
+        private List<string> gdiFonts = null;
 
         /// <include file='doc\PrivateFontCollection.uex' path='docs/doc[@for="PrivateFontCollection.PrivateFontCollection"]/*' />
         /// <devdoc>
@@ -39,6 +42,9 @@ namespace System.Drawing.Text {
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
+
+            if (!LocalAppContextSwitches.DoNotRemoveGdiFontsResourcesFromFontCollection)
+                gdiFonts = new List<string>();
         }
 
         /// <include file='doc\PrivateFontCollection.uex' path='docs/doc[@for="PrivateFontCollection.Dispose"]/*' />
@@ -57,9 +63,16 @@ namespace System.Drawing.Text {
                     SafeNativeMethods.Gdip.GdipDeletePrivateFontCollection(out nativeFontCollection);
 #if DEBUG
                     Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
-#endif        
+#endif
+                    if (gdiFonts != null) {
+                        foreach (string fontFile in gdiFonts) {
+                            SafeNativeMethods.RemoveFontFile(fontFile);
+                        }
+                        gdiFonts.Clear();
+                        gdiFonts = null;
+                    }
                 }
-                catch( Exception ex ){
+                catch ( Exception ex ){
                     if( ClientUtils.IsSecurityOrCriticalException( ex ) ) {
                         throw;
                     }
@@ -87,9 +100,13 @@ namespace System.Drawing.Text {
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
-                
+
             // Register private font with GDI as well so pure GDI-based controls (TextBox, Button for instance) can access it.
-            SafeNativeMethods.AddFontFile( filename );
+            if (SafeNativeMethods.AddFontFile(filename) != 0) {
+                if (gdiFonts != null) {
+                    gdiFonts.Add(filename);
+                }
+            }
         }
 
         // 

@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 
 using System;
+using MS.Internal;
 
 namespace System.Windows
 {
@@ -171,9 +172,9 @@ namespace System.Windows
         public static ValueSource GetValueSource(DependencyObject dependencyObject, DependencyProperty dependencyProperty)
         {
             if (dependencyObject == null)
-                throw new ArgumentNullException("dependencyObject");
+                throw new ArgumentNullException(nameof(dependencyObject));
             if (dependencyProperty == null)
-                throw new ArgumentNullException("dependencyProperty");
+                throw new ArgumentNullException(nameof(dependencyProperty));
 
             dependencyObject.VerifyAccess();
 
@@ -181,6 +182,39 @@ namespace System.Windows
             BaseValueSourceInternal source = dependencyObject.GetValueSource(dependencyProperty, null, out hasModifiers, out isExpression, out isAnimated, out isCoerced, out isCurrent);
 
             return new ValueSource(source, isExpression, isAnimated, isCoerced, isCurrent);
+        }
+
+        /// <summary>
+        /// Returns true if the given element belongs to an instance of a template
+        /// that defines a value for the given property that may change during runtime
+        /// based on changes elsewhere.
+        /// For example, values set by Binding, TemplateBinding, or DynamicResource.
+        /// </summary>
+        /// <param name="elementInTemplate">element belonging to a template instance</param>
+        /// <param name="dependencyProperty">property</param>
+        /// <remarks>
+        /// This method provides more detailed information in cases where
+        /// the BaseValueSource is ParentTemplate.  The information is primarily
+        /// of use to diagnostic tools.
+        /// </remarks>
+        public static bool IsTemplatedValueDynamic(DependencyObject elementInTemplate, DependencyProperty dependencyProperty)
+        {
+            if (elementInTemplate == null)
+                throw new ArgumentNullException(nameof(elementInTemplate));
+
+            if (dependencyProperty == null)
+                throw new ArgumentNullException(nameof(dependencyProperty));
+
+            FrameworkObject child = new FrameworkObject(elementInTemplate);
+            DependencyObject templatedParent = child.TemplatedParent;
+
+            if (templatedParent == null)
+            {
+                throw new ArgumentException(SR.Get(SRID.ElementMustBelongToTemplate), nameof(elementInTemplate));
+            }
+
+            int templateChildIndex = child.TemplateChildIndex;
+            return StyleHelper.IsValueDynamic(templatedParent, templateChildIndex, dependencyProperty);
         }
     }
 }

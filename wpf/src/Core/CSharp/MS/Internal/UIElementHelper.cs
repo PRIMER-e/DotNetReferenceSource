@@ -14,9 +14,9 @@ namespace MS.Internal
     {
         [FriendAccessAllowed]
         internal static bool IsHitTestVisible(DependencyObject o)
-        {   
+        {
             Debug.Assert(o != null, "UIElementHelper.IsHitTestVisible called with null argument");
-                    
+
             UIElement oAsUIElement = o as UIElement;
             if (oAsUIElement != null)
             {
@@ -25,7 +25,7 @@ namespace MS.Internal
             else
             {
                 return ((UIElement3D)o).IsHitTestVisible;
-            } 
+            }
         }
 
         [FriendAccessAllowed]
@@ -41,7 +41,7 @@ namespace MS.Internal
             else
             {
                 return ((UIElement3D)o).IsVisible;
-            }        
+            }
         }
 
         [FriendAccessAllowed]
@@ -49,22 +49,31 @@ namespace MS.Internal
         {
             Debug.Assert(o != null, "UIElementHelper.PredictFocus called with null argument");
 
-            UIElement oAsUIElement = o as UIElement;
-            if (oAsUIElement != null)
+            UIElement uie;
+            ContentElement ce;
+            UIElement3D uie3d;
+
+            if ((uie = o as UIElement) != null)
             {
-                return oAsUIElement.PredictFocus(direction);
+                return uie.PredictFocus(direction);
             }
-            else
+            else if ((ce = o as ContentElement) != null)
             {
-                return ((UIElement3D)o).PredictFocus(direction);
+                return ce.PredictFocus(direction);
             }
+            else if ((uie3d = o as UIElement3D) != null)
+            {
+                return uie3d.PredictFocus(direction);
+            }
+
+            return null;
         }
 
         [FriendAccessAllowed]
         internal static UIElement GetContainingUIElement2D(DependencyObject reference)
         {
             UIElement element = null;
-            
+
             while (reference != null)
             {
                 element = reference as UIElement;
@@ -77,10 +86,10 @@ namespace MS.Internal
             return element;
         }
 
-        [FriendAccessAllowed]        
+        [FriendAccessAllowed]
         internal static DependencyObject GetUIParent(DependencyObject child)
         {
-            DependencyObject parent = GetUIParent(child, false);            
+            DependencyObject parent = GetUIParent(child, false);
 
             return parent;
         }
@@ -100,7 +109,7 @@ namespace MS.Internal
             {
                 myParent = ((Visual3D)child).InternalVisualParent;
             }
-            
+
             parent = InputElement.GetContainingUIElement(myParent) as DependencyObject;
 
             // If there was no UIElement parent in the visual ancestry,
@@ -118,13 +127,13 @@ namespace MS.Internal
                     if (childAsUIElement3D != null)
                     {
                         parent = InputElement.GetContainingInputElement(childAsUIElement3D.GetUIParentCore()) as DependencyObject;
-                    }                    
+                    }
                 }
             }
 
             return parent;
         }
-        
+
         [FriendAccessAllowed]
         internal static bool IsUIElementOrUIElement3D(DependencyObject o)
         {
@@ -140,7 +149,7 @@ namespace MS.Internal
 
             Stack<DependencyObject> branchNodeStack = new Stack<DependencyObject>();
             bool continueInvalidation = true;
-            
+
             while (o != null && continueInvalidation)
             {
                 continueInvalidation &= InvalidateAutomationPeer(o, out e, out ce, out e3d);
@@ -152,21 +161,21 @@ namespace MS.Internal
                 if (e != null)
                 {
                     continueInvalidation &= e.InvalidateAutomationAncestorsCore(branchNodeStack, out continuePastVisualTree);
-                
+
                     // Get element's visual parent
                     o = e.GetUIParent(continuePastVisualTree);
                 }
                 else if (ce != null)
                 {
                     continueInvalidation &= ce.InvalidateAutomationAncestorsCore(branchNodeStack, out continuePastVisualTree);
-                
+
                     // Get element's visual parent
                     o = (DependencyObject)ce.GetUIParent(continuePastVisualTree);
                 }
                 else if (e3d != null)
                 {
                     continueInvalidation &= e3d.InvalidateAutomationAncestorsCore(branchNodeStack, out continuePastVisualTree);
-                
+
                     // Get element's visual parent
                     o = e3d.GetUIParent(continuePastVisualTree);
                 }
@@ -174,17 +183,17 @@ namespace MS.Internal
         }
 
         internal static bool InvalidateAutomationPeer(
-            DependencyObject o, 
-            out UIElement e, 
-            out ContentElement ce, 
+            DependencyObject o,
+            out UIElement e,
+            out ContentElement ce,
             out UIElement3D e3d)
         {
             e = null;
             ce = null;
             e3d = null;
-            
+
             AutomationPeer ap = null;
-            
+
             e = o as UIElement;
             if (e != null)
             {
@@ -213,7 +222,7 @@ namespace MS.Internal
             if (ap != null)
             {
                 ap.InvalidateAncestorsRecursive();
-            
+
                 // Check for parent being non-null while stopping as we don't want to stop in between due to peers not connected to AT
                 // those peers sometimes gets created to serve for various patterns.
                 // e.g: ScrollViewAutomationPeer for Scroll Pattern in case of ListBox.

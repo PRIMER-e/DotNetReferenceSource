@@ -189,8 +189,6 @@ namespace System.Windows.Input
             _primaryMouseDevice = new Win32MouseDevice(this);
             _primaryCommandDevice = new CommandDevice(this);
 
-            _stylusLogic = new StylusLogic(this);
-
             _continueProcessingStagingAreaCallback = new DispatcherOperationCallback(ContinueProcessingStagingArea);
 
             _hitTestInvalidatedAsyncOperation = null;
@@ -436,13 +434,20 @@ namespace System.Windows.Input
             // 
             get {return _primaryMouseDevice;}
         }
+
+        /// <summary>
+        /// This property exists only due to the use of the private reflection hack as
+        /// shown in the MSDN article located 
+        /// <see href="https://msdn.microsoft.com/library/dd901337(v=vs.90).aspx">here</see>.
+        /// Once this is no longer officially supported, this can be removed.
+        /// </summary>
         /// <SecurityNote>
-        ///     Critical, accesses critical member _stylusLogic
+        ///     Critical, accesses critical member StylusLogic.CurrentStylusLogic
         /// </SecurityNote>
         internal StylusLogic StylusLogic
         {
             [SecurityCritical, FriendAccessAllowed]
-            get { return _stylusLogic; }
+            get { return StylusLogic.CurrentStylusLogic; }
         }
 
         /// <summary>
@@ -647,9 +652,9 @@ namespace System.Windows.Input
         /// </summary>
         private void ValidateInputDevices(object sender, EventArgs e)
         {
-            // This null check was necessary as a fix for Dev10 
-
-
+            // This null check was necessary as a fix for Dev10 bug #453002. It turns out that 
+            // somehow we get here after the DispatcherOperation has been dispatched and we 
+            // need to no-op on that.
             
             if (_hitTestInvalidatedAsyncOperation != null)
             {
@@ -1179,12 +1184,6 @@ namespace System.Windows.Input
         private KeyboardDevice _primaryKeyboardDevice;
         private MouseDevice    _primaryMouseDevice;
         private CommandDevice  _primaryCommandDevice;
-
-        /// <SecurityNote>
-        ///     Critical to prevent accidental spread to transparent code
-        /// </SecurityNote>
-        [SecurityCritical]
-        private StylusLogic     _stylusLogic;
 
         private bool            _inDragDrop;
 

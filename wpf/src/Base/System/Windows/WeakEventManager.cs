@@ -446,6 +446,13 @@ namespace System.Windows
             return foundDirt;
         }
 
+#if WeakEventTelemetry
+        protected void LogAllocation(Type type, int count, int bytes)
+        {
+            Table.LogAllocation(type, count, bytes);
+        }
+#endif
+
         #endregion Protected Methods
 
         #region Internal Methods

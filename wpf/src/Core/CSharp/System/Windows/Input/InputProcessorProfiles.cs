@@ -136,10 +136,10 @@ namespace System.Windows.Input
                     {
                         //
                         // Under WinXP or W2K3, ITfInputProcessorProfiles::ChangeCurrentLanguage() fails
-                        // if there is no thread manager in the current thread. This is Cicero's 
-
-
-
+                        // if there is no thread manager in the current thread. This is Cicero's bug and fixed
+                        // for Longhorn.
+                        // We need to try ActivateKeyboardLayout() for the case.
+                        //
                         IntPtr[] hklList = null;
 
                         int count = (int)SafeNativeMethods.GetKeyboardLayoutList(0, null);

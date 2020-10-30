@@ -73,8 +73,8 @@ namespace MS.Internal.AppModel
     /// Shared state for all journal entries associated with the same content object ("bind product").
     /// Journal entries created for fragment navigations or CustomContentState navigations within the
     /// current page share one JournalEntryGroupState object. This avoids duplication of state and
-    /// the problems described in 
-
+    /// the problems described in bug 1216726.
+    /// </summary>
     [Serializable]
     internal class JournalEntryGroupState
     {

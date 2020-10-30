@@ -547,9 +547,7 @@ namespace System.Windows.Controls
                     // loop through a copy of the original collection, and don't rely
                     // on i to be a valid index into the original collection.
                     BindingExpressionBase beb = bindingExpressionsCopy[i];
-                    DependencyObject targetElement = beb.TargetElement;
-                    if (targetElement != null &&
-                        VisualTreeHelper.IsAncestorOf(cell, targetElement, typeof(DataGridCell)))
+                    if (BindingExpressionBelongsToElement<DataGridCell>(beb, cell))
                     {
                         result = beb.ValidateWithoutUpdate() && result;
                     }
@@ -557,6 +555,64 @@ namespace System.Windows.Controls
             }
 
             return result;
+        }
+
+        internal static bool BindingExpressionBelongsToElement<T>(BindingExpressionBase beb, T element) where T : FrameworkElement
+        {
+            DependencyObject targetElement = beb.TargetElement;
+            if (targetElement != null)
+            {
+                DependencyObject contextElement = FindContextElement(beb);
+                if (contextElement == null)
+                {
+                    contextElement = targetElement;
+                }
+
+                if (contextElement is Visual || contextElement is System.Windows.Media.Media3D.Visual3D)
+                {
+                    return VisualTreeHelper.IsAncestorOf(element, contextElement, typeof(T));
+                }
+            }
+
+            return false;
+        }
+
+        private static DependencyObject FindContextElement(BindingExpressionBase beb)
+        {
+            BindingExpression be;
+            MultiBindingExpression mbe;
+            PriorityBindingExpression pbe;
+
+            if ((be = beb as BindingExpression) != null)
+            {
+                // leaf binding - return its context element
+                return be.ContextElement;
+            }
+
+            // otherwise, depth-first search through tree of bindings
+            ReadOnlyCollection<BindingExpressionBase> childBindings = null;
+            if ((mbe = beb as MultiBindingExpression) != null)
+            {
+                childBindings = mbe.BindingExpressions;
+            }
+            else if ((pbe = beb as PriorityBindingExpression) != null)
+            {
+                childBindings = pbe.BindingExpressions;
+            }
+
+            if (childBindings != null)
+            {
+                foreach (BindingExpressionBase childBEB in childBindings)
+                {
+                    DependencyObject result = FindContextElement(childBEB);
+                    if (result != null)
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static readonly DependencyProperty FlowDirectionCacheProperty = DependencyProperty.Register("FlowDirectionCache", typeof(FlowDirection), typeof(DataGridHelper));

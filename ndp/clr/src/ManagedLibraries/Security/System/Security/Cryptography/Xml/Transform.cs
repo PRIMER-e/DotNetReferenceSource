@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.Xml
 {
     using System;
     using System.Collections;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Security;
@@ -176,7 +177,7 @@ namespace System.Security.Cryptography.Xml
             for (int i = 0; i < transformNodes.Count; ++i) {
                 XmlElement transformElement = (XmlElement) transformNodes.Item(i);
                 string algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
-                Transform transform = CryptoConfig.CreateFromName(algorithm) as Transform;
+                Transform transform = Utils.CreateFromName<Transform>(algorithm);
                 if (transform == null)
                     throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
                 // let the transform read the children of the transformElement for data
@@ -387,7 +388,10 @@ namespace System.Security.Cryptography.Xml
             get { return _outputTypes; }
         }
 
-        public override void LoadInnerXml(XmlNodeList nodeList) {}
+        public override void LoadInnerXml(XmlNodeList nodeList) {
+            if (!Utils.GetAllowAdditionalSignatureNodes() && nodeList != null && nodeList.Count > 0)
+                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+        }
 
         protected override XmlNodeList GetInnerXml() {
             return null;
@@ -476,11 +480,19 @@ namespace System.Security.Cryptography.Xml
             if (nodeList != null) {
                 foreach (XmlNode n in nodeList) {
                     XmlElement e = n as XmlElement;
-                    if (e != null && e.LocalName.Equals("InclusiveNamespaces") &&
-                        e.NamespaceURI.Equals(SignedXml.XmlDsigExcC14NTransformUrl) &&
+                    if (e != null) {
+                        if (e.LocalName.Equals("InclusiveNamespaces") 
+                        && e.NamespaceURI.Equals(SignedXml.XmlDsigExcC14NTransformUrl) &&
                         Utils.HasAttribute(e, "PrefixList", SignedXml.XmlDsigNamespaceUrl)) {
-                        this.InclusiveNamespacesPrefixList = Utils.GetAttribute(e, "PrefixList", SignedXml.XmlDsigNamespaceUrl);
-                        return;
+                            if (!Utils.VerifyAttributes(e, "PrefixList")) {
+                                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+                            }
+                            this.InclusiveNamespacesPrefixList = Utils.GetAttribute(e, "PrefixList", SignedXml.XmlDsigNamespaceUrl);
+                            return;
+                        }
+                        else if (!Utils.GetAllowAdditionalSignatureNodes()) {
+                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+                        }
                     }
                 }
             }
@@ -559,6 +571,8 @@ namespace System.Security.Cryptography.Xml
         }
 
         public override void LoadInnerXml(XmlNodeList nodeList) {
+            if (!Utils.GetAllowAdditionalSignatureNodes() && nodeList != null && nodeList.Count > 0)
+                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
         }
 
         protected override XmlNodeList GetInnerXml() {
@@ -672,24 +686,32 @@ namespace System.Security.Cryptography.Xml
                 string prefix = null;
                 string namespaceURI = null;
                 XmlElement elem = node as XmlElement;
-                if ((elem != null) && (elem.LocalName == "XPath")) {
-                    _xpathexpr = elem.InnerXml.Trim(null);
-                    XmlNodeReader nr = new XmlNodeReader(elem);
-                    XmlNameTable nt = nr.NameTable;
-                    _nsm = new XmlNamespaceManager(nt);
-                    // Look for a namespace in the attributes
-                    foreach (XmlAttribute attrib in elem.Attributes) {
-                        if (attrib.Prefix == "xmlns") {
-                            prefix = attrib.LocalName;
-                            namespaceURI = attrib.Value;
-                            if (prefix == null) {
-                                prefix = elem.Prefix;
-                                namespaceURI = elem.NamespaceURI;
-                            }
-                            _nsm.AddNamespace(prefix, namespaceURI);
+                if (elem != null) {
+                    if (elem.LocalName == "XPath") {
+                        _xpathexpr = elem.InnerXml.Trim(null);
+                        XmlNodeReader nr = new XmlNodeReader(elem);
+                        XmlNameTable nt = nr.NameTable;
+                        _nsm = new XmlNamespaceManager(nt);
+                        if (!Utils.VerifyAttributes(elem, (string)null)) {
+                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
                         }
+                        // Look for a namespace in the attributes
+                        foreach (XmlAttribute attrib in elem.Attributes) {
+                            if (attrib.Prefix == "xmlns") {
+                                prefix = attrib.LocalName;
+                                namespaceURI = attrib.Value;
+                                if (prefix == null) {
+                                    prefix = elem.Prefix;
+                                    namespaceURI = elem.NamespaceURI;
+                                }
+                                _nsm.AddNamespace(prefix, namespaceURI);
+                            }
+                        }
+                        break;
                     }
-                    break;
+                    else if (!Utils.GetAllowAdditionalSignatureNodes()) {
+                        throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+                    }
                 }
             }
 
@@ -947,7 +969,10 @@ namespace System.Security.Cryptography.Xml
         }
 
         // An enveloped signature has no inner XML elements
-        public override void LoadInnerXml(XmlNodeList nodeList) {}
+        public override void LoadInnerXml(XmlNodeList nodeList) {
+            if (!Utils.GetAllowAdditionalSignatureNodes() && nodeList != null && nodeList.Count > 0)
+                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+        }
 
         // An enveloped signature has no inner XML elements
         protected override XmlNodeList GetInnerXml() {
@@ -1146,13 +1171,21 @@ namespace System.Security.Cryptography.Xml
             ExceptUris.Clear();
             foreach (XmlNode node in nodeList) {
                 XmlElement elem = node as XmlElement;
-                if (elem != null && elem.LocalName == "Except" && elem.NamespaceURI == XmlDecryptionTransformNamespaceUrl) {
-                    // the Uri is required
-                    string uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
-                    if (uri == null || uri.Length == 0 || uri[0] != '#') 
-                        throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UriRequired"));
-                    string idref = Utils.ExtractIdFromLocalUri(uri);
-                    ExceptUris.Add(idref);
+                if (elem != null) {
+                    if (elem.LocalName == "Except" && elem.NamespaceURI == XmlDecryptionTransformNamespaceUrl) {
+                        // the Uri is required
+                        string uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
+                        if (uri == null || uri.Length == 0 || uri[0] != '#') 
+                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UriRequired"));
+                        if (!Utils.VerifyAttributes(elem, "URI")) {
+                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+                        }
+                        string idref = Utils.ExtractIdFromLocalUri(uri);
+                        ExceptUris.Add(idref);
+                    }
+                    else if (!Utils.GetAllowAdditionalSignatureNodes()) {
+                        throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+                    }
                 }
             }
         }
@@ -1398,8 +1431,12 @@ namespace System.Security.Cryptography.Xml
         }
 
         // License transform has no inner XML elements
-        public override void LoadInnerXml(XmlNodeList nodeList) {}
+        public override void LoadInnerXml(XmlNodeList nodeList) {
+            if (!Utils.GetAllowAdditionalSignatureNodes() && nodeList != null && nodeList.Count > 0)
+                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+        }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3058:DoNotUseSetInnerXml", Justification="Operates on inputs which were already parsed by XmlDocument with valid settings and already would have produced errors (DTD or external resolution)")]
         public override void LoadInput (object obj) {
             // Check if the Context property is set before this transform is invoked.
             if (Context == null)

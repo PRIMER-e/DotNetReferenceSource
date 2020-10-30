@@ -974,9 +974,9 @@ System::Reflection::FieldInfo^ SymbolMap::GetField(BCSYM_Variable * pFieldSymbol
     ASSERT(!pFieldSymbol->IsFromScriptScope(), "[SymbolMap::GetField] 'pFieldSymbol' is from Script Scope");
     IfFalseThrow(pFieldSymbol != NULL);
 
-    // 
-
-
+    // Bug 604017: linked to Dev10 604014, resolved as Duplicate.
+    // Removed code for short circuiting lookup for TypeScope-provided Types.
+    // Leaving code in unnecessary scope to minimize code churn.
     {
         BindingFlags flags;
 

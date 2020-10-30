@@ -459,9 +459,9 @@ Semantics::ImmediateLookup
         Declaration *nonAliasNameBinding = ChaseThroughAlias(NameBinding);
         VSASSERT(nonAliasNameBinding,"ImmediateLookup nonAliasNameBinding NULL");
 
-        // 
-
-
+        // Bug Dev11 29153
+        // If the symbol is marked as Embedded, then it can be only used in the assembly where it is defined.
+        // If the symbol is a member then we check its parent
         BCSYM_NamedRoot *pNameBindingContainer = nonAliasNameBinding->IsContainer() ? 
                                                      nonAliasNameBinding :  
                                                      nonAliasNameBinding->GetParent(); 
@@ -503,9 +503,9 @@ Semantics::ImmediateLookupForMergedHash
         Declaration *nonAliasNameBinding = ChaseThroughAlias(NameBinding);
         VSASSERT(nonAliasNameBinding,"ImmediateLookupForMergedHash nonAliasNameBinding NULL");
 
-        // 
-
-
+        // Bug Dev11 29153
+        // If the symbol is marked as Embedded, then it can be only used in the assembly where it is defined.
+        // If the symbol is a member then we check its parent
         BCSYM_NamedRoot *pNameBindingContainer = nonAliasNameBinding->IsContainer() ? 
                                                      nonAliasNameBinding :  
                                                      nonAliasNameBinding->GetParent(); 
@@ -2421,21 +2421,21 @@ Semantics::LookupInNamespace
 
     InitializeNameLookupGenericBindingContext(GenericBindingContext);
 
-    // Microsoft note: (see 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    // Microsoft note: (see bug 6775: Perf - Improve Namespace hashing)
+    //
+    // LookupInNamespaceNoCaching_WithMergedHash and LookupInNamespaceNoCaching
+    // are made to be behaviorial equivalent.
+    // LookupInNamespaceNoCaching_WithMergedHash uses merged hash table for
+    // name lookup and default backs to the old behavior (i.e., LookupInNamespaceNoCaching)
+    // if memory allocation ever fails for constructing such a merged hash.
+    //
+    // The perf bottleneck identified here is the hit/miss ratio of name lookup about 3%
+    // (under Maui2 project build scenario). In other words, majority of the time
+    // spent on LookupInNamespaceNoCaching was a miss (Result returned NULL). Using
+    // the merged hash approach as in LookupInNamespaceNoCaching_WithMergedHash shortens
+    // the time it take to produce NULL Result in the order of O(1) instead of O(n), where n
+    // is the number of BCSYM_Namespace's under one BCSYM_NamespaceRing.
+    //
 
     //Declaration *Result = LookupInNamespaceNoCaching(
     Declaration *Result = LookupInNamespaceNoCaching_WithMergedHash(
@@ -3068,8 +3068,8 @@ Semantics::LookupInNamespaceNoCaching_WithMergedHash
                             //         This code is probably no longer needed
                             //         we should remove this after we ship orcas.
                             
-                            // 
-
+                            // Bug 109902 - DevDiv Bugs: Do not treat as an ambiguouty the case when both symbols represent the same partial type 
+                            // Bug 116920 - DevDiv Bugs: The same as above
                             BCSYM_Container * ResultAsContainer = Result->IsContainer() ? Result->PContainer() : NULL;
                             BCSYM_Container * CurrentResultAsContainer = CurrentResult->IsContainer() ? CurrentResult->PContainer() : NULL;
                             BCSYM_Container * ResultMainType = NULL;
@@ -3307,7 +3307,7 @@ Semantics::IsMemberSuitableBasedOnGenericTypeArity
 {
     return
         GenericTypeArity == -1 ||
-        (!Member->IsType() && !Member->IsNamespace()) ||    // !Member->IsNamespace() - 
+        (!Member->IsType() && !Member->IsNamespace()) ||    // !Member->IsNamespace() - Bug VSWhidbey 424148
         Member->GetGenericParamCount() == GenericTypeArity;
 }
 
@@ -3389,11 +3389,11 @@ Semantics::LookupInModulesInNamespace
 
         do
         {
-            // 
-
-
-
-
+            // Bug 437737. With the new compilation order for diamond references,
+            // modules in metadata files that are not referenced by this project
+            // either directly or indirectly cannot be loaded when binding this
+            // project.
+            //
             if (!(CurrentLookup->GetCompilerFile() &&
                   CurrentLookup->GetCompilerFile()->IsMetaDataFile() &&
                   CurrentLookup->GetCompilerFile()->GetCompState() < CS_Bound))
@@ -3698,10 +3698,10 @@ Semantics::LookupInImportedTarget
         if (!m_SourceFile || m_SourceFile->GetCompState() >= CS_Bound)
         {
             // Note that this code was originally added to fix http://bugcheck/bugs/DevDivBugs/33999
-            // The code referred to in that 
-
-
-
+            // The code referred to in that bug doesn't seem to exist any more, but there are too 
+            // many other scenarios which may have taken a dependency on this behavior to remove
+            // this line of code completely, so instead we're making a tactical fix to only call it
+            // when we've already compiled past CS_Bound.
             m_SymbolCreator.SetNorlsAllocator(m_LookupCache->GetNorlsAllocator());
         }
     }
@@ -5039,7 +5039,7 @@ Semantics::CheckNamedRootAccessibility
                     NonAliasResult->GetContainingProject(),
                     m_Compiler,
                     m_Errors,
-                    NonAliasResult->GetContainingProject()->GetFileName(),     // 
+                    NonAliasResult->GetContainingProject()->GetFileName(),     // Bug VSWhidbey 395158 - Extra information used by error correction.
                     &SourceLocation,
                     ExtractErrorName(NonAliasResult, TextBuffer1),
                     GetErrorProjectName(NonAliasResult->GetContainingProject()),
@@ -5306,11 +5306,11 @@ Semantics::InterpretName
         return NULL;
     }
 
-    // Devdiv 
-
-
-
-
+    // Devdiv Bug [21871] Anonymous Type Member methods special case
+    // This is a terrible hack. We are replacing, for example, _Field with $Field
+    // so that the anonymous types synthetic code gen can work. For constructor
+    // we must do this ONLY if the flag is set. For other methods, we'll do this
+    // all the time. For now. This is a terrible hack.
 
     bool DoSubstitution = false;
     bool IsAnonymousTypeField = false;

@@ -467,6 +467,128 @@ namespace System.Windows.Automation
             return ((IsOffscreenBehavior)element.GetValue(IsOffscreenBehaviorProperty));
         }
         #endregion IsOffscreenBehavior
+        
+        #region LiveSetting
+        /// <summary>
+        /// LiveSetting Property
+        /// </summary>
+        public static readonly DependencyProperty LiveSettingProperty =
+                    DependencyProperty.RegisterAttached(
+                                "LiveSetting",
+                                typeof(AutomationLiveSetting),
+                                typeof(AutomationProperties),
+                                new UIPropertyMetadata(AutomationLiveSetting.Off));
+
+        /// <summary>
+        /// Helper for setting LiveSetting property on a DependencyObject. 
+        /// </summary>
+        public static void SetLiveSetting(DependencyObject element, AutomationLiveSetting value)
+        {
+            if (element == null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            element.SetValue(LiveSettingProperty, value);
+        }
+
+        /// <summary>
+        /// Helper for reading LiveSetting property from a DependencyObject.
+        /// </summary>
+        public static AutomationLiveSetting GetLiveSetting(DependencyObject element)
+        {
+            if (element == null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            return ((AutomationLiveSetting)element.GetValue(LiveSettingProperty));
+        }
+        #endregion LiveSetting
+
+        #region PositionInSet
+        /// <summary>
+        /// PositionInSet property describes the ordinal location of the element within a set of elements which are considered to be siblings.
+        /// </summary>
+        /// <remarks>
+        /// PositionInSet works in coordination with the SizeOfSet property to describe the ordinal location in the set.
+        /// <see cref="https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx"/>
+        /// </remarks>
+        public static readonly DependencyProperty PositionInSetProperty =
+                    DependencyProperty.RegisterAttached(
+                                "PositionInSet",
+                                typeof(int),
+                                typeof(AutomationProperties),
+                                new UIPropertyMetadata(AutomationProperties.AutomationPositionInSetDefault));
+
+        /// <summary>
+        /// Helper for setting PositionInSet property on a DependencyObject. 
+        /// </summary>
+        public static void SetPositionInSet(DependencyObject element, int value)
+        {
+            if (element == null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            element.SetValue(PositionInSetProperty, value);
+        }
+
+        /// <summary>
+        /// Helper for reading PositionInSet property from a DependencyObject.
+        /// </summary>
+        public static int GetPositionInSet(DependencyObject element)
+        {
+            if (element == null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            return ((int)element.GetValue(PositionInSetProperty));
+        }
+        #endregion
+
+        #region SizeOfSet
+        /// <summary>
+        /// SizeOfSet property describes the count of automation elements in a group or set that are considered to be siblings.
+        /// </summary>
+        /// <remarks>
+        /// SizeOfSet works in coordination with the PositionInSet property to describe the count of items in the set.
+        /// <see cref="https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx"/>
+        /// </remarks>
+        public static readonly DependencyProperty SizeOfSetProperty =
+                    DependencyProperty.RegisterAttached(
+                                "SizeOfSet",
+                                typeof(int),
+                                typeof(AutomationProperties),
+                                new UIPropertyMetadata(AutomationProperties.AutomationSizeOfSetDefault));
+
+        /// <summary>
+        /// Helper for setting SizeOfSet property on a DependencyObject. 
+        /// </summary>
+        public static void SetSizeOfSet(DependencyObject element, int value)
+        {
+            if (element == null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            element.SetValue(SizeOfSetProperty, value);
+        }
+
+        /// <summary>
+        /// Helper for reading SizeOfSet property from a DependencyObject.
+        /// </summary>
+        public static int GetSizeOfSet(DependencyObject element)
+        {
+            if (element == null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            return ((int)element.GetValue(SizeOfSetProperty));
+        }
+        #endregion
 
         #region private implementation
         // Validation callback for string properties
@@ -474,6 +596,11 @@ namespace System.Windows.Automation
         {
             return (value != null);
         }
+        #endregion
+
+        #region internal constants
+        internal const int AutomationPositionInSetDefault = -1;
+        internal const int AutomationSizeOfSetDefault = -1;
         #endregion
     }
 }

@@ -149,7 +149,7 @@ namespace System.Windows.Interop
                 //   - The ReadOnlyPermissionSet may have v2 and v3 assembly references--they are not 'unified'
                 //      to the current framework version. This might confuse code doing more involved permission
                 //      set comparisons or calculations.
-                // See 
+                // See bug Dev10.697110 for the longer story. Workaround is to copy the ROPS to a regular one.
                 if (permissions is ReadOnlyPermissionSet)
                 {
                     permissions = new PermissionSet(permissions); 

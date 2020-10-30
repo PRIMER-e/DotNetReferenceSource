@@ -3694,7 +3694,7 @@ namespace System.Data.SqlClient.SqlGen
             {
                 orderByClause.Append(separator);
                 orderByClause.Append(sortClause.Expression.Accept(this));
-                // 
+                // Bug 431021: COLLATE clause must precede ASC/DESC
                 Debug.Assert(sortClause.Collation != null);
                 if (!String.IsNullOrEmpty(sortClause.Collation))
                 {

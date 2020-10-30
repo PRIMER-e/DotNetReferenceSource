@@ -483,7 +483,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
 
@@ -514,7 +514,7 @@ namespace System.Management
                 sink = new SinkForEventQuery(this, options.Context, wbemServices);
                 if (sink.Status < 0) 
                 {
-                    Marshal.ThrowExceptionForHR(sink.Status);
+                    Marshal.ThrowExceptionForHR(sink.Status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
                 // For async event queries we should ensure 0 flags as this is
@@ -539,7 +539,7 @@ namespace System.Management
 
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
             }
             finally
@@ -653,7 +653,7 @@ namespace System.Management
                 this.isLocal = true;
             }
             
-            if(MTAHelper.IsNoContextMTA())  // 
+            if(MTAHelper.IsNoContextMTA())  // Bug#110141 - Checking for MTA is not enough.  We need to make sure we are not in a COM+ Context
                 HackToCreateStubInMTA(this);
             else
             {
@@ -775,7 +775,7 @@ namespace System.Management
                             if ((status & 0xfffff000) == 0x80041000)
                                 ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                             else
-                                Marshal.ThrowExceptionForHR(status);
+                                Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                         }
                     }
                 }

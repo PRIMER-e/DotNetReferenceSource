@@ -87,7 +87,7 @@ namespace System.Management
 					if ((status & 0xfffff000) == 0x80041000)
 						ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 					else
-						Marshal.ThrowExceptionForHR(status);
+						Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 				}
 
 				return propertyNames.Length;
@@ -157,7 +157,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 
 			return;
@@ -263,7 +263,7 @@ namespace System.Management
 					if ((status & 0xfffff000) == 0x80041000)
 						ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 					else
-						Marshal.ThrowExceptionForHR(status);
+						Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 				}
 			}
 		
@@ -381,7 +381,7 @@ namespace System.Management
 					if ((status & 0xfffff000) == 0x80041000)
 						ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 					else
-						Marshal.ThrowExceptionForHR(status);
+						Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 				}
 			}
 		}
@@ -424,7 +424,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 
@@ -466,7 +466,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 		
@@ -504,7 +504,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 		

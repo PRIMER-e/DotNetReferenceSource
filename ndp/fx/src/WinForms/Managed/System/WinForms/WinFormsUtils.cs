@@ -63,6 +63,7 @@ namespace System.Windows.Forms {
         public static Graphics CreateMeasurementGraphics() {
             return Graphics.FromHdcInternal(WindowsGraphicsCacheManager.MeasurementGraphics.DeviceContext.Hdc);
         }
+       
         // If you want to know if a piece of text contains one and only one &
         // this is your function.  If you have a character "t" and want match it to &Text
         // Control.IsMnemonic is a better bet.

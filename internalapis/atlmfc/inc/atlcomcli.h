@@ -182,8 +182,8 @@ public:
         ATLENSURE(p!=NULL);
         return *p;
     }
-    //The assert on operator& usually indicates a 
-
+    //The assert on operator& usually indicates a bug.  If this is really
+    //what is needed, however, take the address of the p member explicitly.
     T** operator&() throw()
     {
         ATLASSERT(p==NULL);

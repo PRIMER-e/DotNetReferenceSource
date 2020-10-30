@@ -610,10 +610,10 @@ namespace System.Windows
                 }
 
                 // 3a. PropertyInfo, when item exposes INotifyPropertyChanged.
-                // 3b. PropertyInfo, when item is a DependencyObject (
-
-
-
+                // 3b. PropertyInfo, when item is a DependencyObject (bug 1373351).
+                // This uses less working set than PropertyDescriptor, and we don't need
+                // the ValueChanged pattern.  (If item is a DO and wants to raise
+                // change notifications, it should make the property a DP.)
                 if (accessor == null &&
                     (item is INotifyPropertyChanged || item is DependencyObject))
                 {
@@ -623,8 +623,8 @@ namespace System.Windows
                 // 4. PropertyDescriptor (obtain from item - this is reputedly
                 // slower than obtaining from type, but the latter doesn't
                 // discover properties obtained from TypeDescriptorProvider -
-                // see 
-
+                // see bug 1713000).
+                // This supports the Microsoft ValueChanged pattern.
                 if (accessor == null && item != null)
                 {
                     accessor = TypeDescriptor.GetProperties(item)[propertyName];
@@ -804,7 +804,7 @@ namespace System.Windows
                     // the conversion didn't work (often because the converter
                     // reverts to the default behavior - returning null).  So
                     // we treat null as an "error", and keep trying for something
-                    // better.  (See 
+                    // better.  (See bug 861966)
                 }
                 // catch all exceptions.  We simply want to move on to the next
                 // candidate indexer.

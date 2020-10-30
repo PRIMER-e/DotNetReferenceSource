@@ -110,7 +110,7 @@ namespace System.Data.Mapping.Update.Internal
                 if (stateEntries.All(e => e.State == EntityState.Unchanged))
                 {
                     // we shouldn't update the entity if it is unchanged, only update when referenced association is changed.
-                    // if not, then this will trigger a fake update for principal end as describe in 
+                    // if not, then this will trigger a fake update for principal end as describe in bug 894569.
                     command = null;
                 }
                 else

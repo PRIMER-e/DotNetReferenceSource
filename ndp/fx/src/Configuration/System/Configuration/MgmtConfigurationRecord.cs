@@ -10,6 +10,7 @@ namespace System.Configuration {
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Configuration.Internal;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Reflection;
@@ -141,7 +142,7 @@ namespace System.Configuration {
         //
         // Create the ConfigurationSection.
         //
-        override protected object CreateSection(bool inputIsTrusted, FactoryRecord factoryRecord, SectionRecord sectionRecord, object parentConfig, ConfigXmlReader reader) {
+        override protected object CreateSection(bool inputIsTrusted, FactoryRecord factoryRecord, SectionRecord sectionRecord, SectionInput sectionInput, object parentConfig, ConfigXmlReader reader) {
             // Create an instance of the ConfigurationSection
             ConstructorInfo ctor = (ConstructorInfo) factoryRecord.Factory;
             ConfigurationSection configSection = (ConfigurationSection) TypeUtil.InvokeCtorWithReflectionPermission(ctor);
@@ -155,6 +156,10 @@ namespace System.Configuration {
             configSection.Reset(parentConfigSection);
             if (reader != null) {
                 configSection.DeserializeSection(reader);
+            }
+
+            if (sectionInput != null && sectionInput.ConfigBuilder != null) {
+                configSection = CallHostProcessConfigurationSection(configSection, sectionInput.ConfigBuilder);
             }
 
             // Clear the modified bit.
@@ -208,7 +213,7 @@ namespace System.Configuration {
                 throw new ConfigurationErrorsException(SR.GetString(SR.Config_unrecognized_configuration_section, configKey));
             }
 
-            object result = CallCreateSection(false, factoryRecord, sectionRecord, parentResult, null, null, -1);
+            object result = CallCreateSection(false, factoryRecord, sectionRecord, null, parentResult, null);
             return result;
         }
 
@@ -525,6 +530,7 @@ namespace System.Configuration {
         //
         // If xmlElement is null or empty, it is equivalent to calling RevertToParent
         //
+        [SuppressMessage("Microsoft.Security.Xml", "CA3074:ReviewClassesDerivedFromXmlTextReader", Justification="Reading trusted input")]
         internal void SetRawXml(ConfigurationSection configSection, string xmlElement) {
 
             // Null or empty is equivalent to RevertToParent().
@@ -681,6 +687,7 @@ namespace System.Configuration {
         //
         // Throws a ConfigurationErrorsException if there is an error.
         //
+        [SuppressMessage("Microsoft.Security.Xml", "CA3054:DoNotAllowDtdOnXmlTextReader", Justification="Reading trusted input")]
         private void ValidateSectionXml(string xmlElement, string configKey) {
             if (string.IsNullOrEmpty(xmlElement))
                 return;
@@ -1212,8 +1219,8 @@ namespace System.Configuration {
                                 reader.Read();
                             }
 
-                            // Dev10 
-
+                            // Dev10 bug 687017 - Handle only UTF-16 explicitly, so that handling of other 
+                            // encodings are not affected.
                             if (reader.CurrentEncoding is UnicodeEncoding) {
                                 encoding = reader.CurrentEncoding;
                             }
@@ -1647,20 +1654,24 @@ namespace System.Configuration {
         private bool AreSectionAttributesModified(SectionRecord sectionRecord, ConfigurationSection configSection) {
             string configSource;
             string protectionProviderName;
+            string configBuilderName;
 
             if (sectionRecord.HasFileInput) {
                 SectionXmlInfo sectionXmlInfo = sectionRecord.FileInput.SectionXmlInfo;
                 configSource = sectionXmlInfo.ConfigSource;
                 protectionProviderName = sectionXmlInfo.ProtectionProviderName;
+                configBuilderName = sectionXmlInfo.ConfigBuilderName;
             }
             else {
                 configSource = null;
                 protectionProviderName = null;
+                configBuilderName = null;
             }
 
             return
                    !StringUtil.EqualsNE(configSource, configSection.SectionInformation.ConfigSource)
                 || !StringUtil.EqualsNE(protectionProviderName, configSection.SectionInformation.ProtectionProviderName)
+                || !StringUtil.EqualsNE(configBuilderName, configSection.SectionInformation.ConfigBuilderName)
                 || AreLocationAttributesModified(sectionRecord, configSection);
         }
 
@@ -1743,8 +1754,19 @@ namespace System.Configuration {
                                         saveMode == ConfigurationSaveMode.Full) {
                                     // Note: we won't use RawXml if saveMode == Full because Full means we want to
                                     // write all properties, and RawXml may not have all properties.
+
                                     ConfigurationSection parentConfigSection = FindImmediateParentSection(configSection);
                                     updatedXml = configSection.SerializeSection(parentConfigSection, configSection.SectionInformation.Name, saveMode);
+
+                                    // 'System.Windows.Forms.ApplicationConfiguration' is declared as an implicit section. Saving this section definition without declaration in machine .config file is causing IIS 
+                                    // and "wcfservice' project creation failed. See bug #297811 & #461647 for more details. 
+                                    // Following fix exclude this section empty definition in all places while saving itincluding machine.config ( explicit check may not be necessary but removing it as it was added in the earlier release)
+                                    if (String.Equals(configSection.SectionInformation.Name, ConfigurationStringConstants.WinformsApplicationConfigurationSectionName, StringComparison.Ordinal) 
+                                        && (String.Equals(configSection._configRecord.ConfigPath, ClientConfigurationHost.MachineConfigName, StringComparison.Ordinal) 
+                                        || String.Equals(updatedXml, WriteEmptyElement(Microsoft_CONFIGURATION_SECTION), StringComparison.Ordinal))) {
+                                        updatedXml = null;
+                                    }
+
                                     ValidateSectionXml(updatedXml, configKey);
                                 }
                                 else {
@@ -1776,7 +1798,7 @@ namespace System.Configuration {
                                         // VSWhidbey 580658: When a section is to be removed, its corresponding file
                                         // input should be cleared as well so this section will be indicated as "moved"
                                         // next time something is added back to the section.  Without marking it as "moved",
-                                        // adding new content to a removed section fails as the 
+                                        // adding new content to a removed section fails as the bug describes.
                                         sectionRecord.RemoveFileInput();
                                     }
                                 }
@@ -1970,6 +1992,7 @@ namespace System.Configuration {
                                         sectionRecord.ConfigKey, definitionConfigPath, _configPath, _locationSubPath,
                                         ConfigStreamInfo.StreamName, 0, ConfigStreamInfo.StreamVersion, null,
                                         configSource, configSourceStreamName, configSourceStreamVersion,
+                                        configSection.SectionInformation.ConfigBuilderName,
                                         configSection.SectionInformation.ProtectionProviderName,
                                         configSection.SectionInformation.OverrideModeSetting,
                                         !configSection.SectionInformation.InheritInChildApplications);
@@ -1988,6 +2011,7 @@ namespace System.Configuration {
                                 sectionXmlInfo.ConfigSource = configSource;
                                 sectionXmlInfo.ConfigSourceStreamName = configSourceStreamName;
                                 sectionXmlInfo.ConfigSourceStreamVersion = configSourceStreamVersion;
+                                sectionXmlInfo.ConfigBuilderName = configSection.SectionInformation.ConfigBuilderName;
                                 sectionXmlInfo.ProtectionProviderName = configSection.SectionInformation.ProtectionProviderName;
                                 sectionXmlInfo.OverrideModeSetting = configSection.SectionInformation.OverrideModeSetting;
                                 sectionXmlInfo.SkipInChildApps = !configSection.SectionInformation.InheritInChildApplications;

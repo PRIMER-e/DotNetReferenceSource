@@ -24,10 +24,10 @@ namespace System.Windows.Controls
     ///     A control for displaying a row of the DataGrid.
     ///     A row represents a data item in the DataGrid.
     ///     A row displays a cell for each column of the DataGrid.
-    /// 
-    ///     The data item for the row is added n times to the row's Items collection, 
+    ///
+    ///     The data item for the row is added n times to the row's Items collection,
     ///     where n is the number of columns in the DataGrid.
-    /// </summary>    
+    /// </summary>
     public class DataGridRow : Control
     {
         #region Constants
@@ -267,7 +267,7 @@ namespace System.Windows.Controls
         #region Row Header
 
         /// <summary>
-        ///     The object representing the Row Header.  
+        ///     The object representing the Row Header.
         /// </summary>
         public object Header
         {
@@ -291,7 +291,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     The object representing the Row Header style.  
+        ///     The object representing the Row Header style.
         /// </summary>
         public Style HeaderStyle
         {
@@ -306,7 +306,7 @@ namespace System.Windows.Controls
             DependencyProperty.Register("HeaderStyle", typeof(Style), typeof(DataGridRow), new FrameworkPropertyMetadata(null, OnNotifyRowAndRowHeaderPropertyChanged, OnCoerceHeaderStyle));
 
         /// <summary>
-        ///     The object representing the Row Header template.  
+        ///     The object representing the Row Header template.
         /// </summary>
         public DataTemplate HeaderTemplate
         {
@@ -321,7 +321,7 @@ namespace System.Windows.Controls
             DependencyProperty.Register("HeaderTemplate", typeof(DataTemplate), typeof(DataGridRow), new FrameworkPropertyMetadata(null, OnNotifyRowAndRowHeaderPropertyChanged, OnCoerceHeaderTemplate));
 
         /// <summary>
-        ///     The object representing the Row Header template selector.  
+        ///     The object representing the Row Header template selector.
         /// </summary>
         public DataTemplateSelector HeaderTemplateSelector
         {
@@ -355,7 +355,7 @@ namespace System.Windows.Controls
         #region Row Details
 
         /// <summary>
-        ///     The object representing the Row Details template.  
+        ///     The object representing the Row Details template.
         /// </summary>
         public DataTemplate DetailsTemplate
         {
@@ -370,7 +370,7 @@ namespace System.Windows.Controls
             DependencyProperty.Register("DetailsTemplate", typeof(DataTemplate), typeof(DataGridRow), new FrameworkPropertyMetadata(null, OnNotifyDetailsTemplatePropertyChanged, OnCoerceDetailsTemplate));
 
         /// <summary>
-        ///     The object representing the Row Details template selector.  
+        ///     The object representing the Row Details template selector.
         /// </summary>
         public DataTemplateSelector DetailsTemplateSelector
         {
@@ -464,7 +464,7 @@ namespace System.Windows.Controls
             }
 
             // Since we just changed _owner we need to invalidate all child properties that rely on a value supplied by the DataGrid.
-            // A common scenario is when a recycled Row was detached from the visual tree and has just been reattached (we always clear out the 
+            // A common scenario is when a recycled Row was detached from the visual tree and has just been reattached (we always clear out the
             // owner when recycling a container).
             if (fireOwnerChanged)
             {
@@ -491,6 +491,13 @@ namespace System.Windows.Controls
             }
 
             PersistAttachedItemValue(this, DetailsVisibilityProperty);
+
+            Item = BindingExpressionBase.DisconnectedItem;
+            DataGridDetailsPresenter detailsPresenter = DetailsPresenter;
+            if (detailsPresenter != null)
+            {
+                detailsPresenter.Content = BindingExpressionBase.DisconnectedItem;
+            }
 
             _owner = null;
         }
@@ -969,19 +976,19 @@ namespace System.Windows.Controls
         /// <summary>
         ///     Fired when the Row is attached to the DataGrid.  The scenario here is if the user is scrolling and
         ///     the Row is a recycled container that was just added back to the visual tree.  Properties that rely on a value from
-        ///     the Grid should be reevaluated because they may be stale.  
+        ///     the Grid should be reevaluated because they may be stale.
         /// </summary>
         /// <remarks>
         ///     Properties can obviously be stale if the DataGrid's value changes while the row is disconnected.  They can also
         ///     be stale for unobvious reasons.
-        /// 
-        ///     For example, the Style property is invalidated when we detect a new Visual parent.  This happens for 
+        ///
+        ///     For example, the Style property is invalidated when we detect a new Visual parent.  This happens for
         ///     elements in the row (such as the RowHeader) before Prepare is called on the Row.  The coercion callback
-        ///     will thus be unable to find the DataGrid and will return the wrong value.  
-        /// 
+        ///     will thus be unable to find the DataGrid and will return the wrong value.
+        ///
         ///     There is a potential for perf work here.  If we know a DP isn't invalidated when the visual tree is reconnected
         ///     and we know that the Grid hasn't modified that property then its value is likely fine.  We could also cache whether
-        ///     or not the Grid's property is the one that's winning.  If not, no need to redo the coercion.  This notification 
+        ///     or not the Grid's property is the one that's winning.  If not, no need to redo the coercion.  This notification
         ///     is pretty fast already and thus not worth the work for now.
         /// </remarks>
         private void SyncProperties(bool forcePrepareCells)
@@ -1054,7 +1061,7 @@ namespace System.Windows.Controls
         /// </summary>
         /// <remarks>
         ///     When IsSelected is set to true, an InvalidOperationException may be
-        ///     thrown if the value of the SelectionUnit property on the parent DataGrid 
+        ///     thrown if the value of the SelectionUnit property on the parent DataGrid
         ///     prevents selection or rows.
         /// </remarks>
         [Bindable(true), Category("Appearance")]

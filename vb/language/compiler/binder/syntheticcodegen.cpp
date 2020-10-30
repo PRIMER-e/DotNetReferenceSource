@@ -1317,11 +1317,11 @@ Bindable::ConflictsWithOtherProperties
         // CS_TypesEmitted error table and ensure that the TypesEmitted error table does not get purged when moving from CS_Bound to
         // CS_TypesEmitted.
         //
-        // See 
-
+        // See Bug VSWhidbey 273696.
+        //
         ReportErrorOnSymbol(
             ERRID_PropertyNameConflictInMyCollection,
-            GroupMemberClass->GetErrorTableForContext(),    // See 
+            GroupMemberClass->GetErrorTableForContext(),    // See Bug VSWhidbey 273696
             GroupMemberClass,
             GroupMemberClass->GetName());
         return true;

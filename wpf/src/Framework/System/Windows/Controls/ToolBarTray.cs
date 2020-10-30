@@ -8,6 +8,7 @@ using MS.Internal;
 using MS.Internal.Controls;
 using MS.Internal.Documents;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 using MS.Utility;
 
 using System;
@@ -52,6 +53,8 @@ namespace System.Windows.Controls
 
             EventManager.RegisterClassHandler(typeof(ToolBarTray), Thumb.DragDeltaEvent, new DragDeltaEventHandler(OnThumbDragDelta));
             KeyboardNavigation.ControlTabNavigationProperty.OverrideMetadata(typeof(ToolBarTray), new FrameworkPropertyMetadata(KeyboardNavigationMode.Cycle));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.ToolBarTray);
         }
 
         /// <summary>

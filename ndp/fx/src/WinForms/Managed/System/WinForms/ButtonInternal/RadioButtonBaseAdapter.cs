@@ -27,7 +27,7 @@ namespace System.Windows.Forms.ButtonInternal {
 
         #region Drawing helpers
         protected void DrawCheckFlat(PaintEventArgs e, LayoutData layout, Color checkColor, Color checkBackground, Color checkBorder) {
-            DrawCheckBackgroundFlat(e, layout.checkBounds, checkBorder, checkBackground, true);
+            DrawCheckBackgroundFlat(e, layout.checkBounds, checkBorder, checkBackground);
             DrawCheckOnly(e, layout, checkColor, checkBackground, true);
         }
 
@@ -58,16 +58,20 @@ namespace System.Windows.Forms.ButtonInternal {
             }
         }
 
-        protected void DrawCheckBackgroundFlat(PaintEventArgs e, Rectangle bounds, Color borderColor, Color checkBackground, bool disabledColors) {
+        protected void DrawCheckBackgroundFlat(PaintEventArgs e, Rectangle bounds, Color borderColor, Color checkBackground) {
             Color field = checkBackground;
             Color border = borderColor;
             
-            if (!Control.Enabled && disabledColors) {
-                border = ControlPaint.ContrastControlDark;
+            if (!Control.Enabled) {
+                // if we are not in HighContrast mode OR we opted into the legacy behavior
+                if (!SystemInformation.HighContrast || !AccessibilityImprovements.Level1) {
+                    border = ControlPaint.ContrastControlDark;
+                }
+                // otherwise we are in HighContrast mode 
                 field = SystemColors.Control;
             }
 
-            float scale = GetDpiScaleRatio(e.Graphics);
+            double scale = GetDpiScaleRatio(e.Graphics);
 
             using( WindowsGraphics wg = WindowsGraphics.FromGraphics(e.Graphics) ) {
                 using( WindowsPen borderPen = new WindowsPen(wg.DeviceContext, border) ) {
@@ -120,7 +124,7 @@ namespace System.Windows.Forms.ButtonInternal {
 			wg.DrawLine(borderPen, new Point(bounds.X + 10, bounds.Y + 8), new Point(bounds.X + 10, bounds.Y + 10));
 		}
 
-        private static int GetScaledNumber(int n, float scale)
+        private static int GetScaledNumber(int n, double scale)
         {
             return (int)(n * scale);
         }
@@ -134,7 +138,7 @@ namespace System.Windows.Forms.ButtonInternal {
                     checkColor = SystemColors.ControlDark;
                 }
 
-		float scale = GetDpiScaleRatio(e.Graphics);
+                double scale = GetDpiScaleRatio(e.Graphics);
                 using( WindowsGraphics wg = WindowsGraphics.FromGraphics(e.Graphics) ) {
                     using (WindowsBrush brush = new WindowsSolidBrush(wg.DeviceContext, checkColor)) {
                         // circle drawing doesn't work at this size
@@ -181,14 +185,24 @@ namespace System.Windows.Forms.ButtonInternal {
             ButtonState style = GetState();
             
             if (Application.RenderWithVisualStyles) {
-                RadioButtonRenderer.DrawRadioButton(g, new Point(check.Left, check.Top), RadioButtonRenderer.ConvertFromButtonState(style, Control.MouseIsOver));
-            }
+                RadioButtonRenderer.DrawRadioButton(g, new Point(check.Left, check.Top), RadioButtonRenderer.ConvertFromButtonState(style, Control.MouseIsOver), Control.HandleInternal);
+              }
             else {
                 ControlPaint.DrawRadioButton(g, check, style);
             }
         }
 
         #endregion
+
+        protected void AdjustFocusRectangle(LayoutData layout) {
+            if (AccessibilityImprovements.Level2 && String.IsNullOrEmpty(Control.Text)) {
+                // When a RadioButton has no text, AutoSize sets the size to zero 
+                // and thus there's no place around which to draw the focus rectangle.
+                // So, when AutoSize == true we want the focus rectangle to be rendered around the circle area.
+                // Otherwise, it should encircle all the available space next to the box (like it's done in WPF and ComCtl32).
+                layout.focus = Control.AutoSize ? layout.checkBounds : layout.field;
+            }
+        }
 
         internal override LayoutOptions CommonLayout() {
             LayoutOptions layout = base.CommonLayout();

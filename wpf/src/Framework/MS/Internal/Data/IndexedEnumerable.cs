@@ -413,7 +413,7 @@ namespace MS.Internal.Data
                 {
                     Debug.Assert(false, "EnsureCacheCurrent: _enumerator.Current failed with InvalidOperationException");
                 }
-                Debug.Assert(Object.Equals(_cachedItem, current), "EnsureCacheCurrent: _cachedItem out of sync with _enumerator.Current");
+                Debug.Assert(System.Windows.Controls.ItemsControl.EqualsEx(_cachedItem, current), "EnsureCacheCurrent: _cachedItem out of sync with _enumerator.Current");
             }
 #endif // DEBUG
             return isCacheCurrent;
@@ -564,7 +564,7 @@ namespace MS.Internal.Data
                 {
                     // revert to walking the IEnumerable
                     // under partial trust, some properties are not accessible even though they are public
-                    // see 
+                    // see bug 1415832
                     _reflectedCount = null;
                     isNativeValue = false;
                 }
@@ -597,7 +597,7 @@ namespace MS.Internal.Data
                 {
                     // revert to walking the IEnumerable
                     // under partial trust, some properties are not accessible even though they are public
-                    // see 
+                    // see bug 1415832
                     _reflectedCount = null;
                     isNativeValue = false;
                 }
@@ -630,7 +630,7 @@ namespace MS.Internal.Data
                 {
                     // revert to walking the IEnumerable
                     // under partial trust, some properties are not accessible even though they are public
-                    // see 
+                    // see bug 1415832
                     _reflectedIndexOf = null;
                     isNativeValue = false;
                 }
@@ -663,7 +663,7 @@ namespace MS.Internal.Data
                 {
                     // revert to walking the IEnumerable
                     // under partial trust, some properties are not accessible even though they are public
-                    // see 
+                    // see bug 1415832
                     _reflectedItemAt = null;
                     isNativeValue = false;
                 }

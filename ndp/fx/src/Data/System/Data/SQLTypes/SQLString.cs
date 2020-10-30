@@ -105,8 +105,8 @@ namespace System.Data.SqlTypes {
                     SqlCompareOptions.IgnoreNonSpace | SqlCompareOptions.IgnoreKanaType |
                     SqlCompareOptions.BinarySort | SqlCompareOptions.BinarySort2;
 
-        internal static readonly int x_lcidUSEnglish    = 0x00000409;
-        private  static readonly int x_lcidBinary       = 0x00008200;
+        internal const int x_lcidUSEnglish = 0x00000409;
+        private  const int x_lcidBinary    = 0x00008200;
 
 
         // constructor

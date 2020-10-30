@@ -22,6 +22,29 @@ namespace System {
                         LocalAppContext.DefineSwitchDefault(LocalAppContextSwitches.DontSupportReentrantFilterMessageSwitchName, true);
                         LocalAppContext.DefineSwitchDefault(LocalAppContextSwitches.DoNotSupportSelectAllShortcutInMultilineTextBoxSwitchName, true);
                     }
+                    if (version <= 40602) {
+                        LocalAppContext.DefineSwitchDefault(LocalAppContextSwitches.DoNotLoadLatestRichEditControlSwitchName, true);
+                    }
+                    if (version <= 40700) {
+                        LocalAppContext.DefineSwitchDefault(AccessibilityImprovements.UseLegacyAccessibilityFeaturesSwitchName, true);
+                    }
+                    if (version <= 40701) {
+                        LocalAppContext.DefineSwitchDefault(LocalAppContextSwitches.UseLegacyContextMenuStripSourceControlValueSwitchName, true);
+                        LocalAppContext.DefineSwitchDefault(LocalAppContextSwitches.DomainUpDownUseLegacyScrollingSwitchName, true);
+                        LocalAppContext.DefineSwitchDefault(LocalAppContextSwitches.AllowUpdateChildControlIndexForTabControlsSwitchName, true);
+                        LocalAppContext.DefineSwitchDefault(AccessibilityImprovements.UseLegacyAccessibilityFeatures2SwitchName, true);
+                    }
+                    if (version <= 40702) {
+                        LocalAppContext.DefineSwitchDefault(AccessibilityImprovements.UseLegacyAccessibilityFeatures3SwitchName, true);
+                        LocalAppContext.DefineSwitchDefault(LocalAppContextSwitches.UseLegacyImagesSwitchName, true);
+                        LocalAppContext.DefineSwitchDefault(LocalAppContextSwitches.EnableVisualStyleValidationSwitchName, true);
+                    }
+
+                    // When this switch is set to false, it enables the keyboard tooltips feature which is an "opt-in" feature.
+                    // UI that depends on this feature should be designed appropriately to prevent clutter.
+                    // That's why this switch is set to true by default for all versions of the framework.
+                    LocalAppContext.DefineSwitchDefault(AccessibilityImprovements.UseLegacyToolTipDisplaySwitchName, true);
+
                     break;
                 }
             }

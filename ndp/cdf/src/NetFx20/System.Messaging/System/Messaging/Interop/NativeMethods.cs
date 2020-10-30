@@ -43,6 +43,9 @@ namespace System.Messaging.Interop
         private const int ALG_SID_MD5 = 3;
         private const int ALG_SID_SHA = 4;
         private const int ALG_SID_MAC = 5;
+        private const int ALG_SID_SHA256 = 12; // 0xC
+        private const int ALG_SID_SHA384 = 13; // 0xD
+        private const int ALG_SID_SHA512 = 14; // 0xE
         private const int ALG_SID_RIPEMD = 6;
         private const int ALG_SID_RIPEMD160 = 7;
         private const int ALG_SID_SSL3SHAMD5 = 8;
@@ -62,6 +65,9 @@ namespace System.Messaging.Interop
         public const int CALG_MD5 = (ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_MD5);
         public const int CALG_SHA = (ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_SHA);
         public const int CALG_MAC = (ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_MAC);
+        public const int CALG_SHA256 = (ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_SHA256);
+        public const int CALG_SHA384 = (ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_SHA384);
+        public const int CALG_SHA512 = (ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_SHA512);
         public const int CALG_RC2 = (ALG_CLASS_DATA_ENCRYPT | ALG_TYPE_BLOCK | ALG_SID_RC2);
         public const int CALG_RC4 = (ALG_CLASS_DATA_ENCRYPT | ALG_TYPE_STREAM | ALG_SID_RC4);
 

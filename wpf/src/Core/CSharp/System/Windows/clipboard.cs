@@ -63,7 +63,7 @@ namespace System.Windows
         public static void Clear()
         {
             // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-            // See Dev10 
+            // See Dev10 bug 616223 and VSWhidbey bug 476911.
 
             int i = OleRetryCount;
 
@@ -157,7 +157,7 @@ namespace System.Windows
         public static void Flush()
         {
             // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-            // See Dev10 
+            // See Dev10 bug 616223 and VSWhidbey bug 476911.
 
             int i = OleRetryCount;
 
@@ -432,7 +432,7 @@ namespace System.Windows
                 int hr;
 
                 // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-                // See Dev10 
+                // See Dev10 bug 616223 and VSWhidbey bug 476911.
 
                 int i = OleRetryCount;
 
@@ -523,6 +523,17 @@ namespace System.Windows
         //------------------------------------------------------
 
         /// <summary>
+        /// Determines whether the legacy dangerous clipboard deserialization mode should be used based on the AppContext switch and Device Guard policies.
+        /// </summary>
+        /// <returns>
+        /// If Device Guard is enabled this method returns false, otherwise it returns the AppContext switch value.
+        /// </returns>
+        internal static bool UseLegacyDangerousClipboardDeserializationMode()
+        {
+            return !IsDeviceGuardEnabled && CoreAppContextSwitches.EnableLegacyDangerousClipboardDeserializationMode;
+        }
+
+        /// <summary>
         /// Places data on the system Clipboard and uses copy to specify whether the data 
         /// should remain on the Clipboard after the application exits.
         /// </summary>
@@ -562,7 +573,7 @@ namespace System.Windows
             }
 
             // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-            // See Dev10 
+            // See Dev10 bug 616223 and VSWhidbey bug 476911.
 
             int i = OleRetryCount;
 
@@ -586,10 +597,10 @@ namespace System.Windows
 
             if (copy)
             {
-                // Dev10 
-
-
-
+                // Dev10 bug 835751 - OleSetClipboard and OleFlushClipboard both modify the clipboard
+                // and cause notifications to be sent to clipboard listeners. We sleep a bit here to
+                // mitigate issues with clipboard listeners (like TS) corrupting the clipboard contents
+                // as a result of these two calls being back to back.
                 Thread.Sleep(OleFlushDelay);
 
                 Flush();
@@ -626,6 +637,67 @@ namespace System.Windows
         //------------------------------------------------------
 
         #region Private Methods
+
+        /// <summary>
+        /// Calls IsDynamicCodePolicyEnabled to determine if DeviceGuard is enabled, then caches it so subsequent calls only return the cached value.
+        /// </summary>
+        private static bool IsDeviceGuardEnabled
+        {
+            get
+            {
+                if (_isDeviceGuardEnabled < 0) return false;
+                if (_isDeviceGuardEnabled > 0) return true;
+
+                bool isDynamicCodePolicyEnabled = IsDynamicCodePolicyEnabled();
+                _isDeviceGuardEnabled = isDynamicCodePolicyEnabled ? 1 : -1;
+
+                return isDynamicCodePolicyEnabled;
+            }
+        }
+
+        /// <summary>
+        /// Loads Wldp.dll and looks for WldpIsDynamicCodePolicyEnabled to determine whether DeviceGuard is enabled.
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical: Attempts to load unmanaged wldp.dll and attempts to get the proc address of an RS4+ only export.
+        ///     TreatAsSafe: Does not return critical data, does not change critical state, does not consume untrusted input.
+        /// </SecurityNote>
+        [SecuritySafeCritical]
+        private static bool IsDynamicCodePolicyEnabled()
+        {
+            bool isEnabled = false;
+
+            IntPtr hModule = IntPtr.Zero;
+            try
+            {
+                hModule = LoadLibraryHelper.SecureLoadLibraryEx(ExternDll.Wldp, IntPtr.Zero, UnsafeNativeMethods.LoadLibraryFlags.LOAD_LIBRARY_SEARCH_SYSTEM32);
+                if (hModule != IntPtr.Zero)
+                {
+                    IntPtr entryPoint = UnsafeNativeMethods.GetProcAddressNoThrow(new HandleRef(null, hModule), "WldpIsDynamicCodePolicyEnabled");
+                    if (entryPoint != IntPtr.Zero)
+                    {
+                        int hResult = UnsafeNativeMethods.WldpIsDynamicCodePolicyEnabled(out isEnabled);
+
+                        if (hResult != NativeMethods.S_OK)
+                        {
+                            isEnabled = false;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                if (hModule != IntPtr.Zero)
+                {
+                    UnsafeNativeMethods.FreeLibrary(hModule);
+                }
+            }
+
+            return isEnabled;
+        }
 
         /// <SecurityNote>
         ///     Critical: This method calls into ExtractAppDomainPermissionSetMinusSiteOfOrigin  this is used to make trust decision to 
@@ -691,7 +763,7 @@ namespace System.Windows
             IComDataObject oleDataObject;
 
             // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-            // See Dev10 
+            // See Dev10 bug 616223 and VSWhidbey bug 476911.
 
             int i = OleRetryCount;
 
@@ -867,27 +939,29 @@ namespace System.Windows
         /// The number of times to retry OLE clipboard operations.
         /// </summary>
         /// <remarks>
-        /// This is mitigation for clipboard locking issues in TS sessions. See Dev10 
-
+        /// This is mitigation for clipboard locking issues in TS sessions. See Dev10 bug 616223 and VSWhidbey bug 476911.
+        /// </remarks>
         private const int OleRetryCount = 10;
 
         /// <summary>
         /// The amount of time in milliseconds to sleep between retrying OLE clipboard operations.
         /// </summary>
         /// <remarks>
-        /// This is mitigation for clipboard locking issues in TS sessions. See Dev10 
-
+        /// This is mitigation for clipboard locking issues in TS sessions. See Dev10 bug 616223 and VSWhidbey bug 476911.
+        /// </remarks>
         private const int OleRetryDelay = 100;
 
         /// <summary>
         /// The amount of time in milliseconds to sleep before flushing the clipboard after a set.
         /// </summary>
         /// <remarks>
-        /// This is mitigation for clipboard listener issues. See Dev10 
-
+        /// This is mitigation for clipboard listener issues. See Dev10 bug 835751.
+        /// </remarks>
         private const int OleFlushDelay = 10;
 
         #endregion Private Constants
+
+        private static int _isDeviceGuardEnabled = 0;
     }
 
     #endregion Clipboard class

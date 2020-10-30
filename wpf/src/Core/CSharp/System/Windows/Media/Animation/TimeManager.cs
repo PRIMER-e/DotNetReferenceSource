@@ -350,7 +350,7 @@ namespace System.Windows.Media.Animation
         /// starting system time and the current system time. The time manager requires
         /// the system time to move forward.
         /// </remarks>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         public void Tick()
         {
             try

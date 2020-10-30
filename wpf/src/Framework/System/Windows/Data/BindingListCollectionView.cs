@@ -860,7 +860,7 @@ namespace System.Windows.Data
 
         void SetNewItem(object item)
         {
-            if (!Object.Equals(item, _newItem))
+            if (!System.Windows.Controls.ItemsControl.EqualsEx(item, _newItem))
             {
                 _newItem = item;
 
@@ -925,7 +925,7 @@ namespace System.Windows.Data
 
                     // the pending changes may have moved (or even removed) the
                     // item.   Verify the index.
-                    if (index >= InternalList.Count || !Object.Equals(item, GetItemAt(index)))
+                    if (index >= InternalList.Count || !System.Windows.Controls.ItemsControl.EqualsEx(item, GetItemAt(index)))
                     {
                         index = InternalList.IndexOf(item);
                         if (index < 0)
@@ -978,7 +978,7 @@ namespace System.Windows.Data
 
             if (IsAddingNew)
             {
-                if (Object.Equals(item, _newItem))
+                if (System.Windows.Controls.ItemsControl.EqualsEx(item, _newItem))
                     return;     // EditItem(newItem) is a no-op
 
                 CommitNew();    // implicitly close a previous AddNew
@@ -1101,7 +1101,7 @@ namespace System.Windows.Data
 
         void SetEditItem(object item)
         {
-            if (!Object.Equals(item, _editItem))
+            if (!System.Windows.Controls.ItemsControl.EqualsEx(item, _editItem))
             {
                 _editItem = item;
 
@@ -1728,7 +1728,7 @@ namespace System.Windows.Data
                         return InternalCount - 1;
                 }
             }
-            else if (IsAddingNew && Object.Equals(item, _newItem))
+            else if (IsAddingNew && System.Windows.Controls.ItemsControl.EqualsEx(item, _newItem))
             {
                 switch (NewItemPlaceholderPosition)
                 {
@@ -2108,7 +2108,7 @@ namespace System.Windows.Data
         {
             if (oldIndex == CurrentPosition)
             {
-                // moving the current item - currency moves with the item (
+                // moving the current item - currency moves with the item (bug 1942184)
                 SetCurrent(GetItemAt(newIndex), newIndex);
             }
             else if (oldIndex < CurrentPosition && CurrentPosition <= newIndex)
@@ -2300,7 +2300,7 @@ namespace System.Windows.Data
                 object item = list[k];
                 LiveShapingItem lsi = isLiveGrouping ? lsList.ItemAt(k) : null;
 
-                if (!IsAddingNew || !Object.Equals(_newItem, item))
+                if (!IsAddingNew || !System.Windows.Controls.ItemsControl.EqualsEx(_newItem, item))
                 {
                     _group.AddToSubgroups(item, lsi, true /*loading*/);
                 }

@@ -104,7 +104,7 @@ Bindable::CheckImplementsForClass(BCSYM_Class *Class)
     BCITER_CHILD_SORTED ClassIter(Class);
     while (BCSYM_NamedRoot *ImplementingMember = ClassIter.GetNext())
     {
-        // 
+        // Bug fix for whidbey 32593
         if (ImplementingMember->IsBad())
         {
             continue;
@@ -152,7 +152,7 @@ void Bindable::CheckForCompletelyImplementedInterfaces
             if(InterfacesToImplement[ InterfaceIdx ].m_WhereFrom == ImplementsInfo::DirectlyImplemented &&
                 InterfacesToImplement[ InterfaceIdx ].m_ImplementsClause->IsReimplementingInterface())
             {
-                // 
+                // Bug #104767 - DevDiv Bugs: need to keep track of whether all members of this interface are reimplemented by this class
                 OnlyCheckForCompleteness = true;
             }
             else
@@ -1317,7 +1317,7 @@ void Bindable::BindImplements
                     ReportErrorAtLocation(
                         ImplementingEvent->IsDelegateFromImplements() || !ImplementedEventDelegate ?
                             ERRID_MultipleEventImplMismatch3 :
-                            ERRID_EventImplMismatch5,                       // 
+                            ERRID_EventImplMismatch5,                       // Bug VSWhidbey 224442
                         CurrentErrorLog(ImplementingMember),
                         ImplementsList->GetLocation(),
                         ImplementingMember->GetName(),                      // |1

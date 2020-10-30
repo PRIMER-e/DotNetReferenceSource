@@ -35,11 +35,21 @@ namespace System.Windows.Forms {
         internal static readonly object EventSelectionChangeCommitted                    = new object();
         internal static readonly object EventTextUpdate                                   = new object();
 
+        private static readonly Padding dropDownPadding = new Padding(2);
+        private static readonly Padding padding = new Padding(1, 0, 1, 0);
+
+        private Padding scaledDropDownPadding = dropDownPadding;
+        private Padding scaledPadding = padding;
     
         /// <include file='doc\ToolStripComboBox.uex' path='docs/doc[@for="ToolStripComboBox.ToolStripComboBox"]/*' />
         public ToolStripComboBox() : base(CreateControlInstance()) {
             ToolStripComboBoxControl combo = Control as ToolStripComboBoxControl;
             combo.Owner = this;
+
+            if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                scaledPadding = DpiHelper.LogicalToDeviceUnits(padding);
+                scaledDropDownPadding = DpiHelper.LogicalToDeviceUnits(dropDownPadding);
+            }
         }
         public ToolStripComboBox(string name) : this() {
             this.Name = name;
@@ -50,6 +60,69 @@ namespace System.Windows.Forms {
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ToolStripComboBox(Control c) : base(c) {
             throw new NotSupportedException(SR.GetString(SR.ToolStripMustSupplyItsOwnComboBox));
+        }
+
+        /// <summary>
+        ///     Constructs the new instance of the accessibility object for this ToolStripComboBox ToolStrip item.
+        /// </summary>
+        /// <returns>
+        ///     The new instance of the accessibility object for this ToolStripComboBox ToolStrip item
+        /// </returns>
+        protected override AccessibleObject CreateAccessibilityInstance() {
+            if (AccessibilityImprovements.Level3) {
+                return new ToolStripComboBoxAccessibleObject(this);
+            }
+
+            return base.CreateAccessibilityInstance();
+        }
+
+        [System.Runtime.InteropServices.ComVisible(true)]
+        internal class ToolStripComboBoxAccessibleObject  : ToolStripItemAccessibleObject {
+            private ToolStripComboBox ownerItem = null;
+
+            public ToolStripComboBoxAccessibleObject(ToolStripComboBox ownerItem) : base(ownerItem) {
+              this.ownerItem = ownerItem;
+            }
+
+            public override string DefaultAction {
+                get {
+                    // Note: empty value is provided due to this Accessible object
+                    // represents the control container but not the contained ComboBox
+                    // control itself.
+                    return string.Empty;
+                }
+            }
+
+            public override void DoDefaultAction() {
+                // Do nothing.
+            }
+         
+            public override AccessibleRole Role {
+               get {
+                   AccessibleRole role = Owner.AccessibleRole;
+                   if (role != AccessibleRole.Default) {
+                       return role;
+                   }
+
+                   return AccessibleRole.ComboBox;
+               }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                if (direction == UnsafeNativeMethods.NavigateDirection.FirstChild ||
+                    direction == UnsafeNativeMethods.NavigateDirection.LastChild) {
+                    return this.ownerItem.ComboBox.AccessibilityObject;
+                }
+
+                // Handle Parent and other directions in base ToolStripItem.FragmentNavigate() method.
+                return base.FragmentNavigate(direction);
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                get {
+                    return this.ownerItem.RootToolStrip.AccessibilityObject;
+                }
+            }
         }
 
         private static Control CreateControlInstance() {
@@ -144,10 +217,10 @@ namespace System.Windows.Forms {
         protected internal override Padding DefaultMargin {
             get {
                 if (IsOnDropDown) {
-                    return new Padding(2);
+                    return scaledDropDownPadding;
                 }
                 else {
-                    return new Padding(1, 0, 1, 0);
+                    return scaledPadding;
                 }
             }
         }
@@ -528,139 +601,228 @@ namespace System.Windows.Forms {
 
 
         internal class ToolStripComboBoxControl : ComboBox {
-               private ToolStripComboBox owner = null;
-               
-               public ToolStripComboBoxControl() {
-                   this.FlatStyle = FlatStyle.Popup;
-                   SetStyle(ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
-               }
-               public ToolStripComboBox Owner {
-                  get { return owner; }
-                  set { owner = value; }
-               }
+            private ToolStripComboBox owner = null;
 
-               private ProfessionalColorTable ColorTable {
-                    get {
-                        if (Owner != null) {
-                            ToolStripProfessionalRenderer renderer = Owner.Renderer as ToolStripProfessionalRenderer;
-                            if (renderer != null) {
-                                return renderer.ColorTable;
-                            }
+            public ToolStripComboBoxControl() {
+                this.FlatStyle = FlatStyle.Popup;
+                SetStyle(ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
+            }
+
+            public ToolStripComboBox Owner {
+                get { return owner; }
+                set { owner = value; }
+            }
+
+            private ProfessionalColorTable ColorTable {
+                get {
+                    if (Owner != null) {
+                        ToolStripProfessionalRenderer renderer = Owner.Renderer as ToolStripProfessionalRenderer;
+                        if (renderer != null) {
+                            return renderer.ColorTable;
                         }
-                        return ProfessionalColors.ColorTable;
                     }
-               }
+                    return ProfessionalColors.ColorTable;
+                }
+            }
 
-               internal override FlatComboAdapter CreateFlatComboAdapterInstance() {
-                   return new ToolStripComboBoxFlatComboAdapter(this);
-               }
+            /// <summary>
+            ///     Constructs the new instance of the accessibility object for this ToolStripComboBoxControl.
+            /// </summary>
+            /// <returns>
+            ///     The new instance of the accessibility object for this ToolStripComboBoxControl item
+            /// </returns>
+            protected override AccessibleObject CreateAccessibilityInstance() {
+                if (AccessibilityImprovements.Level3) {
+                    return new ToolStripComboBoxControlAccessibleObject(this);
+                }
 
-               internal class ToolStripComboBoxFlatComboAdapter : FlatComboAdapter {
+                return base.CreateAccessibilityInstance();
+            }
 
-                    public ToolStripComboBoxFlatComboAdapter(ComboBox comboBox) : base(comboBox, /*smallButton=*/true) {
+            internal override FlatComboAdapter CreateFlatComboAdapterInstance() {
+                return new ToolStripComboBoxFlatComboAdapter(this);
+            }
+
+            internal class ToolStripComboBoxFlatComboAdapter : FlatComboAdapter {
+
+                public ToolStripComboBoxFlatComboAdapter(ComboBox comboBox) : base(comboBox, /*smallButton=*/true) {
+                }
+
+                private static bool UseBaseAdapter(ComboBox comboBox) {
+                    ToolStripComboBoxControl toolStripComboBox = comboBox as ToolStripComboBoxControl;
+                    if (toolStripComboBox == null || !(toolStripComboBox.Owner.Renderer is ToolStripProfessionalRenderer)) {
+                        Debug.Assert(toolStripComboBox != null, "Why are we here and not a toolstrip combo?");
+                        return true;
                     }
+                    return false;
+                }
 
-                    private static bool UseBaseAdapter(ComboBox comboBox) {
-                        ToolStripComboBoxControl toolStripComboBox = comboBox as ToolStripComboBoxControl;
-                        if (toolStripComboBox == null || !(toolStripComboBox.Owner.Renderer is ToolStripProfessionalRenderer)) {
-                            Debug.Assert(toolStripComboBox != null, "Why are we here and not a toolstrip combo?");
-                            return true;
-                        }
-                        return false;
+                private static ProfessionalColorTable GetColorTable(ToolStripComboBoxControl toolStripComboBoxControl) {
+                    if (toolStripComboBoxControl != null) {
+                        return toolStripComboBoxControl.ColorTable;
                     }
-                    private static ProfessionalColorTable GetColorTable(ToolStripComboBoxControl toolStripComboBoxControl) {
-                        if (toolStripComboBoxControl != null) {
-                            return toolStripComboBoxControl.ColorTable;
-                        }
-                        return ProfessionalColors.ColorTable;                    
-                   }
-                    protected override Color GetOuterBorderColor(ComboBox comboBox) {
-                        if (UseBaseAdapter(comboBox)) {
-                            return base.GetOuterBorderColor(comboBox);
-                        }                            
-                        return (comboBox.Enabled) ? SystemColors.Window : GetColorTable(comboBox as ToolStripComboBoxControl).ComboBoxBorder;
-                    }
+                    return ProfessionalColors.ColorTable;                    
+                }
 
-                    protected override Color GetPopupOuterBorderColor(ComboBox comboBox, bool focused) {
-                        if (UseBaseAdapter(comboBox)) {
-                            return base.GetPopupOuterBorderColor(comboBox, focused);
-                        }
-                        if (!comboBox.Enabled) {
-                            return SystemColors.ControlDark;
-                        }
-                        return (focused) ? GetColorTable(comboBox as ToolStripComboBoxControl).ComboBoxBorder : SystemColors.Window;
-                    }
+                protected override Color GetOuterBorderColor(ComboBox comboBox) {
+                    if (UseBaseAdapter(comboBox)) {
+                        return base.GetOuterBorderColor(comboBox);
+                    }                            
+                    return (comboBox.Enabled) ? SystemColors.Window : GetColorTable(comboBox as ToolStripComboBoxControl).ComboBoxBorder;
+                }
 
-                    protected override void DrawFlatComboDropDown(ComboBox comboBox, Graphics g, Rectangle dropDownRect) {
-                        if (UseBaseAdapter(comboBox)) {
-                             base.DrawFlatComboDropDown(comboBox, g, dropDownRect);
-                             return;
-                        }
+                protected override Color GetPopupOuterBorderColor(ComboBox comboBox, bool focused) {
+                    if (UseBaseAdapter(comboBox)) {
+                        return base.GetPopupOuterBorderColor(comboBox, focused);
+                    }
+                    if (!comboBox.Enabled) {
+                        return SystemColors.ControlDark;
+                    }
+                    return (focused) ? GetColorTable(comboBox as ToolStripComboBoxControl).ComboBoxBorder : SystemColors.Window;
+                }
+
+                protected override void DrawFlatComboDropDown(ComboBox comboBox, Graphics g, Rectangle dropDownRect) {
+                    if (UseBaseAdapter(comboBox)) {
+                            base.DrawFlatComboDropDown(comboBox, g, dropDownRect);
+                            return;
+                    }
 
                                           
-                        if (!comboBox.Enabled || !ToolStripManager.VisualStylesEnabled) {
-                            g.FillRectangle(SystemBrushes.Control, dropDownRect);
+                    if (!comboBox.Enabled || !ToolStripManager.VisualStylesEnabled) {
+                        g.FillRectangle(SystemBrushes.Control, dropDownRect);
+                    }
+                    else {
+                           
+                        ToolStripComboBoxControl toolStripComboBox = comboBox as ToolStripComboBoxControl;
+                        ProfessionalColorTable colorTable = GetColorTable(toolStripComboBox);
+
+                        if (!comboBox.DroppedDown) {
+                            bool focused = comboBox.ContainsFocus || comboBox.MouseIsOver;
+                            if (focused) {
+                                using (Brush b = new LinearGradientBrush(dropDownRect, colorTable.ComboBoxButtonSelectedGradientBegin, colorTable.ComboBoxButtonSelectedGradientEnd, LinearGradientMode.Vertical)) {
+                                    g.FillRectangle(b, dropDownRect);
+                                }
+                            }
+                            else if (toolStripComboBox.Owner.IsOnOverflow) {
+                                using (Brush b = new SolidBrush(colorTable.ComboBoxButtonOnOverflow)) {
+                                    g.FillRectangle(b, dropDownRect);
+                                }
+                            }
+                            else {
+                                using (Brush b = new LinearGradientBrush(dropDownRect, colorTable.ComboBoxButtonGradientBegin, colorTable.ComboBoxButtonGradientEnd, LinearGradientMode.Vertical)) {
+                                    g.FillRectangle(b, dropDownRect);
+                                }
+                            }
+                        }
+                        else {                              
+                            using (Brush b = new LinearGradientBrush(dropDownRect, colorTable.ComboBoxButtonPressedGradientBegin, colorTable.ComboBoxButtonPressedGradientEnd, LinearGradientMode.Vertical)) {
+                                g.FillRectangle(b, dropDownRect);
+                            }                            
+                        }
+                    }
+                        
+                    Brush brush;
+                    if (comboBox.Enabled) {
+                        if (AccessibilityImprovements.Level2 && SystemInformation.HighContrast && (comboBox.ContainsFocus || comboBox.MouseIsOver) && ToolStripManager.VisualStylesEnabled) {
+                            brush = SystemBrushes.HighlightText;
                         }
                         else {
-                           
-                            ToolStripComboBoxControl toolStripComboBox = comboBox as ToolStripComboBoxControl;
-                            ProfessionalColorTable colorTable = GetColorTable(toolStripComboBox);
-
-                            if (!comboBox.DroppedDown) {
-                                bool focused = comboBox.ContainsFocus || comboBox.MouseIsOver;
-                                if (focused) {
-                                    using (Brush b = new LinearGradientBrush(dropDownRect, colorTable.ComboBoxButtonSelectedGradientBegin, colorTable.ComboBoxButtonSelectedGradientEnd, LinearGradientMode.Vertical)) {
-                                        g.FillRectangle(b, dropDownRect);
-                                    }
-                                }
-                                else if (toolStripComboBox.Owner.IsOnOverflow) {
-                                    using (Brush b = new SolidBrush(colorTable.ComboBoxButtonOnOverflow)) {
-                                        g.FillRectangle(b, dropDownRect);
-                                    }
-                                }
-                                else {
-                                    using (Brush b = new LinearGradientBrush(dropDownRect, colorTable.ComboBoxButtonGradientBegin, colorTable.ComboBoxButtonGradientEnd, LinearGradientMode.Vertical)) {
-                                        g.FillRectangle(b, dropDownRect);
-                                    }
-                                }
-                            }
-                            else {                              
-                                using (Brush b = new LinearGradientBrush(dropDownRect, colorTable.ComboBoxButtonPressedGradientBegin, colorTable.ComboBoxButtonPressedGradientEnd, LinearGradientMode.Vertical)) {
-                                    g.FillRectangle(b, dropDownRect);
-                                }                            
-                            }
+                            brush = SystemBrushes.ControlText;
                         }
-                        
-                        Brush brush = (comboBox.Enabled) ? SystemBrushes.ControlText : SystemBrushes.GrayText;
-                        Point middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
-                        
-                        // if the width is odd - favor pushing it over one pixel right.
-                        middle.X += (dropDownRect.Width % 2);
-                        g.FillPolygon(brush, new Point[] {
-                            new Point(middle.X - FlatComboAdapter.Offset2X, middle.Y - 1), 
-                            new Point(middle.X + FlatComboAdapter.Offset2X + 1, middle.Y - 1), 
-                            new Point(middle.X, middle.Y + FlatComboAdapter.Offset2Y)
-                        });
-
                     }
-               }
+                    else {
+                        brush = SystemBrushes.GrayText;
+                    }
+                    Point middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
+                        
+                    // if the width is odd - favor pushing it over one pixel right.
+                    middle.X += (dropDownRect.Width % 2);
+                    g.FillPolygon(brush, new Point[] {
+                        new Point(middle.X - FlatComboAdapter.Offset2Pixels, middle.Y - 1), 
+                        new Point(middle.X + FlatComboAdapter.Offset2Pixels + 1, middle.Y - 1), 
+                        new Point(middle.X, middle.Y + FlatComboAdapter.Offset2Pixels)
+                    });
 
-               protected override bool IsInputKey(Keys keyData) {
-                   if ((keyData & Keys.Alt) == Keys.Alt) {
-                       if ((keyData & Keys.Down) == Keys.Down || (keyData & Keys.Up) == Keys.Up) {
-                           return true;
-                       }
-                   }
-                   return base.IsInputKey(keyData);
-               }
-        
-              
-               protected override void OnDropDownClosed(EventArgs e) {
-                   base.OnDropDownClosed(e);
-                   Invalidate();
-                   Update(); 
-               }
+                }
+            }
+
+            protected override bool IsInputKey(Keys keyData) {
+                if ((keyData & Keys.Alt) == Keys.Alt) {
+                    if ((keyData & Keys.Down) == Keys.Down || (keyData & Keys.Up) == Keys.Up) {
+                        return true;
+                    }
+                }
+                return base.IsInputKey(keyData);
+            }
+
+            protected override void OnDropDownClosed(EventArgs e) {
+                base.OnDropDownClosed(e);
+                Invalidate();
+                Update(); 
+            }
                
+            internal override bool SupportsUiaProviders {
+                get {
+                    return AccessibilityImprovements.Level3;
+                }
+            }
+
+            internal class ToolStripComboBoxControlAccessibleObject : ComboBoxUiaProvider {
+
+                private ComboBox.ChildAccessibleObject childAccessibleObject;
+
+                public ToolStripComboBoxControlAccessibleObject(ToolStripComboBoxControl toolStripComboBoxControl) : base(toolStripComboBoxControl) {
+                    childAccessibleObject = new ChildAccessibleObject(toolStripComboBoxControl, toolStripComboBoxControl.Handle);
+                }
+
+                internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                    switch (direction) {
+                        case UnsafeNativeMethods.NavigateDirection.Parent:
+                        case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                        case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                            var toolStripComboBoxControl = Owner as ToolStripComboBoxControl;
+                            if (toolStripComboBoxControl != null) {
+                                return toolStripComboBoxControl.Owner.AccessibilityObject.FragmentNavigate(direction);
+                            }
+                            break;
+                    }
+
+                    return base.FragmentNavigate(direction);
+                }
+
+                internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                    get {
+                        var toolStripComboBoxControl = this.Owner as ToolStripComboBoxControl;
+                        if (toolStripComboBoxControl != null) {
+                            return toolStripComboBoxControl.Owner.Owner.AccessibilityObject;
+                        }
+
+                        return base.FragmentRoot;
+                    }
+                }
+
+                internal override object GetPropertyValue(int propertyID) {
+                    switch (propertyID) {
+                        case NativeMethods.UIA_ControlTypePropertyId:
+                            return NativeMethods.UIA_ComboBoxControlTypeId;
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                            return (this.State & AccessibleStates.Offscreen) == AccessibleStates.Offscreen;
+                    }
+
+                    return base.GetPropertyValue(propertyID);
+                }
+
+                internal override bool IsPatternSupported(int patternId)
+                {
+                    if (patternId == NativeMethods.UIA_ExpandCollapsePatternId ||
+                        patternId == NativeMethods.UIA_ValuePatternId) {
+                        return true;
+                    }
+
+                    return base.IsPatternSupported(patternId);
+                }
+            }
+
         }
       
     }

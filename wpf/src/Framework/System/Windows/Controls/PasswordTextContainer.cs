@@ -438,22 +438,19 @@ namespace System.Windows.Controls
             }
         }
 
-        // Optional text selection, always null for this ITextContainer.
-        // Since we don't use undo or annotations we don't actually need
-        // to store the value.
+        // DDVSO:405199
+        // We need to store the text selection as we will use it later on to access
+        // the UiScope during splitting text for selection purposes.
         ITextSelection ITextContainer.TextSelection
         { 
             get
             {
-                // Can't invariant  because debuggers like Visual Studio
-                // will evaluate this code at runtime.
-                //Invariant.Assert(false, "Unexpected reference to selection!");
-                return null;
+                return _textSelection;
             }
 
             set
             {
-                // Ignore the set.
+                _textSelection = value;
             }
         }
 
@@ -894,7 +891,7 @@ namespace System.Windows.Controls
             strongReference = weakReference.Target;
             if (strongReference != null && !(strongReference is PasswordTextPointer))
             {
-                // Diagnostics for 
+                // Diagnostics for bug 1267261.
                 Invariant.Assert(false, "Unexpected type: " + strongReference.GetType());
             }
 
@@ -975,6 +972,9 @@ namespace System.Windows.Controls
 
         // implementation of ITextContainer.Changed
         private TextContainerChangedEventHandler Changed;
+
+        // The current ITextSelection
+        private ITextSelection _textSelection;
 
         #endregion Private Fields
     }

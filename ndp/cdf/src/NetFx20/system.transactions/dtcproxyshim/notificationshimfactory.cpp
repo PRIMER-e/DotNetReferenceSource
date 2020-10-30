@@ -1334,7 +1334,7 @@ HRESULT NotificationShimFactory::GetCachedTransmitter(
             );
         if ( FAILED( hr ) )
         {
-            goto ErrorExit;
+            goto ReleaseCriticalSection;
         }
 
         hr = transmitterFactory->Create(
@@ -1342,15 +1342,30 @@ HRESULT NotificationShimFactory::GetCachedTransmitter(
             );
             if ( FAILED( hr ) )
             {
-                goto ErrorExit;
+                goto ReleaseCriticalSection;
             }
 
         localCachedTransmitter = new CachedTransmitter( this, pTransmitter );
         if ( NULL == localCachedTransmitter )
         {
             hr = E_OUTOFMEMORY;
-            goto ErrorExit;
+            goto ReleaseCriticalSection;
         }
+    }
+
+ReleaseCriticalSection:
+
+    // We need to leave the CriticalSection here, BEFORE we call pTxTransmitter->Set because the Set
+    // call may cause transaction promotion, which involves an out-of-process message. We don't
+    // want to hold on to the CriticalSection while we do that. The CriticalSection is protecting
+    // the listOfTransmitters and we have already done the RemoveFirst and won't be manipulating the
+    // list from this point forward.
+    LeaveCriticalSection(&this->csxTransmitter);
+
+    // If we had some sort of error above, get out now.
+    if (FAILED(hr))
+    {
+        goto ErrorExit;
     }
 
     hr = localCachedTransmitter->pTxTransmitter->Set( pTransaction );
@@ -1362,8 +1377,6 @@ HRESULT NotificationShimFactory::GetCachedTransmitter(
     *ppCachedTransmitter = localCachedTransmitter;
 
 ErrorExit:
-
-    LeaveCriticalSection( &this->csxTransmitter );
 
     if ( FAILED ( hr ) )
     {

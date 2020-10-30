@@ -64,8 +64,8 @@ namespace System.Data.Metadata.Edm
 
         /// <summary>
         /// Returns the list of the member names that form the key for this entity type
-        /// Perf 
-
+        /// Perf Bug #529294: To cache the list of member names that form the key for the entity type
+        /// </summary>
         internal string[] KeyMemberNames
         {
             get

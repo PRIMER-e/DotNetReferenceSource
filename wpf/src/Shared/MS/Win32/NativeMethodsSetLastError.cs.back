@@ -19,6 +19,8 @@ namespace MS.Internal.UIAutomationClient
 namespace MS.Internal.UIAutomationClientSideProviders
 #elif WINDOWSFORMSINTEGRATION
 namespace MS.Internal.WinFormsIntegration
+#elif UIAUTOMATIONTYPES
+namespace MS.Internal.UIAutomationTypes
 #elif DRT
 namespace MS.Internal.Drt
 #else
@@ -43,7 +45,7 @@ namespace MS.Internal.Drt
         static NativeMethodsSetLastError()
         {
             // load the installed version of native DLLs, so that P/Invokes call the right methods
-            EnsureLoaded();
+            WpfLibraryLoader.EnsureLoaded(PresentationNativeDll);
         }
 
 #if WINDOWSFORMSINTEGRATION     // WinFormsIntegration
@@ -65,7 +67,7 @@ namespace MS.Internal.Drt
         [DllImport(PresentationNativeDll, EntryPoint="GlobalDeleteAtomWrapper", ExactSpelling = true, SetLastError = true)]
         public static extern short GlobalDeleteAtom(short atom);
 
-        #if UIAUTOMATIONCLIENT  // UIAutomationClient
+#if UIAUTOMATIONCLIENT  // UIAutomationClient
 
         [DllImport(PresentationNativeDll, EntryPoint="GetMenuBarInfoWrapper", SetLastError = true)]
         public static extern bool GetMenuBarInfo (IntPtr hwnd, int idObject, uint idItem, ref UnsafeNativeMethods.MENUBARINFO mbi);
@@ -79,7 +81,7 @@ namespace MS.Internal.Drt
         [DllImport(PresentationNativeDll, EntryPoint="MapWindowPointsWrapper", SetLastError = true, ExactSpelling=true, CharSet=CharSet.Auto)]
         public static extern int MapWindowPoints(NativeMethods.HWND hWndFrom, NativeMethods.HWND hWndTo, [In, Out] ref NativeMethods.POINT pt, int cPoints);
 
-        #elif UIAUTOMATIONCLIENTSIDEPROVIDERS   // UIAutomationClientSideProviders
+#elif UIAUTOMATIONCLIENTSIDEPROVIDERS   // UIAutomationClientSideProviders
 
         [DllImport(PresentationNativeDll, EntryPoint="GetAncestorWrapper", CharSet = CharSet.Auto)]
         public static extern IntPtr GetAncestor(IntPtr hwnd, int gaFlags);
@@ -108,10 +110,10 @@ namespace MS.Internal.Drt
         [DllImport(PresentationNativeDll, EntryPoint="SetScrollPosWrapper", SetLastError = true)]
         public static extern int SetScrollPos(IntPtr hWnd, int nBar, int nPos, bool bRedraw);
 
-        #endif
+#endif
 #else       // Base/Core/FW + DRT
 
-        [DllImport(PresentationNativeDll, EntryPoint="EnableWindowWrapper", SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    [DllImport(PresentationNativeDll, EntryPoint="EnableWindowWrapper", SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern bool EnableWindow(HandleRef hWnd, bool enable);
 
         [DllImport(PresentationNativeDll, EntryPoint="GetAncestorWrapper", CharSet = CharSet.Auto)]
@@ -175,88 +177,6 @@ namespace MS.Internal.Drt
         public static extern IntPtr SetWindowLongPtrWndProc(HandleRef hWnd, int nIndex, NativeMethods.WndProc dwNewLong);
 
 #endif
-
-#region Loading PresentationNative dll
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        private static extern IntPtr LoadLibrary(string lpFileName);
-
-        private const string COMPLUS_Version = @"COMPLUS_Version";
-        private const string COMPLUS_InstallRoot = @"COMPLUS_InstallRoot";
-        private const string EnvironmentVariables = COMPLUS_Version + ";" + COMPLUS_InstallRoot;
-        private const string FRAMEWORK_RegKey  = @"Software\Microsoft\Net Framework Setup\NDP\v4\Client\";
-        private const string FRAMEWORK_RegKey_FullPath  = @"HKEY_LOCAL_MACHINE\" + FRAMEWORK_RegKey;
-        private const string FRAMEWORK_InstallPath_RegValue = "InstallPath";
-        private const string DOTNET_RegKey = @"Software\Microsoft\.NETFramework";
-        private const string DOTNET_Install_RegValue = @"InstallRoot";
-        private const string WPF_SUBDIR = @"WPF";
-
-        private static void EnsureLoaded()
-        {
-            string installPath = GetWPFInstallPath();
-            string fullName = Path.Combine(installPath, PresentationNativeDll);
-            LoadLibrary(fullName);
-        }
-
-        private static string GetWPFInstallPath()
-        {
-            string path = null;
-
-            // We support a "private CLR" which allows someone to use a different framework
-            // location than what is specified in the registry.  The CLR support for this
-            // involves two environment variable: COMPLUS_InstallRoot and COMPLUS_Version.
-            EnvironmentPermission environmentPermission = new EnvironmentPermission(EnvironmentPermissionAccess.Read, EnvironmentVariables);
-            environmentPermission.Assert(); //Blessed Assert
-
-            try
-            {
-                string version = Environment.GetEnvironmentVariable(COMPLUS_Version);
-                if (!String.IsNullOrEmpty(version))
-                {
-                    path = Environment.GetEnvironmentVariable(COMPLUS_InstallRoot);
-                    if (String.IsNullOrEmpty(path))
-                    {
-                        // The COMPLUS_Version environment variable was set, but the
-                        // COMPLUS_InstallRoot environment variable was not.  We fall back
-                        // to getting the framework install root from the registry, but
-                        // still use the private CLR version.
-                        path = ReadLocalMachineString(DOTNET_RegKey, DOTNET_Install_RegValue);
-                    }
-
-                    if (!String.IsNullOrEmpty(path))
-                    {
-                        path = Path.Combine(path, version);
-                    }
-                }
-            }
-            finally
-            {
-                EnvironmentPermission.RevertAssert();
-            }
-
-            if (String.IsNullOrEmpty(path))
-            {
-                // The COMPLUS_Version environment variable was not set.  We do not support
-                // extracting the appropriate version ourselves, since this could come from
-                // various places (app config, etc), so we default to 4.0.  The entire path
-                // is stored in the registry, under the v4 key.
-                path = ReadLocalMachineString(FRAMEWORK_RegKey, FRAMEWORK_InstallPath_RegValue);
-            }
-
-            // WPF chose to make a subdirectory for its own DLLs under the framework directory.
-            path = Path.Combine(path, WPF_SUBDIR);
-
-            return path;
-        }
-
-        private static string ReadLocalMachineString(string key, string valueName)
-        {
-            string keyPath = "HKEY_LOCAL_MACHINE\\" + key;
-            new RegistryPermission(RegistryPermissionAccess.Read, keyPath).Assert();
-            return Microsoft.Win32.Registry.GetValue(keyPath, valueName, null) as string;
-        }
-
-#endregion Loading PresentationNative dll
 
     }
 }

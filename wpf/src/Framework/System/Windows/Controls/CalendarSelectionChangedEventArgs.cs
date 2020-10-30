@@ -12,10 +12,10 @@ using System.Windows;
 namespace System.Windows.Controls
 {
     /// <summary>
-    /// Workaround for Dev10 
-
-
-
+    /// Workaround for Dev10 Bug 527138 UIElement.RaiseEvent(e) throws InvalidCastException when 
+    ///     e is of type SelectionChangedEventArgs 
+    ///     e.RoutedEvent was registered with a handler not of type System.Windows.Controls.SelectionChangedEventHandler
+    /// </summary>
     internal class CalendarSelectionChangedEventArgs : SelectionChangedEventArgs
     {
         /// <summary>

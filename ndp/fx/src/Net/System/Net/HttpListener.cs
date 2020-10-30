@@ -285,14 +285,14 @@ namespace System.Net {
         private static readonly int RequestChannelBindStatusSize =
             Marshal.SizeOf(typeof(UnsafeNclNativeMethods.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS));
 
-        // Win8# 559317 fixed a 
-
-
-
-
-
-
-
+        // Win8# 559317 fixed a bug in Http.sys's HttpReceiveClientCertificate method.
+        // Without this fix IOCP callbacks were not being called although ERROR_IO_PENDING was
+        // returned from HttpReceiveClientCertificate when using the 
+        // FileCompletionNotificationModes.SkipCompletionPortOnSuccess flag.
+        // This bug was only hit when the buffer passed into HttpReceiveClientCertificate
+        // (1500 bytes initially) is tool small for the certificate.
+        // Due to this bug in downlevel operating systems the FileCompletionNotificationModes.SkipCompletionPortOnSuccess
+        // flag is only used on Win8 and later.
         internal static readonly bool SkipIOCPCallbackOnSuccess = ComNetOS.IsWin8orLater;
 
         // Mitigate potential DOS attacks by limiting the number of unknown headers we accept.  Numerous header names 
@@ -1420,7 +1420,8 @@ namespace System.Net {
                         if (Logging.On) Logging.PrintError(Logging.HttpListener, this, "HandleAuthentication", SR.GetString(SR.net_log_listener_delegate_exception, exception));
                         GlobalLog.Print("HttpListener#" + ValidationHelper.HashString(this) + "::HandleAuthentication() AuthenticationSchemeSelectorDelegate() returned authenticationScheme:" + authenticationScheme);
                         SendError(requestId, HttpStatusCode.InternalServerError, null);
-                        httpContext.Close();
+                        FreeContext(ref httpContext, memoryBlob);
+
                         return null;
                     }
                 }
@@ -1509,9 +1510,7 @@ namespace System.Net {
                     }
 
                     httpError = HttpStatusCode.Unauthorized;
-                    httpContext.Request.DetachBlob(memoryBlob);
-                    httpContext.Close();
-                    httpContext = null;
+                    FreeContext(ref httpContext, memoryBlob);
                 }
                 else
                 {
@@ -1564,8 +1563,8 @@ namespace System.Net {
                             outBlob = context.GetOutgoingDigestBlob(inBlob, verb, null, Realm, false, false, out statusCodeNew);
                             GlobalLog.Print("HttpListener#" + ValidationHelper.HashString(this) + "::HandleAuthentication() GetOutgoingDigestBlob() returned IsCompleted:" + context.IsCompleted + " statusCodeNew:" + statusCodeNew + " outBlob:[" + outBlob + "]");
 
-                            // WDigest 
-
+                            // WDigest bug: sometimes when AcceptSecurityContext returns success, it provides a bogus, empty 4k buffer.
+                            // Ignore it.  (Should find out what's going on here from WDigest people.)
                             if (statusCodeNew == SecurityStatus.OK)
                             {
                                 outBlob = null;
@@ -1654,9 +1653,9 @@ namespace System.Net {
                                 error = !context.IsValidContext;
                                 if (error)
                                 {
-                                    // 
-
-
+                                    // Bug #474228: SSPI Workaround
+                                    // If a client sends up a blob on the initial request, Negotiate returns SEC_E_INVALID_HANDLE
+                                    // when it should return SEC_E_INVALID_TOKEN.
                                     if (statusCodeNew == SecurityStatus.InvalidHandle && oldContext == null && bytes != null && bytes.Length > 0)
                                     {
                                         statusCodeNew = SecurityStatus.InvalidToken;
@@ -1779,9 +1778,8 @@ namespace System.Net {
                     {
                         GlobalLog.Print("HttpListener#" + ValidationHelper.HashString(this) + "::HandleAuthentication() handshake has failed");
                         if(Logging.On)Logging.PrintWarning(Logging.HttpListener, this, "HandleAuthentication", SR.GetString(SR.net_log_listener_create_valid_identity_failed));
-                        httpContext.Request.DetachBlob(memoryBlob);
-                        httpContext.Close();
-                        httpContext = null;
+
+                        FreeContext(ref httpContext, memoryBlob);
                     }
                 }
 
@@ -1858,8 +1856,8 @@ namespace System.Net {
 
                         GlobalLog.Print("HttpListener#" + ValidationHelper.HashString(this) + "::HandleAuthentication() failed context#" + ValidationHelper.HashString(context) + " for connectionId:" + connectionId + " because of failed HttpWaitForDisconnect");
                         SendError(requestId, HttpStatusCode.InternalServerError, null);
-                        httpContext.Request.DetachBlob(memoryBlob);
-                        httpContext.Close();
+
+                        FreeContext(ref httpContext, memoryBlob);
                         return null;
                     }
                 }
@@ -1909,11 +1907,8 @@ namespace System.Net {
             }
             catch
             {
-                if (httpContext != null)
-                {
-                    httpContext.Request.DetachBlob(memoryBlob);
-                    httpContext.Close();
-                }
+                FreeContext(ref httpContext, memoryBlob);
+
                 if (newContext != null)
                 {
                     if (newContext == context)
@@ -1976,6 +1971,16 @@ namespace System.Net {
                         disconnectResult.FinishOwningDisconnectHandling();
                     }
                 }
+            }
+        }
+
+        private static void FreeContext(ref HttpListenerContext httpContext, RequestContextBase memoryBlob)
+        {
+            if (httpContext != null)
+            {
+                httpContext.Request.DetachBlob(memoryBlob);
+                httpContext.Close();
+                httpContext = null;
             }
         }
 

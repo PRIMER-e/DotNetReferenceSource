@@ -476,7 +476,7 @@ namespace MS.Internal.AutomationProxies
                 bool isMultipleSelection = wlb.IsMultipleSelection();
 
                 // User should send SelectionAdd for a Multiselect listbox but it sends instead
-                // Selection. The code below fixes the 
+                // Selection. The code below fixes the bug in User
                 if (eventId == NativeMethods.EventObjectSelection && isMultipleSelection && wlb.HasOtherSelections(idChild - 1))
                 {
                     eventId = NativeMethods.EventObjectSelectionAdd;

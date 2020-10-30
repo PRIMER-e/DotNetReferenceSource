@@ -95,7 +95,7 @@ namespace System.Windows.Documents
             DefaultStyleKeyProperty.OverrideMetadata(_typeofThis, new FrameworkPropertyMetadata(_typeofThis));
             FocusableProperty.OverrideMetadata(_typeofThis, new FrameworkPropertyMetadata(true));
 
-            FlowDocumentTraceLogger.LogUsageDetails();
+            ControlsTraceLogger.AddControl(TelemetryControls.FlowDocument);
         }
 
         /// <summary>

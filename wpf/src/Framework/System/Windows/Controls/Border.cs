@@ -15,6 +15,7 @@
 
 using MS.Internal;
 using MS.Internal.PresentationFramework;
+using MS.Internal.Telemetry.PresentationFramework;
 using MS.Utility;
 using System;
 using System.Diagnostics;
@@ -36,6 +37,11 @@ namespace System.Windows.Controls
         //-------------------------------------------------------------------
 
         #region Constructors
+
+        static Border()
+        {
+            ControlsTraceLogger.AddControl(TelemetryControls.Border);
+        }
 
         /// <summary>
         ///     Default DependencyObject constructor

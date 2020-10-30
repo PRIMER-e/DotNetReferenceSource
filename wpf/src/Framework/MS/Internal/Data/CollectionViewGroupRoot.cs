@@ -157,7 +157,7 @@ namespace MS.Internal.Data
 
         internal void RemoveSpecialItem(int index, object item, bool loading)
         {
-            Debug.Assert(Object.Equals(item, ProtectedItems[index]), "RemoveSpecialItem finds inconsistent data");
+            Debug.Assert(System.Windows.Controls.ItemsControl.EqualsEx(item, ProtectedItems[index]), "RemoveSpecialItem finds inconsistent data");
             int globalIndex = -1;
 
             if (!loading)

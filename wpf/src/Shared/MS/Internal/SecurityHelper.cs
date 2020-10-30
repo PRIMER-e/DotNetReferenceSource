@@ -874,12 +874,12 @@ internal static class SecurityHelper
         }
 
         /// <SecurityNote>
-        /// SecurityCritical is needed due to Dev10 
-
-
-
-
-
+        /// SecurityCritical is needed due to Dev10 bug 534574. This is a TEMPORARY WORKAROUND for v4.
+        /// TAS: Callers are transparent, so we need this too to keep them working.
+        ///
+        /// Note that the XAML reader relies on being able to call RunClassConstructor() on non-public types.
+        /// This is considered a security flaw, and a future version of the CLR will likely plug it.
+        /// </SecurityNote>
         [SecuritySafeCritical]
         internal static void RunClassConstructor(Type t)
         {

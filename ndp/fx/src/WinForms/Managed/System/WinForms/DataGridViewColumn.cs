@@ -69,13 +69,23 @@ namespace System.Windows.Forms
         {
             this.fillWeight = DATAGRIDVIEWCOLUMN_defaultFillWeight;
             this.usedFillWeight = DATAGRIDVIEWCOLUMN_defaultFillWeight;
-            this.Thickness = DATAGRIDVIEWCOLUMN_defaultWidth;
-            this.MinimumThickness = DATAGRIDVIEWCOLUMN_defaultMinColumnThickness;
+            this.Thickness = ScaleToCurrentDpi(DATAGRIDVIEWCOLUMN_defaultWidth);
+            this.MinimumThickness = ScaleToCurrentDpi(DATAGRIDVIEWCOLUMN_defaultMinColumnThickness);
             this.name = String.Empty;
             this.bandIsRow = false;
             this.displayIndex = -1;
             this.cellTemplate = cellTemplate;
             this.autoSizeMode = DataGridViewAutoSizeColumnMode.NotSet;
+        }
+
+        /// <summary>
+        /// Scale to current device dpi settings
+        /// </summary>
+        /// <param name="value"> initial value</param>
+        /// <returns> scaled metric</returns>
+        private int ScaleToCurrentDpi(int value)
+        {
+            return DpiHelper.EnableDataGridViewControlHighDpiImprovements ? DpiHelper.LogicalToDeviceUnits(value) : value;
         }
 
         /// <include file='doc\DataGridViewColumn.uex' path='docs/doc[@for="DataGridViewColumn.AutoSizeMode"]/*' />
@@ -1090,8 +1100,8 @@ namespace System.Windows.Forms
         /// <include file='doc\DataGridViewColumn.uex' path='docs/doc[@for="DataGridViewColumn.Clone"]/*' />
         public override object Clone()
         {
-            // SECREVIEW : Late-binding does not represent a security thread, see 
-
+            // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+            //
             DataGridViewColumn dataGridViewColumn = (DataGridViewColumn) System.Activator.CreateInstance(this.GetType());
             if (dataGridViewColumn != null)
             {

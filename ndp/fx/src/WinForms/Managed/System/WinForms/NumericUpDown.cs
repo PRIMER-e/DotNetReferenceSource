@@ -744,7 +744,7 @@ namespace System.Windows.Forms {
                 newValue = maximum;
             }
 
-            Value = newValue;
+            Value = newValue;            
         }
 
         private string GetNumberText(decimal num) {
@@ -841,9 +841,9 @@ namespace System.Windows.Forms {
             }
 
             if (maxDigitsReached) {
-                // Prevent 
-
-
+                // Prevent bug VSWhidbey 555288.
+                // decimal.MaxValue is 79228162514264337593543950335
+                //                 but 99999999999999999999999999999 is not a valid value for testNumber.
                 numDigits = maxDigits - 1;
             }
 
@@ -901,6 +901,19 @@ namespace System.Windows.Forms {
 
             public NumericUpDownAccessibleObject(NumericUpDown owner) : base(owner) {
             }
+
+            /// <summary>
+            /// Gets or sets the accessible name.
+            /// </summary>
+            public override string Name {
+                get {
+                    string baseName = base.Name;
+                    return ((NumericUpDown)Owner).GetAccessibleName(baseName);
+                }
+                set {
+                    base.Name = value;
+                }
+            }
             
             public override AccessibleRole Role {
                 get {
@@ -908,7 +921,14 @@ namespace System.Windows.Forms {
                     if (role != AccessibleRole.Default) {
                         return role;
                     }
-                    return AccessibleRole.ComboBox;
+                    else {
+                        if (AccessibilityImprovements.Level1) {
+                            return AccessibleRole.SpinButton;
+                        }
+                        else {
+                            return AccessibleRole.ComboBox;
+                        }
+                    }
                 }
             }
             

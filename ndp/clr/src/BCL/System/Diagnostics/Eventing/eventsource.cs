@@ -114,13 +114,13 @@
 // 
 // On output there are the following routines
 //    Writing to all listeners that are NOT ETW, we have the following routines
-//       * WriteToAllListeners(ID, Guid*, COUNT, EventData*) 
-//       * WriteToAllListeners(ID, Guid*, object[])
-//       * WriteToAllListeners(NAME, Guid*, EventPayload)
+//       * WriteToAllListeners(ID, Guid*, Guid*, COUNT, EventData*) 
+//       * WriteToAllListeners(ID, Guid*, Guid*, object[])
+//       * WriteToAllListeners(NAME, Guid*, Guid*, EventPayload)
 //
 //       EventPayload is the internal type that implements the IDictionary<string, object> interface
 //       The EventListeners will pass back for serialized classes for nested object, but  
-//       WriteToAllListeners(NAME, Guid*, EventPayload) unpacks this uses the fields as if they
+//       WriteToAllListeners(NAME, Guid*, Guid*, EventPayload) unpacks this uses the fields as if they
 //       were parameters to a method.  
 // 
 //       The first two are used for the WriteEvent* case, and the later is used for the Write<T> case.  
@@ -1079,7 +1079,12 @@ namespace System.Diagnostics.Tracing
             /// Address where the one argument lives (if this points to managed memory you must ensure the
             /// managed object is pinned.
             /// </summary>
-            public IntPtr DataPointer { get { return (IntPtr)m_Ptr; } set { m_Ptr = unchecked((long)value); } }
+            public unsafe IntPtr DataPointer
+            {
+                [SecuritySafeCritical]
+                get { return (IntPtr)(void*)m_Ptr; }
+                set { m_Ptr = unchecked((ulong)(void*)value); }
+            }
             /// <summary>
             /// Size of the argument referenced by DataPointer
             /// </summary>
@@ -1096,14 +1101,14 @@ namespace System.Diagnostics.Tracing
             [SecurityCritical]
             internal unsafe void SetMetadata(byte* pointer, int size, int reserved)
             {
-                this.m_Ptr = (long)(ulong)(UIntPtr)pointer;
+                this.m_Ptr = (ulong)pointer;
                 this.m_Size = size;
                 this.m_Reserved = reserved; // Mark this descriptor as containing tracelogging-compatible metadata.
             }
 
             //Important, we pass this structure directly to the Win32 EventWrite API, so this structure must be layed out exactly
             // the way EventWrite wants it.  
-            internal long m_Ptr;
+            internal ulong m_Ptr;
             internal int m_Size;
 #pragma warning disable 0649
             internal int m_Reserved;       // Used to pad the size to match the Win32 API
@@ -1179,33 +1184,33 @@ namespace System.Diagnostics.Tracing
                     if (relatedActivityId != null)
                         ValidateEventOpcodeForTransfer(ref m_eventData[eventId], m_eventData[eventId].Name);
 
+                    EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
+                    EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
+                    Guid* pActivityId = null;
+                    Guid activityId = Guid.Empty;
+                    Guid relActivityId = Guid.Empty;
+
+                    if (opcode != EventOpcode.Info && relatedActivityId == null &&
+                       ((activityOptions & EventActivityOptions.Disable) == 0))
+                    {
+                        if (opcode == EventOpcode.Start)
+                        {
+                            m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relActivityId, m_eventData[eventId].ActivityOptions);
+                        }
+                        else if (opcode == EventOpcode.Stop)
+                        {
+                            m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
+                        }
+
+                        if (activityId != Guid.Empty)
+                            pActivityId = &activityId;
+                        if (relActivityId != Guid.Empty)
+                            relatedActivityId = &relActivityId;
+                    }
+
 #if FEATURE_MANAGED_ETW
                     if (m_eventData[eventId].EnabledForETW)
                     {
-                        EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
-                        EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
-                        Guid* pActivityId = null;
-                        Guid activityId = Guid.Empty;
-                        Guid relActivityId = Guid.Empty;
-
-                        if (opcode != EventOpcode.Info && relatedActivityId == null &&
-                           ((activityOptions & EventActivityOptions.Disable) == 0))
-                        {
-                            if (opcode == EventOpcode.Start)
-                            {
-                                m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relActivityId, m_eventData[eventId].ActivityOptions);
-                            }
-                            else if (opcode == EventOpcode.Stop)
-                            {
-                                m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
-                            }
-
-                            if (activityId != Guid.Empty)
-                                pActivityId = &activityId;
-                            if (relActivityId != Guid.Empty)
-                                relatedActivityId = &relActivityId;
-                        }
-
 #if FEATURE_ACTIVITYSAMPLING
                         // this code should be kept in sync with WriteEventVarargs().
                         SessionMask etwSessions = SessionMask.All;
@@ -1304,7 +1309,7 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
 
                     if (m_Dispatchers != null && m_eventData[eventId].EnabledForAnyListener)
-                        WriteToAllListeners(eventId, relatedActivityId, eventDataCount, data);
+                        WriteToAllListeners(eventId, pActivityId, relatedActivityId, eventDataCount, data);
                 }
                 catch (Exception ex)
                 {
@@ -1910,33 +1915,34 @@ namespace System.Diagnostics.Tracing
                     }
                     
                     LogEventArgsMismatches(m_eventData[eventId].Parameters, args);
+
+                    Guid* pActivityId = null;
+                    Guid activityId = Guid.Empty;
+                    Guid relatedActivityId = Guid.Empty;
+                    EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
+                    EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
+
+                    if (childActivityID == null &&
+                       ((activityOptions & EventActivityOptions.Disable) == 0))
+                    {
+                        if (opcode == EventOpcode.Start)
+                        {
+                            m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relatedActivityId, m_eventData[eventId].ActivityOptions);
+                        }
+                        else if (opcode == EventOpcode.Stop)
+                        {
+                            m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
+                        }
+
+                        if (activityId != Guid.Empty)
+                            pActivityId = &activityId;
+                        if (relatedActivityId != Guid.Empty)
+                            childActivityID = &relatedActivityId;
+                    }
+
 #if FEATURE_MANAGED_ETW
                     if (m_eventData[eventId].EnabledForETW)
                     {
-                        Guid* pActivityId = null;
-                        Guid activityId = Guid.Empty;
-                        Guid relatedActivityId = Guid.Empty;
-                        EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
-                        EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
-
-                        if (childActivityID == null &&
-                           ((activityOptions & EventActivityOptions.Disable) == 0))
-                        {
-                            if (opcode == EventOpcode.Start)
-                            {
-                                m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relatedActivityId, m_eventData[eventId].ActivityOptions);
-                            }
-                            else if (opcode == EventOpcode.Stop)
-                            {
-                                m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
-                            }
-
-                            if (activityId != Guid.Empty)
-                                pActivityId = &activityId;
-                            if (relatedActivityId != Guid.Empty)
-                                childActivityID = &relatedActivityId;
-                        }
-
 #if FEATURE_ACTIVITYSAMPLING
                         // this code should be kept in sync with WriteEventWithRelatedActivityIdCore().
                         SessionMask etwSessions = SessionMask.All;
@@ -1968,7 +1974,7 @@ namespace System.Diagnostics.Tracing
                                         m_eventData[eventId].Descriptor.Level,
                                         m_eventData[eventId].Descriptor.Opcode,
                                         m_eventData[eventId].Descriptor.Task,
-                                        unchecked((long)(ulong)etwSessions | origKwd));
+                                        unchecked((long)etwSessions.ToEventKeywords() | origKwd));
 
                                     if (!m_provider.WriteEvent(ref desc, pActivityId, childActivityID, args))
                                         ThrowEventSourceException(m_eventData[eventId].Name);
@@ -1989,7 +1995,7 @@ namespace System.Diagnostics.Tracing
                                 // 
                                 EventSourceOptions opt = new EventSourceOptions
                                 {
-                                    Keywords = (EventKeywords)unchecked((long)(ulong)etwSessions | origKwd),
+                                    Keywords = (EventKeywords)unchecked((long)etwSessions.ToEventKeywords() | origKwd), 
                                     Level = (EventLevel)m_eventData[eventId].Descriptor.Level,
                                     Opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode
                                 };
@@ -2033,13 +2039,13 @@ namespace System.Diagnostics.Tracing
                         // Maintain old behavior - object identity is preserved
                         if (AppContextSwitches.PreserveEventListnerObjectIdentity)
                         {
-                            WriteToAllListeners(eventId, childActivityID, args);
+                            WriteToAllListeners(eventId, pActivityId, childActivityID, args);
                         }
                         else
 #endif // !ES_BUILD_STANDALONE
                         {
                             object[] serializedArgs = SerializeEventArgs(eventId, args);
-                            WriteToAllListeners(eventId, childActivityID, serializedArgs);
+                            WriteToAllListeners(eventId, pActivityId, childActivityID, serializedArgs);
                         }
                     }
                 }
@@ -2128,7 +2134,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [SecurityCritical]
-        unsafe private void WriteToAllListeners(int eventId, Guid* childActivityID, int eventDataCount, EventSource.EventData* data)
+        unsafe private void WriteToAllListeners(int eventId, Guid* activityID, Guid* childActivityID, int eventDataCount, EventSource.EventData* data)
         {
             // We represent a byte[] as a integer denoting the length  and then a blob of bytes in the data pointer. This causes a spurious
             // warning because eventDataCount is off by one for the byte[] case since a byte[] has 2 items associated it. So we want to check
@@ -2147,15 +2153,17 @@ namespace System.Diagnostics.Tracing
             EventSource.EventData* dataPtr = data;
             for (int i = 0; i < paramCount; i++)
                 args[i] = DecodeObject(eventId, i, ref dataPtr);
-            WriteToAllListeners(eventId, childActivityID, args);
+            WriteToAllListeners(eventId, activityID, childActivityID, args);
         }
 
         // helper for writing to all EventListeners attached the current eventSource.  
         [SecurityCritical]
-        unsafe private void WriteToAllListeners(int eventId, Guid* childActivityID, params object[] args)
+        unsafe private void WriteToAllListeners(int eventId, Guid* activityID, Guid* childActivityID, params object[] args)
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventId = eventId;
+            if (activityID != null)
+                eventCallbackArgs.ActivityId = *activityID;
             if (childActivityID != null)
                 eventCallbackArgs.RelatedActivityId = *childActivityID;
             eventCallbackArgs.EventName = m_eventData[eventId].Name;
@@ -3109,6 +3117,11 @@ namespace System.Diagnostics.Tracing
                     dataLeft -= chunkSize;
                     dataDescrs[1].Ptr += (uint)chunkSize;
                     envelope.ChunkNumber++;
+                    
+                    // For large manifests we want to not overflow any receiver's buffer. Most manifests will fit within
+                    // 5 chunks, so only the largest manifests will hit the pause.
+                    if((envelope.ChunkNumber % 5) == 0)
+                        Thread.Sleep(15);
                 }
             }
 #endif
@@ -3349,12 +3362,12 @@ namespace System.Diagnostics.Tracing
                         // Get the EventDescriptor (from the Custom attributes)
                         EventAttribute eventAttribute = (EventAttribute)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
                         
-                        // Visual Studio online 
-
-
-
-
-
+                        // Visual Studio online bug #222067 - we can't add a dependency in System.Web on EventSource features that 
+                        // didn't exist in 4.5. We have to manually set the disable flag here since the ActivityOptions 
+                        // falls in to that category.
+                        // 
+                        // The check for <= 3 is to only disable Activity tracking for the RequestStarted and RequestCompleted
+                        // events. 
                         if (eventAttribute != null
                             && source != null
                             && eventAttribute.EventId <= 3
@@ -4330,6 +4343,15 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
+        /// EventSourceIndex is small non-negative integer (suitable for indexing in an array)
+        /// identifying EventSource. It is unique per-appdomain. Some EventListeners might find
+        /// it useful to store additional information about each eventSource connected to it,
+        /// and EventSourceIndex allows this extra information to be efficiently stored in a
+        /// (growable) array (eg List(T)).
+        /// </summary>
+        public static int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
+
+        /// <summary>
         /// This method is called whenever a new eventSource is 'attached' to the dispatcher.
         /// This can happen for all existing EventSources when the EventListener is created
         /// as well as for any EventSources that come into existence after the EventListener
@@ -4366,15 +4388,6 @@ namespace System.Diagnostics.Tracing
                 callBack(this, eventData);
             }
         }
-
-        /// <summary>
-        /// EventSourceIndex is small non-negative integer (suitable for indexing in an array)
-        /// identifying EventSource. It is unique per-appdomain. Some EventListeners might find
-        /// it useful to store additional information about each eventSource connected to it,
-        /// and EventSourceIndex allows this extra information to be efficiently stored in a
-        /// (growable) array (eg List(T)).
-        /// </summary>
-        static protected int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
 
         #region private
         /// <summary>
@@ -4445,7 +4458,7 @@ namespace System.Diagnostics.Tracing
         // to throw a COMPLUS_BOOT_EXCEPTION.   The guideline we give is that you must unregister
         // such callbacks on process shutdown or appdomain so that unmanaged code will never 
         // do this.  This is what this callback is for.  
-        // See 
+        // See bug 724140 for more
         private static void DisposeOnShutdown(object sender, EventArgs e)
         {
             lock(EventListenersLock)
@@ -4773,7 +4786,20 @@ namespace System.Diagnostics.Tracing
         public Guid ActivityId
         {
             [System.Security.SecurityCritical]
-            get { return EventSource.CurrentThreadActivityId; }
+            get
+            {
+                Guid activityId = m_activityId;
+                if (activityId == Guid.Empty)
+                {
+                    activityId = EventSource.CurrentThreadActivityId;
+                }
+
+                return activityId;
+            }
+            internal set
+            {
+                m_activityId = value;
+            }
         }
 
         /// <summary>
@@ -4934,8 +4960,8 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)
-                    return EventLevel.LogAlways;
+                if (EventId < 0)      // TraceLogging convention EventID == -1
+                    return m_level;
                 return (EventLevel)m_eventSource.m_eventData[EventId].Descriptor.Level;
             }
         }
@@ -4949,9 +4975,11 @@ namespace System.Diagnostics.Tracing
         private string m_eventName;
         private EventSource m_eventSource;
         private ReadOnlyCollection<string> m_payloadNames;
+        private Guid m_activityId;
         internal EventTags m_tags;
         internal EventOpcode m_opcode;
         internal EventKeywords m_keywords;
+        internal EventLevel m_level;
         #endregion
     }
 

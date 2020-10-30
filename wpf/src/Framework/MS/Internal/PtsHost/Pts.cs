@@ -2958,7 +2958,7 @@ namespace MS.Internal.PtsHost.UnsafeNativeMethods
             IntPtr pmcsclientIn,
             int dvrDisplaced,
             out int pdvrUsed);
-    */
+    
 
 
 
@@ -3120,7 +3120,7 @@ namespace MS.Internal.PtsHost.UnsafeNativeMethods
         LONG iFtnFirst,
         PFSFTNINFO pfsftninf,
         LONG* piFtnLim);
-    */
+    
         [SecurityCritical] internal delegate int GetCellMinColumnBalancingStep(
             IntPtr pfscell,                         // IN:
             uint fswdir,                            // IN:

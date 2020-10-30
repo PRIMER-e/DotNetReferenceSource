@@ -1769,8 +1769,11 @@ Expression^ DLRTreeETGenerator::FromDLRExpressionTree
         return nullptr;
     }
 
-#pragma warning (suppress:4302)
-    int Key = (int)ExprTree;
+#pragma warning (push)
+#pragma warning (disable:4311)
+#pragma warning (disable:4302)
+	int Key = (int)ExprTree;
+#pragma warning (pop)
 
     return m_ExprMap->default[Key];
 }

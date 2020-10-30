@@ -21,8 +21,9 @@ using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using MS.Internal;
 using System.Windows.Shapes;
+using MS.Internal;
+using MS.Internal.Telemetry.PresentationFramework;
 
 
 using MS.Internal.KnownBoxes;
@@ -49,6 +50,8 @@ namespace System.Windows.Controls
             // Set default to 100.0
             RangeBase.MaximumProperty.OverrideMetadata(typeof(ProgressBar), new FrameworkPropertyMetadata(100.0));
             ForegroundProperty.OverrideMetadata(typeof(ProgressBar), new FrameworkPropertyMetadata(OnForegroundChanged));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.ProgressBar);
         }
 
         /// <summary>

@@ -31,7 +31,8 @@ namespace System.Windows.Forms {
 
 
         private Orientation orientation = Orientation.Horizontal;
-        private Padding rowMargin = new Padding(3,0,0,0);
+        private static readonly Padding rowMargin = new Padding(3,0,0,0);
+        private Padding scaledRowMargin = rowMargin;
         private ToolStripRendererSwitcher rendererSwitcher = null;
         private Type currentRendererType = typeof(System.Type);
         private BitVector32 state = new BitVector32();
@@ -74,6 +75,10 @@ namespace System.Windows.Forms {
 
         /// <include file='doc\ToolStripPanel.uex' path='docs/doc[@for="ToolStripPanel.ToolStripPanel1"]/*' />
         public ToolStripPanel() {
+            if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                scaledRowMargin = DpiHelper.LogicalToDeviceUnits(rowMargin);
+            }
+
             SuspendLayout();
             AutoScaleMode = AutoScaleMode.None;
             InitFlowLayout();
@@ -173,9 +178,9 @@ namespace System.Windows.Forms {
         }
 
         public Padding RowMargin {
-            get { return rowMargin; }
+            get { return scaledRowMargin; }
             set {
-                rowMargin = value;
+                scaledRowMargin = value;
                 LayoutTransaction.DoLayout(this, this, "RowMargin");
             }
         }
@@ -241,7 +246,7 @@ namespace System.Windows.Forms {
             set {
                 if (orientation != value) {
                     orientation = value;
-                    rowMargin= LayoutUtils.FlipPadding(rowMargin);
+                    scaledRowMargin = LayoutUtils.FlipPadding(scaledRowMargin);
                     InitFlowLayout();
                     foreach (ToolStripPanelRow row in this.RowsInternal) {
                         row.OnOrientationChanged();
@@ -375,6 +380,9 @@ namespace System.Windows.Forms {
                 return base.TabStop;
             }
             set {
+                if (AccessibilityImprovements.Level2) {
+                    SetStyle(ControlStyles.Selectable, value);
+                }
                 base.TabStop = value;
             }
         }
@@ -1011,7 +1019,7 @@ namespace System.Windows.Forms {
                                 (currentToolStripPanelRow.ToolStripPanel != this) : true;
 #endif
 
-            // Dev10 
+            // Dev10 bug 477755 - in design mode toolstrip location jump back after being set.
             bool pointInCurrentRow = false;
             if (currentToolStripPanelRow != null && currentToolStripPanelRow.Visible && currentToolStripPanelRow.ToolStripPanel == this) {
                 if (toolStripToDrag.IsCurrentlyDragging) {

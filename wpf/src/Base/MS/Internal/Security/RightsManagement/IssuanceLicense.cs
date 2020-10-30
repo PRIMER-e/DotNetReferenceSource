@@ -1041,9 +1041,9 @@ namespace MS.Internal.Security.RightsManagement
         {
             //As this class is not public, and the corresponding public class (Unsigned Publish License 
             //that uses this class is not disposable, it means, that the only probable reason for using 
-            //Disposed instance of this class is a 
-
-
+            //Disposed instance of this class is a bug in our internal logic; therefore, Invariant Assert is 
+            //more appropriate. Throwing ObjectDisposedException exception would be misleading 
+            //as users will not deal with a Disposable class.  
             Invariant.Assert((_issuanceLicenseHandle != null) &&
                                        (!_issuanceLicenseHandle.IsInvalid));
         }

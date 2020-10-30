@@ -378,17 +378,27 @@ namespace System.Security.Cryptography.Pkcs {
                                            out cbParameters))
                         throw new CryptographicException(Marshal.GetLastWin32Error());
 
-                    if (cbParameters > 0) {
+                    if (cbParameters > Marshal.SizeOf(typeof(CAPI.CRYPTOAPI_BLOB))) {
+                        CAPI.CRYPTOAPI_BLOB blob = (CAPI.CRYPTOAPI_BLOB)Marshal.PtrToStructure(pbParameters.DangerousGetHandle(), typeof(CAPI.CRYPTOAPI_BLOB));
+
                         if (algId == CAPI.CALG_RC4) {
-                            CAPI.CRYPTOAPI_BLOB saltBlob = (CAPI.CRYPTOAPI_BLOB) Marshal.PtrToStructure(pbParameters.DangerousGetHandle(), typeof(CAPI.CRYPTOAPI_BLOB));
-                            if (saltBlob.cbData > 0) {
-                                parameters = new byte[saltBlob.cbData];
-                                Marshal.Copy(saltBlob.pbData, parameters, 0, parameters.Length);
+                            if (blob.cbData > 0) {
+                                parameters = new byte[blob.cbData];
+                                Marshal.Copy(blob.pbData, parameters, 0, parameters.Length);
                             }
                         }
                         else {
+                            // This should be the same as the RC4 code, but for compatibility
+                            // * Allocate an array as big as the CRYPTOAPI_BLOB
+                            // * Copy in the cbData value
+                            // * Copy in the (pbData) value
+                            //
+                            // But don't copy in the pbData pointer value (or, rather, clear it out),
+                            // among other things it makes decoding the same contents into two
+                            // different EnvelopedCms objects say the parameters were different.
                             parameters = new byte[cbParameters];
                             Marshal.Copy(pbParameters.DangerousGetHandle(), parameters, 0, parameters.Length);
+                            Array.Clear(parameters, sizeof(uint), (int)(parameters.Length - blob.cbData - sizeof(uint)));
                         }
                     }
                 }

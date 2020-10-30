@@ -33,12 +33,59 @@ public:
 
     LPCWSTR GetValue() const { return m_pwzValue; }
     HRESULT SetValue(__in_opt LPCWSTR pszValue);
+
+    /// <summary>
+    /// Set value from a substring
+    /// </summary>
+    /// <param name="pszValue">Source string, may not be null-terminated</param>
+    /// <param name="length">Number of characters to copy</param>
+    /// <remarks>
+    /// The caller should guarantee that pszValue[0]..pszValue[length-1] is a valid
+    /// and accessible range of memory.
+    /// </remarks>
+    HRESULT SetValue(__in_opt LPCWSTR pszValue, size_t length);
+
     static CString* CreateOnHeap(LPCWSTR pszValue, size_t maxLength = INTERNET_MAX_URL_LENGTH + 1);
 
     size_t Length() const { return m_curLength; }
 
     HRESULT WriteToStream(IStream* pOutputStream) const;
     HRESULT ReadFromStream(IStream* pInputStream);
+
+    /// <summary> 
+    /// Case sensitive comparison
+    /// </summary> 
+    inline bool operator== (LPCWSTR lpszOther) const
+    {
+        if (m_pwzValue != nullptr)
+        {
+            return wcscmp(m_pwzValue, lpszOther) == 0;
+        }
+
+        // true if both are nullptr; otherwise false
+        return m_pwzValue == lpszOther;
+    }
+
+    /// <summary>
+    /// Case sensitive comparison
+    /// </summary> 
+    inline bool operator== (const CString& strOther) const
+    {
+        return *this == strOther.GetValue();
+    }
+
+    /// <summary> 
+    /// Cast/conversion operator to convert a <c>CString</c> instance to <c>LPCWSTR</c>
+    /// </summary>
+    /// <remarks> 
+    /// Identical to <see cref="GetValue()" />, but more convenient in some 
+    /// situations due to the potential for implicit conversions from <c>CString</c>
+    /// to <c>LPCWSTR</c>
+    /// </remarks>
+    inline operator LPCWSTR() const
+    {
+        return GetValue();
+    }
 
 private:
     void Free();

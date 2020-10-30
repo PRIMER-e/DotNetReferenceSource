@@ -3,11 +3,11 @@
 // <copyright file="PhysicalFontFamily.cs company=Microsoft">
 //    Copyright (C) Microsoft Corporation.  All rights reserved.
 // </copyright>
-// 
+//
 //
 // Description: The PhysicalFontFamily class
 //
-// History:  
+// History:
 //  03/04/2004 : mleonov - Created a new file for PhysicalFontFamily. It was in FontCollection.cs before.
 //
 //---------------------------------------------------------------------------
@@ -40,13 +40,13 @@ namespace MS.Internal.FontFace
         private IDictionary<XmlLanguage, string> _familyNames;
 
         // _family.FamilyNames is of type LocalizedStrings which does not support editing (Adding, Replacing, and Clearing)
-        // IFontFamily.Names is passed to a LanguageSpecificStringDictionary which is exposed publicly and allows editing 
-        // operations. Thus to convert from IDictionary<CultureInfo, string> to IDictionary<XmlLanguage, string> we had 
+        // IFontFamily.Names is passed to a LanguageSpecificStringDictionary which is exposed publicly and allows editing
+        // operations. Thus to convert from IDictionary<CultureInfo, string> to IDictionary<XmlLanguage, string> we had
         // 2 approaches:
         //          - Copying the elements into a new IDictionary<XmlLanguage, string>
         //          - Implement a new class that wraps the IDictionary<CultureInfo, string> and allow
         //            editing operations
-        // The second approach will eventually copy elements into a new structure that allows editing when 
+        // The second approach will eventually copy elements into a new structure that allows editing when
         // an editing operation is performed. Since this dictionary is not expected to hold a huge number of elements
         // we chose to do the copying upfront and not lazily and hence use the first approach.
         //
@@ -113,7 +113,7 @@ namespace MS.Internal.FontFace
                 if (_familyNames == null)
                 {
                     _familyNames = ConvertDictionary(_family.FamilyNames);
-                }                
+                }
                 return _familyNames;
             }
         }
@@ -142,7 +142,7 @@ namespace MS.Internal.FontFace
         {
             Text.TextInterface.Font bestMatch = _family.GetFirstMatchingFont((Text.TextInterface.FontWeight)weight.ToOpenTypeWeight(),
                                                                              (Text.TextInterface.FontStretch)stretch.ToOpenTypeStretch(),
-                                                                             (Text.TextInterface.FontStyle)   style.GetStyleForInternalConstruction());            
+                                                                             (Text.TextInterface.FontStyle)   style.GetStyleForInternalConstruction());
             Debug.Assert(bestMatch != null);
             return new GlyphTypeface(bestMatch);
         }
@@ -182,8 +182,8 @@ namespace MS.Internal.FontFace
             // Add all the cached font faces to a priority queue.
             MatchingStyle targetStyle = new MatchingStyle(style, weight, stretch);
 
-            PriorityQueue<MatchingFace> queue = new PriorityQueue<MatchingFace>(
-                checked((int)_family.Count), 
+            LegacyPriorityQueue<MatchingFace> queue = new LegacyPriorityQueue<MatchingFace>(
+                checked((int)_family.Count),
                 new MatchingFaceComparer(targetStyle));
 
             foreach (Text.TextInterface.Font face in _family)
@@ -231,7 +231,7 @@ namespace MS.Internal.FontFace
                 }
             }
 
-            // no face can map the specified character string, 
+            // no face can map the specified character string,
             // fall back to the closest style match
             advance = 0;
             nextValid = smallestInvalid;
@@ -273,7 +273,7 @@ namespace MS.Internal.FontFace
         /// </summary>
         private class MatchingFaceComparer : IComparer<MatchingFace>
         {
-            
+
             internal MatchingFaceComparer(MatchingStyle targetStyle)
             {
                 _targetStyle = targetStyle;
@@ -305,30 +305,30 @@ namespace MS.Internal.FontFace
             DigitMap digitMap = new DigitMap(digitCulture);
 
             int sizeofChar = 0;
-            int advance;            
+            int advance;
 
-            // skip all the leading joiner characters. They need to be shaped with the 
+            // skip all the leading joiner characters. They need to be shaped with the
             // surrounding strong characters.
             advance = Classification.AdvanceWhile(unicodeString, ItemClass.JoinerClass);
             if (advance >= unicodeString.Length)
             {
                 // It is rare that the run only contains joiner characters.
-                // If it really happens, just return.                
+                // If it really happens, just return.
                 return advance;
             }
-            
+
             //
-            // If the run starts with combining marks, we will not be able to find base characters for them 
-            // within the run. These combining marks will be mapped to their best fonts as normal characters. 
-            // 
+            // If the run starts with combining marks, we will not be able to find base characters for them
+            // within the run. These combining marks will be mapped to their best fonts as normal characters.
+            //
             bool hasBaseChar = false;
-            
+
             // Determine how many characters we can advance, i.e., find the first invalid character.
             for (; advance < unicodeString.Length; advance += sizeofChar)
             {
                 // Get the character and apply digit substitution, if any.
                 int originalChar = Classification.UnicodeScalar(
-                    new CharacterBufferRange(unicodeString, advance, unicodeString.Length - advance), 
+                    new CharacterBufferRange(unicodeString, advance, unicodeString.Length - advance),
                     out sizeofChar
                     );
 
@@ -342,7 +342,7 @@ namespace MS.Internal.FontFace
                 else if (hasBaseChar)
                 {
                     // continue to advance for combining mark with base char
-                    continue; 
+                    continue;
                 }
 
                 int ch = digitMap[originalChar];
@@ -375,28 +375,28 @@ namespace MS.Internal.FontFace
                 {
                     // Get the character.
                     int originalChar = Classification.UnicodeScalar(
-                        new CharacterBufferRange(unicodeString, nextValid, unicodeString.Length - nextValid), 
+                        new CharacterBufferRange(unicodeString, nextValid, unicodeString.Length - nextValid),
                         out sizeofChar
                         );
 
                     // Apply digit substitution, if any.
                     int ch = digitMap[originalChar];
 
-                    // 
-                    // Combining mark should always be shaped by the same font as the base char. 
-                    // If the physical font is invalid for the base char, it should also be invalid for the 
-                    // following combining mark so that both characters will go onto the same fallback font. 
-                    // - When the fallback font is physical font, the font will be valid for both characters 
-                    //   if and only if it is valid for the base char. Otherwise, it will be invalid for both. 
-                    // - When the fallback font is composite font, it maps the combining mark to the same font 
-                    //   as the base char such that they will eventually be resolved to the same physical font. 
-                    //   That means FamilyMap for the combining mark is not used when it follows a base char. 
                     //
-                    // The same goes for joiner. Note that "hasBaseChar" here indicates if there is an invalid base 
-                    // char in front. 
+                    // Combining mark should always be shaped by the same font as the base char.
+                    // If the physical font is invalid for the base char, it should also be invalid for the
+                    // following combining mark so that both characters will go onto the same fallback font.
+                    // - When the fallback font is physical font, the font will be valid for both characters
+                    //   if and only if it is valid for the base char. Otherwise, it will be invalid for both.
+                    // - When the fallback font is composite font, it maps the combining mark to the same font
+                    //   as the base char such that they will eventually be resolved to the same physical font.
+                    //   That means FamilyMap for the combining mark is not used when it follows a base char.
+                    //
+                    // The same goes for joiner. Note that "hasBaseChar" here indicates if there is an invalid base
+                    // char in front.
                     if (Classification.IsJoiner(ch)
                        || (hasBaseChar && Classification.IsCombining(ch))
-                       )                    
+                       )
                        continue;
 
                     // If we have a glyph it's valid.
@@ -418,7 +418,7 @@ namespace MS.Internal.FontFace
 
 
         /// <summary>
-        /// Distance from character cell top to English baseline relative to em size. 
+        /// Distance from character cell top to English baseline relative to em size.
         /// </summary>
         /// <SecurityNote>
         /// Critical - calls into critical Text.TextInterface.FontFamily property
@@ -500,7 +500,7 @@ namespace MS.Internal.FontFace
             targetFamilyName = null;
             scaleInEm = defaultSizeInEm;
             return false;
-        }    
+        }
     }
 }
 

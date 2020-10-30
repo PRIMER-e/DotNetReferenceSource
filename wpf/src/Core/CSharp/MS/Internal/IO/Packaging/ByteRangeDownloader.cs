@@ -517,10 +517,10 @@ namespace MS.Internal.IO.Packaging
 
             // Set the Proxy to Empty one; If we don't set this to empty one, it will try to find one for us
             //  and ends up triggering JScript in another assembly. This will throw PolicyException since the JScript
-            //  dll doesn't have execution right. This is 
-
-
-
+            //  dll doesn't have execution right. This is bug in CLR; supposed to be fixed later
+            // ToDo (Microsoft 05/15/2003): Need to keep consistent HTTP stack with the WININET one (e.g. authentication, proxy, cookies)
+//            IWebProxy emptyProxy = GlobalProxySelection.GetEmptyWebProxy();
+//            request.Proxy = emptyProxy;
 
             // Local assert to allow Proxy get/set under partial trust
             new WebPermission(PermissionState.Unrestricted).Assert();   // Blessed

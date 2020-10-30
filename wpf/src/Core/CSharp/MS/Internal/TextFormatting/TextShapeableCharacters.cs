@@ -121,7 +121,7 @@ namespace System.Windows.Media.TextFormatting
 
 
         #region TextShapeableSymbols implementation
-       
+
         /// <summary>
         /// Compute a shaped glyph run object from specified glyph-based info
         /// </summary>
@@ -379,6 +379,7 @@ namespace System.Windows.Media.TextFormatting
                     }
                 }
 
+
                 BufferCache.ReleaseGlyphMetrics(glyphMetrics);
             }
         }
@@ -421,7 +422,7 @@ namespace System.Windows.Media.TextFormatting
 
             return
                     _shapeTypeface.Equals(charShape._shapeTypeface)
-                // Extended characters need to be shaped by surrogate shaper. They cannot be shaped together with non-exteneded characters. 
+                // Extended characters need to be shaped by surrogate shaper. They cannot be shaped together with non-exteneded characters.
                 && (_textItem.HasExtendedCharacter) == (charShape._textItem.HasExtendedCharacter)
                 && _emSize == charShape._emSize
                 && (

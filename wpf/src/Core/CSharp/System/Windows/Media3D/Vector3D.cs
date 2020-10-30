@@ -168,7 +168,7 @@ namespace System.Windows.Media.Media3D
             // vectors and is sqrt(2)/2 which is well away from extreme slope
             // at +/-1.
             //
-            // (See Windows OS 
+            // (See Windows OS Bug #1706299 for details)
             
             double theta;
             

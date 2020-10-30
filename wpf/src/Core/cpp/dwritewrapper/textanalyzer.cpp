@@ -193,7 +193,8 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
                            | ((isStrong)       ? CharAttribute::IsStrong       : CharAttribute::None)
                            | ((isExtended)     ? CharAttribute::IsExtended     : CharAttribute::None));
 
-        for (UINT32 i = 1; i < length; ++i)
+        UINT32 i = 1;
+        for (; i < length; ++i)
         {
             classificationUtility->GetCharAttribute(
             text[i],
@@ -467,16 +468,9 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
                 {
                     // Actual glyph count is not returned by DWrite unless the call tp GetGlyphs succeeds.
                     // It must be re-estimated in case the first estimate was not adequate.
-                    // Assurance from DWrite is that 3 * textLength is a sufficient buffer size.
-                    // We use this value, but as a fail-safe, add one more check to see if that value is less
-                    // than the original estimate passed in. If it is, multiply buffer size by 2. 
-                    actualGlyphCount = 3 * textLength;
-                    if (actualGlyphCount <= maxGlyphCount)
-                    {
-                        // Multiplying by 3 is still less than current max, use max * 2.
-                        // NOTE: This code is a fail-safe - DWrite's assurance is that 3x is an adequate buffer size.
-                        actualGlyphCount = maxGlyphCount * 2;
-                    }
+                    // DDVSO 725381: The following calculation is a refactoring of DWrite's logic ( 3*stringLength/2 + 16) after 3 retries.
+                    // We'd rather go directly to the maximum buffer size we are willing to allocate than pay the cost of continuously retrying.
+                    actualGlyphCount = 27 * maxGlyphCount / 8 + 76;
                 }
                 else
                 {

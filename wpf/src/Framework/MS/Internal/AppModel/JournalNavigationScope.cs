@@ -442,7 +442,7 @@ namespace MS.Internal.AppModel
             set
             {
                 Debug.Assert(_journal == null && value != null,
-                    "The Journal should be set only once and never removed."); // see 
+                    "The Journal should be set only once and never removed."); // see bug 1367999
                 _journal = value;
                 _journal.Filter = new JournalEntryFilter(this.IsEntryNavigable);
                 _journal.BackForwardStateChange += new EventHandler(OnBackForwardStateChange);

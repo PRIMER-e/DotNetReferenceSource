@@ -21,6 +21,8 @@ namespace MS.Internal.Data
 {
     internal class LiveShapingBlock : RBNode<LiveShapingItem>
     {
+        internal LiveShapingBlock() : base() {}
+        internal LiveShapingBlock(bool b) : base(b) {}
         LiveShapingBlock ParentBlock { get { return Parent as LiveShapingBlock; } }
         LiveShapingBlock LeftChildBlock { get { return (LiveShapingBlock)LeftChild; } }
         LiveShapingBlock RightChildBlock { get { return (LiveShapingBlock)RightChild; } }

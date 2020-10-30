@@ -38,12 +38,20 @@ namespace Internal.Cryptography
 
         public virtual void Dispose()
         {
-            if (IV != null)
-            {
-                Array.Clear(IV, 0, IV.Length);
-                IV = null;
-            }
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (IV != null)
+                {
+                    Array.Clear(IV, 0, IV.Length);
+                    IV = null;
+                }
+            }
         }
 
         protected byte[] IV { get; private set; }

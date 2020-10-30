@@ -1783,9 +1783,9 @@ namespace System.Data.Services
 
             if (this.operationContext.Host.AstoriaHttpVerb != AstoriaVerbs.GET)
             {
-                // 
-
-
+                // Bug 470090: Since we used to call SaveChanges() for service operations in V1, we need to
+                // keep doing that for V1 providers that implement IUpdatable. In other words, for ObjectContextServiceProvider
+                // we will always do this, and for reflection service provider, we will have to check.
                 if (serviceOperationRequest)
                 {
                     if (this.provider.IsV1ProviderAndImplementsUpdatable())
@@ -2407,9 +2407,9 @@ namespace System.Data.Services
                                     {
                                         Debug.Assert(!String.IsNullOrEmpty(changesetBoundary), "!String.IsNullOrEmpty(changesetBoundary)");
 
-                                        // 
-
-
+                                        // Bug 470090: We don't need to call SaveChanges if all requests in the changesets are requests to
+                                        // service operations. But in V1, we used to call SaveChanges, we need to keep calling it, if its
+                                        // implemented.
                                         if (serviceOperationRequests)
                                         {
                                             if (this.Provider.IsV1ProviderAndImplementsUpdatable())

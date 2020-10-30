@@ -302,7 +302,7 @@ namespace System.ServiceModel.Channels
             {
                 if (this.hashAlgorithm == null)
                 {
-                    this.hashAlgorithm = CryptoHelper.CreateHashAlgorithm(SecurityAlgorithms.Sha1Digest);
+                    this.hashAlgorithm = CryptoHelper.CreateHashAlgorithm(SecurityAlgorithms.Sha256Digest);
                 }
                 else
                 {
@@ -1305,7 +1305,7 @@ namespace System.ServiceModel.Channels
                         }
                         catch (NullReferenceException nullReferenceException)
                         {
-                            // workaround for Whidbey 
+                            // workaround for Whidbey bug #558605 - only happens in streamed case.
                             if (TransferModeHelper.IsRequestStreamed(this.factory.transferMode))
                             {
                                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
@@ -1610,7 +1610,7 @@ namespace System.ServiceModel.Channels
                         }
                         catch (NullReferenceException nullReferenceException)
                         {
-                            // workaround for Whidbey 
+                            // workaround for Whidbey bug #558605 - only happens in streamed case.
                             if (TransferModeHelper.IsRequestStreamed(this.factory.transferMode))
                             {
                                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
@@ -1667,7 +1667,7 @@ namespace System.ServiceModel.Channels
                             }
                             catch (NullReferenceException nullReferenceException)
                             {
-                                // workaround for Whidbey 
+                                // workaround for Whidbey bug #558605 - only happens in streamed case.
                                 if (TransferModeHelper.IsRequestStreamed(this.factory.transferMode))
                                 {
                                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(

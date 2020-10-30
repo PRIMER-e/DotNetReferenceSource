@@ -1690,6 +1690,16 @@ namespace System.ServiceModel.Channels
                 }
             }
 
+            internal override void SetProperty(string name, object value)
+            {
+                MessageProperties prop = this.properties;
+
+                if (prop != null)
+                {
+                    prop[name] = value;
+                }
+            }
+
             public override MessageVersion Version
             {
                 get

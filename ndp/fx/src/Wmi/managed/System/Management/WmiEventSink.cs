@@ -49,7 +49,7 @@ internal class WmiEventSink : IWmiEventSource
         string path,
         string className)
     {
-        if(MTAHelper.IsNoContextMTA()) // 
+        if(MTAHelper.IsNoContextMTA()) // Bug#110141 - Checking for MTA is not enough.  We need to make sure we are not in a COM+ Context
             return new WmiEventSink(watcher, context, scope, path, className);
 
         watcherParameter = watcher;
@@ -275,7 +275,7 @@ internal class WmiGetEventSink : WmiEventSink
         ManagementScope scope,
         ManagementObject managementObject)
     {
-        if(MTAHelper.IsNoContextMTA()) // 
+        if(MTAHelper.IsNoContextMTA()) // Bug#110141 - Checking for MTA is not enough.  We need to make sure we are not in a COM+ Context
             return new WmiGetEventSink(watcher, context, scope, managementObject);
 
         watcherParameter = watcher;

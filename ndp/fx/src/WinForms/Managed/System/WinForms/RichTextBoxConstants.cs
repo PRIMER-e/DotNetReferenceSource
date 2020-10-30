@@ -38,6 +38,7 @@ namespace System.Windows.Forms {
         internal const string RICHEDIT_DLL10       = "RichEd32.DLL";
         internal const string RICHEDIT_DLL20       = "RichEd20.DLL";
         internal const string RICHEDIT_DLL30       = RICHEDIT_DLL20;
+        internal const string RICHEDIT_DLL41       = "MsftEdit.DLL";
 
         /* Richedit1.0 Window Class */
         internal const string RICHEDIT_CLASS10A    = "RICHEDIT";
@@ -50,9 +51,17 @@ namespace System.Windows.Forms {
         internal const string RICHEDIT_CLASS30A    = RICHEDIT_CLASS20A;
         internal const string RICHEDIT_CLASS30W    = RICHEDIT_CLASS20W;
 
-        internal const string DLL_RICHEDIT         = RICHEDIT_DLL30;
-        internal const string WC_RICHEDITA          = RICHEDIT_CLASS30A;
-        internal const string WC_RICHEDITW          = RICHEDIT_CLASS30W;
+        internal const string DLL_RICHEDIT = RICHEDIT_DLL30;
+        internal const string WC_RICHEDITA = RICHEDIT_CLASS30A;
+        internal const string WC_RICHEDITW = RICHEDIT_CLASS30W;
+
+        /* Richedit4.1 Window Class */
+        internal const string RICHEDIT_CLASS41A     = "RICHEDIT50A";
+        internal const string RICHEDIT_CLASS41W     = "RICHEDIT50W";
+
+        internal const string DLL_RICHEDIT_41       = RICHEDIT_DLL41;
+        internal const string WC_RICHEDITA_41       = RICHEDIT_CLASS41A;
+        internal const string WC_RICHEDITW_41       = RICHEDIT_CLASS41W;
 
         /* RichTextBox messages */
         internal const int WM_CONTEXTMENU          = 0x007B;

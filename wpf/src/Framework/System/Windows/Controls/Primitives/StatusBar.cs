@@ -9,6 +9,7 @@ using System.Windows.Automation.Peers;
 using System.Windows.Media;
 using System.Windows.Threading;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls.Primitives
 {
@@ -41,6 +42,8 @@ namespace System.Windows.Controls.Primitives
             ItemsPanelTemplate template = new ItemsPanelTemplate(new FrameworkElementFactory(typeof(DockPanel)));
             template.Seal();
             ItemsPanelProperty.OverrideMetadata(typeof(StatusBar), new FrameworkPropertyMetadata(template));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.StatusBar);
         }
 
         #endregion

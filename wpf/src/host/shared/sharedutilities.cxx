@@ -951,3 +951,35 @@ HRESULT CheckSameDomain(LPCWSTR url1, LPCWSTR url2, IInternetSecurityManager *pS
 Cleanup:
     return hr;
 }
+
+/// <summary>
+/// Finds the attribute by namespace name and returns the attributes' text value. For ambiguous names,
+/// this method returns the value from the first namespace
+/// </summary>
+/// <param name="pAttributes">The <c>ISAXAttributes</c> instance that is searched for the attribute</param>
+/// <param name="pwchUri">The namespace URI, or if the namespace has no URI, an empty string</param>
+/// <param name="cchUri">The length of the URI string</param>
+/// <param name="pwchLocalName">The local name of the attribute</param>
+/// <param name="cchLocalName">The length of the local name string</param>
+/// <param name="strValue">The string value of the attribute</param>
+/// <returns> An <c>HRESULT</c> value indicating success or failure </returns>
+/// <remarks>
+/// This function delegates to <c>ISAXAttributes::getValueFromName</c>. The 
+/// buffer returned by <c>getValueFromName</c> is not is always directly usable - it 
+/// often requires a substring to be extracted from it before it can be 
+/// used. <c>GetXmlAttributeValue</c> is intended as a helper function that avoids the need
+/// for this extra step, and returns a <c>CString</c> object
+/// </remarks>
+HRESULT GetXmlAttributeValue(__in ISAXAttributes* pAttributes, __in LPCWSTR pwchUri, __in size_t cchUri, __in LPCWSTR pwchLocalName, __in size_t cchLocalName, __inout CString& strValue)
+{
+    HRESULT hr = S_OK;
+    
+    LPCWSTR pwzValue = nullptr;
+    int nLength = 0;
+
+    CHECK_POINTER_ARG(pAttributes);
+    CKHR(pAttributes->getValueFromName(pwchUri, static_cast<int>(cchUri), pwchLocalName, static_cast<int>(cchLocalName), &pwzValue, &nLength));
+    CKHR(strValue.SetValue(pwzValue, nLength));
+Cleanup:
+    return hr;
+}

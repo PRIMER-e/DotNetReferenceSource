@@ -26,6 +26,7 @@ namespace System.Deployment.Internal.CodeSigning {
         //
         // PInvoke dll's.
         //
+        internal const String CRYPT32  = "crypt32.dll";
         internal const String KERNEL32 = "kernel32.dll";
 #if (true)
 
@@ -44,6 +45,7 @@ namespace System.Deployment.Internal.CodeSigning {
         // Constants.
         //
         internal const int S_OK                                = unchecked((int) 0x00000000);
+        internal const int NTE_BAD_HASH                        = unchecked((int) 0x80090002);
         internal const int NTE_BAD_KEY                         = unchecked((int) 0x80090003);
                        
         // Trust errors.
@@ -176,6 +178,79 @@ namespace System.Deployment.Internal.CodeSigning {
         int _AxlPublicKeyBlobToPublicKeyToken (
             [In]     ref CRYPT_DATA_BLOB        pCspPublicKeyBlob,
             [In,Out] ref IntPtr                 ppwszPublicKeyToken);
+
+        // RFC3161 support
+
+        // hash algorithm OIDs
+        internal const string szOID_OIWSEC_sha1 = "1.3.14.3.2.26";
+        internal const string szOID_NIST_sha256 = "2.16.840.1.101.3.4.2.1";
+
+        internal const string szOID_RSA_messageDigest = "1.2.840.113549.1.9.4";
+        internal const string szOID_PKIX_KP_TIMESTAMP_SIGNING = "1.3.6.1.5.5.7.3.8";
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CRYPT_TIMESTAMP_CONTEXT {
+            internal uint           cbEncoded;      // DWORD->unsigned int
+            internal IntPtr         pbEncoded;      // BYTE*
+            internal IntPtr         pTimeStamp;     // PCRYPT_TIMESTAMP_INFO->_CRYPT_TIMESTAMP_INFO*
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CRYPTOAPI_BLOB {
+            internal uint cbData;
+            internal IntPtr pbData;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CRYPT_TIMESTAMP_PARA {
+            internal IntPtr pszTSAPolicyId;
+            internal bool fRequestCerts;
+            internal CRYPTOAPI_BLOB Nonce;
+            internal int cExtension;
+            internal IntPtr rgExtension;
+        }
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [DllImport(CRYPT32, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal extern static
+        bool CryptRetrieveTimeStamp (
+            [In]     [MarshalAs(UnmanagedType.LPWStr)]  string wszUrl,
+            [In]     uint                               dwRetrievalFlags,
+            [In]     int                                dwTimeout,
+            [In]     [MarshalAs(UnmanagedType.LPStr)]   string pszHashId,
+            [In,Out] ref CRYPT_TIMESTAMP_PARA           pPara,
+            [In]     byte[]                             pbData,
+            [In]     int                                cbData,
+            [In,Out] ref IntPtr                         ppTsContext,
+            [In,Out] ref IntPtr                         ppTsSigner,
+            [In,Out] ref IntPtr                         phStore);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [DllImport(CRYPT32, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal extern static
+        bool CryptVerifyTimeStampSignature(
+            [In]     byte[]     pbTSContentInfo,
+            [In]     int        cbTSContentInfo,
+            [In]     byte[]     pbData,
+            [In]     int        cbData,
+            [In]     IntPtr     hAdditionalStore,
+            [In,Out] ref IntPtr ppTsContext,
+            [In,Out] ref IntPtr ppTsSigner,
+            [In,Out] ref IntPtr phStore);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [DllImport(CRYPT32, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+        internal static extern bool CertFreeCertificateContext(IntPtr pCertContext);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [DllImport(CRYPT32, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+        internal static extern bool CertCloseStore(IntPtr pCertContext, int dwFlags);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [DllImport(CRYPT32, CallingConvention = CallingConvention.Winapi)]
+        internal static extern void CryptMemFree(IntPtr pv);
     }
 
     internal class ManifestSignedXml : SignedXml {

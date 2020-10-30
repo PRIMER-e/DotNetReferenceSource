@@ -354,10 +354,10 @@ struct COR_ILMETHOD_SECT
     {
         if (Kind() == CorILMethod_Sect_EHTable) 
         {
-            // VB and MC++ shipped with 
-
-
-
+            // VB and MC++ shipped with bug where they have not accounted for size of COR_ILMETHOD_SECT_EH_XXX
+            // in DataSize. To avoid breaking these images, we will align the size of EH sections up. This works
+            // because IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_XXX is bigger than COR_ILMETHOD_SECT_EH_XXX 
+            // (see VSWhidbey #99031 and related bugs for details).
 
             if (IsFat())
                 return Fat.Size(Fat.GetDataSize() / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT));

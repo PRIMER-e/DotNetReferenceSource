@@ -125,9 +125,15 @@ namespace MS.Internal.Data
                     binding.Source = _item;
                     if (oneTime)
                         binding.Mode = BindingMode.OneTime;
-                    BindingExpressionBase beb = BindingOperations.SetBinding(this, dp, binding);
+
+                    //BindingExpressionBase beb = BindingOperations.SetBinding(this, dp, binding);
+                    // we need to set the cross-thread flag before the binding is
+                    // attached, in case the source raises PropertyChanged events
+                    // right away.  So don't call BO.SetBinding, but imitate its effect
+                    BindingExpressionBase beb = binding.CreateBindingExpression(this, dp);
                     if (enableXT)
                         beb.TargetWantsCrossThreadNotifications = true;
+                    this.SetValue(dp, beb);
                 }
                 else if (!oneTime)
                 {

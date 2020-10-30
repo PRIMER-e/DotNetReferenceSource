@@ -19,13 +19,13 @@
 //  04/27/01: rogerg    Added stub for creating the default form.
 //  05/06/03: marka     Moved over to WCP dir. Made match spec, updated comments.
 //  07/11/03: lgolding  Removed code for UseDefaultApp and ContainerNoCode.
-//  08/12/03: Microsoft    Changed ShutDown to Shutdown (
-
-
-
-
-
-
+//  08/12/03: Microsoft    Changed ShutDown to Shutdown (bug 856983)
+//  08/10/04: kusumav   Moved NavigationApplication and other navigation classes to separate files in Navigation dir.
+//  02/04/05: hamidm    Made certain Application APIs thread safe
+//  06/16/05: weibz     Remove RegisterDefaultResourceManager
+//  01/31/06: brucemac  Change PreloadedPackages.AddPackage() to pass a boolean indicating that ResourceContainer is thread-safe
+//
+//---------------------------------------------------------------------------
 
 //In order to avoid generating warnings about unknown message numbers and unknown pragmas
 //when compiling your C# source code with the actual C# compiler, you need to disable
@@ -69,6 +69,7 @@ using MS.Internal.Resources;
 using MS.Utility;
 using MS.Win32;
 using Microsoft.Win32;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows
 {
@@ -161,17 +162,17 @@ namespace System.Windows
 
             //
             // NOTE: hamidm 08/06/04
-            // PS Windows OS 
-
-
-
-
-
-
-
-
-
-
+            // PS Windows OS Bug # 994269 (Application not shutting down when calling
+            // Application.Current.Shutdown())
+            //
+            // post item to do startup work
+            // posting it here so that this is the first item in the queue. Devs
+            // could post items before calling run and then those will be serviced
+            // before if we don't post this one here.
+            //
+            // Also, doing startup (firing OnStartup etc.) once our dispatcher
+            // is run ensures that we run before any external code is run in the
+            // application's Dispatcher.
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Send,
                 (DispatcherOperationCallback) delegate(object unused)
@@ -346,6 +347,8 @@ namespace System.Windows
             {
                 return;
             }
+
+            ControlsTraceLogger.LogUsedControlsDetails();
 
             SetExitCode(exitCode);
             IsShuttingDown = true;
@@ -1785,18 +1788,18 @@ namespace System.Windows
 
             //
             // NOTE: hamidm 08/06/04
-            // PS Windows OS 
-
-
-
-
-
-
-
-
-
-
-
+            // PS Windows OS Bug # 901085 (Can't create app and do run/shutdown followed
+            // by run/shutdown)
+            //
+            // Devs could write the following code
+            //
+            // Application app = new Application();
+            // app.Run();
+            // app.Run();
+            //
+            // In this case, we should throw an exception when Run is called for the second time.
+            // When app is shutdown, _appIsShutdown is set to true.  If it is true here, then we
+            // throw an exception
             if (_appIsShutdown == true)
             {
                 throw new InvalidOperationException(SR.Get(SRID.CannotCallRunMultipleTimes, this.GetType().FullName));
@@ -2553,7 +2556,7 @@ namespace System.Windows
             {
                 // if Visibility has not been set, we set it to true
                 // Also check whether the window is already closed when we get here - applications could close the window
-                // in its constructor. See Window SE 
+                // in its constructor. See Window SE bug # 253703 (or DevDiv Dev10 bug #574222) for more details.
                 if (!w.IsVisibilitySet && !w.IsDisposed)
                 {
                     w.Visibility = Visibility.Visible;
@@ -2621,7 +2624,7 @@ namespace System.Windows
                 }
             }
             // When the value of the register key is empty, the IndexOutofRangeException is thrown.
-            // Please see Dev10 
+            // Please see Dev10 bug 586158 for more details.
             catch (System.IndexOutOfRangeException)
             {
             }
@@ -2725,13 +2728,13 @@ namespace System.Windows
             {
                 BrowserInteropHelper.InitializeHostFilterInput();
 
-                // This seemingly meaningless try-catch-throw is a workaround for a CLR deficiency/
-
-
-
-
-
-
+                // This seemingly meaningless try-catch-throw is a workaround for a CLR deficiency/bug in
+                // exception handling. (WOSB 1936603) When an unhandled exception on the main thread crosses
+                // the AppDomain boundary, the p/invoke layer catches it and throws another exception. Thus,
+                // the original exception is lost before the debugger is notified. The result is no managed
+                // callstack whatsoever. The workaround is based on a debugger/CLR feature that notifies of
+                // exceptions unhandled in 'user code'. This works only when the Just My Code feature is enabled
+                // in VS.
                 try
                 {
                     RunDispatcher(null);

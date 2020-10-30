@@ -1403,17 +1403,27 @@ DWORD GetProtocolList( 	ProtList * pProtList,
 							const WCHAR * wszServer,
 							const WCHAR * wszOriginalServer )
 {
+	return GetProtocolList(pProtList, wszServer, wszOriginalServer, NULL);
+}
+
+DWORD GetProtocolList( 	ProtList * pProtList, 
+							const WCHAR * wszServer,
+							const WCHAR * wszOriginalServer,
+							TCHAR * pszProt)
+{
 	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtList: %p, wszServer: '%s', wszOriginalServer: '%s'\n"), pProtList, wszServer, wszOriginalServer);
 
 	LONG       lResult      = 0;
-	TCHAR		* pszProt;
 	ProtElem * newProtElem;
 	DWORD  nlReturn;
 
-	if( !gfIsWin9x )
-		pszProt = DEFAULT_PROTOCOLS; 
-	else
-		pszProt = DEFAULT_PROTOCOLS_WIN9X; 
+	if(pszProt == NULL)
+	{
+		if( !gfIsWin9x )
+			pszProt = DEFAULT_PROTOCOLS; 
+		else
+			pszProt = DEFAULT_PROTOCOLS_WIN9X; 		
+	}
 
 	// Go through each protocol and add to our protocol list
 	//

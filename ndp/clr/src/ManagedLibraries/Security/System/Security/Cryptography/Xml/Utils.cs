@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.Xml
     using Microsoft.Win32;
     using System.Collections;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Security.Cryptography.X509Certificates;
@@ -158,6 +159,7 @@ namespace System.Security.Cryptography.Xml
             return reader;
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3069:ReviewDtdProcessingAssignment", Justification= "DTD risks are mitigated by URI restrictions and expansion limits")]
         internal static XmlReaderSettings GetSecureXmlReaderSettings(XmlResolver xmlResolver)
         {
             XmlReaderSettings settings = new XmlReaderSettings();
@@ -293,6 +295,191 @@ namespace System.Security.Cryptography.Xml
             return s_requireNCNameIdentifier;
         }
 
+        private static bool s_readMaxTransformsPerReference = false;
+        private static long s_maxTransformsPerReference = 10;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static long GetMaxTransformsPerReference()
+        {
+            // Allow machine administrators to specify a maximum number of Transforms per Reference in SignedXML.
+            if (s_readMaxTransformsPerReference)
+            {
+                return s_maxTransformsPerReference;
+            }
+
+            long maxTransforms = GetNetFxSecurityRegistryValue("SignedXmlMaxTransformsPerReference", 10);
+
+            s_maxTransformsPerReference = maxTransforms;
+            Thread.MemoryBarrier();
+            s_readMaxTransformsPerReference = true;
+
+            return s_maxTransformsPerReference;
+        }
+
+        private static bool s_readMaxReferencesPerSignedInfo = false;
+        private static long s_maxReferencesPerSignedInfo = 100;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static long GetMaxReferencesPerSignedInfo()
+        {
+            // Allow machine administrators to specify a maximum number of References per SignedInfo/Signature in SignedXML.
+            if (s_readMaxReferencesPerSignedInfo)
+            {
+                return s_maxReferencesPerSignedInfo;
+            }
+
+            long maxReferences = GetNetFxSecurityRegistryValue("SignedXmlMaxReferencesPerSignedInfo", 100);
+
+            s_maxReferencesPerSignedInfo = maxReferences;
+            Thread.MemoryBarrier();
+            s_readMaxReferencesPerSignedInfo = true;
+
+            return s_maxReferencesPerSignedInfo;
+        }
+
+        private static bool s_readAllowAdditionalSignatureNodes = false;
+        private static bool s_allowAdditionalSignatureNodes = false;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static bool GetAllowAdditionalSignatureNodes()
+        {
+            // Allow machine administrators to specify whether SignedXML should allow Signature nodes that don't conform to the spec.
+            if (s_readAllowAdditionalSignatureNodes)
+            {
+                return s_allowAdditionalSignatureNodes;
+            }
+
+            long numericValue = GetNetFxSecurityRegistryValue("SignedXmlAllowAdditionalSignatureNodes", 0);
+            bool allowAdditionalSignatureNodes = numericValue != 0;
+
+            s_allowAdditionalSignatureNodes = allowAdditionalSignatureNodes;
+            Thread.MemoryBarrier();
+            s_readAllowAdditionalSignatureNodes = true;
+
+            return s_allowAdditionalSignatureNodes;
+        }
+
+        private static bool s_readSkipSignatureAttributeEnforcement = false;
+        private static bool s_skipSignatureAttributeEnforcement = false;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static bool GetSkipSignatureAttributeEnforcement()
+        {
+            // Allow machine administrators to specify whether SignedXML should skip enforcement of
+            // spec Attribute rules in Signature nodes.
+            if (s_readSkipSignatureAttributeEnforcement)
+            {
+                return s_skipSignatureAttributeEnforcement;
+            }
+
+            long numericValue = GetNetFxSecurityRegistryValue("SignedXmlSkipSignatureAttributeEnforcement", 0);
+            bool skipSignatureAttributeEnforcement = numericValue != 0;
+
+            s_skipSignatureAttributeEnforcement = skipSignatureAttributeEnforcement;
+            Thread.MemoryBarrier();
+            s_readSkipSignatureAttributeEnforcement = true;
+
+            return s_skipSignatureAttributeEnforcement;
+        }
+
+        private static bool s_readAllowBareTypeReference = false;
+        private static bool s_allowBareTypeReference = false;
+
+        internal static bool VerifyAttributes(XmlElement element, string expectedAttrName)
+        {
+            return VerifyAttributes(element, expectedAttrName == null ? null : new string[] { expectedAttrName });
+        }
+
+        internal static bool VerifyAttributes(XmlElement element, string[] expectedAttrNames)
+        {
+            if (!GetSkipSignatureAttributeEnforcement())
+            {
+                foreach (XmlAttribute attr in element.Attributes)
+                {
+                    // There are a few Xml Special Attributes that are always allowed on any node. Make sure we allow those here.
+                    bool attrIsAllowed = attr.Name == "xmlns" || attr.Name.StartsWith("xmlns:") || attr.Name == "xml:space" || attr.Name == "xml:lang" || attr.Name == "xml:base";
+                    int expectedInd = 0;
+                    while (!attrIsAllowed && expectedAttrNames != null && expectedInd < expectedAttrNames.Length)
+                    {
+                        attrIsAllowed = attr.Name == expectedAttrNames[expectedInd];
+                        expectedInd++;
+                    }
+                    if (!attrIsAllowed)
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static bool GetAllowBareTypeReference()
+        {
+            if (s_readAllowBareTypeReference)
+            {
+                return s_allowBareTypeReference;
+            }
+
+            long numericValue = GetNetFxSecurityRegistryValue("CryptoXmlAllowBareTypeReference", 0);
+            bool allowBareReference = numericValue != 0;
+
+            s_allowBareTypeReference = allowBareReference;
+            Thread.MemoryBarrier();
+            s_readAllowBareTypeReference = true;
+
+            return s_allowBareTypeReference;
+        }
+
+        private static bool s_readLeaveCipherValueUnchecked = false;
+        private static bool s_leaveCipherValueUnchecked = false;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static bool GetLeaveCipherValueUnchecked()
+        {
+            if (s_readLeaveCipherValueUnchecked)
+            {
+                return s_leaveCipherValueUnchecked;
+            }
+
+            long numericValue = GetNetFxSecurityRegistryValue("EncryptedXmlLeaveCipherValueUnchecked", 0);
+            bool leaveCipherValueUnchecked = numericValue != 0;
+
+            s_leaveCipherValueUnchecked = leaveCipherValueUnchecked;
+            Thread.MemoryBarrier();
+            s_readLeaveCipherValueUnchecked = true;
+
+            return s_leaveCipherValueUnchecked;
+        }
+
+        private static readonly char[] s_invalidChars = new char[] { ',', '`', '[', '*', '&' };
+
+        internal static T CreateFromName<T>(string key) where T : class
+        {
+            if (GetAllowBareTypeReference())
+            {
+                return CryptoConfig.CreateFromName(key) as T;
+            }
+
+            if (key == null || key.IndexOfAny(s_invalidChars) >= 0)
+            {
+                return null;
+            }
+
+            try
+            {
+                return CryptoConfig.CreateFromName(key) as T;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private static long GetNetFxSecurityRegistryValue(string regValueName, long defaultValue)
         {
             try {
@@ -313,6 +500,7 @@ namespace System.Security.Cryptography.Xml
             return defaultValue;
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3069:ReviewDtdProcessingAssignment", Justification= "Required for re-parsing documents which were user-loaded with DtdProcessing.Parse")]
         internal static XmlDocument PreProcessDocumentInput (XmlDocument document, XmlResolver xmlResolver, string baseUri) {
             if (document == null)
                 throw new ArgumentNullException("document");
@@ -333,6 +521,7 @@ namespace System.Security.Cryptography.Xml
             return doc;
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3069:ReviewDtdProcessingAssignment", Justification= "Required for re-parsing elements which were user-loaded with DtdProcessing.Parse")]
         internal static XmlDocument PreProcessElementInput (XmlElement elem, XmlResolver xmlResolver, string baseUri) {
             if (elem == null)
                 throw new ArgumentNullException("elem");

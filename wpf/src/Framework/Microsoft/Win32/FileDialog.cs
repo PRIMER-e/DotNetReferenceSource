@@ -1537,11 +1537,11 @@ namespace Microsoft.Win32
                                      // 0 is reserved for the custom filter functionality
                                      // provided by Windows, which we do not expose to the user.
 
-            // Variables used for 
-
-
-
-
+            // Variables used for bug workaround:
+            // When the selected file is locked for writing, we get a sharing violation notification
+            // followed by *two* CDN_FILEOK notifications.  These flags are used to track the multiple
+            // notifications so we only show one error message box to the user.  
+            // For a more complete explanation and PS bug information, see HookProc.
             _ignoreSecondFileOkNotification = false;
             _fileOkNotificationCount = 0;
 
@@ -1557,21 +1557,21 @@ namespace Microsoft.Win32
         {
             if (String.IsNullOrEmpty(s))
             {
-                // Workaround for VSWhidbey 
-
-
-
-
-
-
+                // Workaround for VSWhidbey bug #95338 (carried over from Microsoft implementation)
+                // Apparently, when filter is null, the common dialogs in Windows XP will not dereference
+                // links properly.  The work around is to provide a default filter;  " |*.*" is used to 
+                // avoid localization issues from description text.
+                //
+                // This behavior is now documented in MSDN on the OPENFILENAME structure, so I don't
+                // expect it to change anytime soon.
                 if (dereferenceLinks && System.Environment.OSVersion.Version.Major >= 5)
                 {
                     s = " |*.*";
                 }
                 else
                 {
-                    // Even if we don't need the 
-
+                    // Even if we don't need the bug workaround, change empty
+                    // strings into null strings.
                     return null;
                 }
             }

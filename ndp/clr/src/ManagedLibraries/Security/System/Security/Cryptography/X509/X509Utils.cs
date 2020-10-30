@@ -179,7 +179,8 @@ namespace System.Security.Cryptography.X509Certificates {
 
         // this method create a memory store from a certificate collection
         [SecurityCritical]
-        internal static SafeCertStoreHandle ExportToMemoryStore (X509Certificate2Collection collection) {
+        internal static SafeCertStoreHandle ExportToMemoryStore (X509Certificate2Collection collection,
+                                                                 X509Certificate2Collection collection2 = null) {
             //
             // We need to Assert all StorePermission flags since this is a memory store and we want 
             // semi-trusted code to be able to export certificates to a memory store.
@@ -188,7 +189,7 @@ namespace System.Security.Cryptography.X509Certificates {
             StorePermission sp = new StorePermission(StorePermissionFlags.AllFlags);
             sp.Assert();
 
-            SafeCertStoreHandle safeCertStoreHandle = SafeCertStoreHandle.InvalidHandle;
+            SafeCertStoreHandle safeCertStoreHandle;
 
             // we always want to use CERT_STORE_ENUM_ARCHIVED_FLAG since we want to preserve the collection in this operation.
             // By default, Archived certificates will not be included.
@@ -202,20 +203,33 @@ namespace System.Security.Cryptography.X509Certificates {
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
                 throw new CryptographicException(Marshal.GetLastWin32Error());
 
+            AddToStore(safeCertStoreHandle, collection);
+
+            if (collection2 != null) {
+                AddToStore(safeCertStoreHandle, collection2);
+            }
+
+            return safeCertStoreHandle;
+        }
+
+        [SecurityCritical]
+        private static void AddToStore(SafeCertStoreHandle safeCertStoreHandle, X509Certificate2Collection collection)
+        {
             //
             // We use CertAddCertificateLinkToStore to keep a link to the original store, so any property changes get
             // applied to the original store. This has a limit of 99 links per cert context however.
             //
-
+            // X509Store.Add(Range) uses CertAddCertificateContextToStore, which would lose information like ephemeral
+            // private key associations.
             foreach (X509Certificate2 x509 in collection) {
-                if (!CAPI.CertAddCertificateLinkToStore(safeCertStoreHandle,
-                                                        X509Utils.GetCertContext(x509),
-                                                        CAPI.CERT_STORE_ADD_ALWAYS,
-                                                        SafeCertContextHandle.InvalidHandle))
-                    throw new CryptographicException(Marshal.GetLastWin32Error());
+                using (SafeCertContextHandle ctx = X509Utils.GetCertContext(x509)) {
+                    if (!CAPI.CertAddCertificateLinkToStore(safeCertStoreHandle,
+                                                            ctx,
+                                                            CAPI.CERT_STORE_ADD_ALWAYS,
+                                                            SafeCertContextHandle.InvalidHandle))
+                        throw new CryptographicException(Marshal.GetLastWin32Error());
+                }
             }
-
-            return safeCertStoreHandle;
         }
 
         [SecuritySafeCritical]

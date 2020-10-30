@@ -38,6 +38,32 @@ namespace System.Windows
         Unknown = 0xFF,
     }
 
+    // Implementation note:
+    // All the property getters follow the pattern:
+    //      lock (_cacheValid)
+    //      {
+    //          while (!_cacheValid[mySlot])
+    //          {
+    //              _cacheValid[mySlot] = true;
+    //              _myCache = FetchValueFromOS();
+    //          }
+    //      }
+    //      return _myCache;
+    //
+    // This pattern defends against a race condition that arises when the OS
+    // changes its internal value after the getter fetches the value.  The OS
+    // can notify another thread (e.g. via WM_THEMECHANGED), which will clear
+    // the valid bit.  That can happen during the current setter, because
+    // InvalidateProperty does not lock.
+    //
+    // By (a) setting the valid bit _before_ fetching the value and
+    // (b) checking the valid bit again after caching the value, we guarantee
+    // that the return value isn't stale.  The precise claim: during the timespan
+    // from one internal OS change to the next, once any thread invalidates the
+    // property, all threads will see the latest value.
+    //
+    // See UxThemeWrapper for more discussion of the ----.
+
     /// <summary>
     ///     Contains properties that are queries into the system's various settings.
     /// </summary>
@@ -47,11 +73,12 @@ namespace System.Windows
 
         private static void OnPropertiesChanged(params string[] propertyNames)
         {
-            if (StaticPropertyChanged != null)
+            System.ComponentModel.PropertyChangedEventHandler handler = StaticPropertyChanged;
+            if (handler != null)
             {
                 for (int i=0; i<propertyNames.Length; ++i)
                 {
-                    StaticPropertyChanged(null, new System.ComponentModel.PropertyChangedEventArgs(propertyNames[i]));
+                    handler(null, new System.ComponentModel.PropertyChangedEventArgs(propertyNames[i]));
                 }
             }
         }
@@ -88,17 +115,19 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FocusBorderWidth])
+                    while (!_cacheValid[(int)CacheSlot.FocusBorderWidth])
                     {
+                        _cacheValid[(int)CacheSlot.FocusBorderWidth] = true;
+
                         int focusBorderWidth = 0;
 
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETFOCUSBORDERWIDTH, 0, ref focusBorderWidth, 0))
                         {
                             _focusBorderWidth = ConvertPixel(focusBorderWidth);
-                            _cacheValid[(int)CacheSlot.FocusBorderWidth] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.FocusBorderWidth] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -122,17 +151,19 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FocusBorderHeight])
+                    while (!_cacheValid[(int)CacheSlot.FocusBorderHeight])
                     {
+                        _cacheValid[(int)CacheSlot.FocusBorderHeight] = true;
+
                         int focusBorderHeight = 0;
 
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETFOCUSBORDERHEIGHT, 0, ref focusBorderHeight, 0))
                         {
                             _focusBorderHeight = ConvertPixel(focusBorderHeight);
-                            _cacheValid[(int)CacheSlot.FocusBorderHeight] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.FocusBorderHeight] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -157,18 +188,20 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.HighContrast])
+                    while (!_cacheValid[(int)CacheSlot.HighContrast])
                     {
+                        _cacheValid[(int)CacheSlot.HighContrast] = true;
+
                         NativeMethods.HIGHCONTRAST_I highContrast = new NativeMethods.HIGHCONTRAST_I();
 
                         highContrast.cbSize = Marshal.SizeOf(typeof(NativeMethods.HIGHCONTRAST_I));
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETHIGHCONTRAST, highContrast.cbSize, ref highContrast, 0))
                         {
                             _highContrast = (highContrast.dwFlags & NativeMethods.HCF_HIGHCONTRASTON) == NativeMethods.HCF_HIGHCONTRASTON;
-                            _cacheValid[(int)CacheSlot.HighContrast] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.HighContrast] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -193,14 +226,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MouseVanish])
+                    while (!_cacheValid[(int)CacheSlot.MouseVanish])
                     {
+                        _cacheValid[(int)CacheSlot.MouseVanish] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETMOUSEVANISH, 0, ref _mouseVanish, 0))
                         {
-                            _cacheValid[(int)CacheSlot.MouseVanish] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MouseVanish] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -286,14 +321,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.DropShadow])
+                    while (!_cacheValid[(int)CacheSlot.DropShadow])
                     {
+                        _cacheValid[(int)CacheSlot.DropShadow] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETDROPSHADOW, 0, ref _dropShadow, 0))
                         {
-                            _cacheValid[(int)CacheSlot.DropShadow] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.DropShadow] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -318,14 +355,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FlatMenu])
+                    while (!_cacheValid[(int)CacheSlot.FlatMenu])
                     {
+                        _cacheValid[(int)CacheSlot.FlatMenu] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETFLATMENU, 0, ref _flatMenu, 0))
                         {
-                            _cacheValid[(int)CacheSlot.FlatMenu] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.FlatMenu] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -349,15 +388,17 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WorkAreaInternal])
+                    while (!_cacheValid[(int)CacheSlot.WorkAreaInternal])
                     {
+                        _cacheValid[(int)CacheSlot.WorkAreaInternal] = true;
+
                         _workAreaInternal = new NativeMethods.RECT();
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETWORKAREA, 0, ref _workAreaInternal, 0))
                         {
-                            _cacheValid[(int)CacheSlot.WorkAreaInternal] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.WorkAreaInternal] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -376,12 +417,12 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WorkArea])
+                    while (!_cacheValid[(int)CacheSlot.WorkArea])
                     {
-                        NativeMethods.RECT workArea = WorkAreaInternal;
-
-                        _workArea = new Rect(ConvertPixel(workArea.left), ConvertPixel(workArea.top), ConvertPixel(workArea.Width), ConvertPixel(workArea.Height));
                         _cacheValid[(int)CacheSlot.WorkArea] = true;
+
+                        NativeMethods.RECT workArea = WorkAreaInternal;
+                        _workArea = new Rect(ConvertPixel(workArea.left), ConvertPixel(workArea.top), ConvertPixel(workArea.Width), ConvertPixel(workArea.Height));
                     }
                 }
 
@@ -459,15 +500,17 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IconMetrics])
+                    while (!_cacheValid[(int)CacheSlot.IconMetrics])
                     {
+                        _cacheValid[(int)CacheSlot.IconMetrics] = true;
+
                         _iconMetrics = new NativeMethods.ICONMETRICS();
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETICONMETRICS, _iconMetrics.cbSize, _iconMetrics, 0))
                         {
-                            _cacheValid[(int)CacheSlot.IconMetrics] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.IconMetrics] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -582,14 +625,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.KeyboardCues])
+                    while (!_cacheValid[(int)CacheSlot.KeyboardCues])
                     {
+                        _cacheValid[(int)CacheSlot.KeyboardCues] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETKEYBOARDCUES, 0, ref _keyboardCues, 0))
                         {
-                            _cacheValid[(int)CacheSlot.KeyboardCues] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.KeyboardCues] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -613,14 +658,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.KeyboardDelay])
+                    while (!_cacheValid[(int)CacheSlot.KeyboardDelay])
                     {
+                        _cacheValid[(int)CacheSlot.KeyboardDelay] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETKEYBOARDDELAY, 0, ref _keyboardDelay, 0))
                         {
-                            _cacheValid[(int)CacheSlot.KeyboardDelay] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.KeyboardDelay] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -644,14 +691,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.KeyboardPreference])
+                    while (!_cacheValid[(int)CacheSlot.KeyboardPreference])
                     {
+                        _cacheValid[(int)CacheSlot.KeyboardPreference] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETKEYBOARDPREF, 0, ref _keyboardPref, 0))
                         {
-                            _cacheValid[(int)CacheSlot.KeyboardPreference] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.KeyboardPreference] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -675,14 +724,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.KeyboardSpeed])
+                    while (!_cacheValid[(int)CacheSlot.KeyboardSpeed])
                     {
+                        _cacheValid[(int)CacheSlot.KeyboardSpeed] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETKEYBOARDSPEED, 0, ref _keyboardSpeed, 0))
                         {
-                            _cacheValid[(int)CacheSlot.KeyboardSpeed] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.KeyboardSpeed] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -706,14 +757,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.SnapToDefaultButton])
+                    while (!_cacheValid[(int)CacheSlot.SnapToDefaultButton])
                     {
+                        _cacheValid[(int)CacheSlot.SnapToDefaultButton] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETSNAPTODEFBUTTON, 0, ref _snapToDefButton, 0))
                         {
-                            _cacheValid[(int)CacheSlot.SnapToDefaultButton] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.SnapToDefaultButton] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -737,14 +790,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WheelScrollLines])
+                    while (!_cacheValid[(int)CacheSlot.WheelScrollLines])
                     {
+                        _cacheValid[(int)CacheSlot.WheelScrollLines] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETWHEELSCROLLLINES, 0, ref _wheelScrollLines, 0))
                         {
-                            _cacheValid[(int)CacheSlot.WheelScrollLines] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.WheelScrollLines] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -776,14 +831,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MouseHoverTime])
+                    while (!_cacheValid[(int)CacheSlot.MouseHoverTime])
                     {
+                        _cacheValid[(int)CacheSlot.MouseHoverTime] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETMOUSEHOVERTIME, 0, ref _mouseHoverTime, 0))
                         {
-                            _cacheValid[(int)CacheSlot.MouseHoverTime] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MouseHoverTime] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -807,17 +864,19 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MouseHoverHeight])
+                    while (!_cacheValid[(int)CacheSlot.MouseHoverHeight])
                     {
+                        _cacheValid[(int)CacheSlot.MouseHoverHeight] = true;
+
                         int mouseHoverHeight = 0;
 
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETMOUSEHOVERHEIGHT, 0, ref mouseHoverHeight, 0))
                         {
                             _mouseHoverHeight = ConvertPixel(mouseHoverHeight);
-                            _cacheValid[(int)CacheSlot.MouseHoverHeight] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MouseHoverHeight] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -842,17 +901,19 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MouseHoverWidth])
+                    while (!_cacheValid[(int)CacheSlot.MouseHoverWidth])
                     {
+                        _cacheValid[(int)CacheSlot.MouseHoverWidth] = true;
+
                         int mouseHoverWidth = 0;
 
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETMOUSEHOVERWIDTH, 0, ref mouseHoverWidth, 0))
                         {
                             _mouseHoverWidth = ConvertPixel(mouseHoverWidth);
-                            _cacheValid[(int)CacheSlot.MouseHoverWidth] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MouseHoverWidth] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1030,14 +1091,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuDropAlignment])
+                    while (!_cacheValid[(int)CacheSlot.MenuDropAlignment])
                     {
+                        _cacheValid[(int)CacheSlot.MenuDropAlignment] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETMENUDROPALIGNMENT, 0, ref _menuDropAlignment, 0))
                         {
-                            _cacheValid[(int)CacheSlot.MenuDropAlignment] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MenuDropAlignment] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1060,14 +1123,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuFade])
+                    while (!_cacheValid[(int)CacheSlot.MenuFade])
                     {
+                        _cacheValid[(int)CacheSlot.MenuFade] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETMENUFADE, 0, ref _menuFade, 0))
                         {
-                            _cacheValid[(int)CacheSlot.MenuFade] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MenuFade] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1092,14 +1157,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuShowDelay])
+                    while (!_cacheValid[(int)CacheSlot.MenuShowDelay])
                     {
+                        _cacheValid[(int)CacheSlot.MenuShowDelay] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETMENUSHOWDELAY, 0, ref _menuShowDelay, 0))
                         {
-                            _cacheValid[(int)CacheSlot.MenuShowDelay] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MenuShowDelay] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1198,15 +1265,16 @@ namespace System.Windows
 
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ComboBoxAnimation])
+                    while (!_cacheValid[(int)CacheSlot.ComboBoxAnimation])
                     {
+                        _cacheValid[(int)CacheSlot.ComboBoxAnimation] = true;
 
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETCOMBOBOXANIMATION, 0, ref _comboBoxAnimation, 0))
                         {
-                            _cacheValid[(int)CacheSlot.ComboBoxAnimation] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.ComboBoxAnimation] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1230,24 +1298,25 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ClientAreaAnimation])
+                    while (!_cacheValid[(int)CacheSlot.ClientAreaAnimation])
                     {
+                        _cacheValid[(int)CacheSlot.ClientAreaAnimation] = true;
+
                         // This parameter is only available on Windows Versions >= 0x0600 (Vista)
                         if (System.Environment.OSVersion.Version.Major >= 6)
                         {
                             if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETCLIENTAREAANIMATION, 0, ref _clientAreaAnimation, 0))
                             {
-                                _cacheValid[(int)CacheSlot.ClientAreaAnimation] = true;
                             }
                             else
                             {
+                                _cacheValid[(int)CacheSlot.ClientAreaAnimation] = false;
                                 throw new Win32Exception();
                             }
                         }
                         else  // Windows XP, assume value is true
                         {
                             _clientAreaAnimation = true;
-                            _cacheValid[(int)CacheSlot.ClientAreaAnimation] = true;
                         }
                     }
                 }
@@ -1270,14 +1339,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.CursorShadow])
+                    while (!_cacheValid[(int)CacheSlot.CursorShadow])
                     {
+                        _cacheValid[(int)CacheSlot.CursorShadow] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETCURSORSHADOW, 0, ref _cursorShadow, 0))
                         {
-                            _cacheValid[(int)CacheSlot.CursorShadow] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.CursorShadow] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1301,14 +1372,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.GradientCaptions])
+                    while (!_cacheValid[(int)CacheSlot.GradientCaptions])
                     {
+                        _cacheValid[(int)CacheSlot.GradientCaptions] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETGRADIENTCAPTIONS, 0, ref _gradientCaptions, 0))
                         {
-                            _cacheValid[(int)CacheSlot.GradientCaptions] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.GradientCaptions] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1332,14 +1405,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.HotTracking])
+                    while (!_cacheValid[(int)CacheSlot.HotTracking])
                     {
+                        _cacheValid[(int)CacheSlot.HotTracking] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETHOTTRACKING, 0, ref _hotTracking, 0))
                         {
-                            _cacheValid[(int)CacheSlot.HotTracking] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.HotTracking] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1363,14 +1438,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ListBoxSmoothScrolling])
+                    while (!_cacheValid[(int)CacheSlot.ListBoxSmoothScrolling])
                     {
+                        _cacheValid[(int)CacheSlot.ListBoxSmoothScrolling] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETLISTBOXSMOOTHSCROLLING, 0, ref _listBoxSmoothScrolling, 0))
                         {
-                            _cacheValid[(int)CacheSlot.ListBoxSmoothScrolling] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.ListBoxSmoothScrolling] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1417,14 +1494,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuAnimation])
+                    while (!_cacheValid[(int)CacheSlot.MenuAnimation])
                     {
+                        _cacheValid[(int)CacheSlot.MenuAnimation] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETMENUANIMATION, 0, ref _menuAnimation, 0))
                         {
-                            _cacheValid[(int)CacheSlot.MenuAnimation] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MenuAnimation] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1448,14 +1527,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.SelectionFade])
+                    while (!_cacheValid[(int)CacheSlot.SelectionFade])
                     {
+                        _cacheValid[(int)CacheSlot.SelectionFade] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETSELECTIONFADE, 0, ref _selectionFade, 0))
                         {
-                            _cacheValid[(int)CacheSlot.SelectionFade] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.SelectionFade] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1479,14 +1560,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.StylusHotTracking])
+                    while (!_cacheValid[(int)CacheSlot.StylusHotTracking])
                     {
+                        _cacheValid[(int)CacheSlot.StylusHotTracking] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETSTYLUSHOTTRACKING, 0, ref _stylusHotTracking, 0))
                         {
-                            _cacheValid[(int)CacheSlot.StylusHotTracking] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.StylusHotTracking] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1525,18 +1608,18 @@ namespace System.Windows
             [SecurityCritical ]
             get
             {
-
-
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ToolTipAnimation])
+                    while (!_cacheValid[(int)CacheSlot.ToolTipAnimation])
                     {
+                        _cacheValid[(int)CacheSlot.ToolTipAnimation] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETTOOLTIPANIMATION, 0, ref _toolTipAnimation, 0))
                         {
-                            _cacheValid[(int)CacheSlot.ToolTipAnimation] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.ToolTipAnimation] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1558,17 +1641,18 @@ namespace System.Windows
             [SecurityCritical ]
             get
             {
-
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ToolTipFade])
+                    while (!_cacheValid[(int)CacheSlot.ToolTipFade])
                     {
+                        _cacheValid[(int)CacheSlot.ToolTipFade] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETTOOLTIPFADE, 0, ref _tooltipFade, 0))
                         {
-                            _cacheValid[(int)CacheSlot.ToolTipFade] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.ToolTipFade] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1592,14 +1676,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.UIEffects])
+                    while (!_cacheValid[(int)CacheSlot.UIEffects])
                     {
+                        _cacheValid[(int)CacheSlot.UIEffects] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETUIEFFECTS, 0, ref _uiEffects, 0))
                         {
-                            _cacheValid[(int)CacheSlot.UIEffects] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.UIEffects] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1869,20 +1955,21 @@ namespace System.Windows
             [SecurityCritical ]
             get
             {
-
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimizeAnimation])
+                    while (!_cacheValid[(int)CacheSlot.MinimizeAnimation])
                     {
+                        _cacheValid[(int)CacheSlot.MinimizeAnimation] = true;
+
                         NativeMethods.ANIMATIONINFO animInfo = new NativeMethods.ANIMATIONINFO();
 
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETANIMATION, animInfo.cbSize, animInfo, 0))
                         {
                             _minAnimation = animInfo.iMinAnimate != 0;
-                            _cacheValid[(int)CacheSlot.MinimizeAnimation] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.MinimizeAnimation] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1906,15 +1993,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-
-                    if (!_cacheValid[(int)CacheSlot.Border])
+                    while (!_cacheValid[(int)CacheSlot.Border])
                     {
+                        _cacheValid[(int)CacheSlot.Border] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETBORDER, 0, ref _border, 0))
                         {
-                            _cacheValid[(int)CacheSlot.Border] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.Border] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -1938,19 +2026,43 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.CaretWidth])
+                    while (!_cacheValid[(int)CacheSlot.CaretWidth])
                     {
+                        _cacheValid[(int)CacheSlot.CaretWidth] = true;
+
                         int caretWidth = 0;
 
+
+#if NEVER
+                        // this code would work if the OS treated SPI_GETCARETWIDTH
+                        // like all the other metrics, scaling it to the primary monitor's DPI
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETCARETWIDTH, 0, ref caretWidth, 0))
                         {
                             _caretWidth = ConvertPixel(caretWidth);
-                            _cacheValid[(int)CacheSlot.CaretWidth] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.CaretWidth] = false;
                             throw new Win32Exception();
                         }
+#else
+                        // the OS doesn't scale SPI_GETCARETWIDTH to the primary monitor's DPI,
+                        // so we should not apply the ConvertPixel adjustment [DDVSO 973208].
+                        // Call SPI in "unaware" mode;  this ensures we won't break
+                        // if the OS decides to "fix" their anomalous behavior.
+                        using (DpiUtil.WithDpiAwarenessContext(MS.Utility.DpiAwarenessContextValue.Unaware))
+                        {
+                            if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETCARETWIDTH, 0, ref caretWidth, 0))
+                            {
+                                _caretWidth = (double)caretWidth;
+                            }
+                            else
+                            {
+                                _cacheValid[(int)CacheSlot.CaretWidth] = false;
+                                throw new Win32Exception();
+                            }
+                        }
+#endif
                     }
                 }
 
@@ -1972,14 +2084,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.DragFullWindows])
+                    while (!_cacheValid[(int)CacheSlot.DragFullWindows])
                     {
+                        _cacheValid[(int)CacheSlot.DragFullWindows] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETDRAGFULLWINDOWS, 0, ref _dragFullWindows, 0))
                         {
-                            _cacheValid[(int)CacheSlot.DragFullWindows] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.DragFullWindows] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -2004,14 +2118,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ForegroundFlashCount])
+                    while (!_cacheValid[(int)CacheSlot.ForegroundFlashCount])
                     {
+                        _cacheValid[(int)CacheSlot.ForegroundFlashCount] = true;
+
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETFOREGROUNDFLASHCOUNT, 0, ref _foregroundFlashCount, 0))
                         {
-                            _cacheValid[(int)CacheSlot.ForegroundFlashCount] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.ForegroundFlashCount] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -2035,15 +2151,17 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.NonClientMetrics])
+                    while (!_cacheValid[(int)CacheSlot.NonClientMetrics])
                     {
+                        _cacheValid[(int)CacheSlot.NonClientMetrics] = true;
+
                         _ncm = new NativeMethods.NONCLIENTMETRICS();
                         if (UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, _ncm.cbSize, _ncm, 0))
                         {
-                            _cacheValid[(int)CacheSlot.NonClientMetrics] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.NonClientMetrics] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -2382,10 +2500,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ThinHorizontalBorderHeight])
+                    while (!_cacheValid[(int)CacheSlot.ThinHorizontalBorderHeight])
                     {
-                        _thinHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXBORDER));
                         _cacheValid[(int)CacheSlot.ThinHorizontalBorderHeight] = true;
+                        _thinHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXBORDER));
                     }
                 }
 
@@ -2408,10 +2526,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ThinVerticalBorderWidth])
+                    while (!_cacheValid[(int)CacheSlot.ThinVerticalBorderWidth])
                     {
-                        _thinVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYBORDER));
                         _cacheValid[(int)CacheSlot.ThinVerticalBorderWidth] = true;
+                        _thinVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYBORDER));
                     }
                 }
 
@@ -2433,10 +2551,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.CursorWidth])
+                    while (!_cacheValid[(int)CacheSlot.CursorWidth])
                     {
-                        _cursorWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXCURSOR));
                         _cacheValid[(int)CacheSlot.CursorWidth] = true;
+                        _cursorWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXCURSOR));
                     }
                 }
 
@@ -2458,10 +2576,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.CursorHeight])
+                    while (!_cacheValid[(int)CacheSlot.CursorHeight])
                     {
-                        _cursorHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYCURSOR));
                         _cacheValid[(int)CacheSlot.CursorHeight] = true;
+                        _cursorHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYCURSOR));
                     }
                 }
 
@@ -2483,10 +2601,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ThickHorizontalBorderHeight])
+                    while (!_cacheValid[(int)CacheSlot.ThickHorizontalBorderHeight])
                     {
-                        _thickHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXEDGE));
                         _cacheValid[(int)CacheSlot.ThickHorizontalBorderHeight] = true;
+                        _thickHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXEDGE));
                     }
                 }
 
@@ -2508,10 +2626,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ThickVerticalBorderWidth])
+                    while (!_cacheValid[(int)CacheSlot.ThickVerticalBorderWidth])
                     {
-                        _thickVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYEDGE));
                         _cacheValid[(int)CacheSlot.ThickVerticalBorderWidth] = true;
+                        _thickVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYEDGE));
                     }
                 }
 
@@ -2533,10 +2651,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimumHorizontalDragDistance])
+                    while (!_cacheValid[(int)CacheSlot.MinimumHorizontalDragDistance])
                     {
-                        _minimumHorizontalDragDistance = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXDRAG));
                         _cacheValid[(int)CacheSlot.MinimumHorizontalDragDistance] = true;
+                        _minimumHorizontalDragDistance = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXDRAG));
                     }
                 }
 
@@ -2558,10 +2676,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimumVerticalDragDistance])
+                    while (!_cacheValid[(int)CacheSlot.MinimumVerticalDragDistance])
                     {
-                        _minimumVerticalDragDistance = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYDRAG));
                         _cacheValid[(int)CacheSlot.MinimumVerticalDragDistance] = true;
+                        _minimumVerticalDragDistance = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYDRAG));
                     }
                 }
 
@@ -2583,10 +2701,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FixedFrameHorizontalBorderHeight])
+                    while(!_cacheValid[(int)CacheSlot.FixedFrameHorizontalBorderHeight])
                     {
-                        _fixedFrameHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXFIXEDFRAME));
                         _cacheValid[(int)CacheSlot.FixedFrameHorizontalBorderHeight] = true;
+                        _fixedFrameHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXFIXEDFRAME));
                     }
                 }
 
@@ -2608,10 +2726,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FixedFrameVerticalBorderWidth])
+                    while (!_cacheValid[(int)CacheSlot.FixedFrameVerticalBorderWidth])
                     {
-                        _fixedFrameVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYFIXEDFRAME));
                         _cacheValid[(int)CacheSlot.FixedFrameVerticalBorderWidth] = true;
+                        _fixedFrameVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYFIXEDFRAME));
                     }
                 }
 
@@ -2633,10 +2751,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FocusHorizontalBorderHeight])
+                    while (!_cacheValid[(int)CacheSlot.FocusHorizontalBorderHeight])
                     {
-                        _focusHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXFOCUSBORDER));
                         _cacheValid[(int)CacheSlot.FocusHorizontalBorderHeight] = true;
+                        _focusHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXFOCUSBORDER));
                     }
                 }
 
@@ -2658,10 +2776,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FocusVerticalBorderWidth])
+                    while(!_cacheValid[(int)CacheSlot.FocusVerticalBorderWidth])
                     {
-                        _focusVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYFOCUSBORDER));
                         _cacheValid[(int)CacheSlot.FocusVerticalBorderWidth] = true;
+                        _focusVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYFOCUSBORDER));
                     }
                 }
 
@@ -2688,10 +2806,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FullPrimaryScreenWidth])
+                    while (!_cacheValid[(int)CacheSlot.FullPrimaryScreenWidth])
                     {
-                        _fullPrimaryScreenWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXFULLSCREEN));
                         _cacheValid[(int)CacheSlot.FullPrimaryScreenWidth] = true;
+                        _fullPrimaryScreenWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXFULLSCREEN));
                     }
                 }
 
@@ -2717,10 +2835,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.FullPrimaryScreenHeight])
+                    while (!_cacheValid[(int)CacheSlot.FullPrimaryScreenHeight])
                     {
-                        _fullPrimaryScreenHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYFULLSCREEN));
                         _cacheValid[(int)CacheSlot.FullPrimaryScreenHeight] = true;
+                        _fullPrimaryScreenHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYFULLSCREEN));
                     }
                 }
 
@@ -2742,10 +2860,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.HorizontalScrollBarButtonWidth])
+                    while (!_cacheValid[(int)CacheSlot.HorizontalScrollBarButtonWidth])
                     {
-                        _horizontalScrollBarButtonWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXHSCROLL));
                         _cacheValid[(int)CacheSlot.HorizontalScrollBarButtonWidth] = true;
+                        _horizontalScrollBarButtonWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXHSCROLL));
                     }
                 }
 
@@ -2767,10 +2885,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.HorizontalScrollBarHeight])
+                    while (!_cacheValid[(int)CacheSlot.HorizontalScrollBarHeight])
                     {
-                        _horizontalScrollBarHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYHSCROLL));
                         _cacheValid[(int)CacheSlot.HorizontalScrollBarHeight] = true;
+                        _horizontalScrollBarHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYHSCROLL));
                     }
                 }
 
@@ -2792,10 +2910,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.HorizontalScrollBarThumbWidth])
+                    while (!_cacheValid[(int)CacheSlot.HorizontalScrollBarThumbWidth])
                     {
-                        _horizontalScrollBarThumbWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXHTHUMB));
                         _cacheValid[(int)CacheSlot.HorizontalScrollBarThumbWidth] = true;
+                        _horizontalScrollBarThumbWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXHTHUMB));
                     }
                 }
 
@@ -2817,10 +2935,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IconWidth])
+                    while (!_cacheValid[(int)CacheSlot.IconWidth])
                     {
-                        _iconWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXICON));
                         _cacheValid[(int)CacheSlot.IconWidth] = true;
+                        _iconWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXICON));
                     }
                 }
 
@@ -2842,10 +2960,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IconHeight])
+                    while (!_cacheValid[(int)CacheSlot.IconHeight])
                     {
-                        _iconHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYICON));
                         _cacheValid[(int)CacheSlot.IconHeight] = true;
+                        _iconHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYICON));
                     }
                 }
 
@@ -2867,10 +2985,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IconGridWidth])
+                    while (!_cacheValid[(int)CacheSlot.IconGridWidth])
                     {
-                        _iconGridWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXICONSPACING));
                         _cacheValid[(int)CacheSlot.IconGridWidth] = true;
+                        _iconGridWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXICONSPACING));
                     }
                 }
 
@@ -2892,10 +3010,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IconGridHeight])
+                    while (!_cacheValid[(int)CacheSlot.IconGridHeight])
                     {
-                        _iconGridHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYICONSPACING));
                         _cacheValid[(int)CacheSlot.IconGridHeight] = true;
+                        _iconGridHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYICONSPACING));
                     }
                 }
 
@@ -2921,10 +3039,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MaximizedPrimaryScreenWidth])
+                    while (!_cacheValid[(int)CacheSlot.MaximizedPrimaryScreenWidth])
                     {
-                        _maximizedPrimaryScreenWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMAXIMIZED));
                         _cacheValid[(int)CacheSlot.MaximizedPrimaryScreenWidth] = true;
+                        _maximizedPrimaryScreenWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMAXIMIZED));
                     }
                 }
 
@@ -2950,10 +3068,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MaximizedPrimaryScreenHeight])
+                    while (!_cacheValid[(int)CacheSlot.MaximizedPrimaryScreenHeight])
                     {
-                        _maximizedPrimaryScreenHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMAXIMIZED));
                         _cacheValid[(int)CacheSlot.MaximizedPrimaryScreenHeight] = true;
+                        _maximizedPrimaryScreenHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMAXIMIZED));
                     }
                 }
 
@@ -2979,10 +3097,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MaximumWindowTrackWidth])
+                    while (!_cacheValid[(int)CacheSlot.MaximumWindowTrackWidth])
                     {
-                        _maximumWindowTrackWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMAXTRACK));
                         _cacheValid[(int)CacheSlot.MaximumWindowTrackWidth] = true;
+                        _maximumWindowTrackWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMAXTRACK));
                     }
                 }
 
@@ -3008,10 +3126,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MaximumWindowTrackHeight])
+                    while (!_cacheValid[(int)CacheSlot.MaximumWindowTrackHeight])
                     {
-                        _maximumWindowTrackHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMAXTRACK));
                         _cacheValid[(int)CacheSlot.MaximumWindowTrackHeight] = true;
+                        _maximumWindowTrackHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMAXTRACK));
                     }
                 }
 
@@ -3033,10 +3151,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuCheckmarkWidth])
+                    while (!_cacheValid[(int)CacheSlot.MenuCheckmarkWidth])
                     {
-                        _menuCheckmarkWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMENUCHECK));
                         _cacheValid[(int)CacheSlot.MenuCheckmarkWidth] = true;
+                        _menuCheckmarkWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMENUCHECK));
                     }
                 }
 
@@ -3058,10 +3176,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuCheckmarkHeight])
+                    while (!_cacheValid[(int)CacheSlot.MenuCheckmarkHeight])
                     {
-                        _menuCheckmarkHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMENUCHECK));
                         _cacheValid[(int)CacheSlot.MenuCheckmarkHeight] = true;
+                        _menuCheckmarkHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMENUCHECK));
                     }
                 }
 
@@ -3083,10 +3201,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuButtonWidth])
+                    while (!_cacheValid[(int)CacheSlot.MenuButtonWidth])
                     {
-                        _menuButtonWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMENUSIZE));
                         _cacheValid[(int)CacheSlot.MenuButtonWidth] = true;
+                        _menuButtonWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMENUSIZE));
                     }
                 }
 
@@ -3108,10 +3226,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuButtonHeight])
+                    while (!_cacheValid[(int)CacheSlot.MenuButtonHeight])
                     {
-                        _menuButtonHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMENUSIZE));
                         _cacheValid[(int)CacheSlot.MenuButtonHeight] = true;
+                        _menuButtonHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMENUSIZE));
                     }
                 }
 
@@ -3137,10 +3255,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimumWindowWidth])
+                    while (!_cacheValid[(int)CacheSlot.MinimumWindowWidth])
                     {
-                        _minimumWindowWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMIN));
                         _cacheValid[(int)CacheSlot.MinimumWindowWidth] = true;
+                        _minimumWindowWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMIN));
                     }
                 }
 
@@ -3166,10 +3284,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimumWindowHeight])
+                    while (!_cacheValid[(int)CacheSlot.MinimumWindowHeight])
                     {
-                        _minimumWindowHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMIN));
                         _cacheValid[(int)CacheSlot.MinimumWindowHeight] = true;
+                        _minimumWindowHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMIN));
                     }
                 }
 
@@ -3195,10 +3313,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimizedWindowWidth])
+                    while (!_cacheValid[(int)CacheSlot.MinimizedWindowWidth])
                     {
-                        _minimizedWindowWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMINIMIZED));
                         _cacheValid[(int)CacheSlot.MinimizedWindowWidth] = true;
+                        _minimizedWindowWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMINIMIZED));
                     }
                 }
 
@@ -3224,10 +3342,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimizedWindowHeight])
+                    while (!_cacheValid[(int)CacheSlot.MinimizedWindowHeight])
                     {
-                        _minimizedWindowHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMINIMIZED));
                         _cacheValid[(int)CacheSlot.MinimizedWindowHeight] = true;
+                        _minimizedWindowHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMINIMIZED));
                     }
                 }
 
@@ -3249,10 +3367,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimizedGridWidth])
+                    while (!_cacheValid[(int)CacheSlot.MinimizedGridWidth])
                     {
-                        _minimizedGridWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMINSPACING));
                         _cacheValid[(int)CacheSlot.MinimizedGridWidth] = true;
+                        _minimizedGridWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMINSPACING));
                     }
                 }
 
@@ -3274,10 +3392,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimizedGridHeight])
+                    while (!_cacheValid[(int)CacheSlot.MinimizedGridHeight])
                     {
-                        _minimizedGridHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMINSPACING));
                         _cacheValid[(int)CacheSlot.MinimizedGridHeight] = true;
+                        _minimizedGridHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMINSPACING));
                     }
                 }
 
@@ -3303,10 +3421,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimumWindowTrackWidth])
+                    while (!_cacheValid[(int)CacheSlot.MinimumWindowTrackWidth])
                     {
-                        _minimumWindowTrackWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMINTRACK));
                         _cacheValid[(int)CacheSlot.MinimumWindowTrackWidth] = true;
+                        _minimumWindowTrackWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXMINTRACK));
                     }
                 }
 
@@ -3332,10 +3450,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MinimumWindowTrackHeight])
+                    while (!_cacheValid[(int)CacheSlot.MinimumWindowTrackHeight])
                     {
-                        _minimumWindowTrackHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMINTRACK));
                         _cacheValid[(int)CacheSlot.MinimumWindowTrackHeight] = true;
+                        _minimumWindowTrackHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMINTRACK));
                     }
                 }
 
@@ -3357,10 +3475,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.PrimaryScreenWidth])
+                    while (!_cacheValid[(int)CacheSlot.PrimaryScreenWidth])
                     {
-                        _primaryScreenWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSCREEN));
                         _cacheValid[(int)CacheSlot.PrimaryScreenWidth] = true;
+                        _primaryScreenWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSCREEN));
                     }
                 }
 
@@ -3383,10 +3501,10 @@ namespace System.Windows
 
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.PrimaryScreenHeight])
+                    while(!_cacheValid[(int)CacheSlot.PrimaryScreenHeight])
                     {
-                        _primaryScreenHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSCREEN));
                         _cacheValid[(int)CacheSlot.PrimaryScreenHeight] = true;
+                        _primaryScreenHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSCREEN));
                     }
                 }
 
@@ -3412,10 +3530,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WindowCaptionButtonWidth])
+                    while (!_cacheValid[(int)CacheSlot.WindowCaptionButtonWidth])
                     {
-                        _windowCaptionButtonWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSIZE));
                         _cacheValid[(int)CacheSlot.WindowCaptionButtonWidth] = true;
+                        _windowCaptionButtonWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSIZE));
                     }
                 }
 
@@ -3437,10 +3555,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WindowCaptionButtonHeight])
+                    while (!_cacheValid[(int)CacheSlot.WindowCaptionButtonHeight])
                     {
-                        _windowCaptionButtonHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSIZE));
                         _cacheValid[(int)CacheSlot.WindowCaptionButtonHeight] = true;
+                        _windowCaptionButtonHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSIZE));
                     }
                 }
 
@@ -3463,10 +3581,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ResizeFrameHorizontalBorderHeight])
+                    while (!_cacheValid[(int)CacheSlot.ResizeFrameHorizontalBorderHeight])
                     {
-                        _resizeFrameHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSIZEFRAME));
                         _cacheValid[(int)CacheSlot.ResizeFrameHorizontalBorderHeight] = true;
+                        _resizeFrameHorizontalBorderHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSIZEFRAME));
                     }
                 }
 
@@ -3488,10 +3606,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ResizeFrameVerticalBorderWidth])
+                    while (!_cacheValid[(int)CacheSlot.ResizeFrameVerticalBorderWidth])
                     {
-                        _resizeFrameVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSIZEFRAME));
                         _cacheValid[(int)CacheSlot.ResizeFrameVerticalBorderWidth] = true;
+                        _resizeFrameVerticalBorderWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSIZEFRAME));
                     }
                 }
 
@@ -3513,10 +3631,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.SmallIconWidth])
+                    while (!_cacheValid[(int)CacheSlot.SmallIconWidth])
                     {
-                        _smallIconWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSMICON));
                         _cacheValid[(int)CacheSlot.SmallIconWidth] = true;
+                        _smallIconWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSMICON));
                     }
                 }
 
@@ -3538,10 +3656,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.SmallIconHeight])
+                    while (!_cacheValid[(int)CacheSlot.SmallIconHeight])
                     {
-                        _smallIconHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSMICON));
                         _cacheValid[(int)CacheSlot.SmallIconHeight] = true;
+                        _smallIconHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSMICON));
                     }
                 }
 
@@ -3563,10 +3681,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.SmallWindowCaptionButtonWidth])
+                    while (!_cacheValid[(int)CacheSlot.SmallWindowCaptionButtonWidth])
                     {
-                        _smallWindowCaptionButtonWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSMSIZE));
                         _cacheValid[(int)CacheSlot.SmallWindowCaptionButtonWidth] = true;
+                        _smallWindowCaptionButtonWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXSMSIZE));
                     }
                 }
 
@@ -3588,10 +3706,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.SmallWindowCaptionButtonHeight])
+                    while (!_cacheValid[(int)CacheSlot.SmallWindowCaptionButtonHeight])
                     {
-                        _smallWindowCaptionButtonHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSMSIZE));
                         _cacheValid[(int)CacheSlot.SmallWindowCaptionButtonHeight] = true;
+                        _smallWindowCaptionButtonHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYSMSIZE));
                     }
                 }
 
@@ -3617,10 +3735,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.VirtualScreenWidth])
+                    while (!_cacheValid[(int)CacheSlot.VirtualScreenWidth])
                     {
-                        _virtualScreenWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXVIRTUALSCREEN));
                         _cacheValid[(int)CacheSlot.VirtualScreenWidth] = true;
+                        _virtualScreenWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXVIRTUALSCREEN));
                     }
                 }
 
@@ -3646,10 +3764,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.VirtualScreenHeight])
+                    while (!_cacheValid[(int)CacheSlot.VirtualScreenHeight])
                     {
-                        _virtualScreenHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYVIRTUALSCREEN));
                         _cacheValid[(int)CacheSlot.VirtualScreenHeight] = true;
+                        _virtualScreenHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYVIRTUALSCREEN));
                     }
                 }
 
@@ -3672,10 +3790,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.VerticalScrollBarWidth])
+                    while (!_cacheValid[(int)CacheSlot.VerticalScrollBarWidth])
                     {
-                        _verticalScrollBarWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXVSCROLL));
                         _cacheValid[(int)CacheSlot.VerticalScrollBarWidth] = true;
+                        _verticalScrollBarWidth = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CXVSCROLL));
                     }
                 }
 
@@ -3697,10 +3815,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.VerticalScrollBarButtonHeight])
+                    while (!_cacheValid[(int)CacheSlot.VerticalScrollBarButtonHeight])
                     {
-                        _verticalScrollBarButtonHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYVSCROLL));
                         _cacheValid[(int)CacheSlot.VerticalScrollBarButtonHeight] = true;
+                        _verticalScrollBarButtonHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYVSCROLL));
                     }
                 }
 
@@ -3726,10 +3844,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WindowCaptionHeight])
+                    while (!_cacheValid[(int)CacheSlot.WindowCaptionHeight])
                     {
-                        _windowCaptionHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYCAPTION));
                         _cacheValid[(int)CacheSlot.WindowCaptionHeight] = true;
+                        _windowCaptionHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYCAPTION));
                     }
                 }
 
@@ -3756,10 +3874,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.KanjiWindowHeight])
+                    while (!_cacheValid[(int)CacheSlot.KanjiWindowHeight])
                     {
-                        _kanjiWindowHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYKANJIWINDOW));
                         _cacheValid[(int)CacheSlot.KanjiWindowHeight] = true;
+                        _kanjiWindowHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYKANJIWINDOW));
                     }
                 }
 
@@ -3785,10 +3903,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.MenuBarHeight])
+                    while (!_cacheValid[(int)CacheSlot.MenuBarHeight])
                     {
-                        _menuBarHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMENU));
                         _cacheValid[(int)CacheSlot.MenuBarHeight] = true;
+                        _menuBarHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYMENU));
                     }
                 }
 
@@ -3810,10 +3928,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.VerticalScrollBarThumbHeight])
+                    while (!_cacheValid[(int)CacheSlot.VerticalScrollBarThumbHeight])
                     {
-                        _verticalScrollBarThumbHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYVTHUMB));
                         _cacheValid[(int)CacheSlot.VerticalScrollBarThumbHeight] = true;
+                        _verticalScrollBarThumbHeight = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.CYVTHUMB));
                     }
                 }
 
@@ -3839,10 +3957,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsImmEnabled])
+                    while (!_cacheValid[(int)CacheSlot.IsImmEnabled])
                     {
-                        _isImmEnabled = UnsafeNativeMethods.GetSystemMetrics(SM.IMMENABLED) != 0;
                         _cacheValid[(int)CacheSlot.IsImmEnabled] = true;
+                        _isImmEnabled = UnsafeNativeMethods.GetSystemMetrics(SM.IMMENABLED) != 0;
                     }
                 }
 
@@ -3869,10 +3987,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsMediaCenter])
+                    while (!_cacheValid[(int)CacheSlot.IsMediaCenter])
                     {
-                        _isMediaCenter = UnsafeNativeMethods.GetSystemMetrics(SM.MEDIACENTER) != 0;
                         _cacheValid[(int)CacheSlot.IsMediaCenter] = true;
+                        _isMediaCenter = UnsafeNativeMethods.GetSystemMetrics(SM.MEDIACENTER) != 0;
                     }
                 }
 
@@ -3894,10 +4012,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsMenuDropRightAligned])
+                    while (!_cacheValid[(int)CacheSlot.IsMenuDropRightAligned])
                     {
-                        _isMenuDropRightAligned = UnsafeNativeMethods.GetSystemMetrics(SM.MENUDROPALIGNMENT) != 0;
                         _cacheValid[(int)CacheSlot.IsMenuDropRightAligned] = true;
+                        _isMenuDropRightAligned = UnsafeNativeMethods.GetSystemMetrics(SM.MENUDROPALIGNMENT) != 0;
                     }
                 }
 
@@ -3923,10 +4041,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsMiddleEastEnabled])
+                    while (!_cacheValid[(int)CacheSlot.IsMiddleEastEnabled])
                     {
-                        _isMiddleEastEnabled = UnsafeNativeMethods.GetSystemMetrics(SM.MIDEASTENABLED) != 0;
                         _cacheValid[(int)CacheSlot.IsMiddleEastEnabled] = true;
+                        _isMiddleEastEnabled = UnsafeNativeMethods.GetSystemMetrics(SM.MIDEASTENABLED) != 0;
                     }
                 }
 
@@ -3948,10 +4066,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsMousePresent])
+                    while (!_cacheValid[(int)CacheSlot.IsMousePresent])
                     {
-                        _isMousePresent = UnsafeNativeMethods.GetSystemMetrics(SM.MOUSEPRESENT) != 0;
                         _cacheValid[(int)CacheSlot.IsMousePresent] = true;
+                        _isMousePresent = UnsafeNativeMethods.GetSystemMetrics(SM.MOUSEPRESENT) != 0;
                     }
                 }
 
@@ -3973,10 +4091,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsMouseWheelPresent])
+                    while (!_cacheValid[(int)CacheSlot.IsMouseWheelPresent])
                     {
-                        _isMouseWheelPresent = UnsafeNativeMethods.GetSystemMetrics(SM.MOUSEWHEELPRESENT) != 0;
                         _cacheValid[(int)CacheSlot.IsMouseWheelPresent] = true;
+                        _isMouseWheelPresent = UnsafeNativeMethods.GetSystemMetrics(SM.MOUSEWHEELPRESENT) != 0;
                     }
                 }
 
@@ -4002,10 +4120,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsPenWindows])
+                    while (!_cacheValid[(int)CacheSlot.IsPenWindows])
                     {
-                        _isPenWindows = UnsafeNativeMethods.GetSystemMetrics(SM.PENWINDOWS) != 0;
                         _cacheValid[(int)CacheSlot.IsPenWindows] = true;
+                        _isPenWindows = UnsafeNativeMethods.GetSystemMetrics(SM.PENWINDOWS) != 0;
                     }
                 }
 
@@ -4031,10 +4149,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsRemotelyControlled])
+                    while (!_cacheValid[(int)CacheSlot.IsRemotelyControlled])
                     {
-                        _isRemotelyControlled = UnsafeNativeMethods.GetSystemMetrics(SM.REMOTECONTROL) != 0;
                         _cacheValid[(int)CacheSlot.IsRemotelyControlled] = true;
+                        _isRemotelyControlled = UnsafeNativeMethods.GetSystemMetrics(SM.REMOTECONTROL) != 0;
                     }
                 }
 
@@ -4060,10 +4178,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsRemoteSession])
+                    while (!_cacheValid[(int)CacheSlot.IsRemoteSession])
                     {
-                        _isRemoteSession = UnsafeNativeMethods.GetSystemMetrics(SM.REMOTESESSION) != 0;
                         _cacheValid[(int)CacheSlot.IsRemoteSession] = true;
+                        _isRemoteSession = UnsafeNativeMethods.GetSystemMetrics(SM.REMOTESESSION) != 0;
                     }
                 }
 
@@ -4089,10 +4207,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.ShowSounds])
+                    while (!_cacheValid[(int)CacheSlot.ShowSounds])
                     {
-                        _showSounds = UnsafeNativeMethods.GetSystemMetrics(SM.SHOWSOUNDS) != 0;
                         _cacheValid[(int)CacheSlot.ShowSounds] = true;
+                        _showSounds = UnsafeNativeMethods.GetSystemMetrics(SM.SHOWSOUNDS) != 0;
                     }
                 }
 
@@ -4118,10 +4236,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsSlowMachine])
+                    while (!_cacheValid[(int)CacheSlot.IsSlowMachine])
                     {
-                        _isSlowMachine = UnsafeNativeMethods.GetSystemMetrics(SM.SLOWMACHINE) != 0;
                         _cacheValid[(int)CacheSlot.IsSlowMachine] = true;
+                        _isSlowMachine = UnsafeNativeMethods.GetSystemMetrics(SM.SLOWMACHINE) != 0;
                     }
                 }
 
@@ -4147,10 +4265,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.SwapButtons])
+                    while (!_cacheValid[(int)CacheSlot.SwapButtons])
                     {
-                        _swapButtons = UnsafeNativeMethods.GetSystemMetrics(SM.SWAPBUTTON) != 0;
                         _cacheValid[(int)CacheSlot.SwapButtons] = true;
+                        _swapButtons = UnsafeNativeMethods.GetSystemMetrics(SM.SWAPBUTTON) != 0;
                     }
                 }
 
@@ -4176,10 +4294,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsTabletPC])
+                    while (!_cacheValid[(int)CacheSlot.IsTabletPC])
                     {
-                        _isTabletPC = UnsafeNativeMethods.GetSystemMetrics(SM.TABLETPC) != 0;
                         _cacheValid[(int)CacheSlot.IsTabletPC] = true;
+                        _isTabletPC = UnsafeNativeMethods.GetSystemMetrics(SM.TABLETPC) != 0;
                     }
                 }
 
@@ -4205,10 +4323,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.VirtualScreenLeft])
+                    while (!_cacheValid[(int)CacheSlot.VirtualScreenLeft])
                     {
-                        _virtualScreenLeft = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.XVIRTUALSCREEN));
                         _cacheValid[(int)CacheSlot.VirtualScreenLeft] = true;
+                        _virtualScreenLeft = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.XVIRTUALSCREEN));
                     }
                 }
 
@@ -4234,10 +4352,10 @@ namespace System.Windows
                 SecurityHelper.DemandUnmanagedCode();
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.VirtualScreenTop])
+                    while (!_cacheValid[(int)CacheSlot.VirtualScreenTop])
                     {
-                        _virtualScreenTop = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.YVIRTUALSCREEN));
                         _cacheValid[(int)CacheSlot.VirtualScreenTop] = true;
+                        _virtualScreenTop = SystemParameters.ConvertPixel(UnsafeNativeMethods.GetSystemMetrics(SM.YVIRTUALSCREEN));
                     }
                 }
 
@@ -5426,16 +5544,18 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.PowerLineStatus])
+                    while (!_cacheValid[(int)CacheSlot.PowerLineStatus])
                     {
+                        _cacheValid[(int)CacheSlot.PowerLineStatus] = true;
+
                         NativeMethods.SYSTEM_POWER_STATUS status = new NativeMethods.SYSTEM_POWER_STATUS();
                         if (UnsafeNativeMethods.GetSystemPowerStatus(ref status))
                         {
                             _powerLineStatus = (PowerLineStatus)status.ACLineStatus;
-                            _cacheValid[(int)CacheSlot.PowerLineStatus] = true;
                         }
                         else
                         {
+                            _cacheValid[(int)CacheSlot.PowerLineStatus] = false;
                             throw new Win32Exception();
                         }
                     }
@@ -5932,7 +6052,7 @@ namespace System.Windows
         }
 
         // Several properties exposed here are not true system parameters but emerge
-        // as logical properties when the system theme changes. 
+        // as logical properties when the system theme changes.
         internal static void InvalidateDerivedThemeRelatedProperties()
         {
             InvalidateProperty((int)CacheSlot.UxThemeName, "UxThemeName");
@@ -5957,7 +6077,7 @@ namespace System.Windows
         /// <summary>
         ///     Whether DWM composition is turned on.
         ///     May change when WM.DWMNCRENDERINGCHANGED or WM.DWMCOMPOSITIONCHANGED is received.
-        ///     
+        ///
         ///     It turns out there may be some lag between someone asking this
         ///     and the window getting updated.  It's not too expensive, just always do the check
         /// </summary>
@@ -5971,10 +6091,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.IsGlassEnabled])
+                    while (!_cacheValid[(int)CacheSlot.IsGlassEnabled])
                     {
-                        _isGlassEnabled = Standard.NativeMethods.DwmIsCompositionEnabled();
                         _cacheValid[(int)CacheSlot.IsGlassEnabled] = true;
+                        _isGlassEnabled = Standard.NativeMethods.DwmIsCompositionEnabled();
                     }
                 }
 
@@ -5997,8 +6117,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.UxThemeName])
+                    while (!_cacheValid[(int)CacheSlot.UxThemeName])
                     {
+                        _cacheValid[(int)CacheSlot.UxThemeName] = true;
+
                         if (!Standard.NativeMethods.IsThemeActive())
                         {
                             _uxThemeName = "Classic";
@@ -6012,8 +6134,6 @@ namespace System.Windows
                             Standard.NativeMethods.GetCurrentThemeName(out name, out color, out size);
                             _uxThemeName = System.IO.Path.GetFileNameWithoutExtension(name);
                         }
-
-                        _cacheValid[(int)CacheSlot.UxThemeName] = true;
                     }
                 }
 
@@ -6036,8 +6156,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.UxThemeColor])
+                    while (!_cacheValid[(int)CacheSlot.UxThemeColor])
                     {
+                        _cacheValid[(int)CacheSlot.UxThemeColor] = true;
+
                         if (!Standard.NativeMethods.IsThemeActive())
                         {
                             _uxThemeColor = "";
@@ -6051,8 +6173,6 @@ namespace System.Windows
                             Standard.NativeMethods.GetCurrentThemeName(out name, out color, out size);
                             _uxThemeColor = color;
                         }
-
-                        _cacheValid[(int)CacheSlot.UxThemeColor] = true;
                     }
                 }
 
@@ -6075,8 +6195,10 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WindowCornerRadius])
+                    while (!_cacheValid[(int)CacheSlot.WindowCornerRadius])
                     {
+                        _cacheValid[(int)CacheSlot.WindowCornerRadius] = true;
+
                         Standard.Assert.IsNeitherNullNorEmpty(UxThemeName);
 
                         // These radii are approximate.  The way WPF does rounding is different than how
@@ -6115,7 +6237,6 @@ namespace System.Windows
                         }
 
                         _windowCornerRadius = cornerRadius;
-                        _cacheValid[(int)CacheSlot.WindowCornerRadius] = true;
                     }
                 }
 
@@ -6136,15 +6257,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WindowGlassColor])
+                    while (!_cacheValid[(int)CacheSlot.WindowGlassColor])
                     {
+                        _cacheValid[(int)CacheSlot.WindowGlassColor] = true;
+
                         bool isOpaque;
                         uint color;
                         Standard.NativeMethods.DwmGetColorizationColor(out color, out isOpaque);
                         color |= isOpaque ? 0xFF000000 : 0;
 
                         _windowGlassColor = Standard.Utility.ColorFromArgbDword(color);
-                        _cacheValid[(int)CacheSlot.WindowGlassColor] = true;
                     }
                 }
 
@@ -6165,13 +6287,14 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WindowGlassBrush])
+                    while (!_cacheValid[(int)CacheSlot.WindowGlassBrush])
                     {
+                        _cacheValid[(int)CacheSlot.WindowGlassBrush] = true;
+
                         var glassBrush = new SolidColorBrush(WindowGlassColor);
                         glassBrush.Freeze();
 
                         _windowGlassBrush = glassBrush;
-                        _cacheValid[(int)CacheSlot.WindowGlassBrush] = true;
                     }
                 }
 
@@ -6192,14 +6315,15 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WindowResizeBorderThickness])
+                    while (!_cacheValid[(int)CacheSlot.WindowResizeBorderThickness])
                     {
+                        _cacheValid[(int)CacheSlot.WindowResizeBorderThickness] = true;
+
                         Size frameSize = new Size(Standard.NativeMethods.GetSystemMetrics(Standard.SM.CXSIZEFRAME),
                                                   Standard.NativeMethods.GetSystemMetrics(Standard.SM.CYSIZEFRAME));
                         Size frameSizeInDips = Standard.DpiHelper.DeviceSizeToLogical(frameSize, SystemParameters.DpiX / 96.0, SystemParameters.Dpi / 96.0);
 
                         _windowResizeBorderThickness = new Thickness(frameSizeInDips.Width, frameSizeInDips.Height, frameSizeInDips.Width, frameSizeInDips.Height);
-                        _cacheValid[(int)CacheSlot.WindowResizeBorderThickness] = true;
                     }
                 }
 
@@ -6220,15 +6344,16 @@ namespace System.Windows
             {
                 lock (_cacheValid)
                 {
-                    if (!_cacheValid[(int)CacheSlot.WindowNonClientFrameThickness])
+                    while (!_cacheValid[(int)CacheSlot.WindowNonClientFrameThickness])
                     {
+                        _cacheValid[(int)CacheSlot.WindowNonClientFrameThickness] = true;
+
                         Size frameSize = new Size(Standard.NativeMethods.GetSystemMetrics(Standard.SM.CXSIZEFRAME),
                                                   Standard.NativeMethods.GetSystemMetrics(Standard.SM.CYSIZEFRAME));
                         Size frameSizeInDips = Standard.DpiHelper.DeviceSizeToLogical(frameSize, SystemParameters.DpiX / 96.0, SystemParameters.Dpi / 96.0);
                         int captionHeight = Standard.NativeMethods.GetSystemMetrics(Standard.SM.CYCAPTION);
                         double captionHeightInDips = Standard.DpiHelper.DevicePixelsToLogical(new Point(0, captionHeight), SystemParameters.DpiX / 96.0, SystemParameters.Dpi / 96.0).Y;
                         _windowNonClientFrameThickness = new Thickness(frameSizeInDips.Width, frameSizeInDips.Height + captionHeightInDips, frameSizeInDips.Width, frameSizeInDips.Height);
-                        _cacheValid[(int)CacheSlot.WindowNonClientFrameThickness] = true;
                     }
                 }
 

@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{ab107739-db44-4e26-891e-3cb12ec52fe8}</ProjectGuid>
+    <ProjectGuid>{e3f4bb6b-ba05-46a9-b3a0-db4fd00a92f1}</ProjectGuid>
     <OutputPath>.</OutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Windows.Forms</AssemblyName>
@@ -20,35 +20,35 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\clr\src\bcl\mscorlib.csproj">
-      <Project>{20f34c38-8c60-44e7-b703-0e341d274957}</Project>
+      <Project>{43e44db7-dc97-46cb-b868-751d11c60bf1}</Project>
       <Name>mscorlib</Name>
     </ProjectReference>
     <ProjectReference Include="System.csproj">
-      <Project>{85716da4-9fb2-4f44-9c4d-b7431fdf1b20}</Project>
+      <Project>{d218394f-a89e-455a-8c59-5e3554100e4a}</Project>
       <Name>System</Name>
     </ProjectReference>
     <ProjectReference Include="Configuration\System.Configuration.csproj">
-      <Project>{a4d7a44f-817d-4fad-ba6a-076580aadfbe}</Project>
+      <Project>{24728477-162e-4c13-9c17-6be2dc1fd2bc}</Project>
       <Name>System.Configuration</Name>
     </ProjectReference>
     <ProjectReference Include="Core\System.Core.csproj">
-      <Project>{1d8f39aa-9297-49e4-8f18-cea8f165d7c4}</Project>
+      <Project>{e7e62ebb-b829-4b6e-9ec0-4ca0c96fe4ac}</Project>
       <Name>System.Core</Name>
     </ProjectReference>
     <ProjectReference Include="System.Drawing.csproj">
-      <Project>{712ac13c-4586-461b-9626-7c107a6981eb}</Project>
+      <Project>{2ccdab8f-9a51-4660-abb5-b42b005b5024}</Project>
       <Name>System.Drawing</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\clr\src\managedlibraries\remoting\System.Runtime.Remoting.csproj">
-      <Project>{cb8f1986-8e4c-4150-abb1-7c47ebd175e1}</Project>
+      <Project>{9fbded74-28f9-4c5e-be2e-05f62341f9d4}</Project>
       <Name>System.Runtime.Remoting</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\clr\src\managedlibraries\security\System.Security.csproj">
-      <Project>{6cf2ea71-7eb3-48ae-8938-3edf77bb9412}</Project>
+      <Project>{05d4e9cd-3a3a-461b-a895-b39e85f1969a}</Project>
       <Name>System.Security</Name>
     </ProjectReference>
     <ProjectReference Include="Xml\System.Xml.csproj">
-      <Project>{6f992f82-1c90-4388-ab60-15c653aeeca5}</Project>
+      <Project>{23c706b3-6f70-42a4-9476-ee1b30c0cca3}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>
   </ItemGroup>

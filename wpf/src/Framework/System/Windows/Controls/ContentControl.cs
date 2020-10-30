@@ -14,6 +14,7 @@ using MS.Internal.Controls;
 using MS.Internal.Data;
 using MS.Internal.KnownBoxes;
 using MS.Internal.PresentationFramework;
+using MS.Internal.Telemetry.PresentationFramework;
 using System.Text;
 
 namespace System.Windows.Controls
@@ -45,6 +46,8 @@ namespace System.Windows.Controls
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(ContentControl), new FrameworkPropertyMetadata(typeof(ContentControl)));
             _dType = DependencyObjectType.FromSystemTypeInternal(typeof(ContentControl));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.ContentControl);
         }
 
         #endregion

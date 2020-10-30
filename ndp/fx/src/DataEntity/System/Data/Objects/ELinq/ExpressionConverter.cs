@@ -1069,8 +1069,8 @@ namespace System.Data.Objects.ELinq
         /// </summary>
         private static void VerifyTypeSupportedForComparison(Type clrType, TypeUsage edmType, Stack<EdmMember> memberPath)
         {
-            // NOTE: due to 
-
+            // NOTE: due to bug in null handling for complex types, complex types are currently not supported
+            // for comparisons (see SQL BU 543956)
             switch (edmType.EdmType.BuiltInTypeKind)
             {
                 case BuiltInTypeKind.PrimitiveType:

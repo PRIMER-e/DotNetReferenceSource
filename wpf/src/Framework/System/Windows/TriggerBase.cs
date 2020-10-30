@@ -245,8 +245,8 @@ namespace System.Windows
 
                     // Check for obvious cycles.  Don't test for cycles if we have
                     // something other than self as the target, since this means that
-                    // the templatedParent is presumably not the target.  See windows 
-
+                    // the templatedParent is presumably not the target.  See windows bug
+                    // 984916 for details.
                     if (source == dependent && propertyValue.ChildName == StyleHelper.SelfName)
                     {
                         throw new InvalidOperationException(SR.Get(SRID.PropertyTriggerCycleDetected, source.Name));

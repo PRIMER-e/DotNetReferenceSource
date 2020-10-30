@@ -53,6 +53,15 @@ namespace System.Windows.Forms {
         public ToolStripDropDownButton(string text, Image image, params ToolStripItem[] dropDownItems):base(text,image,dropDownItems) {
             Initialize();            
         }
+
+        protected override AccessibleObject CreateAccessibilityInstance() {
+            if (AccessibilityImprovements.Level1) {
+                return new ToolStripDropDownButtonAccessibleObject(this);
+            }
+            else {
+                return base.CreateAccessibilityInstance();
+            }            
+        }
  
         [DefaultValue(true)]
         public new bool AutoToolTip {
@@ -170,7 +179,13 @@ namespace System.Windows.Forms {
                     ToolStripDropDownButton.ToolStripDropDownButtonInternalLayout layout = InternalLayout as ToolStripDropDownButtonInternalLayout;
                     Rectangle dropDownArrowRect = (layout != null) ? layout.DropDownArrowRect :Rectangle.Empty;
 
-                    Color arrowColor =  Enabled ? SystemColors.ControlText : SystemColors.ControlDark;
+                    Color arrowColor;
+                    if (Selected && !Pressed && AccessibilityImprovements.Level2 && SystemInformation.HighContrast) {
+                        arrowColor = Enabled ? SystemColors.HighlightText : SystemColors.ControlDark;
+                    }
+                    else {
+                        arrowColor =  Enabled ? SystemColors.ControlText : SystemColors.ControlDark;
+                    }
                     renderer.DrawArrow(new ToolStripArrowRenderEventArgs(g, this,dropDownArrowRect, arrowColor, ArrowDirection.Down)); 
                 }
             }
@@ -191,28 +206,48 @@ namespace System.Windows.Forms {
              return false;
          }
 
+        /// <devdoc>
+        /// An implementation of Accessibleobject for use with ToolStripDropDownButton        
+        /// </devdoc>
+        [System.Runtime.InteropServices.ComVisible(true)]
+        internal class ToolStripDropDownButtonAccessibleObject : ToolStripDropDownItemAccessibleObject {
+            private ToolStripDropDownButton ownerItem = null;
+
+            public ToolStripDropDownButtonAccessibleObject(ToolStripDropDownButton ownerItem)
+                : base(ownerItem) {
+                this.ownerItem = ownerItem;
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_ButtonControlTypeId;
+                }
+                else {
+                    return base.GetPropertyValue(propertyID);
+                }
+            }
+        }
 
         internal class ToolStripDropDownButtonInternalLayout : ToolStripItemInternalLayout {
             private ToolStripDropDownButton    ownerItem;
-            private static bool                isScalingInitialized = false;
             private static readonly Size       dropDownArrowSizeUnscaled = new Size(5, 3);
             private static Size                dropDownArrowSize = dropDownArrowSizeUnscaled;
             private const int                  DROP_DOWN_ARROW_PADDING = 2;
             private static Padding             dropDownArrowPadding = new Padding(DROP_DOWN_ARROW_PADDING);
+            private Padding                    scaledDropDownArrowPadding = dropDownArrowPadding;
             private Rectangle                  dropDownArrowRect    = Rectangle.Empty;
             
             public ToolStripDropDownButtonInternalLayout(ToolStripDropDownButton ownerItem) : base(ownerItem) {
-                if (!isScalingInitialized) {
-                    if (DpiHelper.IsScalingRequired) {
-                        // these 2 values are used to calculate size of the clickable drop down button
-                        // on the right of the image/text
-                        dropDownArrowSize = DpiHelper.LogicalToDeviceUnits(dropDownArrowSizeUnscaled);
-                        dropDownArrowPadding = new Padding(DpiHelper.LogicalToDeviceUnitsX(DROP_DOWN_ARROW_PADDING),
-                                                           DpiHelper.LogicalToDeviceUnitsY(DROP_DOWN_ARROW_PADDING),
-                                                           DpiHelper.LogicalToDeviceUnitsX(DROP_DOWN_ARROW_PADDING),
-                                                           DpiHelper.LogicalToDeviceUnitsY(DROP_DOWN_ARROW_PADDING));
-                    }
-                    isScalingInitialized = true;
+                if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements)
+                {
+                    dropDownArrowSize = DpiHelper.LogicalToDeviceUnits(dropDownArrowSizeUnscaled, ownerItem.DeviceDpi);
+                    scaledDropDownArrowPadding = DpiHelper.LogicalToDeviceUnits(dropDownArrowPadding, ownerItem.DeviceDpi);
+                }
+                else if (DpiHelper.IsScalingRequired) {
+                    // these 2 values are used to calculate size of the clickable drop down button
+                    // on the right of the image/text
+                    dropDownArrowSize = DpiHelper.LogicalToDeviceUnits(dropDownArrowSizeUnscaled);
+                    scaledDropDownArrowPadding = DpiHelper.LogicalToDeviceUnits(dropDownArrowPadding);
                 }
                 this.ownerItem = ownerItem;    
             }
@@ -222,10 +257,10 @@ namespace System.Windows.Forms {
                 Size preferredSize = base.GetPreferredSize(constrainingSize);
                 if (ownerItem.ShowDropDownArrow) {
                     if (ownerItem.TextDirection == ToolStripTextDirection.Horizontal) {
-                        preferredSize.Width += DropDownArrowRect.Width + dropDownArrowPadding.Horizontal;
+                        preferredSize.Width += DropDownArrowRect.Width + scaledDropDownArrowPadding.Horizontal;
                     }
                     else {
-                        preferredSize.Height += DropDownArrowRect.Height + dropDownArrowPadding.Vertical;
+                        preferredSize.Height += DropDownArrowRect.Height + scaledDropDownArrowPadding.Vertical;
                     }
                 }
                 return preferredSize;
@@ -240,14 +275,14 @@ namespace System.Windows.Forms {
 
                         // We're rendering horizontal....  make sure to take care of RTL issues.
                         
-                        int widthOfDropDown = dropDownArrowSize.Width + dropDownArrowPadding.Horizontal;
+                        int widthOfDropDown = dropDownArrowSize.Width + scaledDropDownArrowPadding.Horizontal;
                         options.client.Width -= widthOfDropDown;
 
                         if (ownerItem.RightToLeft == RightToLeft.Yes) {
 
                             // if RightToLeft.Yes: [ v | rest of drop down button ]
                             options.client.Offset(widthOfDropDown, 0);
-                            dropDownArrowRect = new Rectangle(dropDownArrowPadding.Left,0, dropDownArrowSize.Width, ownerItem.Bounds.Height);
+                            dropDownArrowRect = new Rectangle(scaledDropDownArrowPadding.Left,0, dropDownArrowSize.Width, ownerItem.Bounds.Height);
                         }
                         else {
                            // if RightToLeft.No [ rest of drop down button | v ]
@@ -257,12 +292,12 @@ namespace System.Windows.Forms {
                     }
                     else {
                         // else we're rendering vertically. 
-                        int heightOfDropDown = dropDownArrowSize.Height + dropDownArrowPadding.Vertical;
+                        int heightOfDropDown = dropDownArrowSize.Height + scaledDropDownArrowPadding.Vertical;
 
                         options.client.Height -= heightOfDropDown;
                         
                         //  [ rest of button / v]
-                        dropDownArrowRect = new Rectangle(0,options.client.Bottom + dropDownArrowPadding.Top, ownerItem.Bounds.Width-1, dropDownArrowSize.Height);
+                        dropDownArrowRect = new Rectangle(0,options.client.Bottom + scaledDropDownArrowPadding.Top, ownerItem.Bounds.Width-1, dropDownArrowSize.Height);
                        
                     }
 

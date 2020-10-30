@@ -319,7 +319,7 @@ void SourceFile::RegisterFileSubType()
 
         // We always pass 0 for the ClassID (not the line number for the class) because the Designer
         // uses this information as a ClassID, so it should be changing as code moves around. ) indicates the
-        // first class in the file. (see 
+        // first class in the file. (see bug 160102)
         pMsg = new RegisterDesignViewAttributeMessage(this, 0, m_pstrLastSubTypeCategory);
         GetCompilerSharedState()->GetMessages()->RegisterDesignViewAttribute(pMsg);
     }
@@ -2656,9 +2656,9 @@ long SourceFile::GetMappedLineInfo(
         // Do a binary search on the array ( the range pairs in the array are assumed to be in sorted order )
         // VSWhidbey#56614,Microsoft: Changed the while loop from true to UpperBound >= LowerBound
         //    This is doing a binary search and the code below does not check that LowerBound is less
-        //    than UpperBound.  This 
-
-
+        //    than UpperBound.  This bug ran into a situation where LowerBound was greater than UpperBound
+        //    and thus we were accessing the array with a rather large index.  On x86 we have been "lucky"
+        //    and have been able to access the memory location.  But, on 64-bit we explode with an AV.
         while ( UpperBound >= LowerBound )
         {
             unsigned TryThisIdx = LowerBound + ( UpperBound - LowerBound ) / 2;

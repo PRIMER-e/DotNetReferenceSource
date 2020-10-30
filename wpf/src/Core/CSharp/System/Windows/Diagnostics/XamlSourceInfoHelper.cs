@@ -49,35 +49,24 @@ namespace System.Windows.Diagnostics
             get { return (s_sourceInfoTable != null); }
         }
 
-        [SecuritySafeCritical]
         static XamlSourceInfoHelper()
         {
-            // Check environment variable
-            const string environmentVariable = "ENABLE_XAML_DIAGNOSTICS_SOURCE_INFO";
-            EnvironmentPermission environmentPermission = new EnvironmentPermission(EnvironmentPermissionAccess.Read, environmentVariable);
-            environmentPermission.Assert();
-            try
-            {
-                InitializeEnableXamlSourceInfo(Environment.GetEnvironmentVariable(environmentVariable));
-            }
-            finally
-            {
-                EnvironmentPermission.RevertAssert();
-            }
+            InitializeEnableXamlSourceInfo(null);
         }
 
+        // this method is (also) called via private reflection from test code
+        [SecuritySafeCritical]
         private static void InitializeEnableXamlSourceInfo(string value)
         {
-            // Initialize source info support. Source info is disabled if value
-            // is empty, 0 or false (case insensitive). Otherwise true.
-            value = (value ?? string.Empty).Trim().ToLowerInvariant();
-            if (value == string.Empty || value == "0" || value == "false" || !InitializeXamlObjectEventArgs())
+            if (VisualDiagnostics.IsEnabled &&
+                VisualDiagnostics.IsEnvironmentVariableSet(value, "ENABLE_XAML_DIAGNOSTICS_SOURCE_INFO") &&
+                InitializeXamlObjectEventArgs())
             {
-                s_sourceInfoTable = null;
+                s_sourceInfoTable = new ConditionalWeakTable<object, XamlSourceInfo>();
             }
             else
             {
-                s_sourceInfoTable = new ConditionalWeakTable<object, XamlSourceInfo>();
+                s_sourceInfoTable = null;
             }
         }
 
@@ -117,6 +106,7 @@ namespace System.Windows.Diagnostics
             }
         }
 
+        // this method is (also) called via private reflection from test code
         internal static void SetXamlSourceInfo(object obj, Uri sourceUri, int elementLineNumber, int elementLinePosition)
         {
             // Some BAML content - like system resources or Release builds - contains fake source info of line=0, pos=0. Ignore it.

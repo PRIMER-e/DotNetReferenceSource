@@ -1927,9 +1927,9 @@ namespace System.Windows.Forms {
                     Debug.Assert(targetFrameName == null || targetFrameName is string, "invalid targetFrameName type");
                     Debug.Assert(headers == null || headers is string, "invalid headers type");
                     //
-                    // Due to a 
-
-
+                    // Due to a bug in the interop code where the variant.bstr value gets set
+                    // to -1 on return back to native code, if the original value was null, we
+                    // have to set targetFrameName and headers to "".
                     if (targetFrameName == null) {
                         targetFrameName = "";
                     }

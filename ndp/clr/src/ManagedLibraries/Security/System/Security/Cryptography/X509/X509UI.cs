@@ -147,10 +147,10 @@ namespace System.Security.Cryptography.X509Certificates {
             if (safeCertContextHandle != null && !safeCertContextHandle.IsInvalid) {
                 // Single select, so add it to our hCertStore
                 SafeCertContextHandle ppStoreContext = SafeCertContextHandle.InvalidHandle;
-                if (!CAPI.CertAddCertificateContextToStore(safeCertStoreHandle, 
-                                                           safeCertContextHandle, 
-                                                           CAPI.CERT_STORE_ADD_NEWER_INHERIT_PROPERTIES, 
-                                                           ppStoreContext))
+                if (!CAPI.CertAddCertificateLinkToStore(safeCertStoreHandle, 
+                                                        safeCertContextHandle, 
+                                                        CAPI.CERT_STORE_ADD_ALWAYS, 
+                                                        ppStoreContext))
                     dwErrorCode = Marshal.GetLastWin32Error();
             }
 

@@ -124,10 +124,10 @@ namespace System.Xml {
         }
  
         public override char GetNextChar() {
-            // 
-
-
-
+            // Bug fix: 35637. The protocol using GetNextChar() and MovePrevious() called by Encoder is not well documented.
+            // Here we have to to signal to Encoder that the previous read was last character. Only AFTER we can 
+            // mark ourself as done (-1). Otherwise MovePrevious() can still be called, but -1 is already incorrectly set
+            // and return false from MovePrevious(). Then Encoder ----ing the rest of the bytes.
             if (charEntityIndex == charEntity.Length)
             {
                 charEntityIndex = -1;

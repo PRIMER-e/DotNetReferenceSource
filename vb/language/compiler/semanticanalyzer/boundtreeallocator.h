@@ -119,8 +119,10 @@ private:
 
 }; // class
 
-static inline
+//markmil: this used to be declared static. 
+inline
 void* _cdecl operator new(size_t cbSize, BILALLOC &alloc)
 {
 	return alloc.xAllocBilBytes(cbSize);
 }
+

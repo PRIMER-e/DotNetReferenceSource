@@ -120,8 +120,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 dataGridViewCell = (DataGridViewColumnHeaderCell) System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -844,6 +844,11 @@ namespace System.Windows.Forms
                         }
                     }
 
+                    if (IsHighlighted())
+                    {
+                        state = (int)HeaderItemState.Pressed;
+                    }
+
                     // Microsoft: even though XP provides support for theming the sort glyph, 
                     // we rely on our own implementation for painting the sort glyph
                     if (this.DataGridView.RightToLeftInternal)
@@ -885,7 +890,8 @@ namespace System.Windows.Forms
             {
                 if (paint && DataGridViewCell.PaintBackground(paintParts) && backgroundBounds.Width > 0 && backgroundBounds.Height > 0)
                 {
-                    br = this.DataGridView.GetCachedBrush((DataGridViewCell.PaintSelectionBackground(paintParts) && cellSelected) ? cellStyle.SelectionBackColor : cellStyle.BackColor);
+                    br = this.DataGridView.GetCachedBrush((DataGridViewCell.PaintSelectionBackground(paintParts) && cellSelected) || IsHighlighted() ? 
+                        cellStyle.SelectionBackColor : cellStyle.BackColor);
                     if (br.Color.A == 255)
                     {
                         g.FillRectangle(br, backgroundBounds);
@@ -1182,6 +1188,14 @@ namespace System.Windows.Forms
             return contentBounds;
         }
 
+        private bool IsHighlighted()
+        {
+            return this.DataGridView.SelectionMode == DataGridViewSelectionMode.FullRowSelect && 
+                this.DataGridView.CurrentCell != null && this.DataGridView.CurrentCell.Selected &&
+                this.DataGridView.CurrentCell.OwningColumn == this.OwningColumn &&
+                AccessibilityImprovements.Level2;
+        }
+
         /// <include file='doc\DataGridViewColumnHeaderCell.uex' path='docs/doc[@for="DataGridViewColumnHeaderCell.SetValue"]/*' />
         protected override bool SetValue(int rowIndex, object value)
         {
@@ -1233,7 +1247,7 @@ namespace System.Windows.Forms
                 Rectangle rectClip = Rectangle.Truncate(g.ClipBounds);
                 if ((int) HeaderItemState.Hot == headerState)
                 {
-                    // Workaround for a 
+                    // Workaround for a bug in XP theming: no painting of corners around orange tab.
                     VisualStyleRenderer.SetParameters(HeaderElement);
                     Rectangle cornerClip = new Rectangle(bounds.Left, bounds.Bottom-2, 2, 2);
                     cornerClip.Intersect(rectClip);
@@ -1536,6 +1550,69 @@ namespace System.Windows.Forms
                     }
                 }
             }
+
+            #region IRawElementProviderFragment Implementation
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction)
+            {
+                if (this.Owner.OwningColumn == null)
+                {
+                    return null;
+                }
+
+                switch (direction)
+                {
+                    case UnsafeNativeMethods.NavigateDirection.Parent:
+                        return Parent;
+                    case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                        return NavigateForward();
+                    case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                        return NavigateBackward();
+                    default:
+                        return null;
+                }
+            }
+
+            #endregion
+
+            #region IRawElementProviderSimple Implementation
+
+            internal override bool IsPatternSupported(int patternId)
+            {
+                return patternId.Equals(NativeMethods.UIA_LegacyIAccessiblePatternId) ||
+                    patternId.Equals(NativeMethods.UIA_InvokePatternId);
+            }
+
+            internal override object GetPropertyValue(int propertyId)
+            {
+                if (AccessibilityImprovements.Level3)
+                {
+                    switch (propertyId)
+                    {
+                        case NativeMethods.UIA_NamePropertyId:
+                            return this.Name;
+                        case NativeMethods.UIA_ControlTypePropertyId:
+                            return NativeMethods.UIA_HeaderControlTypeId;
+                        case NativeMethods.UIA_IsEnabledPropertyId:
+                            return Owner.DataGridView.Enabled;
+                        case NativeMethods.UIA_HelpTextPropertyId:
+                            return this.Help ?? string.Empty;
+                        case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                            return (this.State & AccessibleStates.Focusable) == AccessibleStates.Focusable;
+                        case NativeMethods.UIA_HasKeyboardFocusPropertyId:
+                        case NativeMethods.UIA_IsPasswordPropertyId:
+                            return false;
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                            return (this.State & AccessibleStates.Offscreen) == AccessibleStates.Offscreen;
+                        case NativeMethods.UIA_AccessKeyPropertyId:
+                            return string.Empty;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyId);
+            }
+
+            #endregion
         }
     }
 }

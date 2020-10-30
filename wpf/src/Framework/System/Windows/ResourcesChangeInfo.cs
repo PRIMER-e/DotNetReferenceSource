@@ -18,7 +18,7 @@ using System.Diagnostics;
 namespace System.Windows
 {
     /// <summary>
-    ///     This is the data that is passed through the DescendentsWalker 
+    ///     This is the data that is passed through the DescendentsWalker
     ///     during a resources change tree-walk.
     /// </summary>
     internal struct ResourcesChangeInfo
@@ -26,7 +26,7 @@ namespace System.Windows
         #region Constructors
 
         /// <summary>
-        ///     This constructor is used for notifying changes to individual 
+        ///     This constructor is used for notifying changes to individual
         ///     entries in a ResourceDictionary
         /// </summary>
         internal ResourcesChangeInfo(object key)
@@ -39,7 +39,7 @@ namespace System.Windows
         }
 
         /// <summary>
-        ///     This constructor is used for notifying changes in Application.Resources, 
+        ///     This constructor is used for notifying changes in Application.Resources,
         ///     [FE/FCE].Resources, ResourceDictionary.EndInit
         /// </summary>
         internal ResourcesChangeInfo(ResourceDictionary oldDictionary, ResourceDictionary newDictionary)
@@ -64,12 +64,12 @@ namespace System.Windows
         }
 
         /// <summary>
-        ///     This constructor is used for notifying changes in Style.Resources, 
+        ///     This constructor is used for notifying changes in Style.Resources,
         ///     Template.Resources, ThemeStyle.Resources
         /// </summary>
         internal ResourcesChangeInfo(
-            List<ResourceDictionary> oldDictionaries, 
-            List<ResourceDictionary> newDictionaries, 
+            List<ResourceDictionary> oldDictionaries,
+            List<ResourceDictionary> newDictionaries,
             bool                     isStyleResourcesChange,
             bool                     isTemplateResourcesChange,
             DependencyObject         container)
@@ -84,11 +84,11 @@ namespace System.Windows
         }
 
         #endregion Constructors
-        
+
         #region Operations
 
         /// <summary>
-        ///     This is a static accessor for a ResourcesChangeInfo that is used 
+        ///     This is a static accessor for a ResourcesChangeInfo that is used
         ///     for theme change notifications
         /// </summary>
         internal static ResourcesChangeInfo ThemeChangeInfo
@@ -102,7 +102,7 @@ namespace System.Windows
         }
 
         /// <summary>
-        ///     This is a static accessor for a ResourcesChangeInfo that is used 
+        ///     This is a static accessor for a ResourcesChangeInfo that is used
         ///     for tree change notifications
         /// </summary>
         internal static ResourcesChangeInfo TreeChangeInfo
@@ -116,7 +116,7 @@ namespace System.Windows
         }
 
         /// <summary>
-        ///     This is a static accessor for a ResourcesChangeInfo that is used 
+        ///     This is a static accessor for a ResourcesChangeInfo that is used
         ///     for system colors or settings change notifications
         /// </summary>
         internal static ResourcesChangeInfo SysColorsOrSettingsChangeInfo
@@ -128,10 +128,10 @@ namespace System.Windows
                 return info;
             }
         }
-        
+
         /// <summary>
-        ///     This is a static accessor for a ResourcesChangeInfo that is used 
-        ///     for any ResourceDictionary operations that we aren't able to provide 
+        ///     This is a static accessor for a ResourcesChangeInfo that is used
+        ///     for any ResourceDictionary operations that we aren't able to provide
         ///     the precise 'key that changed' information
         /// </summary>
         internal static ResourcesChangeInfo CatastrophicDictionaryChangeInfo
@@ -186,6 +186,13 @@ namespace System.Windows
             set { WritePrivateFlag(PrivateFlags.IsCatastrophicDictionaryChange, value); }
         }
 
+        // This flag is used to indicate that an implicit data template change has occured
+        internal bool IsImplicitDataTemplateChange
+        {
+            get {return ReadPrivateFlag(PrivateFlags.IsImplicitDataTemplateChange); }
+            set { WritePrivateFlag(PrivateFlags.IsImplicitDataTemplateChange, value); }
+        }
+
         // This flag is used to indicate if the current operation is an effective add operation
         internal bool IsResourceAddOperation
         {
@@ -207,11 +214,11 @@ namespace System.Windows
             }
             else if (IsThemeChange || IsSysColorsOrSettingsChange)
             {
-                // Implicit Styles are not fetched from the Themes. 
-                // So we do not need to respond to theme changes. 
+                // Implicit Styles are not fetched from the Themes.
+                // So we do not need to respond to theme changes.
                 // This is a performance optimization.
-                
-                return !isImplicitStyleKey; 
+
+                return !isImplicitStyleKey;
             }
 
             Debug.Assert(_oldDictionaries != null || _newDictionaries != null || _key != null, "Must have a dictionary or a key that has changed");
@@ -223,7 +230,7 @@ namespace System.Windows
                     return true;
                 }
             }
-            
+
             if (_oldDictionaries != null)
             {
                 for (int i=0; i<_oldDictionaries.Count; i++)
@@ -248,9 +255,42 @@ namespace System.Windows
 
             return false;
         }
-        
+
+        // determine whether this change affects implicit data templates
+        internal void SetIsImplicitDataTemplateChange()
+        {
+            bool isImplicitDataTemplateChange = (IsCatastrophicDictionaryChange ||
+                                                (_key is DataTemplateKey));
+
+            if (!isImplicitDataTemplateChange && _oldDictionaries != null)
+            {
+                foreach (ResourceDictionary rd in _oldDictionaries)
+                {
+                    if (rd.HasImplicitDataTemplates)
+                    {
+                        isImplicitDataTemplateChange = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!isImplicitDataTemplateChange && _newDictionaries != null)
+            {
+                foreach (ResourceDictionary rd in _newDictionaries)
+                {
+                    if (rd.HasImplicitDataTemplates)
+                    {
+                        isImplicitDataTemplateChange = true;
+                        break;
+                    }
+                }
+            }
+
+            IsImplicitDataTemplateChange = isImplicitDataTemplateChange;
+        }
+
         #endregion Operations
-        
+
         #region PrivateMethods
 
         private void WritePrivateFlag(PrivateFlags bit, bool value)
@@ -271,7 +311,7 @@ namespace System.Windows
         }
 
         #endregion PrivateMethods
-        
+
         #region PrivateDataStructures
 
         private enum PrivateFlags : byte
@@ -282,12 +322,13 @@ namespace System.Windows
             IsTemplateResourceChange        = 0x08,
             IsSysColorsOrSettingsChange     = 0x10,
             IsCatastrophicDictionaryChange  = 0x20,
+            IsImplicitDataTemplateChange    = 0x40,
         }
 
         #endregion PrivateDataStructures
-        
+
         #region Data
-        
+
         private List<ResourceDictionary> _oldDictionaries;
         private List<ResourceDictionary> _newDictionaries;
         private object                   _key;

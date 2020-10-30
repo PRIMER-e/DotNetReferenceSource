@@ -28,6 +28,8 @@ namespace System.Windows.Forms {
     [SRDescription(SR.DescriptionVScrollBar)]
     public class VScrollBar : ScrollBar {
 
+        private const int VERTICAL_SCROLLBAR_HEIGHT = 80;
+
         /// <include file='doc\VScrollBar.uex' path='docs/doc[@for="VScrollBar.CreateParams"]/*' />
         /// <internalonly/>
         /// <devdoc>
@@ -54,7 +56,12 @@ namespace System.Windows.Forms {
         /// </devdoc>
         protected override Size DefaultSize {
             get {
-                return new Size(SystemInformation.VerticalScrollBarWidth, 80);
+                if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                    return new Size(SystemInformation.GetVerticalScrollBarWidthForDpi(this.deviceDpi), LogicalToDeviceUnits(VERTICAL_SCROLLBAR_HEIGHT));
+                }
+                else {
+                    return new Size(SystemInformation.VerticalScrollBarWidth, VERTICAL_SCROLLBAR_HEIGHT);
+                }
             }
         }
 

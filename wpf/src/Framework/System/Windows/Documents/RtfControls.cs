@@ -376,7 +376,7 @@ namespace System.Windows.Documents
             CreateCommonControlWord("dgvshow", RTK_DOCPROPS | RTK_VALUE | RTK_PARAM ),
             CreateCommonControlWord("dgvspace", RTK_DOCPROPS | RTK_VALUE | RTK_PARAM ),
             CreateCommonControlWord("dibitmap", RTK_PICTPROPS | RTK_VALUE ),
-            CreateCommonControlWord("dn", RTK_CHARPROPS | RTK_VALUE ),
+            new RtfControlWordInfo(RtfControlWord.Ctrl_DN, "dn", RTK_PICTPROPS | RTK_VALUE),
             CreateCommonDocPropsControlWord("dntblnsbdb"),
             new RtfControlWordInfo(RtfControlWord.Ctrl_DO, "do", RTK_DRAWOBJ | RTK_DESTINATION ),
             CreateCommonDrawObjControlWord("dobxcolumn"),

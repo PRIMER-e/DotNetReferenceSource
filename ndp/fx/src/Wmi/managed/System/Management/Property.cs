@@ -8,15 +8,15 @@ using System.Globalization;
 
 namespace System.Management
 {
-    // 
-
-
-
-
-
-
-
-
+    // Bug#808408 - We use this class to prevent the accidental returning of a boxed value type to a caller
+    // If we store a boxed value type in a private field, and return it to the caller through a public
+    // property or method, the call can potentially change its value.  The GetSafeObject method does two things
+    // 1) If the value is a primitive, we know that it will implement IConvertible.  IConvertible.ToType will
+    // copy a boxed primitive
+    // 2) In the case of a boxed non-primitive value type, or simply a reference type, we call
+    // RuntimeHelpers.GetObjectValue.  This returns reference types right back to the caller, but if passed
+    // a boxed non-primitive value type, it will return a boxed copy.  We cannot use GetObjectValue for primitives
+    // because its implementation does not copy boxed primitives.
     class ValueTypeSafety
     {
         public static object GetSafeObject(object theValue)
@@ -109,7 +109,7 @@ namespace System.Management
 				if ((status & 0xfffff000) == 0x80041000)
 					ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 				else
-					Marshal.ThrowExceptionForHR(status);
+					Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 			}
 		}
 
@@ -154,7 +154,7 @@ namespace System.Management
 					if ((status & 0xfffff000) == 0x80041000)
 						ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 					else
-						Marshal.ThrowExceptionForHR(status);
+						Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 				}
 				//if succeeded and this object has a path, update the path to reflect the new key value
 				//NOTE : we could only do this for key properties but since it's not trivial to find out
@@ -227,7 +227,7 @@ namespace System.Management
 					else if ((status & 0xfffff000) == 0x80041000)
 						ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
 					else
-						Marshal.ThrowExceptionForHR(status);
+						Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
 				}
 
 				return className;

@@ -2,33 +2,89 @@
 using System;
 using System.Security;
 using System.Security.Permissions;
+using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.ConstrainedExecution;
+using System.Windows.Interop;
+using MS.Internal;
+using MS.Internal.PresentationCore;
 using MS.Win32;
 
 namespace MS.Win32.Penimc
-{   
+{
     internal static class UnsafeNativeMethods
     {
+        // DDVSO:514949
+        // The flags in this region are all in support of COM hardening to add resilience
+        // to (OSGVSO:10779198).
+        // They are special arguments to COM calls that allow us to re-purpose them for 
+        // functions relating to this hardening.
+        #region PenIMC Operations Flags
+
+        /// <summary>
+        /// Instruct IPimcManager2.GetTablet to release the external lock on itself.
+        /// </summary>
+        private const UInt32 ReleaseManagerExt = 0xFFFFDEAD;
+
+        /// <summary>
+        /// Instruct IPimcTablet2.GetCursorButtonCount to release the external lock on itself.
+        /// </summary>
+        private const int ReleaseTabletExt = -1;
+
+        /// <summary>
+        /// Instruct IPimcTablet2.GetCursorButtonCount to return the GIT key for the WISP Tablet.
+        /// </summary>
+        private const int GetWispTabletKey = -2;
+
+        /// <summary>
+        /// Instruct IPimcTablet2.GetCursorButtonCount to return the GIT key for the WISP Tablet Manager.
+        /// </summary>
+        private const int GetWispManagerKey = -3;
+
+        /// <summary>
+        /// Instruct IPimcTablet2.GetCursorButtonCount to acquire the external lock on itself.
+        /// </summary>
+        private const int LockTabletExt = -4;
+
+        /// <summary>
+        /// Instruct IPimcContext2.GetPacketPropertyInfo to return the GIT key for the WISP Tablet Context.
+        /// </summary>
+        private const int GetWispContextKey = -1;
+
+        #endregion
+
+        #region Stylus Input Thread Manager
+
+        /// <summary>
+        /// The GIT key to use when managing the WISP Tablet Manager objects
+        /// </summary>
         /// <SecurityNote>
-        /// Critical to prevent inadvertant spread to transparent code
+        ///     Critical:  This field can be used to manipulate the GIT entries for WISP objects.
         /// </SecurityNote>
         [SecurityCritical]
-        private static IPimcManager _pimcManager;
+        [ThreadStatic]
+        private static UInt32? _wispManagerKey;
+
+        /// <summary>
+        /// Whether or not the WISP Tablet Manager server object has been locked in the MTA.
+        /// </summary>
+        [ThreadStatic]
+        private static bool _wispManagerLocked = false;
 
         /// <SecurityNote>
         /// Critical to prevent inadvertant spread to transparent code
         /// </SecurityNote>
         [SecurityCritical]
         [ThreadStatic]
-        private static IPimcManager _pimcManagerThreadStatic;
+        private static IPimcManager2 _pimcManagerThreadStatic;
 
-            
+        #endregion
+
         /// <summary>
-        /// Make sure we load penimc.dll from COM registered location to avoid two instances of it.
+        /// Make sure we load penimc.dll from WPF's installed location to avoid two instances of it.
         /// </summary>
         /// <SecurityNote>
-        /// Critical calls COM interop code that uses suppress unmanaged code security attributes
+        /// Critical: Calls NativeLibraryLoader.EnsureLoaded
         /// </SecurityNote>
         [SecurityCritical]
         static UnsafeNativeMethods()
@@ -43,19 +99,30 @@ namespace MS.Win32.Penimc
             // penimc.dll.  One that we'd use for P/invokes and one that we'd use for COM.
             // If this happens then our Stylus code will fail since it relies on both P/invoke and COM
             // calls to talk to penimc.dll and it requires just one instance of this DLL to work.
-            // So to make sure this doesn't happen we want to ensure we load the DLL using the COM 
-            // registered path before doing any P/invokes into it.
-            _pimcManager = CreatePimcManager();
+            //
+            // DDVSO:474688
+            // We cannot rely on COM to load PenIMC.  The CoCreate call can re-enter, potentially deadlocking.
+            //
+            // 1) CoCreate is COM Pumped and re-enters off of an EnableCore call
+            // 2) Message for, say, device changed or tablet added is received.
+            // 3) Work is sent to the PenThread and the UI thread waits on it
+            // 4) PenThread accesses MS.Win32.Penimc.UnsafeNativeMethods
+            // 
+            // At this point, the static constructor has not finished and the CLR blocks the PenThread on the 
+            // completion of the constructor.  However, the UI thread cannot complete the constructor call until 
+            // the PenThread returns.
+            // 
+            // Instead, use LoadLibrary with a full path here to ensure it won't load local binaries and we don't re-enter.
+            WpfLibraryLoader.EnsureLoaded(ExternDll.Penimc);
         }
 
-
         /// <summary>
-        /// Returns IPimcManager interface.  Creates this object the first time per thread.
+        /// Returns IPimcManager2 interface.  Creates this object the first time per thread.
         /// </summary>
         /// <SecurityNote>
         /// Critical  - returns critial data _pimcManager.
         /// </SecurityNote>
-        internal static IPimcManager PimcManager
+        internal static IPimcManager2 PimcManager
         {
             [SecurityCritical]
             get
@@ -75,7 +142,7 @@ namespace MS.Win32.Penimc
         /// Critical calls interop code that uses suppress unmanaged code security attributes
         /// </SecurityNote>
         [SecurityCritical]
-        private static IPimcManager CreatePimcManager()
+        private static IPimcManager2 CreatePimcManager()
         {
             // Instantiating PimcManager using "new PimcManager()" results
             // in calling CoCreateInstanceForApp from an immersive process
@@ -83,16 +150,258 @@ namespace MS.Win32.Penimc
             // in ---- for that call. Hence we call CoCreateInstance directly.
             // Note: Normally WPF is not supported for immersive processes
             // but designer is an exception.
-            Guid clsid = Guid.Parse(PimcConstants.PimcManagerCLSID);
-            Guid iid = Guid.Parse(PimcConstants.IPimcManagerIID);
+            Guid clsid = Guid.Parse(PimcConstants.PimcManager2CLSID);
+            Guid iid = Guid.Parse(PimcConstants.IPimcManager2IID);
             object pimcManagerObj = CoCreateInstance(ref clsid,
                                                      null,
                                                      0x1, /*CLSCTX_INPROC_SERVER*/
                                                      ref iid);
-            return ((IPimcManager)pimcManagerObj);
+            return ((IPimcManager2)pimcManagerObj);
         }
 
-#if OLD_ISF       
+        #region COM Locking/Unlocking Functions
+
+        #region General
+
+        /// <summary>
+        /// Calls WISP GIT lock functions on Win8+.
+        /// On Win7 these will always fail since WISP objects are always proxies (WISP is out of proc).
+        /// </summary>
+        /// <param name="gitKey">The GIT key for the object to lock.</param>
+        /// <SecurityNote>
+        ///     Critical:   Calls LockWispObjectFromGit
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static void CheckedLockWispObjectFromGit(UInt32 gitKey)
+        {
+            if (OSVersionHelper.IsOsWindows8OrGreater)
+            {
+                if (!LockWispObjectFromGit(gitKey))
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calls WISP GIT unlock functions on Win8+.
+        /// On Win7 these will always fail since WISP objects are always proxies (WISP is out of proc).
+        /// </summary>
+        /// <param name="gitKey">The GIT key for the object to unlock.</param>
+        /// <SecurityNote>
+        ///     Critical:   Calls UnlockWispObjectFromGit
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static void CheckedUnlockWispObjectFromGit(UInt32 gitKey)
+        {
+            if (OSVersionHelper.IsOsWindows8OrGreater)
+            {
+                if (!UnlockWispObjectFromGit(gitKey))
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Manager
+
+        /// <summary>
+        /// DDVSO:514949
+        /// Calls into GetTablet with a special flag that indicates we should release
+        /// the lock obtained previously by a CoLockObjectExternal call.
+        /// </summary>
+        /// <param name="manager">The manager to release the lock for.</param>'
+        /// <SecurityNote>
+        ///     Critical:       Accesses IPimcManager2.
+        /// </SecurityNote>
+        [SecurityCritical]
+        private static void ReleaseManagerExternalLockImpl(IPimcManager2 manager)
+        {
+            IPimcTablet2 unused = null;
+            manager.GetTablet(ReleaseManagerExt, out unused);
+        }
+
+        /// <summary>
+        /// DDVSO:514949
+        /// Calls into GetTablet with a special flag that indicates we should release
+        /// the lock obtained previously by a CoLockObjectExternal call.
+        /// </summary>
+        /// <param name="manager">The manager to release the lock for.</param>'
+        /// <SecurityNote>
+        ///     Critical:       Accesses IPimcManager2.
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static void ReleaseManagerExternalLock()
+        {
+            if (_pimcManagerThreadStatic != null)
+            {
+                ReleaseManagerExternalLockImpl(_pimcManagerThreadStatic);
+            }
+        }
+
+        /// <summary>
+        /// Queries and sets the GIT key for the WISP Tablet Manager
+        /// </summary>
+        /// <param name="tablet">The tablet to call through</param>
+        /// <SecurityNote>
+        ///     Critical:       Accesses IPimcTablet2.
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static void SetWispManagerKey(IPimcTablet2 tablet)
+        {
+            UInt32 latestKey = QueryWispKeyFromTablet(GetWispManagerKey, tablet);
+
+            // Assert here to ensure that every call through to this specific manager has the same
+            // key.  This should be guaranteed since these calls are always done on the thread the tablet
+            // is created on and all tablets created on a particular thread should be through the same
+            // manager.
+            Invariant.Assert(!_wispManagerKey.HasValue || _wispManagerKey.Value == latestKey);
+
+            _wispManagerKey = latestKey;
+        }
+
+        /// <summary>
+        /// Calls down into PenIMC in order to lock the WISP Tablet Manager.
+        /// </summary>
+        [SecurityCritical]
+        internal static void LockWispManager()
+        {
+            if (!_wispManagerLocked && _wispManagerKey.HasValue)
+            {
+                CheckedLockWispObjectFromGit(_wispManagerKey.Value);
+                _wispManagerLocked = true;
+            }
+        }
+
+        /// <summary>
+        /// Calls down into PenIMC in order to unlock the WISP Tablet Manager.
+        /// </summary>
+        [SecurityCritical]
+        internal static void UnlockWispManager()
+        {
+            if (_wispManagerLocked && _wispManagerKey.HasValue)
+            {
+                CheckedUnlockWispObjectFromGit(_wispManagerKey.Value);
+                _wispManagerLocked = false;
+            }
+        }
+
+        #endregion
+
+        #region Tablet
+
+        /// <summary>
+        /// DDVSO:514949
+        /// Calls into GetCursorButtonCount with a special flag that indicates we should acquire
+        /// the external lock by a CoLockObjectExternal call.
+        /// </summary>
+        /// <param name="manager">The tablet to acquire the lock for.</param>'
+        /// <SecurityNote>
+        ///     Critical:       Accesses IPimcTablet2.
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static void AcquireTabletExternalLock(IPimcTablet2 tablet)
+        {
+            int unused = 0;
+
+            // Call through with special param to release the external lock on the tablet.
+            tablet.GetCursorButtonCount(LockTabletExt, out unused);
+        }
+
+        /// <summary>
+        /// DDVSO:514949
+        /// Calls into GetCursorButtonCount with a special flag that indicates we should release
+        /// the lock obtained previously by a CoLockObjectExternal call.
+        /// </summary>
+        /// <param name="manager">The tablet to release the lock for.</param>'
+        /// <SecurityNote>
+        ///     Critical:       Accesses IPimcTablet2.
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static void ReleaseTabletExternalLock(IPimcTablet2 tablet)
+        {
+            int unused = 0;
+
+            // Call through with special param to release the external lock on the tablet.
+            tablet.GetCursorButtonCount(ReleaseTabletExt, out unused);
+        }
+
+        /// <summary>
+        /// Queries the GIT key from the PenIMC Tablet
+        /// </summary>
+        /// <param name="keyType">The kind of key to instruct the tablet to return</param>
+        /// <param name="tablet">The tablet to call through</param>
+        /// <returns>The GIT key for the requested operation</returns>
+        /// <SecurityNote>
+        ///     Critical:       Accesses IPimcTablet2.
+        /// </SecurityNote>
+        [SecurityCritical]
+        private static UInt32 QueryWispKeyFromTablet(int keyType, IPimcTablet2 tablet)
+        {
+            int key = 0;
+
+            tablet.GetCursorButtonCount(keyType, out key);
+
+            if(key == 0)
+            {
+                throw new InvalidOperationException();
+            }
+
+            return (UInt32)key;
+        }
+
+        /// <summary>
+        /// Queries the GIT key for the WISP Tablet
+        /// </summary>
+        /// <param name="tablet">The tablet to call through</param>
+        /// <returns>The GIT key for the WISP Tablet</returns>
+        /// <SecurityNote>
+        ///     Critical:       Accesses IPimcTablet2.
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static UInt32 QueryWispTabletKey(IPimcTablet2 tablet)
+        {
+            return QueryWispKeyFromTablet(GetWispTabletKey, tablet);
+        }
+
+        #endregion
+
+        #region Context
+
+        /// <summary>
+        /// Queries the GIT key for the WISP Tablet Context
+        /// </summary>
+        /// <param name="context">The context to query through</param>
+        /// <returns>The GIT key for the WISP Tablet Context</returns>
+        ///  <SecurityNote>
+        ///     Critical:       Accesses IPimcContext2.
+        /// </SecurityNote>
+        [SecurityCritical]
+        internal static UInt32 QueryWispContextKey(IPimcContext2 context)
+        {
+            int key = 0;
+            Guid unused = Guid.Empty;
+            int unused2 = 0;
+            int unused3 = 0;
+            float unused4 = 0;
+
+            context.GetPacketPropertyInfo(GetWispContextKey, out unused, out key, out unused2, out unused3, out unused4);
+
+            if (key == 0)
+            {
+                throw new InvalidOperationException();
+            }
+
+            return (UInt32)key;
+        }
+
+        #endregion
+
+        #endregion
+
+#if OLD_ISF
         /// <summary>
         /// Managed wrapper for IsfCompressPropertyData
         /// </summary>
@@ -252,6 +561,7 @@ namespace MS.Win32.Penimc
         /// </SecurityNote>
         [SecurityCritical, SuppressUnmanagedCodeSecurity]
         [DllImport(ExternDll.Penimc, CharSet=CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetPenEvent(
             IntPtr      commHandle,
             IntPtr      handleReset,
@@ -279,6 +589,7 @@ namespace MS.Win32.Penimc
         /// </SecurityNote>
         [SecurityCritical, SuppressUnmanagedCodeSecurity]
         [DllImport(ExternDll.Penimc, CharSet=CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetPenEventMultiple(
             int         cCommHandles,
             IntPtr[]    commHandles,
@@ -307,6 +618,7 @@ namespace MS.Win32.Penimc
         /// </SecurityNote>
         [SecurityCritical, SuppressUnmanagedCodeSecurity]
         [DllImport(ExternDll.Penimc, CharSet=CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetLastSystemEventData(
             IntPtr      commHandle,
             out int     evt,
@@ -327,6 +639,7 @@ namespace MS.Win32.Penimc
         /// </SecurityNote>
         [SecurityCritical, SuppressUnmanagedCodeSecurity]
         [DllImport(ExternDll.Penimc, CharSet=CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CreateResetEvent(out IntPtr handle);
 
         /// <summary>
@@ -339,6 +652,7 @@ namespace MS.Win32.Penimc
         /// </SecurityNote>
         [SecurityCritical, SuppressUnmanagedCodeSecurity]
         [DllImport(ExternDll.Penimc, CharSet=CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool DestroyResetEvent(IntPtr handle);
 
         /// <summary>
@@ -351,7 +665,34 @@ namespace MS.Win32.Penimc
         /// </SecurityNote>
         [SecurityCritical, SuppressUnmanagedCodeSecurity]
         [DllImport(ExternDll.Penimc, CharSet=CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool RaiseResetEvent(IntPtr handle);
+
+        /// <summary>
+        /// Managed wrapper for LockObjectExtFromGit
+        /// </summary>
+        /// <param name="gitKey">The key used to refer to this object in the GIT.</param>
+        /// <returns>true if succeeded, false if failed.</returns>
+        /// <SecurityNote>
+        /// Critical as suppressing UnmanagedCodeSecurity
+        /// </SecurityNote>
+        [SecurityCritical, SuppressUnmanagedCodeSecurity]
+        [DllImport(ExternDll.Penimc, CharSet = CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool LockWispObjectFromGit(UInt32 gitKey);
+
+        /// <summary>
+        /// Managed wrapper for UnlockObjectExtFromGit
+        /// </summary>
+        /// <param name="gitKey">The key used to refer to this object in the GIT.</param>
+        /// <returns>true if succeeded, false if failed.</returns>
+        /// <SecurityNote>
+        /// Critical as suppressing UnmanagedCodeSecurity
+        /// </SecurityNote>
+        [SecurityCritical, SuppressUnmanagedCodeSecurity]
+        [DllImport(ExternDll.Penimc, CharSet = CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool UnlockWispObjectFromGit(UInt32 gitKey);
 
         /// <summary>
         /// Managed wrapper for CoCreateInstance

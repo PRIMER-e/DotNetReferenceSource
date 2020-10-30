@@ -464,7 +464,7 @@ namespace System.Windows.Threading
         ///     An IAsyncResult object that represents the result of the
         ///     BeginInvoke operation.
         /// </returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         public DispatcherOperation BeginInvoke(DispatcherPriority priority, Delegate method, object arg) // NOTE: should be Priority
         {
@@ -494,7 +494,7 @@ namespace System.Windows.Threading
         ///     An IAsyncResult object that represents the result of the
         ///     BeginInvoke operation.
         /// </returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         public DispatcherOperation BeginInvoke(DispatcherPriority priority, Delegate method, object arg, params object[] args)
         {
@@ -1855,11 +1855,32 @@ namespace System.Windows.Threading
         /// </summary>
         internal object PtsCache
         {
+            // This gets multiplexed with the log for "request processing" failures.
+            // See OnRequestProcessingFailure.  (DDVSO 127745)
             [FriendAccessAllowed] // Built into Base, used by Core or Framework.
-            get { return _reservedPtsCache; }
+            get
+            {
+                if (!_hasRequestProcessingFailed)
+                    return _reservedPtsCache;
+                Tuple<Object, List<String>> tuple = _reservedPtsCache as Tuple<Object, List<String>>;
+                if (tuple == null)
+                    return _reservedPtsCache;
+                else
+                    return tuple.Item1;
+            }
 
             [FriendAccessAllowed] // Built into Base, used by Core or Framework.
-            set { _reservedPtsCache = value; }
+            set
+            {
+                if (!_hasRequestProcessingFailed)
+                    _reservedPtsCache = value;
+                else
+                {
+                    Tuple<Object, List<String>> tuple = _reservedPtsCache as Tuple<Object, List<String>>;
+                    List<String> list = (tuple != null) ? tuple.Item2 : new List<String>();
+                    _reservedPtsCache = new Tuple<Object, List<String>>(value, list);
+                }
+            }
         }
 
         internal object InputMethod
@@ -1915,6 +1936,10 @@ namespace System.Windows.Threading
 
             _hook = new HwndWrapperHook(WndProcHook);
             _window.Value.AddHook(_hook);
+
+            // DDVSO:447590
+            // Verify that the accessibility switches are set prior to any major UI code running.
+            AccessibilitySwitches.VerifySwitches(this);
         }
 
         // creates a "sentinel" dispatcher.  It doesn't do anything, and should never
@@ -1971,9 +1996,9 @@ namespace System.Windows.Threading
                 _shutdownExecutionContext = new SecurityCriticalDataClass<CulturePreservingExecutionContext>(shutdownExecutionContext);
 
                 // Tell Win32 to exit the message loop for this thread.
-                // NOTE: I removed this code because of 
-
-
+                // NOTE: I removed this code because of bug 1062099.
+                //
+                // UnsafeNativeMethods.PostQuitMessage(0);
 
                 if(_frameDepth > 0)
                 {
@@ -2099,11 +2124,11 @@ namespace System.Windows.Threading
         }
 
         // Returns whether or not the priority was set.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
-
-
-
-
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        /// <SecurityNote>
+        ///     Critical: accesses _hooks
+        ///     TreatAsSafe: does not expose _hooks
+        /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
         internal bool SetPriority(DispatcherOperation operation, DispatcherPriority priority) // NOTE: should be Priority
         {
@@ -2144,11 +2169,11 @@ namespace System.Windows.Threading
         }
 
         // Returns whether or not the operation was removed.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
-
-
-
-
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        /// <SecurityNote>
+        ///     Critical: accesses _hooks
+        ///     TreatAsSafe: does not expose _hooks
+        /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
         internal bool Abort(DispatcherOperation operation)
         {
@@ -2184,11 +2209,11 @@ namespace System.Windows.Threading
             return notify;
         }
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
-
-
-
-
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        /// <SecurityNote>
+        ///    Critical: This code can be used to process input and calls into DispatcherOperation.Invoke which
+        ///    is critical
+        /// </SecurityNote>
         [SecurityCritical]
         private void ProcessQueue()
         {
@@ -2674,7 +2699,12 @@ namespace System.Windows.Threading
 
                 // We have foreground items to process.
                 // By posting a message, Win32 will service us fairly promptly.
-                return UnsafeNativeMethods.TryPostMessage(new HandleRef(this, _window.Value.Handle), _msgProcessQueue, IntPtr.Zero, IntPtr.Zero);
+                bool succeeded = UnsafeNativeMethods.TryPostMessage(new HandleRef(this, _window.Value.Handle), _msgProcessQueue, IntPtr.Zero, IntPtr.Zero);
+                if (!succeeded)
+                {
+                    OnRequestProcessingFailure("TryPostMessage");
+                }
+                return succeeded;
             }
 
             return true;
@@ -2699,6 +2729,10 @@ namespace System.Windows.Threading
                     _postedProcessingType = PROCESS_BACKGROUND;
 
                     succeeded = SafeNativeMethods.TrySetTimer(new HandleRef(this, _window.Value.Handle), TIMERID_BACKGROUND, DELTA_BACKGROUND);
+                    if (!succeeded)
+                    {
+                        OnRequestProcessingFailure("TrySetTimer");
+                    }
                 }
                 else
                 {
@@ -2707,6 +2741,66 @@ namespace System.Windows.Threading
             }
 
             return succeeded;
+        }
+
+        // Request{Foreground|Background}Processing can encounter failures from an
+        // underlying OS method.  We cannot recover from these failures - they are
+        // typically due to the application flooding the message queue, or starving
+        // the dispatcher's message pump until the queue floods, and thus outside
+        // the control of WPF.  WPF ignores the failures, but that can leave the
+        // dispatcher in a non-responsive state, waiting for a message that will
+        // never arrive.  It's difficult or impossible to determine whether
+        // this has happened from a crash dump.
+        //
+        // To help this diagnosis, we now record the fact that the failure has
+        // happened in the member
+        //      _hasRequestProcessingFailed
+        // When this bool is true, you can delve into
+        //      _reservedPtsCache
+        // to find a list of strings with some more rudimentary diagnostic information.
+        // Unfortunately, we cannot tell why the message queue is full or who has
+        // filled it - that knowledge is only available to the kernel. (DDVSO 127745)
+        private void OnRequestProcessingFailure(string methodName)
+        {
+            if (!_hasRequestProcessingFailed)
+            {
+                // initialize the failure log, multiplexed under _reservedPtsCache.
+                // (this member was chosen after instrumented tests revealed it
+                // usually has the least activity of any of the existing fields)
+                _reservedPtsCache = new Tuple<Object, List<String>>(_reservedPtsCache, new List<String>());
+                _hasRequestProcessingFailed = true;
+            }
+
+            // add a new entry to the failure log
+            Tuple<Object, List<String>> tuple = _reservedPtsCache as Tuple<Object, List<String>>;
+            if (tuple != null)
+            {
+                List<String> list = tuple.Item2;
+                list.Add(String.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "{0:O} {1} failed", DateTime.Now, methodName));
+
+                // keep the list from growing too large
+                // (although usually it will have only one entry)
+                if (list.Count > 1000)
+                {
+                    // keep the earliest and latest failures
+                    list.RemoveRange(100, list.Count-200);
+                    // acknowledge the gap
+                    list.Insert(100, "... entries removed to conserve memory ...");
+                }
+            }
+
+            // handle the failure, according to app's preference
+            switch (BaseCompatibilityPreferences.HandleDispatcherRequestProcessingFailure)
+            {
+                case BaseCompatibilityPreferences.HandleDispatcherRequestProcessingFailureOptions.Continue:
+                    break;
+                case BaseCompatibilityPreferences.HandleDispatcherRequestProcessingFailureOptions.Throw:
+                    throw new InvalidOperationException(SR.Get(SRID.DispatcherRequestProcessingFailed));
+                case BaseCompatibilityPreferences.HandleDispatcherRequestProcessingFailureOptions.Reset:
+                    _postedProcessingType = PROCESS_NONE;
+                    break;
+            }
         }
 
         internal void PromoteTimers(int currentTimeInTicks)
@@ -3137,6 +3231,11 @@ namespace System.Windows.Threading
 
         // Enables/disables ITfMessagePump handshake with Text Services Framework.
         private bool _isTSFMessagePumpEnabled;
+
+        // For diagnosing situations where dispatcher stops responding due to failure
+        // of TryPostMessage or TrySetTimer.  If this is true (in a crash dump, say)
+        // delve into _reservedPtsCache to find more about the failure(s).
+        private bool _hasRequestProcessingFailed;
 
         /// <SecurityNote>
         ///     Do not expose hooks to partial trust.

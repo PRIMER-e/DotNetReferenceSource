@@ -82,6 +82,29 @@ namespace System.Windows.Automation.Peers
             return result ?? String.Empty;
         }
 
+        ///
+        override internal bool IgnoreUpdatePeer()
+        {
+            // Ignore UpdatePeer if the peer's owner has been removed from the
+            // visual tree.  There's no need to update such a peer, as it no longer
+            // participates in automation.  And UpdatePeer actually throws exceptions
+            // in some cases (DDVSO 555225).
+
+            // There's no general-purpose efficient test for "belongs to the visual tree",
+            // but we can test for elements that belong to data templates corresponding
+            // to items that have been virtualized or removed from the underlying
+            // collection, and that's enough to avoid the ElementNotAvailable exceptions.
+            DependencyObject owner = Owner;
+            if (owner == null ||
+                owner.GetValue(FrameworkElement.DataContextProperty) ==
+                    System.Windows.Data.BindingOperations.DisconnectedSource)
+            {
+                return true;
+            }
+
+            return base.IgnoreUpdatePeer();
+        }
+
     }
 }
 

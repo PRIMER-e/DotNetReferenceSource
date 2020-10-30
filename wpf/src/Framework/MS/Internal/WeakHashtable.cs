@@ -1,29 +1,28 @@
-// ---------------------------------------------------------------------------
-// This file was generated, please do not edit it directly.
-// 
-// This file was generated using the common file located at:
-//    wpfoob\common\Microsoft\Windows\Controls\WeakHashtable.cs
-// ---------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 // <copyright file="WeakHashtable.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
+// </copyright>
 //------------------------------------------------------------------------------
 
 // This was ripped from the BCL's WeakHashtable and the namespace was changed.
+//
+// This class doesn't work when the keys are value-types.
+// If that's the case, use the class WeakObjectHashtable instead.
+
 namespace MS.Internal
 {
     using System;
     using System.Collections;
+    using System.Diagnostics;
     using System.Security.Permissions;
 
     /// <devdoc>
-    ///     This is a hashtable that stores object keys as weak references.  
+    ///     This is a hashtable that stores object keys as weak references.
     ///     It monitors memory usage and will periodically scavenge the
     ///     hash table to clean out dead references.
     /// </devdoc>
     [HostProtection(SharedState = true)]
-    internal sealed class WeakHashtable : Hashtable
+    internal sealed class WeakHashtable : Hashtable, IWeakHashtable
     {
         private static IEqualityComparer _comparer = new WeakKeyComparer();
 
@@ -57,8 +56,15 @@ namespace MS.Internal
         /// </devdoc>
         public void SetWeak(object key, object value)
         {
+            Debug.Assert(!key.GetType().IsValueType, "WeakHashtable doesn't support value-type keys.  Use WeakObjectHashtable instead.");
             ScavengeKeys();
             this[new EqualityWeakReference(key)] = value;
+        }
+
+        public object UnwrapKey(object key)
+        {
+            EqualityWeakReference keyRef = key as EqualityWeakReference;
+            return (keyRef != null) ? keyRef.Target : null;
         }
 
         /// <devdoc>
@@ -102,7 +108,7 @@ namespace MS.Internal
             if (memDelta < 0 && hashDelta >= 0)
             {
                 // Perform a scavenge through our keys, looking
-                // for dead references.                
+                // for dead references.
                 ArrayList cleanupList = null;
                 foreach (object o in Keys)
                 {
@@ -229,5 +235,19 @@ namespace MS.Internal
                 return _hashCode;
             }
         }
+
+        // choose the hashtable implementation that works for the key type
+        public static IWeakHashtable FromKeyType(Type tKey)
+        {
+            if (tKey == typeof(Object) || tKey.IsValueType)
+            {
+                return new WeakObjectHashtable();
+            }
+            else
+            {
+                return new WeakHashtable();
+            }
+        }
+
     }
 }

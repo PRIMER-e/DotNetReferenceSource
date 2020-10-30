@@ -447,8 +447,8 @@ OACR_WARNING_POP
 
 			// SQL BU DT 291063: 2.8 netlibs allow for an additional
 			// TCP parameter ",urgent" but ignores it, and does not even 
-			// validate it's actually ",urgent" (Webdata QFE 
-
+			// validate it's actually ",urgent" (Webdata QFE bug 449).  
+			// To preserve backward compatibility, SNI will do the same.  
 			if( !wcscmp(L"tcp", m_wszProtocolName) )
 			{
 				if( WCHAR * pComma = wcschr(wszProtocolParameter, L',') )

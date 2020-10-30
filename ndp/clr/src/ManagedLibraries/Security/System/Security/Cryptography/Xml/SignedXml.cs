@@ -90,6 +90,9 @@ namespace System.Security.Cryptography.Xml
         public const string XmlDsigSHA512Url = "http://www.w3.org/2001/04/xmlenc#sha512";
         public const string XmlDsigRSASHA512Url = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512";
 
+        internal static readonly string XmlDsigDigestDefault = LocalAppContextSwitches.XmlUseInsecureHashAlgorithms ? XmlDsigSHA1Url : XmlDsigSHA256Url;
+        internal static readonly string XmlDsigRSADefault = LocalAppContextSwitches.XmlUseInsecureHashAlgorithms ? XmlDsigRSASHA1Url : XmlDsigRSASHA256Url;
+
         public const string XmlDsigC14NTransformUrl = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"; 
         public const string XmlDsigC14NWithCommentsTransformUrl = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"; 
         public const string XmlDsigExcC14NTransformUrl = "http://www.w3.org/2001/10/xml-exc-c14n#";
@@ -363,16 +366,16 @@ namespace System.Security.Cryptography.Xml
                 if (key is DSA) {
                     SignedInfo.SignatureMethod = XmlDsigDSAUrl;
                 } else if (key is RSA) {
-                    // Default to RSA-SHA1
+                    // Default to RSA-SHA256 or RSA-SHA1 depending on context switch
                     if (SignedInfo.SignatureMethod == null) 
-                        SignedInfo.SignatureMethod = XmlDsigRSASHA1Url;
+                        SignedInfo.SignatureMethod = XmlDsigRSADefault;
                 } else {
                     throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_CreatedKeyFailed"));
                 }
             }
 
             // See if there is a signature description class defined in the Config file
-            SignatureDescription signatureDescription = CryptoConfig.CreateFromName(SignedInfo.SignatureMethod) as SignatureDescription;
+            SignatureDescription signatureDescription = Utils.CreateFromName<SignatureDescription>(SignedInfo.SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_SignatureDescriptionNotCreated"));
             HashAlgorithm hashAlg = signatureDescription.CreateDigest();
@@ -494,7 +497,7 @@ namespace System.Security.Cryptography.Xml
             while (m_x509Enum.MoveNext()) {
                 X509Certificate2 certificate = (X509Certificate2) m_x509Enum.Current;
                 if (certificate != null)
-                    return certificate.GetAnyPublicKey();
+                    return LocalAppContextSwitches.SignedXmlUseLegacyCertificatePrivateKey ? certificate.PublicKey.Key : certificate.GetAnyPublicKey();
             }
 
             return null;
@@ -594,7 +597,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // See if we're signed witn an HMAC algorithm
-            HMAC hmac = CryptoConfig.CreateFromName(SignatureMethod) as HMAC;
+            HMAC hmac = Utils.CreateFromName<HMAC>(SignatureMethod);
             if (hmac == null) {
                 // We aren't signed with an HMAC algorithm, so we cannot have a truncated HMAC
                 return false;
@@ -861,9 +864,9 @@ namespace System.Security.Cryptography.Xml
                 nodeList.Add(obj.GetXml());
             }
             foreach (Reference reference in sortedReferences) {
-                // If no DigestMethod has yet been set, default it to sha1
+                // If no DigestMethod has yet been set, default it to SHA256 or SHA1 depending on context switch
                 if (reference.DigestMethod == null)
-                    reference.DigestMethod = XmlDsigSHA1Url;
+                    reference.DigestMethod = XmlDsigDigestDefault;
 
                 SignedXmlDebugLog.LogSigningReference(this, reference);
 
@@ -895,7 +898,7 @@ namespace System.Security.Cryptography.Xml
                 // Compare both hashes
                 SignedXmlDebugLog.LogVerifyReferenceHash(this, digestedReference, calculatedHash, digestedReference.DigestValue);
 
-                if (!CryptographicEquals(calculatedHash, digestedReference.DigestValue)) {
+                if (!CryptographicEquals(calculatedHash, digestedReference.DigestValue, calculatedHash.Length)) {
                     return false;
                 }
             }
@@ -909,21 +912,27 @@ namespace System.Security.Cryptography.Xml
         // This method makes no attempt to disguise the length of either of its inputs. It is assumed the attacker has 
         // knowledge of the algorithms used, and thus the output length. Length is difficult to properly blind in modern CPUs.
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private static bool CryptographicEquals(byte[] a, byte[] b) {
+        internal static bool CryptographicEquals(byte[] a, byte[] b, int count) {
             System.Diagnostics.Debug.Assert(a != null);
             System.Diagnostics.Debug.Assert(b != null);
+            System.Diagnostics.Debug.Assert(count > 0);
 
             int result = 0;
 
-            // Short cut if the lengths are not identical
-            if (a.Length != b.Length)
+            // Short cut if the lengths are not right
+            if (a.Length < count || b.Length < count)
                 return false;
 
             unchecked {
-                // Normally this caching doesn't matter, but with the optimizer off, this nets a non-trivial speedup.
-                int aLength = a.Length;
+                // This routine was changed to accept the count as an input, so the total length is already
+                // in a register.
+                //
+                // If this method is being copied to require an exact length match (a la
+                // CryptographicOperations.FixedTimeEquals(ReadOnlySpan, ReadOnlySpan) then
+                // one of the lengths should be saved to a local here, or the non-optimized call in the
+                // for loop is noticable.
 
-                for (int i = 0; i < aLength; i++)
+                for (int i = 0; i < count; i++)
                     // We use subtraction here instead of XOR because the XOR algorithm gets ever so
                     // slightly faster as more and more differences pile up.
                     // This cannot overflow more than once (and back to 0) because bytes are 1 byte
@@ -958,7 +967,7 @@ namespace System.Security.Cryptography.Xml
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
 
-            SignatureDescription signatureDescription = CryptoConfig.CreateFromName(SignatureMethod) as SignatureDescription;
+            SignatureDescription signatureDescription = Utils.CreateFromName<SignatureDescription>(SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_SignatureDescriptionNotCreated"));
 

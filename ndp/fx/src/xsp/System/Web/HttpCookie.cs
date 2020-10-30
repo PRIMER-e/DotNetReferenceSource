@@ -18,6 +18,8 @@ namespace System.Web {
     using System.Security.Permissions;
     using System.Web.Configuration;
     using System.Web.Management;
+    using Util;
+    using System.ComponentModel;
 
 
     /// <devdoc>
@@ -38,6 +40,7 @@ namespace System.Web {
         private HttpValueCollection _multiValue;
         private bool _changed;
         private bool _added;
+        private SameSiteMode _sameSite;
 
         internal HttpCookie() {
             _changed = true;
@@ -82,7 +85,8 @@ namespace System.Web {
             HttpCookiesSection config = RuntimeConfig.GetConfig().HttpCookies;
             _secure = config.RequireSSL;
             _httpOnly = config.HttpOnlyCookies;
-            
+            _sameSite = config.SameSite;
+
             if (config.Domain != null && config.Domain.Length > 0)
                 _domain = config.Domain;
         }
@@ -106,7 +110,7 @@ namespace System.Web {
         // DevID 251951	Cookie is getting duplicated by ASP.NET when they are added via a native module
         // This flag is used to remember that this cookie came from an IIS Set-Header flag, 
         // so we don't duplicate it and send it back to IIS
-        internal bool FromHeader {
+        internal bool IsInResponseHeader {
             get;
             set;
         }
@@ -265,6 +269,20 @@ namespace System.Web {
             }
         }
 
+        /// <devdoc>
+        ///     <para>SameSite mode for the current cookie</para>
+        /// </devdoc>
+        public SameSiteMode SameSite {
+            get {
+                return _sameSite;
+            }
+
+            set {
+                _sameSite = value;
+                _changed = true;
+            }
+        }
+
         /*
          * Checks is cookie has sub-keys
          */
@@ -336,6 +354,90 @@ namespace System.Web {
             }
         }
 
+        /// <summary>
+        /// Converts the specified string representation of an HTTP cookie to HttpCookie
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        public static bool TryParse(string input, out HttpCookie result) {
+            result = null;
+
+            if (string.IsNullOrEmpty(input)) {
+                return false;
+            }
+
+            // The substring before the first ';' is cookie-pair, with format of cookiename[=key1=val2&key2=val2&...]
+            int dividerIndex = input.IndexOf(';');
+            string cookiePair = dividerIndex >= 0 ? input.Substring(0, dividerIndex) : input;
+
+            HttpCookie cookie = HttpRequest.CreateCookieFromString(cookiePair.Trim());
+
+            // If there was no cookie name being created, stop parsing and return
+            if (string.IsNullOrEmpty(cookie.Name)) {
+                return false;
+            }
+
+            //
+            // Parse the collections of cookie-av 
+            // cookie-av = expires-av/max-age-av/domain-av/path-av/secure-av/httponly-av/extension-av
+            // https://tools.ietf.org/html/rfc6265 
+
+            while (dividerIndex >= 0 && dividerIndex < input.Length - 1) {
+                int cookieAvStartIndex = dividerIndex + 1;
+                dividerIndex = input.IndexOf(';', cookieAvStartIndex);
+                string cookieAv = dividerIndex >= 0 ? input.Substring(cookieAvStartIndex, dividerIndex - cookieAvStartIndex).Trim() : input.Substring(cookieAvStartIndex).Trim();
+
+                int assignmentIndex = cookieAv.IndexOf('=');
+                string attributeName = assignmentIndex >= 0 ? cookieAv.Substring(0, assignmentIndex).Trim() : cookieAv;
+                string attributeValue = assignmentIndex >= 0 && assignmentIndex < cookieAv.Length - 1 ? cookieAv.Substring(assignmentIndex + 1).Trim() : null;
+
+                //
+                // Parse supported cookie-av Attribute
+
+                //
+                // Expires
+                if (StringUtil.EqualsIgnoreCase(attributeName, "Expires")) {
+                    DateTime dt;
+                    if (DateTime.TryParse(attributeValue, out dt)) {
+                        cookie.Expires = dt;
+                    }
+                }
+                //
+                // Domain
+                else if (attributeValue != null && StringUtil.EqualsIgnoreCase(attributeName, "Domain")) {
+                    cookie.Domain = attributeValue;
+                }
+                //
+                // Path
+                else if (attributeValue != null && StringUtil.EqualsIgnoreCase(attributeName, "Path")) {
+                    cookie.Path = attributeValue;
+                }
+                //
+                // Secure
+                else if (StringUtil.EqualsIgnoreCase(attributeName, "Secure")) {
+                    cookie.Secure = true;
+                }
+                //
+                // HttpOnly
+                else if (StringUtil.EqualsIgnoreCase(attributeName, "HttpOnly")) {
+                    cookie.HttpOnly = true;
+                }
+                //
+                // SameSite
+                else if(StringUtil.EqualsIgnoreCase(attributeName, "SameSite")) {
+                    SameSiteMode sameSite = (SameSiteMode)(-1);
+                    if(Enum.TryParse<SameSiteMode>(attributeValue, true, out sameSite)) {
+                        cookie.SameSite = sameSite;
+                    }
+                }
+            }
+
+            result = cookie;
+
+            return true;
+        }
+
         /*
          * Construct set-cookie header
          */
@@ -381,14 +483,16 @@ namespace System.Web {
                 s.Append("; HttpOnly");
             }
 
+            // SameSite
+            if(_sameSite > (AppSettings.SuppressSameSiteNone ? SameSiteMode.None : (SameSiteMode)(-1) /* Unspecified */)) {
+                s.Append("; SameSite=");
+                s.Append(_sameSite);
+            }
+
             // return as HttpResponseHeader
             return new HttpResponseHeader(HttpWorkerRequest.HeaderSetCookie, s.ToString());
         }
     }
-
-    /////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////
 
     public enum HttpCookieMode {
 
@@ -399,5 +503,44 @@ namespace System.Web {
         AutoDetect,      // cookieless=AutoDetect; Probe if device is cookied
 
         UseDeviceProfile // cookieless=UseDeviceProfile; Base decision on caps
+    }
+
+    // Due to modern browser updates, "None" is now required to be emitted in the cookie header. To prevent
+    // any the header from being written, Cookies should be SameSite=Unspecified. But we can't update the
+    // enum in a servicing patch. So...
+    // Unspecified == -1
+    public enum SameSiteMode {
+        None,
+
+        Lax,
+
+        Strict
+    }
+
+    internal class SameSiteConverter : EnumConverter
+    {
+        public SameSiteConverter() : base(typeof(SameSiteMode)) { }
+
+        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        {
+            string strval = value as string;
+
+            if (strval != null && strval.Equals("Unspecified", StringComparison.InvariantCultureIgnoreCase))
+                return (SameSiteMode)(-1);
+
+            return base.ConvertFrom(context, culture, value);
+        }
+
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        {
+            if (value is SameSiteMode && destinationType == typeof(string))
+            {
+                int iVal = (int)value;
+                if (iVal < 0)
+                    return "Unspecified";
+            }
+
+            return base.ConvertTo(context, culture, value, destinationType);
+        }
     }
 }

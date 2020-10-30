@@ -446,9 +446,9 @@ namespace System.Activities.Presentation
                 {
                     this.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, (Action)(() =>
                     {
-                        // check for Item == null, we found an interesting 
-
-
+                        // check for Item == null, we found an interesting bug, where the user 
+                        // could drop something in here, and undo the change before the code below
+                        // could execute
                         if (this.Item != null)
                         {
                             UIElement view = (UIElement)(this.Item.View);
@@ -767,10 +767,12 @@ namespace System.Activities.Presentation
 
             protected override string GetNameCore()
             {
-                // Return an empty string if an activity is dropped on the presenter
-                if (owner.Item != null)
+                // Return the item type name if an activity is dropped on the presenter
+                if (owner.Item != null &&
+                    owner.Item.ItemType != null &&
+                    !string.IsNullOrEmpty(owner.Item.ItemType.Name))
                 {
-                    return string.Empty;
+                    return owner.Item.ItemType.Name;
                 }
                 string name = base.GetNameCore();
                 if (string.IsNullOrEmpty(name))
@@ -817,9 +819,9 @@ namespace System.Activities.Presentation
 
         // NOTE: This wrapper method is exclusively called by TransitionDesigner, because
         // WIP of Transition.Action would handle the event if the dragged source comes from
-        // WIP of Transition.Trigger (see 
-
-
+        // WIP of Transition.Trigger (see Bug 201342).  However, Auto-Surround spacer is usually
+        // handled in DragEnter handler of WIP, and other ActivityDesigner should not need to 
+        // access this method directly.
         internal void ShowSpacerHelperOnDraggedItems(DragEventArgs arg)
         {
             this.spacerHelper.OnWfItemPresenterPreviewDragEnter(this, arg);

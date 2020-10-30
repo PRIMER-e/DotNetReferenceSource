@@ -78,11 +78,11 @@ namespace System.Drawing {
         ///     the current thread does not pump message, finalizer thread is blocked, and AD  unload is blocked while 
         ///     waiting for finalizer thread. RWLock is a fair lock. If a thread waits for a writer lock, then it needs
         ///     a reader lock while pumping message, the thread is blocked forever/>.
-        ///     See 
-
-
-
-
+        ///     See Bug VSW#364535 which was due to the above situation.
+        ///     
+        ///     This TLS variable is used to flag the above situation and avoid the deadlock, it is ThreadStatic so each
+        ///     thread calling into ImageAnimator is garded against this problem.
+        /// </devdoc>
         [ThreadStatic]
         static int threadWriterLockWaitCount;
 

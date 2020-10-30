@@ -163,8 +163,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 dataGridViewCell = (DataGridViewRowHeaderCell) System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -1457,6 +1457,70 @@ namespace System.Windows.Forms
                     }
                 }
             }
+
+            #region IRawElementProviderFragment Implementation
+            
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction)
+            {
+                if (this.Owner.OwningRow == null)
+                {
+                    return null;
+                }
+
+                switch (direction)
+                {
+                    case UnsafeNativeMethods.NavigateDirection.Parent:
+                        return this.Owner.OwningRow.AccessibilityObject;
+                    case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                        if (this.Owner.DataGridView.Columns.GetColumnCount(DataGridViewElementStates.Visible) > 0)
+                        {
+                            // go to the next sibling
+                            return this.Owner.OwningRow.AccessibilityObject.GetChild(1);
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                    default:
+                        return null;
+                }
+            }
+
+            #endregion
+
+            #region IRawElementProviderSimple Implementation
+
+            internal override object GetPropertyValue(int propertyId)
+            {
+                if (AccessibilityImprovements.Level3)
+                {
+                    switch (propertyId)
+                    {
+                        case NativeMethods.UIA_NamePropertyId:
+                            return this.Name;
+                        case NativeMethods.UIA_ControlTypePropertyId:
+                            return NativeMethods.UIA_HeaderControlTypeId;
+                        case NativeMethods.UIA_IsEnabledPropertyId:
+                            return Owner.DataGridView.Enabled;
+                        case NativeMethods.UIA_HelpTextPropertyId:
+                            return this.Help ?? string.Empty;
+                        case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                            return (this.State & AccessibleStates.Focusable) == AccessibleStates.Focusable;
+                        case NativeMethods.UIA_HasKeyboardFocusPropertyId:
+                        case NativeMethods.UIA_IsPasswordPropertyId:
+                            return false;
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                            return (this.State & AccessibleStates.Offscreen) == AccessibleStates.Offscreen;
+                        case NativeMethods.UIA_AccessKeyPropertyId:
+                            return string.Empty;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyId);
+            }
+
+            #endregion
         }
     }
 }

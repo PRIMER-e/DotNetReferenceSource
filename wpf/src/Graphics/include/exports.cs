@@ -2463,6 +2463,8 @@ namespace System.Windows.Media.Composition
                 int nWidth,
                 int nHeight,
                 bool softwareOnly,
+                int dpiAwarenessContext,
+                DpiScale dpiScale,
                 Channel channel
                 )
             {
@@ -2485,10 +2487,12 @@ namespace System.Windows.Media.Composition
 
                 command.width = (UInt32)nWidth;
                 command.height = (UInt32)nHeight;
+
                 command.clearColor.b = 0.0f;
                 command.clearColor.r = 0.0f;
                 command.clearColor.g = 0.0f;
                 command.clearColor.a = 1.0f;
+
                 command.flags =
                     (UInt32)(MILRTInitializationFlags.MIL_RT_PRESENT_IMMEDIATELY |
                     MILRTInitializationFlags.MIL_RT_PRESENT_RETAIN_CONTENTS);
@@ -2527,6 +2531,10 @@ namespace System.Windows.Media.Composition
                 command.hSection = 0;
                 command.masterDevice = 0;
 
+                command.DpiAwarenessContext = dpiAwarenessContext;
+                command.DpiX = dpiScale.DpiScaleX;
+                command.DpiY = dpiScale.DpiScaleY;
+
                 unsafe
                 {
                     channel.SendCommand(
@@ -2534,6 +2542,31 @@ namespace System.Windows.Media.Composition
                         sizeof(DUCE.MILCMD_HWNDTARGET_CREATE),
                         false /* sendInSeparateBatch */
                         );
+                }
+            }
+
+            [SecuritySafeCritical]
+            internal static void ProcessDpiChanged(
+                DUCE.ResourceHandle hCompositionTarget,
+                DpiScale dpiScale,
+                bool afterParent,
+                Channel channel
+                )
+            {
+                DUCE.MILCMD_HWNDTARGET_DPICHANGED command;
+
+                command.Type = MILCMD.MilCmdHwndTargetDpiChanged;
+                command.Handle = hCompositionTarget;
+                command.DpiX = dpiScale.DpiScaleX;
+                command.DpiY = dpiScale.DpiScaleY;
+                command.AfterParent = afterParent ? 1U : 0U;
+
+                unsafe
+                {
+                    channel.SendCommand(
+                        (byte*)&command,
+                        sizeof(DUCE.MILCMD_HWNDTARGET_DPICHANGED),
+                        sendInSeparateBatch: false);
                 }
             }
 
@@ -2732,6 +2765,39 @@ namespace System.Windows.Media.Composition
                 channel.CloseBatch();
                 channel.Commit();
             }
+        }
+
+        /// <summary>
+        /// See <see cref="MediaContext.ShouldRenderEvenWhenNoDisplayDevicesAreAvailable"/> for 
+        /// details.
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical: This code accesses an unsafe code block
+        ///     Safe:     Operation is ok to call, sending a pointer to a channel is safe, 
+        ///               and this does not return any Critical data to the caller
+        /// </SecurityNote>
+        [SecuritySafeCritical]
+        internal static void NotifyPolicyChangeForNonInteractiveMode(
+            bool forceRender, 
+            Channel channel
+            )
+        {
+            var command = new DUCE.MILCMD_PARTITION_NOTIFYPOLICYCHANGEFORNONINTERACTIVEMODE
+            {
+                Type = MILCMD.MilCmdPartitionNotifyPolicyChangeForNonInteractiveMode,
+                ShouldRenderEvenWhenNoDisplayDevicesAreAvailable = (forceRender ? 1u : 0u)
+            };
+
+            unsafe
+            {
+                channel.SendCommand(
+                    (byte*)&command, 
+                    sizeof(DUCE.MILCMD_PARTITION_NOTIFYPOLICYCHANGEFORNONINTERACTIVEMODE), 
+                    sendInSeparateBatch: false
+                    );
+            }
+
+            // Caller should close and commit
         }
 
         internal static class ETWEvent

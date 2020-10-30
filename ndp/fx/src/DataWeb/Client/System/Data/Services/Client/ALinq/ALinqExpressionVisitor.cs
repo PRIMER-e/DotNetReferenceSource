@@ -25,9 +25,9 @@ namespace System.Data.Services.Client
     using System.Security.Permissions;
 
     /// <summary>
-    /// This class introduced because of a 
-
-
+    /// This class introduced because of a bug in SL3 which prevents using non-public (e.g anonymous) types as return types for lambdas
+    /// We should be able to remove this for SL4.
+    /// </summary>
     internal static class ExpressionHelpers
     {
         private static MethodInfo lambdaFunc;

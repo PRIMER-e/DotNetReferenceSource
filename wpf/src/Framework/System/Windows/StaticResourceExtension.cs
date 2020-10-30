@@ -12,6 +12,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Diagnostics;
 using System.Windows.Documents;
 using System.Windows.Markup;
 using System.Reflection;
@@ -25,7 +26,7 @@ namespace System.Windows
     ///  Class for Xaml markup extension for static resource references.
     /// </summary>
     [MarkupExtensionReturnType(typeof(object))]
-    [Localizability(LocalizationCategory.NeverLocalize)] // cannot be localized            
+    [Localizability(LocalizationCategory.NeverLocalize)] // cannot be localized
     public class StaticResourceExtension : MarkupExtension
     {
         /// <summary>
@@ -105,6 +106,73 @@ namespace System.Windows
         }
 
         internal object TryProvideValueInternal(IServiceProvider serviceProvider, bool allowDeferredReference, bool mustReturnDeferredResourceReference)
+        {
+            if (!ResourceDictionaryDiagnostics.HasStaticResourceResolvedListeners)
+            {
+                return TryProvideValueImpl(serviceProvider, allowDeferredReference, mustReturnDeferredResourceReference);
+            }
+            else
+            {
+                return TryProvideValueWithDiagnosticEvent(serviceProvider, allowDeferredReference, mustReturnDeferredResourceReference);
+            }
+        }
+
+        private object TryProvideValueWithDiagnosticEvent(IServiceProvider serviceProvider, bool allowDeferredReference, bool mustReturnDeferredResourceReference)
+        {
+            IProvideValueTarget provideValueTarget = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
+            if (provideValueTarget == null || provideValueTarget.TargetObject == null || provideValueTarget.TargetProperty == null
+                || ResourceDictionaryDiagnostics.ShouldIgnoreProperty(provideValueTarget.TargetProperty))
+            {
+                // if there's no target, or target is ignorable, get the value the quick way.
+                return TryProvideValueImpl(serviceProvider, allowDeferredReference, mustReturnDeferredResourceReference);
+            }
+
+            ResourceDictionaryDiagnostics.LookupResult result;
+            object value;
+            bool success = false;
+
+            try
+            {
+                // request a result of the lookup
+                result = ResourceDictionaryDiagnostics.RequestLookupResult(this);
+
+                // do the lookup - the ResourceDictionary that resolves the reference will fill in the result
+                value = TryProvideValueImpl(serviceProvider, allowDeferredReference, mustReturnDeferredResourceReference);
+
+                // for the purposes of diagnostics, a deferred reference is a success -
+                // we only need the dictionary that holds the value, not the value itself
+                DeferredResourceReference deferredReference = value as DeferredResourceReference;
+                if (deferredReference != null)
+                {
+                    success = true;
+                    ResourceDictionary dict = deferredReference.Dictionary;
+                    if (dict != null)
+                    {
+                        // the result may not have been recorded yet
+                        ResourceDictionaryDiagnostics.RecordLookupResult(ResourceKey, dict);
+                    }
+                }
+                else
+                {
+                    success = (value != DependencyProperty.UnsetValue);
+                }
+            }
+            finally
+            {
+                // revert the request
+                ResourceDictionaryDiagnostics.RevertRequest(this, success);
+            }
+
+            // raise the diagnostic event
+            if (success)
+            {
+                ResourceDictionaryDiagnostics.OnStaticResourceResolved(provideValueTarget.TargetObject, provideValueTarget.TargetProperty, result);
+            }
+
+            return value;
+        }
+
+        private object TryProvideValueImpl(IServiceProvider serviceProvider, bool allowDeferredReference, bool mustReturnDeferredResourceReference)
         {
             // Get prefetchedValue
             DeferredResourceReference prefetchedValue = PrefetchedValue;
@@ -189,7 +257,7 @@ namespace System.Windows
             for(int i=0; i<ambientList.Count; i++)
             {
                 AmbientPropertyValue ambientValue = ambientList[i];
-               
+
                 if (ambientValue.Value is ResourceDictionary)
                 {
                     var resourceDictionary = (ResourceDictionary)ambientValue.Value;
@@ -258,7 +326,7 @@ namespace System.Windows
         }
 
 
-        private object FindResourceInEnviroment(IServiceProvider serviceProvider, 
+        private object FindResourceInEnviroment(IServiceProvider serviceProvider,
                                                 bool allowDeferredReference,
                                                 bool mustReturnDeferredResourceReference)
         {

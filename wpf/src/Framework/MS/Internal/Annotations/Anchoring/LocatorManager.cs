@@ -759,8 +759,8 @@ namespace MS.Internal.Annotations.Anchoring
                 if (selProcessor != null)
                 {
                     IList <ContentLocatorPart> locatorParts = selProcessor.GenerateLocatorParts(selection, startNode.Node);
-                    // Possible 
-
+                    // Possible bug - AddLocatorPartsToLocator was only written to handle normal locators, not
+                    // locator groups. ToDo
                     if (locatorParts != null && locatorParts.Count > 0)
                     {
                         List<ContentLocatorBase> tempLocators = new List<ContentLocatorBase>(locatorsToReturn.Count * locatorParts.Count);

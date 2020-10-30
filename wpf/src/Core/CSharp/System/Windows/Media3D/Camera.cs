@@ -66,8 +66,8 @@ namespace System.Windows.Media.Media3D
         // We also need to return the distance between the original an new near
         // planes (distanceAdjustment), so we can correct the hit-test
         // distances before handing them back to the user. For more
-        // information, see WindowsOS 
-
+        // information, see WindowsOS Bug #1329733.
+        //
         internal abstract RayHitTestParameters RayFromViewportPoint(Point point, Size viewSize, Rect3D boundingRect, out double distanceAdjustment);
         internal abstract Matrix3D GetViewMatrix();
         internal abstract Matrix3D GetProjectionMatrix(double aspectRatio);

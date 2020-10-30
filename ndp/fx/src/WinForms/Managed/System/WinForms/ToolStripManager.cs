@@ -9,6 +9,7 @@ namespace System.Windows.Forms {
     using System.Windows.Forms.VisualStyles;
     using System.ComponentModel;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -32,6 +33,7 @@ namespace System.Windows.Forms {
         private static bool initialized;
 
         private static Font defaultFont;
+        private static ConcurrentDictionary<int, Font> defaultFontCache = new ConcurrentDictionary<int, Font>();
 
         // WARNING: When subscribing to static event handlers - make sure you unhook from them
         // otherwise you can leak USER objects on process shutdown.
@@ -42,6 +44,8 @@ namespace System.Windows.Forms {
         private const int staticEventCount = 1;
 
         private static object internalSyncObject = new object();
+
+        private static int currentDpi = DpiHelper.DeviceDpi;
 
         private static void InitalizeThread() {
             if (!initialized) {
@@ -59,37 +63,71 @@ namespace System.Windows.Forms {
         internal static Font DefaultFont {
             get {
                 Font sysFont = null;
-                Font retFont = defaultFont;  // threadsafe local reference
 
-                if (retFont == null) {
-                    lock (internalSyncObject) {
-                        // double check the defaultFont after the lock.
-                        retFont = defaultFont;
+                // We need to cache the default fonts for the different DPIs.
+                if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements) {
+                    int dpi = CurrentDpi;
 
-                        if (retFont == null) {
-                            // default to menu font
-                            sysFont = SystemFonts.MenuFont;
-                            if (sysFont == null) {
-                                // ...or to control font if menu font unavailable
-                                sysFont = Control.DefaultFont;
+                    Font retFont = null;
+                    if (defaultFontCache.TryGetValue(dpi, out retFont) == false || retFont == null) {
+                        // default to menu font
+                        sysFont = SystemInformation.GetMenuFontForDpi(dpi);
+                        if (sysFont != null) {
+                            // ensure font is in pixels so it displays properly in the property grid at design time.
+                            if (sysFont.Unit != GraphicsUnit.Point) {
+                                retFont = ControlPaint.FontInPoints(sysFont);
+                                sysFont.Dispose();
                             }
-                            if (sysFont != null) {
-                                // ensure font is in pixels so it displays properly in the property grid at design time.
-                                if (sysFont.Unit != GraphicsUnit.Point) {
-                                    defaultFont = ControlPaint.FontInPoints(sysFont);
-                                    retFont = defaultFont;
-                                    sysFont.Dispose();
-                                }
-                                else {
-                                    defaultFont = sysFont;
-                                    retFont = defaultFont;
-                                }
+                            else {
+                                retFont = sysFont;
                             }
-                            return retFont;
+                            defaultFontCache[dpi] = retFont;
                         }
                     }
+                    return retFont;
                 }
-                return retFont;
+                else {
+                    Font retFont = defaultFont;  // threadsafe local reference
+
+                    if (retFont == null) {
+                        lock (internalSyncObject) {
+                            // double check the defaultFont after the lock.
+                            retFont = defaultFont;
+
+                            if (retFont == null) {
+                                // default to menu font
+                                sysFont = SystemFonts.MenuFont;
+                                if (sysFont == null) {
+                                    // ...or to control font if menu font unavailable
+                                    sysFont = Control.DefaultFont;
+                                }
+                                if (sysFont != null) {
+                                    // ensure font is in pixels so it displays properly in the property grid at design time.
+                                    if (sysFont.Unit != GraphicsUnit.Point) {
+                                        defaultFont = ControlPaint.FontInPoints(sysFont);
+                                        retFont = defaultFont;
+                                        sysFont.Dispose();
+                                    }
+                                    else {
+                                        defaultFont = sysFont;
+                                        retFont = defaultFont;
+                                    }
+                                }
+                                return retFont;
+                            }
+                        }
+                    }
+                    return retFont;
+                }
+            }
+        }
+
+        internal static int CurrentDpi {
+            get {
+                return currentDpi;
+            }
+            set {
+                currentDpi = value;
             }
         }
 
@@ -232,8 +270,13 @@ namespace System.Windows.Forms {
             // SPI_SETNONCLIENTMETRICS is put up in WM_SETTINGCHANGE if the Menu font changes.
             // this corresponds to UserPreferenceCategory.Window.
             if (e.Category == UserPreferenceCategory.Window) {
-                lock (internalSyncObject) {
-                    defaultFont = null;
+                if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements) {
+                    defaultFontCache.Clear();
+                }
+                else { 
+                    lock (internalSyncObject) {
+                        defaultFont = null;
+                    }
                 }
             }
         }
@@ -701,6 +744,8 @@ namespace System.Windows.Forms {
 
             private ToolStrip _toplevelToolStrip = null;
 
+            private readonly WeakReference<IKeyboardToolTip> lastFocusedTool = new WeakReference<IKeyboardToolTip>(null);
+
 #if DEBUG
             bool _justEnteredMenuMode = false;
 #endif
@@ -821,12 +866,23 @@ namespace System.Windows.Forms {
                     }
                     _inMenuMode = true;
 
+                    if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                        NotifyLastLastFocusedToolAboutFocusLoss();
+                    }
+
                     // fire timer messages to force our filter to get evaluated.
                     ProcessMessages(true);
                 }
 
             }
 
+            internal void NotifyLastLastFocusedToolAboutFocusLoss() {
+                IKeyboardToolTip lastFocusedTool = KeyboardToolTipStateMachine.Instance.LastFocusedTool;
+                if (lastFocusedTool != null) {
+                    this.lastFocusedTool.SetTarget(lastFocusedTool);
+                    KeyboardToolTipStateMachine.Instance.NotifyAboutLostFocus(lastFocusedTool);
+                }
+            }
 
             internal static void ExitMenuMode() {
                 Instance.ExitMenuModeCore();
@@ -869,6 +925,13 @@ namespace System.Windows.Forms {
                         if (_caretHidden) {
                             _caretHidden = false;
                             SafeNativeMethods.ShowCaret(NativeMethods.NullHandleRef);
+                        }
+
+                        if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                            IKeyboardToolTip tool;
+                            if(this.lastFocusedTool.TryGetTarget(out tool) && tool != null) {
+                                KeyboardToolTipStateMachine.Instance.NotifyAboutGotFocus(tool);
+                            }
                         }
 
                     }
@@ -1207,92 +1270,95 @@ namespace System.Windows.Forms {
                     return false;
                 }
 
-                switch (m.Msg) {
+                DpiAwarenessContext context = CommonUnsafeNativeMethods.TryGetDpiAwarenessContextForWindow(m.HWnd);
 
-                    case NativeMethods.WM_MOUSEMOVE:
-                    case NativeMethods.WM_NCMOUSEMOVE:
-                        // Mouse move messages should be eaten if they arent for a dropdown.
-                        // this prevents things like ToolTips and mouse over highlights from
-                        // being processed.  
-                        Control control = Control.FromChildHandleInternal(m.HWnd);
-                        if (control == null || !(control.TopLevelControlInternal is ToolStripDropDown)) {
-                            // double check it's not a child control of the active toolstrip.
-                            if (!IsChildOrSameWindow(hwndActiveToolStrip, new HandleRef(null, m.HWnd))) {
+                using (DpiHelper.EnterDpiAwarenessScope(context)) {
+                    switch (m.Msg) {
 
-                                // it is NOT a child of the current active toolstrip.
+                        case NativeMethods.WM_MOUSEMOVE:
+                        case NativeMethods.WM_NCMOUSEMOVE:
+                            // Mouse move messages should be eaten if they arent for a dropdown.
+                            // this prevents things like ToolTips and mouse over highlights from
+                            // being processed.  
+                            Control control = Control.FromChildHandleInternal(m.HWnd);
+                            if (control == null || !(control.TopLevelControlInternal is ToolStripDropDown)) {
+                                // double check it's not a child control of the active toolstrip.
+                                if (!IsChildOrSameWindow(hwndActiveToolStrip, new HandleRef(null, m.HWnd))) {
 
-                                ToolStrip toplevelToolStrip = GetCurrentToplevelToolStrip();
-                                if (toplevelToolStrip != null
-                                    && (IsChildOrSameWindow(new HandleRef(toplevelToolStrip, toplevelToolStrip.Handle),
-                                                           new HandleRef(null, m.HWnd)))) {
-                                    // DONT EAT mouse message.
-                                    // The mouse message is from an HWND that is part of the toplevel toolstrip - let the mosue move through so
-                                    // when you have something like the file menu open and mouse over the edit menu
-                                    // the file menu will dismiss.
+                                    // it is NOT a child of the current active toolstrip.
 
-                                    return false;
+                                    ToolStrip toplevelToolStrip = GetCurrentToplevelToolStrip();
+                                    if (toplevelToolStrip != null
+                                        && (IsChildOrSameWindow(new HandleRef(toplevelToolStrip, toplevelToolStrip.Handle),
+                                                               new HandleRef(null, m.HWnd)))) {
+                                        // DONT EAT mouse message.
+                                        // The mouse message is from an HWND that is part of the toplevel toolstrip - let the mosue move through so
+                                        // when you have something like the file menu open and mouse over the edit menu
+                                        // the file menu will dismiss.
+
+                                        return false;
+                                    }
+                                    else if (!IsChildOrSameWindow(ActiveHwnd, new HandleRef(null, m.HWnd))) {
+                                        // DONT EAT mouse message.
+                                        // the mouse message is from another toplevel HWND.
+                                        return false;
+                                    }
+                                    // EAT mouse message
+                                    // the HWND is 
+                                    //      not part of the active toolstrip
+                                    //      not the toplevel toolstrip (e.g. MenuStrip).
+                                    //      not parented to the toplevel toolstrip (e.g a combo box on a menu strip).
+                                    return true;
                                 }
-                                else if (!IsChildOrSameWindow(ActiveHwnd, new HandleRef(null, m.HWnd))) {
-                                    // DONT EAT mouse message.
-                                    // the mouse message is from another toplevel HWND.
-                                    return false;
-                                }
-                                // EAT mouse message
-                                // the HWND is 
-                                //      not part of the active toolstrip
-                                //      not the toplevel toolstrip (e.g. MenuStrip).
-                                //      not parented to the toplevel toolstrip (e.g a combo box on a menu strip).
-                                return true;
                             }
-                        }
-                        break;
-                    case NativeMethods.WM_LBUTTONDOWN:
-                    case NativeMethods.WM_RBUTTONDOWN:
-                    case NativeMethods.WM_MBUTTONDOWN:
-                        //
-                        // When a mouse button is pressed, we should determine if it is within the client coordinates
-                        // of the active dropdown.  If not, we should dismiss it.  
-                        //
-                        ProcessMouseButtonPressed(m.HWnd,
-                            /*x=*/NativeMethods.Util.SignedLOWORD(m.LParam),
-                            /*y=*/NativeMethods.Util.SignedHIWORD(m.LParam));
+                            break;
+                        case NativeMethods.WM_LBUTTONDOWN:
+                        case NativeMethods.WM_RBUTTONDOWN:
+                        case NativeMethods.WM_MBUTTONDOWN:
+                            //
+                            // When a mouse button is pressed, we should determine if it is within the client coordinates
+                            // of the active dropdown.  If not, we should dismiss it.  
+                            //
+                            ProcessMouseButtonPressed(m.HWnd,
+                                /*x=*/NativeMethods.Util.SignedLOWORD(m.LParam),
+                                /*y=*/NativeMethods.Util.SignedHIWORD(m.LParam));
 
-                        break;
-                    case NativeMethods.WM_NCLBUTTONDOWN:
-                    case NativeMethods.WM_NCRBUTTONDOWN:
-                    case NativeMethods.WM_NCMBUTTONDOWN:
-                        //
-                        // When a mouse button is pressed, we should determine if it is within the client coordinates
-                        // of the active dropdown.  If not, we should dismiss it.  
-                        //
-                        ProcessMouseButtonPressed(/*nc messages are in screen coords*/IntPtr.Zero,
-                            /*x=*/NativeMethods.Util.SignedLOWORD(m.LParam),
-                            /*y=*/NativeMethods.Util.SignedHIWORD(m.LParam));
-                        break;
+                            break;
+                        case NativeMethods.WM_NCLBUTTONDOWN:
+                        case NativeMethods.WM_NCRBUTTONDOWN:
+                        case NativeMethods.WM_NCMBUTTONDOWN:
+                            //
+                            // When a mouse button is pressed, we should determine if it is within the client coordinates
+                            // of the active dropdown.  If not, we should dismiss it.  
+                            //
+                            ProcessMouseButtonPressed(/*nc messages are in screen coords*/IntPtr.Zero,
+                                /*x=*/NativeMethods.Util.SignedLOWORD(m.LParam),
+                                /*y=*/NativeMethods.Util.SignedHIWORD(m.LParam));
+                            break;
 
-                    case NativeMethods.WM_KEYDOWN:
-                    case NativeMethods.WM_KEYUP:
-                    case NativeMethods.WM_CHAR:
-                    case NativeMethods.WM_DEADCHAR:
-                    case NativeMethods.WM_SYSKEYDOWN:
-                    case NativeMethods.WM_SYSKEYUP:
-                    case NativeMethods.WM_SYSCHAR:
-                    case NativeMethods.WM_SYSDEADCHAR:
+                        case NativeMethods.WM_KEYDOWN:
+                        case NativeMethods.WM_KEYUP:
+                        case NativeMethods.WM_CHAR:
+                        case NativeMethods.WM_DEADCHAR:
+                        case NativeMethods.WM_SYSKEYDOWN:
+                        case NativeMethods.WM_SYSKEYUP:
+                        case NativeMethods.WM_SYSCHAR:
+                        case NativeMethods.WM_SYSDEADCHAR:
 
-                        if (!activeToolStrip.ContainsFocus) {
-                            Debug.WriteLineIf(ToolStrip.SnapFocusDebug.TraceVerbose, "[ModalMenuFilter.PreFilterMessage] MODIFYING Keyboard message " + m.ToString());
+                            if (!activeToolStrip.ContainsFocus) {
+                                Debug.WriteLineIf(ToolStrip.SnapFocusDebug.TraceVerbose, "[ModalMenuFilter.PreFilterMessage] MODIFYING Keyboard message " + m.ToString());
 
-                            // route all keyboard messages to the active dropdown.
-                            m.HWnd = activeToolStrip.Handle;
-                        }
-                        else {
-                            Debug.WriteLineIf(ToolStrip.SnapFocusDebug.TraceVerbose, "[ModalMenuFilter.PreFilterMessage] got Keyboard message " + m.ToString());
-                        }
-                        break;
+                                // route all keyboard messages to the active dropdown.
+                                m.HWnd = activeToolStrip.Handle;
+                            }
+                            else {
+                                Debug.WriteLineIf(ToolStrip.SnapFocusDebug.TraceVerbose, "[ModalMenuFilter.PreFilterMessage] got Keyboard message " + m.ToString());
+                            }
+                            break;
 
+                    }
                 }
                 return false;
-
             }
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]  // since this has the lifetime of the thread, theres no great way to dispose.
@@ -1356,7 +1422,7 @@ namespace System.Windows.Forms {
                 }
 
                 private unsafe IntPtr MessageHookProc(int nCode, IntPtr wparam, IntPtr lparam) {
-                    if (nCode == NativeMethods.HC_ACTION)  {
+                    if (nCode == NativeMethods.HC_ACTION) {
                         if (isHooked && (int)wparam == NativeMethods.PM_REMOVE /*only process GetMessage, not PeekMessage*/) {
                             // only process messages we've pulled off the queue
                             NativeMethods.MSG* msg = (NativeMethods.MSG*)lparam;

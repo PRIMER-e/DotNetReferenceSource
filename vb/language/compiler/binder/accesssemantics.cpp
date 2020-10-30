@@ -66,8 +66,8 @@ bool Bindable::VerifyAccessExposure(
                 // be specified at the use sites. This can happen under either of the following
                 // situations:
                 // - the binding is a cached binding shared by several use sites
-                // - the binding corresponds to a generic alias - 
-
+                // - the binding corresponds to a generic alias - Bug VSWhidbey #167282
+                //
                 DigThroughTypeArguments = true;
             }
 
@@ -440,8 +440,8 @@ Bindable::VerifyAccessExposureHelper
         
     if (GetAccessInAssemblyContext(Member, IsOutsideAssembly) == ACCESS_Private)
     {
-        // 
-
+        // Bug #173443 - DevDiv Bugs: Continue checking for nested types because 
+        // the fact that the enclosing type is private doesn't mean that it is OK to expose the nested type.
         if(!(Member->IsContainer() && IsTypeNestedIn(Type, Member->PContainer())))
         {
             return true;

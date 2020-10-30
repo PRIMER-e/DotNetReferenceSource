@@ -19,6 +19,7 @@
 #include "String.hxx"
 #include "StringMap.hxx"
 #include <unknwn.h>
+#include <msxml6.h>
 
 HRESULT GetDefaultBrowser(__inout_ecount(nBufferSize)LPCWSTR pszCommandlineToExec, size_t nBufferSize);
 HRESULT GetURLFromCommandLine(__in LPWSTR pszCommandStart, __deref_out_ecount(1) LPWSTR* ppszURL);
@@ -90,6 +91,60 @@ struct UriSecurityId
 
 HRESULT CheckSameDomain(LPCWSTR url1, LPCWSTR url2, IInternetSecurityManager *pSecMgr, bool &sameDomain);
 
+/// <summary>
+/// Finds the attribute by namespace name and returns the attributes' text value. For ambiguous names,
+/// this method returns the value from the first namespace
+/// </summary>
+/// <param name="pAttributes">The <c>ISAXAttributes</c> instance that is searched for the attribute</param>
+/// <param name="pwchUri">The namespace URI, or if the namespace has no URI, an empty string</param>
+/// <param name="cchUri">The length of the URI string</param>
+/// <param name="pwchLocalName">The local name of the attribute</param>
+/// <param name="cchLocalName">The length of the local name string</param>
+/// <param name="strValue">The string value of the attribute</param>
+/// <returns> An <c>HRESULT</c> value indicating success or failure </returns>
+/// <remarks>
+/// This function delegates to <c>ISAXAttributes::getValueFromName</c>. The 
+/// buffer returned by <c>getValueFromName</c> is not is always directly usable - it 
+/// often requires a substring to be extracted from it before it can be 
+/// used. <c>GetValue</c> is intended as a helper function that avoids the need 
+/// for this extra step, and returns a <c>CString</c> object
+///
+/// An overload <i>without</i> <paramref name="cchUri" />, <paramref name="cchLocalName"> parameters
+/// might be of interest, given the fact that we <i>always</i> pass null-terminated strings 
+/// to this method in our code-base, and the string lengths can be safely calculated during runtime. 
+/// Such an overload is not added at present, though it might be of interest in the future.
+/// </remarks>
+HRESULT GetXmlAttributeValue(__in ISAXAttributes* pAttributes, __in LPCWSTR pwchUri, __in size_t cchUri, __in LPCWSTR pwchLocalName, __in size_t cchLocalName, __inout CString& strValue);
+
+/// <summary>
+/// Compile-time length for a string literal
+/// </summary>
+/// <remarks>
+/// This function assumes that the input is a C-style string literal that is null-terminated, 
+/// and not an array of type <c>char[]</c> whose last element might be any arbitrary character. 
+/// The returned length does not count the (thus presumed) terminating null
+/// character
+/// </remarks>
+template <size_t sz>
+inline size_t strlit_len(const char(&)[sz])
+{
+    return sz - 1;
+}
+
+/// <summary>
+/// Compile-time length for a wide string literal. 
+/// </summary>
+/// <remarks>
+/// This function assumes that the input is a C-style string literal that is null-terminated, 
+/// and not an array of type <c>wchar_t[]</c> whose last element might be any arbitrary character. 
+/// The returned length does not count the (thus presumed) terminating null
+/// character
+/// </remarks>
+template <size_t sz>
+inline size_t strlit_len(const wchar_t(&)[sz])
+{
+    return sz - 1;
+}
 
 //*********************************************************************************
 // Debug Help functions

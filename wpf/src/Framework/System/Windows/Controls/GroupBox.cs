@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 using System.Windows.Input; // Access Key support
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -26,6 +27,8 @@ namespace System.Windows.Controls
             IsTabStopProperty.OverrideMetadata(typeof(GroupBox), new FrameworkPropertyMetadata(false));
             DefaultStyleKeyProperty.OverrideMetadata(typeof(GroupBox), new FrameworkPropertyMetadata(typeof(GroupBox)));
             EventManager.RegisterClassHandler(typeof(GroupBox), AccessKeyManager.AccessKeyPressedEvent, new AccessKeyPressedEventHandler(OnAccessKeyPressed));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.GroupBox);
         }
 
         #endregion

@@ -556,11 +556,11 @@ namespace System.Activities.Core.Presentation
                 element = this.Context.Services.GetService<VirtualizedContainerService>().GetContainer(model, this);
                 if (element is VirtualizedContainerService.VirtualizingContainer)
                 {
-                    // Fix 
-
-
-
-
+                    // Fix bug 183698 - if the container does not contain other states, the minwidth should
+                    // be re-set to the default and let the FreeFormPanel to calculate its actual size.
+                    // If a child state was previously expanded, the container's min size would be set
+                    // to its expanded size via ContainerService.GetHintSize in GetContainer() method.
+                    // But if the item is a simple state, its min size should be reset to the default minimum.
                     ((VirtualizedContainerService.VirtualizingContainer)element).MinWidth = DefaultStateDesignerWidth;
                     ((VirtualizedContainerService.VirtualizingContainer)element).MinHeight = DefaultStateDesignerHeight;
                 }
@@ -1467,8 +1467,8 @@ namespace System.Activities.Core.Presentation
                 !this.activeSrcConnectionPoint.ParentDesigner.IsKeyboardFocusWithin)
             {
                 // If a floating annotation is visible, it needs to lose the keyboard focus
-                // to hide itself again (
-
+                // to hide itself again (bug 200739). Therefore, selecting the src connection
+                // point would give the keyboard focus back to its source parent state.
                 Keyboard.Focus(VirtualizedContainerService.TryGetVirtualizedElement(this.activeSrcConnectionPoint.ParentDesigner));
             }
 

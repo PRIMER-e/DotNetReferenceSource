@@ -161,13 +161,13 @@ namespace System.Activities.Core.Presentation
             }
             else if (e.PropertyName == "DefaultCaseDisplayName")
             {
-                // To fix 218600 without losing PropertyGrid focus (
-
-
-
-
-
-
+                // To fix 218600 without losing PropertyGrid focus (Bug 210326), the only workaround is to
+                // update the connector label manually, because FlowSwitchLink.ModelItem["DefaultCaseDisplayName"]
+                // is a FakeModelPropertyImpl, and would not generate a Undo unit 
+                // (FakeModelNotifyPropertyChange.GetInverse() returns null).
+                // However, there is a known issue with PropertyGrid bound to a fake ModelItem.  The workaround is 
+                // to shift the focus to the FlowchartDesigner IF the keyboard focus is on the connector when the user
+                // calls Undo/Redo, to avoid the problem of PropertyGrid not refreshable.
                 FlowchartDesigner flowchartDesigner = VisualTreeUtils.FindVisualAncestor<FlowchartDesigner>(this);
                 Fx.Assert(null != flowchartDesigner, "flowchart designer cannot be null because FlowswitchDesigner must exist within the same visual tree ofthe parent Flowchart.");
 

@@ -165,7 +165,7 @@ namespace System.Windows.Documents
             // Return the available width and height. Please don't
             // return AdornedElement.RenderSize since it will be scrolled
             // in case of the reder size is greater than the available size.
-            // Reference 
+            // Reference bug#1068444.
 
             // We choose to return an arbitrary large value of double.MaxValue/2 in case of infinite height/width.
             // This is safer, because adding (even zero) margin to double.MaxValue causes available size to become infinite again.
@@ -561,8 +561,8 @@ namespace System.Windows.Documents
                 if (adorners != null)
                 {
                     // Verify we still adorn our element.
-                    // We have a persistent but still unexplained stress 
-
+                    // We have a persistent but still unexplained stress bug where
+                    // the caret adorner is mysteriously detached -- Windows OS Bugs 1645800.
                     for (int i = 0; i < adorners.Length; i++)
                     {
                         if (adorners[i] == this)

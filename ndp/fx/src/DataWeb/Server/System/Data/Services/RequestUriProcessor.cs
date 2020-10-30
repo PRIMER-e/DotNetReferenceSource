@@ -290,11 +290,11 @@ namespace System.Data.Services
             UriBuilder resultBuilder = new UriBuilder(requestUri);
             resultBuilder.Query = null;
 
-            // This is fix for 
-
-
-
-
+            // This is fix for bug 565322.
+            // Since we don't allow uri to compose on collections, () must be present
+            // as the last thing in the uri, if present. We need to remove the () from
+            // the uri, since its a optional thing and we want to return a canonical
+            // uri from the server.
             if (resultBuilder.Path.EndsWith("()", StringComparison.Ordinal))
             {
                 resultBuilder.Path = resultBuilder.Path.Substring(0, resultBuilder.Path.Length - 2);

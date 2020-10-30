@@ -1042,8 +1042,8 @@ namespace System.Windows.Documents
             // DataObject data can have the invalid value that throw the Exception.
             // In case of OutOfMemoryException, ExternalException(and Win32Exception),
             // we return null quietly and do nothing for paste.
-            // For example(
-
+            // For example(Bug#1391689) , IE set the invalid Rich Text Format data that bring
+            // CLR OutOfMemoryException.
             catch (OutOfMemoryException)
             {
                 pastedData = null;
@@ -1099,7 +1099,8 @@ namespace System.Windows.Documents
                 try
                 {
                     // Parse the fragment into a separate subtree
-                    object xamlObject = XamlReader.Load(new XmlTextReader(new System.IO.StringReader(pasteXaml)));
+                    bool useRestrictiveXamlReader = !Clipboard.UseLegacyDangerousClipboardDeserializationMode();
+                    object xamlObject = XamlReader.Load(new XmlTextReader(new System.IO.StringReader(pasteXaml)), useRestrictiveXamlReader);
                     TextElement flowContent = xamlObject as TextElement;
 
                     success = flowContent == null ? false : PasteTextElement(This, flowContent);

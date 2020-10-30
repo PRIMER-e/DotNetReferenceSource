@@ -19,10 +19,12 @@ using System;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Xml;
 using MS.Utility;
 using System.Diagnostics;
+using MS.Internal.Xaml.Parser;
 
 #if PBTCOMPILER
 namespace MS.Internal.Markup
@@ -166,7 +168,8 @@ namespace System.Windows.Markup
             _xamlTypeMapper      = parserContext.XamlTypeMapper;
             _mapTable    = parserContext.MapTable;
             _baseUri     = parserContext.BaseUri;
-
+            _masterBracketCharacterCache = parserContext.MasterBracketCharacterCache;
+            
             _rootElement = parserContext._rootElement;
             if (parserContext._nameScopeStack != null)
                 _nameScopeStack = (Stack)parserContext._nameScopeStack.Clone();
@@ -197,6 +200,22 @@ namespace System.Windows.Markup
             }
         }
 #endif
+
+        /// <summary>
+        /// Constructs a cache of all the members in this particular type that have 
+        /// MarkupExtensionBracketCharactersAttribute set on them. This cache is added to a master
+        /// cache which stores the BracketCharacter cache for each type.
+        /// </summary>
+        internal Dictionary<string, SpecialBracketCharacters> InitBracketCharacterCacheForType(Type type)
+        {
+            if (!MasterBracketCharacterCache.ContainsKey(type))
+            {
+                Dictionary<string, SpecialBracketCharacters> map = BuildBracketCharacterCacheForType(type);
+                MasterBracketCharacterCache.Add(type, map);
+            }
+
+            return MasterBracketCharacterCache[type];
+        }
 
         /// <summary>
         /// Pushes the context scope stack (modifications to the ParserContext only apply to levels below
@@ -703,6 +722,22 @@ namespace System.Windows.Markup
         }
 #endif
 
+        /// <summary>
+        /// Master cache of Bracket Characters which stores the BracketCharacter cache for each Type.
+        /// </summary>
+        internal Dictionary<Type, Dictionary<string, SpecialBracketCharacters>> MasterBracketCharacterCache
+        {
+            get
+            {
+                if (_masterBracketCharacterCache == null)
+                {
+                    _masterBracketCharacterCache = new Dictionary<Type, Dictionary<string, SpecialBracketCharacters>>();
+                }
+
+                return _masterBracketCharacterCache;
+            }
+        }
+
         // Return a new Parser context that has the same instance variables as this instance,
         // will all scoped and non-scoped complex properties deep copied.
 #if !PBTCOMPILER
@@ -746,7 +781,7 @@ namespace System.Windows.Markup
                     // and pushing the stack frame
 #if DEBUG
                     bool canDecrement = 
-#endif            
+#endif
                     _currentFreezeStackFrame.DecrementRepeatCount();
 #if DEBUG
                     // We're replacing a no-op with a state change.  Detect if we accidently
@@ -803,7 +838,7 @@ namespace System.Windows.Markup
 
             return freezable;
         }
-#endif    
+#endif
 
 #endregion Internal
 
@@ -818,6 +853,7 @@ namespace System.Windows.Markup
         private Stack                   _langSpaceStack;
         private int                     _repeat;
         private Type                    _targetType;
+        private Dictionary<Type, Dictionary<string, SpecialBracketCharacters>> _masterBracketCharacterCache;
 
 #if !PBTCOMPILER
         private bool                    _skipJournaledProperties;
@@ -829,9 +865,67 @@ namespace System.Windows.Markup
         private List<object[]>          _staticResourcesStack;
 
         object                                      _rootElement;  // RootElement for the Page scoping [temporary, should be
-        // something like page name or baseUri]
+                                                                   // something like page name or baseUri]
 
 #endif
+
+        /// <summary>
+        /// Looks up all properties via reflection on the given type, and scans through the attributes on all of them
+        /// to build a cache of properties which have MarkupExtensionBracketCharactersAttribute set on them.
+        /// </summary>
+        private Dictionary<string, SpecialBracketCharacters> BuildBracketCharacterCacheForType(Type extensionType)
+        {
+            Dictionary<string, SpecialBracketCharacters> cache = new Dictionary<string, SpecialBracketCharacters>(StringComparer.OrdinalIgnoreCase);
+            PropertyInfo[] propertyInfo = extensionType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            Type constructorArgumentType = null;
+            Type markupExtensionBracketCharacterType = null;
+
+            foreach (PropertyInfo property in propertyInfo)
+            {
+                string propertyName = property.Name;
+                string constructorArgumentName = null;
+                IList<CustomAttributeData> customAttributes = CustomAttributeData.GetCustomAttributes(property);
+                SpecialBracketCharacters bracketCharacters = null;
+                foreach (CustomAttributeData attributeData in customAttributes)
+                {
+                    Type attributeType = attributeData.AttributeType;
+                    Assembly xamlAssembly = attributeType.Assembly;
+                    if (constructorArgumentType == null || markupExtensionBracketCharacterType == null)
+                    {
+                        constructorArgumentType =
+                            xamlAssembly.GetType("System.Windows.Markup.ConstructorArgumentAttribute");
+                        markupExtensionBracketCharacterType =
+                            xamlAssembly.GetType("System.Windows.Markup.MarkupExtensionBracketCharactersAttribute");
+                    }
+
+                    if (attributeType.IsAssignableFrom(constructorArgumentType))
+                    {
+                        constructorArgumentName = attributeData.ConstructorArguments[0].Value as string;
+                    }
+                    else if (attributeType.IsAssignableFrom(markupExtensionBracketCharacterType))
+                    {
+                        if (bracketCharacters == null)
+                        {
+                            bracketCharacters = new SpecialBracketCharacters();
+                        }
+
+                        bracketCharacters.AddBracketCharacters((char)attributeData.ConstructorArguments[0].Value, (char)attributeData.ConstructorArguments[1].Value);
+                    }
+                }
+
+                if (bracketCharacters != null)
+                {
+                    bracketCharacters.EndInit();
+                    cache.Add(propertyName, bracketCharacters);
+                    if (constructorArgumentName != null)
+                    {
+                        cache.Add(constructorArgumentName, bracketCharacters);
+                    }
+                }
+            }
+
+            return cache.Count == 0 ? null : cache;
+        }
 
         // Struct that maintains both the freezeFreezable state & stack depth
         // between freezeFreezable state changes
@@ -870,7 +964,7 @@ namespace System.Windows.Markup
             // Whether or not Freezeables with the current scope should be Frozen            
             private bool _freezeFreezables;
 
-#endif                        
+#endif
 
             // The number of frames until the next state change.
             // We need to know how many times PopScope() is called until the 

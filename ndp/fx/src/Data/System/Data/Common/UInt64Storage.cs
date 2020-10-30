@@ -15,7 +15,7 @@ namespace System.Data.Common {
 
     internal sealed class UInt64Storage : DataStorage {
 
-        private static readonly UInt64 defaultValue = UInt64.MinValue;
+        private const UInt64 defaultValue = UInt64.MinValue;
 
         private UInt64[] values;
 

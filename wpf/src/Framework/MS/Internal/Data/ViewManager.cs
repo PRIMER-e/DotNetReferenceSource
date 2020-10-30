@@ -101,29 +101,29 @@
     event listeners.
 
 
-    Dev10 
+    Dev10 bug 452676 exposed a small flaw in this scheme.  The "not shown"
+    strong reference from the collection to a view (via the CollectionChanged event)
+    turns out to be important.  It keeps the view alive at least as
+    long as the collection, even if the app releases all its references to views.
+    If the collection doesn't expose INotifyCollectionChanged, this reference isn't
+    present, and you can draw a smaller dotted line around the views and the view
+    table that has no incoming strong references.  This means the view table (and
+    the views) can get GC'd.
 
+    We can't fix this.  We need that strong reference, but without an event there's
+    no way to get it (remember, we can't touch the collection itself).  But we can
+    mitigate it.
 
+    Here's the mitigation.  The view manager keeps a list of strong references to the
+    relevant view tables, each with an "expiration date" (an integer).  At
+    each purge cycle, decrease the expiration dates and discard the ones that reach
+    zero.  Whenever there is actual activity on a view table, reset its expiration
+    date to the initial value N.  This keeps the view table alive for N purge cycles
+    after its last activity, so it can survive a short transition period of inactivity
+    such as the one in bug 452676.  This will also keep the collection alive for up
+    to N purge cycles longer than before, which customer may perceive as a leak.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-*/
+\***************************************************************************/
 
 using System;
 using System.ComponentModel;
@@ -587,7 +587,7 @@ namespace MS.Internal.Data
                 if (!typeof(ICollectionView).IsAssignableFrom(collectionViewType))
                     throw new ArgumentException(SR.Get(SRID.CollectionView_WrongType, collectionViewType.Name));
 
-                // if collection is IListSource, get its list first (
+                // if collection is IListSource, get its list first (bug 1023903)
                 object arg = (ilsList != null) ? ilsList : collection;
 
                 try
@@ -744,9 +744,9 @@ namespace MS.Internal.Data
                 cr.ViewTable = vt;
 
                 // if the collection doesn't implement INCC, it won't hold a strong
-                // reference to its views.  To mitigate Dev10 
-
-
+                // reference to its views.  To mitigate Dev10 bug 452676, keep a
+                // strong reference to the ViewTable alive for at least a few
+                // Purge cycles.  (See comment at the top of the file.)
                 if (!(collection is INotifyCollectionChanged))
                 {
                     _inactiveViewTables.Add(vt, InactivityThreshold);

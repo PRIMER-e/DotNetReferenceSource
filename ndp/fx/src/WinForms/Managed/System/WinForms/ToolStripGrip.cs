@@ -24,10 +24,23 @@ namespace System.Windows.Forms {
         private Point lastEndLocation = ToolStrip.InvalidMouseEnter;
         private static Size DragSize = LayoutUtils.MaxSize;
 
+        private static readonly Padding defaultPadding = new Padding(2);
+        private static readonly int gripThicknessDefault = 3;
+        private static readonly int gripThicknessVisualStylesEnabled = 5;
+        private Padding scaledDefaultPadding = defaultPadding;
+        private int scaledGripThickness = gripThicknessDefault;
+        private int scaledGripThicknessVisualStylesEnabled = gripThicknessVisualStylesEnabled;
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         internal ToolStripGrip()	{
+            if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding);
+                scaledGripThickness = DpiHelper.LogicalToDeviceUnitsX(gripThicknessDefault);
+                scaledGripThicknessVisualStylesEnabled = DpiHelper.LogicalToDeviceUnitsX(gripThicknessVisualStylesEnabled);
+            }
+
             // if we're using XP themes we've got to be a bit thicker.
-            gripThickness = ToolStripManager.VisualStylesEnabled ? 5 : 3;     
+            gripThickness = ToolStripManager.VisualStylesEnabled ? scaledGripThicknessVisualStylesEnabled : scaledGripThickness;     
             SupportsItemClick = false;
         }
 
@@ -37,7 +50,7 @@ namespace System.Windows.Forms {
         /// </devdoc>
         protected internal override Padding DefaultMargin {
             get {
-                return new Padding(2);
+                return scaledDefaultPadding;
             }
         }
 
@@ -225,6 +238,18 @@ namespace System.Windows.Forms {
             base.OnMouseUp(mea);
         }
 
+        internal override void ToolStrip_RescaleConstants(int oldDpi, int newDpi) {
+            base.RescaleConstantsInternal(newDpi);
+            scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(defaultPadding, newDpi);
+            scaledGripThickness = DpiHelper.LogicalToDeviceUnits(gripThicknessDefault, newDpi);
+            scaledGripThicknessVisualStylesEnabled = DpiHelper.LogicalToDeviceUnits(gripThicknessVisualStylesEnabled, newDpi);
+            this.Margin = DefaultMargin;
+
+            gripThickness = ToolStripManager.VisualStylesEnabled ? scaledGripThicknessVisualStylesEnabled : scaledGripThickness;
+
+            OnFontChanged(EventArgs.Empty);
+        }
+
         private static void SetCursor(Control control, Cursor cursor) {
             IntSecurity.ModifyCursor.Assert();
             control.Cursor = cursor;
@@ -264,6 +289,18 @@ namespace System.Windows.Forms {
                }
             }
 
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3) {
+                    switch (propertyID) {
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                            return false;
+                        case NativeMethods.UIA_ControlTypePropertyId:
+                            return NativeMethods.UIA_ThumbControlTypeId;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
         }
     }
 }

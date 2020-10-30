@@ -486,7 +486,7 @@ namespace MS.Internal.AutomationProxies
             // Moved this outside the if block because it's needed for Microsoft, which uses _acc.DoDefaultAction()
             if (!IsShowAllProgramsButton())
             {
-                // SetFocus need here to resolve 
+                // SetFocus need here to resolve bug 1060649
                 Misc.SetFocus(_hwnd);
             }
 
@@ -536,10 +536,10 @@ namespace MS.Internal.AutomationProxies
                         }
                         catch (ElementNotAvailableException)
                         {
-                            // This is to resolve PS 
-
-
-
+                            // This is to resolve PS Bug 1074570.  There is a timing issue with the SendMessage and
+                            // the Cancel button on the Log Off Dialog box.  The button with be invoked but sometimes
+                            // the SendMessage will return a failure that will cause the ElementNotAvailableException
+                            // to be thrown.
                             return;
                         }
 

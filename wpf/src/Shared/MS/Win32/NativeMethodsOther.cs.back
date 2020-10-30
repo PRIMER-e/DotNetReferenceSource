@@ -23,6 +23,8 @@ namespace MS.Win32
     using MS.Internal.PresentationCore;
 #elif PRESENTATIONFRAMEWORK
     using MS.Internal.PresentationFramework;
+#elif UIAUTOMATIONTYPES
+    using MS.Internal.UIAutomationTypes;
 #elif DRT
     using MS.Internal.Drt;
 #else

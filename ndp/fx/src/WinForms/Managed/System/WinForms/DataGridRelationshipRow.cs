@@ -834,7 +834,7 @@ namespace System.Windows.Forms {
                 }
             }
 
-            private DataGridRelationshipRow Row {
+            private DataGridRelationshipRow RelationshipRow {
                 get {
                     return (DataGridRelationshipRow)Owner;
                 }
@@ -842,8 +842,8 @@ namespace System.Windows.Forms {
 
             public override string DefaultAction {
                 get {
-                    if (Row.dgTable.RelationsList.Count > 0) {
-                        if (Row.Expanded) {
+                    if (RelationshipRow.dgTable.RelationsList.Count > 0) {
+                        if (RelationshipRow.Expanded) {
                             return SR.GetString(SR.AccDGCollapse);
                         }
                         else {
@@ -857,7 +857,7 @@ namespace System.Windows.Forms {
             public override AccessibleStates State {
                 get {
                     AccessibleStates state = base.State;
-                    if (Row.dgTable.RelationsList.Count > 0) {
+                    if (RelationshipRow.dgTable.RelationsList.Count > 0) {
                         if (((DataGridRelationshipRow)Owner).Expanded) {
                             state |= AccessibleStates.Expanded;
                         }
@@ -871,7 +871,7 @@ namespace System.Windows.Forms {
 
             [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
             public override void DoDefaultAction() {
-                if (Row.dgTable.RelationsList.Count > 0) {
+                if (RelationshipRow.dgTable.RelationsList.Count > 0) {
                     ((DataGridRelationshipRow)Owner).Expanded = !((DataGridRelationshipRow)Owner).Expanded;
                 }
             }

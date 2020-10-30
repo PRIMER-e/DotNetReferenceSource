@@ -804,10 +804,10 @@ namespace System.Windows.Documents
                 // we already require -- strictly speaking that's true.  But in practice,
                 // we want the Invariant in this method to remind callers to think about
                 // when they must call BeforeAddChange ahead of logical tree events.  Then,
-                // in practice, there's a subtle 
-
-
-
+                // in practice, there's a subtle bug where a listener might not initially
+                // exist but is added during the logical tree events.  That we handle
+                // here with an additional BeforeAddChange call instead of requiring all
+                // our callers to remember to handle the more subtle case.
                 if (_changes == null)
                 {
                     _changes = new TextContainerChangedEventArgs();
@@ -2968,8 +2968,8 @@ namespace System.Windows.Documents
 
             //
             // Remove char count for logical break, since the element is leaving the tree.
-            // For more data refer to comments of dev10 
-
+            // For more data refer to comments of dev10 bug 703174.
+            //
             if (null != element.TextElementNode)
             {
                 element.TextElementNode.IMECharCount -= imeLeftEdgeCharCount;

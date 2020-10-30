@@ -1278,9 +1278,9 @@ Semantics::LiftOperator
     bool hasGenericParam = false;
     
 
-    // 
-
-
+    // Bug 841109, shiqic. 
+    // When lifting a operator with generic parameter, LiftUserDefinedOperator does not always return the same lifted operator, so we can't cache them.
+    // We only cache non-generic operator without generic parameter.
     ThrowIfNull(pSourceOperator->GetType());
     ThrowIfNull(pSourceOperator->GetFirstParam());
     ThrowIfNull(pSourceOperator->GetFirstParam()->GetType());    
@@ -1576,7 +1576,7 @@ Semantics::ResolveUserDefinedOperator
             );
 
         if (ResolutionFailed ||
-            ResolutionIsLateBound)  // 
+            ResolutionIsLateBound)  // Bug VSWhidbey 472275. Latebound resolution will be required when all narrowing is from Object.
         {
             // Method overload resolution failed--errors have already been reported.
             return NULL;
@@ -1589,8 +1589,8 @@ Semantics::ResolveUserDefinedOperator
             return TypeInGenericContext(OperatorMethod->GetType(), OperatorMethodGenericContext);
         }
     }
-    // MQ 
-
+    // MQ Bug 842804
+    // If OperatorSet.NumberOfEntries() == 0 and either of the oparand is object, it should be late bind.
     else if ((LeftType != NULL && LeftType->IsObject()) || (RightType != NULL && RightType->IsObject()))
     {
         ResolutionIsLateBound = true;

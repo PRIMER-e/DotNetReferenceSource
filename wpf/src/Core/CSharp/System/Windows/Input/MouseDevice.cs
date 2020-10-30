@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Collections;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Input;
+using System.Windows.Input.StylusPointer;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using System.Security;
@@ -12,8 +14,8 @@ using MS.Win32; // *NativeMethods
 using System.Runtime.InteropServices;
 using System;
 
-using SR=MS.Internal.PresentationCore.SR;
-using SRID=MS.Internal.PresentationCore.SRID;
+using SR = MS.Internal.PresentationCore.SR;
+using SRID = MS.Internal.PresentationCore.SRID;
 
 #pragma warning disable 1634, 1691  // suppressing PreSharp warnings
 
@@ -81,8 +83,8 @@ namespace System.Windows.Input
         /// </returns>
         protected MouseButtonState GetButtonState(MouseButton mouseButton)
         {
-            // 
-            if ( _stylusDevice != null && _stylusDevice.IsValid) 
+            // Bug 839668,StylusDevice could have been disposed internally here.
+            if ( _stylusDevice != null && _stylusDevice.IsValid)
                 return _stylusDevice.GetMouseButtonState(mouseButton, this);
             else
                 return GetButtonStateFromSystem(mouseButton);
@@ -306,7 +308,7 @@ namespace System.Windows.Input
             get
             {
 //                 VerifyAccess();
-                return _mouseCapture;
+                return (!_isCaptureMouseInProgress) ? _mouseCapture : null;
             }
         }
 
@@ -434,7 +436,18 @@ namespace System.Windows.Input
                 {
                     if (element != null)
                     {
+                        // CaptureMouse can raise a MouseMove event in some cases
+                        // (see HwndMouseInputProvider.CaptureMouse - "WORKAROUND for bug 969748")
+                        // and listeners that query Mouse.Captured should not see the old
+                        // value that's being replaced.   We'll expose 'null' instead.
+                        // [This situation arises in a ComboBox that has a TextBox in
+                        // its dropdown window - DDVSO 209754.]
+                        bool savedIsCaptureMouseInProgress = _isCaptureMouseInProgress;
+                        _isCaptureMouseInProgress = true;
+
                         success = mouseInputProvider.CaptureMouse();
+
+                        _isCaptureMouseInProgress = savedIsCaptureMouseInProgress;
 
                         if (success)
                         {
@@ -1057,7 +1070,7 @@ namespace System.Windows.Input
                             ((UIElement)o).IsEnabledChanged -= _overIsEnabledChangedEventHandler;
                             ((UIElement)o).IsVisibleChanged -= _overIsVisibleChangedEventHandler;
                             ((UIElement)o).IsHitTestVisibleChanged -= _overIsHitTestVisibleChangedEventHandler;
-                        }                        
+                        }
                         else if (InputElement.IsContentElement(o))
                         {
                             ((ContentElement)o).IsEnabledChanged -= _overIsEnabledChangedEventHandler;
@@ -1082,7 +1095,7 @@ namespace System.Windows.Input
                             ((UIElement)o).IsEnabledChanged += _overIsEnabledChangedEventHandler;
                             ((UIElement)o).IsVisibleChanged += _overIsVisibleChangedEventHandler;
                             ((UIElement)o).IsHitTestVisibleChanged += _overIsHitTestVisibleChangedEventHandler;
-                        }                        
+                        }
                         else if (InputElement.IsContentElement(o))
                         {
                             ((ContentElement)o).IsEnabledChanged += _overIsEnabledChangedEventHandler;
@@ -1159,7 +1172,7 @@ namespace System.Windows.Input
                             ((UIElement)o).IsEnabledChanged -= _captureIsEnabledChangedEventHandler;
                             ((UIElement)o).IsVisibleChanged -= _captureIsVisibleChangedEventHandler;
                             ((UIElement)o).IsHitTestVisibleChanged -= _captureIsHitTestVisibleChangedEventHandler;
-                        }                        
+                        }
                         else if (InputElement.IsContentElement(o))
                         {
                             ((ContentElement)o).IsEnabledChanged -= _captureIsEnabledChangedEventHandler;
@@ -1184,7 +1197,7 @@ namespace System.Windows.Input
                             ((UIElement)o).IsEnabledChanged += _captureIsEnabledChangedEventHandler;
                             ((UIElement)o).IsVisibleChanged += _captureIsVisibleChangedEventHandler;
                             ((UIElement)o).IsHitTestVisibleChanged += _captureIsHitTestVisibleChangedEventHandler;
-                        }                        
+                        }
                         else if (InputElement.IsContentElement(o))
                         {
                             ((ContentElement)o).IsEnabledChanged += _captureIsEnabledChangedEventHandler;
@@ -1315,7 +1328,24 @@ namespace System.Windows.Input
 
                         if (inputDevice == null)
                         {
-                            inputDevice = inputReportEventArgs.Device as StylusDevice;
+                            if (StylusLogic.IsPointerStackEnabled
+                                && StylusLogic.IsPromotedMouseEvent(rawMouseInputReport))
+                            {
+                                // DDVSO:197685
+                                // Due to the WPF pointer stack not promoting mouse internally, we must first
+                                // detect a promoted mouse messages and then fill the stylus device
+                                // from the promoted device used.  This comes from the extra information
+                                // on the mouse message.
+                                uint cursorId = StylusLogic.GetCursorIdFromMouseEvent(rawMouseInputReport);
+                                var tablets = Tablet.TabletDevices.As<PointerTabletDeviceCollection>();
+
+                                inputDevice = tablets.GetStylusDeviceByCursorId(cursorId)?.StylusDevice;
+                            }
+                            else
+                            {
+                                inputDevice = inputReportEventArgs.Device as StylusDevice;
+                            }
+
                             if (inputDevice != null)
                             {
                                 e.StagingItem.SetData(_tagStylusDevice, inputDevice);
@@ -1539,7 +1569,7 @@ namespace System.Windows.Input
 
                         // If the input is reporting mouse movement, only update the
                         // set of non-redundant actions if the position changed.
-                        if ((rawMouseInputReport.Actions & RawMouseActions.AbsoluteMove) == RawMouseActions.AbsoluteMove) // 
+                        if ((rawMouseInputReport.Actions & RawMouseActions.AbsoluteMove) == RawMouseActions.AbsoluteMove) // TODO: RelativeMove, VirtualDesktopMove
                         {
                             //Console.WriteLine("RawMouseActions.AbsoluteMove: X=" + rawMouseInputReport.X + " Y=" + rawMouseInputReport.Y );
 
@@ -1663,7 +1693,7 @@ namespace System.Windows.Input
                                                     }
                                                     else
                                                     {
-                                                        ceTest = ieTest as ContentElement; 
+                                                        ceTest = ieTest as ContentElement;
 
                                                         if (ceTest != null)
                                                         {
@@ -1674,7 +1704,7 @@ namespace System.Windows.Input
                                                             e3DTest = ieTest as UIElement3D; // Should never fail.
 
                                                             ieTest = InputElement.GetContainingInputElement(e3DTest.GetUIParent(true));
-                                                        }                                                        
+                                                        }
                                                     }
                                                 }
 
@@ -1767,7 +1797,7 @@ namespace System.Windows.Input
 
                                 // Console.WriteLine("RawMouseActions.AbsoluteMove: ptRoot=" + ptRoot);
 
-                                actions |= RawMouseActions.AbsoluteMove; // 
+                                actions |= RawMouseActions.AbsoluteMove; // TODO: RelativeMove, VirtualDesktopMove
 
                                 // In most cases the sequence of messages received from the system are HitTest, SetCursor & MouseMove.
                                 // The SetCursor message in this case will be traslated into an Avalon MouseMove & QueryCursor.
@@ -1985,7 +2015,7 @@ namespace System.Windows.Input
                         }
 
                         // Raw --> PreviewMouseWheel
-                        if ((actions & RawMouseActions.VerticalWheelRotate) == RawMouseActions.VerticalWheelRotate) // 
+                        if ((actions & RawMouseActions.VerticalWheelRotate) == RawMouseActions.VerticalWheelRotate) // TODO: HorizontalWheelRotate
                         {
                             MouseWheelEventArgs previewWheel = new MouseWheelEventArgs(this, rawMouseInputReport.Timestamp, rawMouseInputReport.Wheel);
 
@@ -2095,7 +2125,7 @@ namespace System.Windows.Input
                         }
 
                         // Raw --> PreviewMouseMove
-                        if ((actions & RawMouseActions.AbsoluteMove) == RawMouseActions.AbsoluteMove) // 
+                        if ((actions & RawMouseActions.AbsoluteMove) == RawMouseActions.AbsoluteMove) // TODO: RelativeMove, VirtualDesktopMove
                         {
                             MouseEventArgs previewMove = new MouseEventArgs(this, rawMouseInputReport.Timestamp, GetStylusDevice(e.StagingItem));
 
@@ -2361,6 +2391,7 @@ namespace System.Windows.Input
         private DeferredElementTreeState _mouseCaptureWithinTreeState;
         private SecurityCriticalDataClass<IMouseInputProvider> _providerCapture;
         private CaptureMode _captureMode;
+        private bool _isCaptureMouseInProgress;
 
         private DependencyPropertyChangedEventHandler _overIsEnabledChangedEventHandler;
         private DependencyPropertyChangedEventHandler _overIsVisibleChangedEventHandler;

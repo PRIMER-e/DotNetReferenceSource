@@ -299,7 +299,7 @@ DWORD SNI_Sec::CheckServiceBindings(SNIAuthErrStates *pSSPIFailureState)
 		if( NULL == clientTargetSPN.sTargetName )
 		{
 			*pSSPIFailureState = SNIAUTH_ERRST_SSPIHANDSHAKE_SERVICEBINDINGS_QUERYCONTEXTATTRIBUTES2;
-			// This pointer should always be valid, so this would indicate an SSPI 
+			// This pointer should always be valid, so this would indicate an SSPI bug. We validate it for our own peace of mind.
 			Assert(0 && "QueryContextAttributes for SECPKG_ATTR_CLIENT_SPECIFIED_TARGET returned SEC_E_OK and a NULL sTargetName.");
 			BidTrace0(ERROR_TAG _T("QueryContextAttributes for SECPKG_ATTR_CLIENT_SPECIFIED_TARGET returned SEC_E_OK and a NULL sTargetName.\n"));
 			dwRet = ERROR_OUTOFMEMORY; // the only reason one can imagine for this to fail...
@@ -842,7 +842,7 @@ DWORD SNISecGenServerContext( __in SNI_Conn * pConn,
 	// Note: I removed the old check for invalid token. We should never get
 	// a Kerberos token unless we have registered an Spn and in that case an invalid
 	// token is an error. 
-	// Code taken out after 
+	// Code taken out after Bug 233729.
 	if( !SEC_SUCCESS (ss) )
 	{
 		*pSSPIFailureState = SNIAUTH_ERRST_SSPIHANDSHAKE_ACCEPTSECURITYCONTEXT;
@@ -886,9 +886,9 @@ DWORD SNISecGenServerContext( __in SNI_Conn * pConn,
 				{
 					case ExtendedProtectionPolicy_OFF:
 						// This should be impossible, and should indicate either a mistaken assumption during coding 
-						// or a Windows 
-
-
+						// or a Windows bug. Expectation is that Negotiate only returns SEC_E_BAD_BINDINGS due 
+						// to Channel Bindings mismatch, and with OFF we don't specify CBs. 
+						// Assert the unexpected error case and leave the failure state as ASC failure.
 						Assert(0 && "Unexpected return value from AcceptSecurityContext.");
 						break;
 					case ExtendedProtectionPolicy_ALLOWED:

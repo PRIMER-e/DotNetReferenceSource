@@ -571,7 +571,7 @@ if (zoneElement != null) {{
         }
 
         // Only call PermitOnly() in legacy CAS mode.  In the v4 CAS model, calling PermitOnly() would prevent us from calling
-        // Activator.CreateInstance() on types in App_Code (assuming it is non-APTCA). (Dev10 
+        // Activator.CreateInstance() on types in App_Code (assuming it is non-APTCA). (Dev10 Bug 807117)
         private bool UsePermitOnly {
             get {
                 if (!_usePermitOnly.HasValue) {
@@ -1584,8 +1584,8 @@ if (zoneElement != null) {{
             StaticConnections.SetReadOnly(SR.WebPartManager_StaticConnectionsReadOnly);
 
             // The user can't directly change the DynamicConnections property since it is internal.
-            // Make it read-only in case we have a 
-
+            // Make it read-only in case we have a bug and try to change it after activation.
+            // We check the read-only status of this collection in ConnectWebParts() and DisconnectWebParts().
             DynamicConnections.SetReadOnly(SR.WebPartManager_DynamicConnectionsReadOnly);
 
             return (WebPartConnection[])finalConnectionsToActivate.ToArray(typeof(WebPartConnection));

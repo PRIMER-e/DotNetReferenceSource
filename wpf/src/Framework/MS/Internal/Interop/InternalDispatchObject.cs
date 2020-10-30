@@ -15,33 +15,33 @@
 //      Reflection API. In a partial-trust AppDomain, and oddly only with some particular transitions 
 //      between managed-native-managed stack frames, this demand fails. Given that this occurs with
 //      substantially equivalent callstacks in terms of CAS (Asserts) and managed<->native transitions,
-//      there is probably an obscure CLR 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//      there is probably an obscure CLR bug somewhere at the intersection of its IDispatch 
+//      implementation, Reflection and CAS. And there seems to be no explicit suggestion in 
+//      documentation that this scenario is supported in the first place.
+//
+//      By implementing IReflect, any object can provide its own reflection implementation. And it 
+//      turns out CLR's IDispatch "front end" will happily use such an implementation. We don't need
+//      to explicitly assert any ReflectionPermission in this arrangement as long as we are targeting
+//      an internally visible interface type. (The built-in reflection system performs the equivalent
+//      of a LinkDemand against the caller of the reflection API.) This, however, creates a potentially
+//      dangerous security situation.
+//
+//      CAUTION!!! Do not expose any InternalDispatchObject-derived object instance to untrusted code,
+//          unless the implementation of the dispinterface is entirely safe. Such objects should be 
+//          passed only to native code, to be invoked via IDispatch.
+//
+//          Because IReflect is a public interface and has no (link)demands on it and because 
+//          InternalDispatchObject's internal invocation of relection satisfies the reflection system's
+//          ReflectionPermission demand, the implementaiton of the given dispinterface effectively
+//          becomes publicly accessible. (Putting a LinkDemand on InternalDispatchObject.InvokeMember()
+//          would have no effect because it can be called via IReflect, and LinkDemands are evaluated
+//          based on static type info. And putting a full Demand would defeat the whole purpose of
+//          InternalDispatchObject.)
+//
+// History
+//      04/30/08 - Microsoft - Created
+// 
+//------------------------------------------------------------------------------
 
 using System;
 using System.Security;

@@ -1271,7 +1271,7 @@ namespace System.Windows.Controls
 
                         //if both are Auto, then appearance of one scrollbar may causes appearance of another.
                         //If we don't re-check here, we get some part of content covered by auto scrollbar and can never reach to it since
-                        //another scrollbar may not appear (in cases when viewport==extent) - 
+                        //another scrollbar may not appear (in cases when viewport==extent) - bug 1199443
                         if(hsbAuto && vsbAuto && (makeHorizontalBarVisible != makeVerticalBarVisible))
                         {
                             bool makeHorizontalBarVisible2 = !makeHorizontalBarVisible && DoubleUtil.GreaterThan(isi.ExtentWidth, isi.ViewportWidth);
@@ -2288,8 +2288,8 @@ namespace System.Windows.Controls
                     if (    child != null
                         &&  visi != null
                         &&  (visi == child || visi.IsAncestorOf(child))
-                        //  
-
+                        //  bug 1616807. ISI could be removed from visual tree,
+                        //  but ScrollViewer.ScrollInfo may not reflect this yet.
                         &&  this.IsAncestorOf(visi) )
                     {
                         Rect targetRect = cmd.MakeVisibleParam.TargetRect;
@@ -2965,7 +2965,7 @@ namespace System.Windows.Controls
 
             EventManager.RegisterClassHandler(typeof(ScrollViewer), RequestBringIntoViewEvent, new RequestBringIntoViewEventHandler(OnRequestBringIntoView));
 
-            ScrollViewerTraceLogger.LogUsageDetails();
+            ControlsTraceLogger.AddControl(TelemetryControls.ScrollViewer);
         }
 
         private static bool IsValidScrollBarVisibility(object o)

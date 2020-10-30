@@ -74,10 +74,22 @@ namespace System.Windows.Forms.ButtonInternal {
             return layout;
         }
 
-        internal static float GetDpiScaleRatio(Graphics g) {
+        internal double GetDpiScaleRatio(Graphics g) {
+            return GetDpiScaleRatio(g, Control);
+        }
+
+        internal static double GetDpiScaleRatio(Graphics g, Control control) {
+
+            if (DpiHelper.EnableDpiChangedMessageHandling 
+                && control != null && control.IsHandleCreated) {
+
+                return control.deviceDpi / DpiHelper.LogicalDpi;
+            }
+
             if (g == null)
                 return 1.0F;
             return g.DpiX / 96;
         }
+
     }
 }

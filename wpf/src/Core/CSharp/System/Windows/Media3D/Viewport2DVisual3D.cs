@@ -723,8 +723,8 @@ namespace System.Windows.Media.Media3D
         /// <param name="value">The value to set</param>
         public static void SetIsVisualHostMaterial(Material element, Boolean value)
         {
-            // [BreakingChange] Dev10 TFS 
-
+            // [BreakingChange] Dev10 TFS Bug #453513
+            // We should throw ArgumentNullException if element is null.
             element.SetValue(IsVisualHostMaterialProperty, BooleanBoxes.Box(value));
         }
 
@@ -735,8 +735,8 @@ namespace System.Windows.Media.Media3D
         /// <returns>The property's value.</returns>
         public static Boolean GetIsVisualHostMaterial(Material element)
         {
-            // [BreakingChange] Dev10 TFS 
-
+            // [BreakingChange] Dev10 TFS Bug #453513
+            // We should throw ArgumentNullException if element is null.
             return (bool)element.GetValue(IsVisualHostMaterialProperty);
         }
 

@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.Xml;
 using System.Text;
 
 namespace System.Security.Cryptography
@@ -167,11 +168,6 @@ namespace System.Security.Cryptography
         protected abstract byte[] ProviderProtect(byte[] userData);
         protected abstract byte[] ProviderUnprotect(byte[] encryptedData);
 
-        // For security reasons, we don't want the optimizer to introduce a timing attack against
-        // the scenario where we are checking the HashedPurpose.  Whenever we are making decisions
-        // based on the plainText bytes, make sure not to bail out early - Doing so will expose
-        // information about what the plaintext bytes were.
-        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         public byte[] Unprotect(byte[] encryptedData)
         {
             // Make sure we were given some encrypted data
@@ -191,23 +187,7 @@ namespace System.Security.Cryptography
                 // In this code block, we don't want any timing differences between success and failure
                 // Don't touch this code block without crypto board review
                 {
-                    // If the length of the decrypted text is less than the HashPurpose, we know something
-                    // is wrong - However, we don't want to expose this to the caller via a timing difference
-                    // detectable when verifying the HashPurpose.  As a result, we'll still iterate through
-                    // the 'for' loop exactly HashPurpose.Length times.
-                    bool hashedPurposeOK = plainTextWithHashedPurpose.Length >= hashedPurpose.Length;
-                    for (int i = 0; i < hashedPurpose.Length; i++)
-                    {
-                        // As a trick to handle the case where the plain text was less than the length
-                        // of the hash, we modulo it with the lenght of the array - This prevents exceptions
-                        // while preserving the number of iterations of this loop
-                        if (hashedPurpose[i] != plainTextWithHashedPurpose[i % plainTextWithHashedPurpose.Length])
-                        {
-                            hashedPurposeOK = false;
-                        }
-                    }
-
-                    if (!hashedPurposeOK)
+                    if (!SignedXml.CryptographicEquals(hashedPurpose, plainTextWithHashedPurpose, hashedPurpose.Length))
                     {
                         throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_DataProtector_InvalidPurpose"));
                     }

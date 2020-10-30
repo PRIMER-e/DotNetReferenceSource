@@ -265,7 +265,7 @@ namespace System.Windows
             object resource = _cachedResourceValue;
 
             // If the old value was a DeferredResourceReference, it should be
-            // removed from its Dictionary's list to avoid a leak (
+            // removed from its Dictionary's list to avoid a leak (bug 1624666).
             DeferredResourceReference deferredResourceReference = _cachedResourceValue as DeferredResourceReference;
             if (deferredResourceReference != null)
             {

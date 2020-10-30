@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using MS.Utility;
+using MS.Internal.Telemetry.PresentationFramework;
 
 // Disable CS3001: Warning as Error: not CLS-compliant
 #pragma warning disable 3001
@@ -31,6 +32,8 @@ namespace System.Windows.Controls
             _dType = DependencyObjectType.FromSystemTypeInternal(typeof(RadioButton));
 
             KeyboardNavigation.AcceptsReturnProperty.OverrideMetadata(typeof(RadioButton), new FrameworkPropertyMetadata(MS.Internal.KnownBoxes.BooleanBoxes.FalseBox));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.RadioButton);
         }
 
         /// <summary>

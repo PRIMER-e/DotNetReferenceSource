@@ -437,8 +437,8 @@ namespace System.Windows.Forms {
                 columnHeader = new ColumnHeader();
             }
             else {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 columnHeader = (ColumnHeader)Activator.CreateInstance(clonedType);
             }
 

@@ -13,6 +13,7 @@ namespace System.Drawing {
     internal static class LocalAppContextSwitches {
         private static int dontSupportPngFramesInIcons;
         private static int optimizePrintPreview;
+        private static int doNotRemoveGdiFontsResourcesFromFontCollection;
 
         public static bool DontSupportPngFramesInIcons {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -25,6 +26,13 @@ namespace System.Drawing {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get {
                 return LocalAppContext.GetCachedSwitchValue(@"Switch.System.Drawing.Printing.OptimizePrintPreview", ref LocalAppContextSwitches.optimizePrintPreview);
+            }
+        }
+
+        public static bool DoNotRemoveGdiFontsResourcesFromFontCollection {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get {
+                return LocalAppContext.GetCachedSwitchValue(@"Switch.System.Drawing.Text.DoNotRemoveGdiFontsResourcesFromFontCollection", ref LocalAppContextSwitches.doNotRemoveGdiFontsResourcesFromFontCollection);
             }
         }
     }

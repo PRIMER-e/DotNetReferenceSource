@@ -2386,10 +2386,10 @@ namespace System.Windows.Media.Animation
                         localSpeed = maxRate * t / userAcceleration;
                         t = maxRate * t * t / (2 * userAcceleration);
 
-                        // Fix for 
-
-
-
+                        // Fix for bug 118853: Animations with Deceleration cause the Timing system to
+                        // keep ticking while idle.  Only reset NextTickNeededTime when we are
+                        // Active.  When we (or our parent) is Filling, there is no non-linear
+                        // unpredictability to our behavior that requires us to reset NextTickNeededTime.
                         if (_currentClockState == ClockState.Active
                          && _parent._currentClockState == ClockState.Active)
                         {
@@ -2410,10 +2410,10 @@ namespace System.Windows.Media.Animation
                         localSpeed = maxRate * tc / userDeceleration;
                         t = 1 - maxRate * tc * tc / (2 * userDeceleration);
 
-                        // Fix for 
-
-
-
+                        // Fix for bug 118853: Animations with Deceleration cause the Timing system to
+                        // keep ticking while idle.  Only reset NextTickNeededTime when we are
+                        // Active.  When we (or our parent) is Filling, there is no non-linear
+                        // unpredictability to our behavior that requires us to reset NextTickNeededTime.
                         if (_currentClockState == ClockState.Active
                          && _parent._currentClockState == ClockState.Active)
                         {
@@ -3380,9 +3380,9 @@ namespace System.Windows.Media.Animation
             TimeSpan parentTimeSlipPT = parentElapsedTimePT - DivideTimeSpan(syncElapsedTimeLT, _appliedSpeedRatio);
             // NOTE: The above line does the same as this:
             //     parentTimeSlip = syncSlip / _appliedSpeedRatio
-            // ...but it maintains greater accuracy and prevents a 
-
-
+            // ...but it maintains greater accuracy and prevents a bug where parentTimeSlip ends up 1 tick greater
+            // that it should be, thus becoming larger than parentElapsedTimePT and causing us to suddenly fall out
+            // of our sync period.
             
             // Unless the media is exactly perfect, we will have non-zero slip time; we assume that it isn't
             // perfect, and always adjust our time accordingly.

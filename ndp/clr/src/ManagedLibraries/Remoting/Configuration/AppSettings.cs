@@ -22,11 +22,24 @@ namespace System.Runtime.Remoting.Configuration
         internal static readonly bool AllowTransparentProxyMessageDefaultValue = false;
         internal static readonly string AllowTransparentProxyMessageFwLink = "http://go.microsoft.com/fwlink/?LinkId=390633";
 
+        internal static readonly string AllowUnsanitizedWSDLUrlsKeyName = "microsoft:Remoting:AllowUnsanitizedWSDLUrls";
+        internal static readonly bool AllowUnsanitizedWSDLUrlsDefaultValue = false;
+
         // All appSettings must be initialized to their default value in case appSettings section is not present.
         private static bool allowTransparentProxyMessageValue = AllowTransparentProxyMessageDefaultValue;
+        private static bool allowUnsanitizedWSDLUrlsValue = AllowUnsanitizedWSDLUrlsDefaultValue;
 
         private static volatile bool settingsInitialized = false;
         private static object appSettingsLock = new object();
+
+        internal static bool AllowUnsanitizedWSDLUrls
+        {
+            get
+            {
+                EnsureSettingsLoaded();
+                return allowUnsanitizedWSDLUrlsValue;
+            }
+        }
 
         internal static bool AllowTransparentProxyMessage
         {
@@ -56,6 +69,15 @@ namespace System.Runtime.Remoting.Configuration
                             else
                             {
                                 allowTransparentProxyMessageValue = AllowTransparentProxyMessageDefaultValue;
+                            }
+
+                            if (TryGetValue(reader, AllowUnsanitizedWSDLUrlsKeyName, typeof(bool), out value))
+                            {
+                                allowUnsanitizedWSDLUrlsValue = (bool)value;
+                            }
+                            else
+                            {
+                                allowUnsanitizedWSDLUrlsValue = AllowUnsanitizedWSDLUrlsDefaultValue;
                             }
                         }
                         catch

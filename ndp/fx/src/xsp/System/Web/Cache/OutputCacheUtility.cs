@@ -33,6 +33,14 @@ namespace System.Web.Caching {
         }
 
         /// <summary>
+        /// Expose the mothod to flush kernel cache for Out of Band Module
+        /// </summary>
+        /// <param name="cacheEntryKey">The kernel cache key</param>
+        public static void FlushKernelCache(string cacheKey) {
+            Hosting.UnsafeIISMethods.MgdFlushKernelCache(cacheKey);
+        }
+
+        /// <summary>
         /// Create cache dependency for response and return the dependency
         /// </summary>
         /// <param name="response"></param>

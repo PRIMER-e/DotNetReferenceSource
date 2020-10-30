@@ -23,11 +23,19 @@ namespace System
             {
                 case ".NETFramework":
                     {
-                        // Apps targetting .NET Framework version <= 4.6.1 will have to opt-in to Per Monitor DPI Changes using
-                        // this switch in app.config.
                         if (targetFrameworkVersion <= 40601)
                         {
                             LocalAppContext.DefineSwitchDefault(CoreAppContextSwitches.DoNotScaleForDpiChangesSwitchName, true);
+                        }
+
+                        if (targetFrameworkVersion <= 40602)
+                        {
+                            LocalAppContext.DefineSwitchDefault(CoreAppContextSwitches.OverrideExceptionWithNullReferenceExceptionName, true);
+                        }
+
+                        if (targetFrameworkVersion <= 40702)
+                        {
+                            LocalAppContext.DefineSwitchDefault(CoreAppContextSwitches.DoNotUsePresentationDpiCapabilityTier2OrGreaterSwitchName, true);
                         }
 
                         break;

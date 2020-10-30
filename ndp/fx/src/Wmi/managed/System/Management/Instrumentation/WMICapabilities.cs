@@ -137,7 +137,7 @@ namespace System.Management.Instrumentation
 
         public static bool IsUserAdmin()
         {
-            // 
+            // Bug#89083 - If we are on Win9x, we are always assumed to be an admin
             if(Environment.OSVersion.Platform == PlatformID.Win32Windows)
                 return true;
             WindowsPrincipal principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());

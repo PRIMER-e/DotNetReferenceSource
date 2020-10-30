@@ -17,17 +17,15 @@ using MS.Win32;
 
 namespace System.Windows.Automation.Peers
 {
-    /// 
+    ///
     public class GridViewItemAutomationPeer : ListBoxItemAutomationPeer
     {
         ///
         public GridViewItemAutomationPeer(object owner, ListViewAutomationPeer listviewAP)
             : base(owner, listviewAP)
         {
-            Invariant.Assert(owner != null);
             Invariant.Assert(listviewAP != null);
 
-            _item = owner;
             _listviewAP = listviewAP;
         }
 
@@ -43,13 +41,14 @@ namespace System.Windows.Automation.Peers
             return AutomationControlType.DataItem;
         }
 
-        /// 
+        ///
         protected override List<AutomationPeer> GetChildrenCore()
         {
             ListView listview = _listviewAP.Owner as ListView;
             Invariant.Assert(listview != null);
+            object item = Item;
 
-            ListViewItem lvi = listview.ItemContainerGenerator.ContainerFromItem(_item) as ListViewItem;
+            ListViewItem lvi = listview.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
             if (lvi != null)
             {
                 GridViewRowPresenter rowPresenter = GridViewAutomationPeer.FindVisualByType(lvi, typeof(GridViewRowPresenter)) as GridViewRowPresenter;
@@ -59,7 +58,7 @@ namespace System.Windows.Automation.Peers
                     _dataChildren = new Hashtable(rowPresenter.ActualCells.Count);
 
                     List<AutomationPeer> list = new List<AutomationPeer>();
-                    int row = listview.Items.IndexOf(_item);
+                    int row = listview.Items.IndexOf(item);
                     int column = 0;
 
                     foreach (UIElement ele in rowPresenter.ActualCells)
@@ -101,7 +100,6 @@ namespace System.Windows.Automation.Peers
 
         #region Private Fields
 
-        private object _item;
         private ListViewAutomationPeer _listviewAP;
         private Hashtable _dataChildren = null;
 

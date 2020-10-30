@@ -330,8 +330,8 @@ namespace System.Data.Odbc {
                             // it causes failure with jet if it is there
                             //
                             // MDAC 76227: Code is required for japanese client/server tests.
-                            // If this causes regressions with Jet please doc here including 
-
+                            // If this causes regressions with Jet please doc here including bug#. (Microsoft)
+                            //
                             if ((ODBC32.SQL_TYPE.CHAR == _bindtype._sql_type)
                                 || (ODBC32.SQL_TYPE.VARCHAR == _bindtype._sql_type)
                                 || (ODBC32.SQL_TYPE.LONGVARCHAR == _bindtype._sql_type)) {
@@ -653,25 +653,27 @@ namespace System.Data.Odbc {
                 }
             };
 
-            int cbParameterSize = GetParameterSize(value, offset, ordinal);      // count of bytes for the data, for SQLBindParameter
+            int cbParameterSize = GetParameterSize(value, offset, ordinal); // count of bytes for the data, for SQLBindParameter
 
-            // here we upgrade the datatypes if the given values size is bigger than the types columnsize
-            //
+            // Upgrade input value type if the size of input value is bigger than the max size of the input value type.
             switch(_bindtype._sql_type) {
-                case ODBC32.SQL_TYPE.VARBINARY: // MDAC 74372
-                    // Note: per definition DbType.Binary does not support more than 8000 bytes so we change the type for binding
-                    if ((cbParameterSize > 8000))
-                        { _bindtype = TypeMap._Image; } // will change to LONGVARBINARY
+                case ODBC32.SQL_TYPE.VARBINARY:
+                    // Max length of VARBINARY is 8,000 of byte array.
+                    if (size > 8000) {
+						_bindtype = TypeMap._Image; // will change to LONGVARBINARY
+					}
                     break;
-                case ODBC32.SQL_TYPE.VARCHAR: // MDAC 74372
-                    // Note: per definition DbType.Binary does not support more than 8000 bytes so we change the type for binding
-                    if ((cbParameterSize > 8000))
-                        { _bindtype = TypeMap._Text; }  // will change to LONGVARCHAR
+                case ODBC32.SQL_TYPE.VARCHAR:
+                    // Max length of VARCHAR is 8,000 of non-unicode characters.
+                    if (size > 8000) {
+						_bindtype = TypeMap._Text; // will change to LONGVARCHAR
+					}
                     break;
-                case ODBC32.SQL_TYPE.WVARCHAR : // MDAC 75099
-                    // Note: per definition DbType.Binary does not support more than 8000 bytes so we change the type for binding
-                    if ((cbParameterSize > 4000))
-                        { _bindtype = TypeMap._NText; }  // will change to WLONGVARCHAR
+                case ODBC32.SQL_TYPE.WVARCHAR:
+                    // Max length of WVARCHAR (NVARCHAR) is 4,000 of unicode characters.
+                    if (size > 4000) {
+						_bindtype = TypeMap._NText; // will change to WLONGVARCHAR
+					}
                     break;
             }
 
@@ -707,8 +709,8 @@ namespace System.Data.Odbc {
             if (ODBC32.SQL_C.NUMERIC == sql_c_type) {
 
                 // for input/output parameters we need to adjust the scale of the input value since the convert function in
-                // sqlsrv32 takes this scale for the output parameter (possible 
-
+                // sqlsrv32 takes this scale for the output parameter (possible bug in sqlsrv32?)
+                //
                 if ((ODBC32.SQL_PARAM.INPUT_OUTPUT == sqldirection) && (value is Decimal)) {
                     if (scale < _internalScale) {
                         while (scale < _internalScale) {
@@ -720,8 +722,8 @@ namespace System.Data.Odbc {
                 SetInputValue(value, sql_c_type, cbValueSize, precision, 0, parameterBuffer);
 
                 // for output parameters we need to write precision and scale to the buffer since the convert function in
-                // sqlsrv32 expects these values there (possible 
-
+                // sqlsrv32 expects these values there (possible bug in sqlsrv32?)
+                //
                 if (ODBC32.SQL_PARAM.INPUT != sqldirection) {
                     parameterBuffer.WriteInt16(_preparedValueOffset, (short)(((ushort)scale << 8) | (ushort)precision));
                 }

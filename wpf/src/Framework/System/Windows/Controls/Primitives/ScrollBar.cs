@@ -25,6 +25,7 @@ using System.Windows.Markup;
 using MS.Internal;
 using MS.Internal.Commands;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 using MS.Utility;
 using MS.Internal.Utility;
 using MS.Win32;
@@ -721,6 +722,8 @@ namespace System.Windows.Controls.Primitives
             MinimumProperty.OverrideMetadata(typeof(ScrollBar), new FrameworkPropertyMetadata(new PropertyChangedCallback(ViewChanged)));
 
             ContextMenuProperty.OverrideMetadata(typeof(ScrollBar), new FrameworkPropertyMetadata(null, new CoerceValueCallback(CoerceContextMenu)));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.ScrollBar);
         }
 
         private static void ViewChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

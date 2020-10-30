@@ -1,13 +1,7 @@
-// ---------------------------------------------------------------------------
-// This file was generated, please do not edit it directly.
-// 
-// This file was generated using the common file located at:
-//    wpfoob\common\Microsoft\Windows\Controls\WeakDictionary.cs
-// ---------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 // <copyright file="WeakDictionary.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
+// </copyright>
 //------------------------------------------------------------------------------
 
 namespace MS.Internal
@@ -83,17 +77,13 @@ namespace MS.Internal
 
             public IEnumerator<KeyType> GetEnumerator()
             {
-                WeakHashtable hashTable = Dict._hashTable;
+                IWeakHashtable hashTable = Dict._hashTable;
                 foreach (object obj in hashTable.Keys)
                 {
-                    WeakHashtable.EqualityWeakReference keyRef = obj as WeakHashtable.EqualityWeakReference;
-                    if (keyRef != null)
+                    KeyType key = hashTable.UnwrapKey(obj) as KeyType;
+                    if (key != null)
                     {
-                        KeyType key = keyRef.Target as KeyType;
-                        if (key != null)
-                        {
-                            yield return key;
-                        }
+                        yield return key;
                     }
                 }
             }
@@ -174,17 +164,13 @@ namespace MS.Internal
 
             public IEnumerator<ValueType> GetEnumerator()
             {
-                WeakHashtable hashTable = Dict._hashTable;
+                IWeakHashtable hashTable = Dict._hashTable;
                 foreach (object obj in hashTable.Keys)
                 {
-                    WeakHashtable.EqualityWeakReference keyRef = obj as WeakHashtable.EqualityWeakReference;
-                    if (keyRef != null)
+                    KeyType key = hashTable.UnwrapKey(obj) as KeyType;
+                    if (key != null)
                     {
-                        KeyType key = keyRef.Target as KeyType;
-                        if (key != null)
-                        {
-                            yield return (ValueType)hashTable[obj];
-                        }
+                        yield return (ValueType)hashTable[obj];
                     }
                 }
             }
@@ -360,14 +346,10 @@ namespace MS.Internal
         {
             foreach (object obj in _hashTable.Keys)
             {
-                WeakHashtable.EqualityWeakReference keyRef = obj as WeakHashtable.EqualityWeakReference;
-                if (keyRef != null)
+                TKey key = _hashTable.UnwrapKey(obj) as TKey;
+                if (key != null)
                 {
-                    TKey key = keyRef.Target as TKey;
-                    if (key != null)
-                    {
-                        yield return new KeyValuePair<TKey, TValue>(key, (TValue)_hashTable[obj]);
-                    }
+                    yield return new KeyValuePair<TKey, TValue>(key, (TValue)_hashTable[obj]);
                 }
             }
         }
@@ -385,7 +367,7 @@ namespace MS.Internal
 
         #region Private Data
 
-        WeakHashtable _hashTable = new WeakHashtable();
+        IWeakHashtable _hashTable = WeakHashtable.FromKeyType(typeof(TKey));
         KeyCollection<TKey, TValue> _keys = null;
         ValueCollection<TKey, TValue> _values = null;
 

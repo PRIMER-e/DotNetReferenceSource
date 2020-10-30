@@ -517,8 +517,8 @@ HRESULT TextFile::LoadTextFileFromBytes(
 
         if (cchFileSizeOut == 0)
         {
-            // 
-
+            // Bug VSWhidbey 386072
+            //
             wszFileContentsOut = (WCHAR*)pnra->Alloc(sizeof(WCHAR));
             *wszFileContentsOut = L'\0';
             cchFileSizeOut = 0;

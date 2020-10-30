@@ -20,7 +20,9 @@ namespace System.Windows.Forms {
 
         private CheckState                 checkState                                   = CheckState.Unchecked;
         private bool                       checkOnClick                                 = false;
-        private const int StandardButtonWidth = 23;
+        private const int STANDARD_BUTTON_WIDTH = 23;
+        private int standardButtonWidth = STANDARD_BUTTON_WIDTH;
+
         private static readonly object EventCheckedChanged      = new object();
         private static readonly object EventCheckStateChanged   = new object();
 
@@ -178,6 +180,22 @@ namespace System.Windows.Forms {
             }
         }
 
+        internal override int DeviceDpi {
+            get {
+                return base.DeviceDpi;
+            }
+
+            // This gets called via ToolStripItem.RescaleConstantsForDpi.
+            // It's practically calling Initialize on DpiChanging with the new Dpi value.
+            // ToolStripItem.RescaleConstantsForDpi is already behind quirks.
+            set {
+                if (base.DeviceDpi != value) {
+                    base.DeviceDpi = value;
+                    standardButtonWidth = DpiHelper.LogicalToDeviceUnits(STANDARD_BUTTON_WIDTH, DeviceDpi);
+                }
+            }
+        }
+
         /// <include file='doc\ToolStripButton.uex' path='docs/doc[@for="ToolStripButton.CreateAccessibilityInstance"]/*' />
         /// <devdoc>
         /// constructs the new instance of the accessibility object for this ToolStripItem. Subclasses
@@ -190,7 +208,7 @@ namespace System.Windows.Forms {
 
         public override Size GetPreferredSize(Size constrainingSize) {
            Size prefSize = base.GetPreferredSize(constrainingSize);
-           prefSize.Width = Math.Max(prefSize.Width, StandardButtonWidth);
+           prefSize.Width = Math.Max(prefSize.Width, standardButtonWidth);
            return prefSize;
         }
 
@@ -199,6 +217,9 @@ namespace System.Windows.Forms {
         /// </devdoc>
         private void Initialize() {
             SupportsSpaceKey = true;            
+            if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                standardButtonWidth = DpiHelper.LogicalToDeviceUnitsX(STANDARD_BUTTON_WIDTH);
+            }
         }
         
         /// <include file='doc\ToolStripButton.uex' path='docs/doc[@for="ToolStripButton.OnCheckedChanged"]/*' />
@@ -263,16 +284,45 @@ namespace System.Windows.Forms {
                 this.ownerItem = ownerItem;
             }
 
-            
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3) {
+                    switch (propertyID) {
+                        case NativeMethods.UIA_ControlTypePropertyId:
+                            return NativeMethods.UIA_ButtonControlTypeId;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
+            public override AccessibleRole Role {
+                get {
+                    if (ownerItem.CheckOnClick && AccessibilityImprovements.Level1) {
+                        return AccessibleRole.CheckButton;
+                    }
+                    else {
+                        return base.Role;
+                    }
+                }
+            }
+
             public override AccessibleStates State {
                get {
                     if (ownerItem.Enabled && ownerItem.Checked) {
                         return base.State | AccessibleStates.Checked;
                     }
+
+                    if (AccessibilityImprovements.Level1) {
+                        // Disabled ToolStripButton, that is selected, must have focus state so that Narrator can announce it
+                        if (!ownerItem.Enabled && ownerItem.Selected) {
+                            return base.State | AccessibleStates.Focused;
+                        }
+                    }
+
                     return base.State;
                }
             }
-            
+
         }
     }
 }

@@ -55,13 +55,13 @@ namespace System.Experimental.Gdi
         public static bool DeleteDC(HandleRef hDC) {
             System.Internal.HandleCollector.Remove((IntPtr)hDC, IntSafeNativeMethods.CommonHandles.GDI);
             bool retVal = IntDeleteDC(hDC);
-            DbgUtil.AssertWin32(retVal, "DeleteDC([hdc=0x{0:X8}]) failed.", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(retVal, "DeleteDC([hdc=0x{0:X8}]) failed.", hDC.Handle);
             return retVal;
         }
         public static bool DeleteHDC(HandleRef hDC) {
             System.Internal.HandleCollector.Remove((IntPtr)hDC, IntSafeNativeMethods.CommonHandles.HDC);
             bool retVal = IntDeleteDC(hDC);
-            DbgUtil.AssertWin32(retVal, "DeleteHDC([hdc=0x{0:X8}]) failed.", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(retVal, "DeleteHDC([hdc=0x{0:X8}]) failed.", hDC.Handle);
             return retVal;
         }
 
@@ -84,7 +84,7 @@ namespace System.Experimental.Gdi
         public static IntPtr CreateDC(String lpszDriverName, string lpszDeviceName, string lpszOutput, HandleRef /*DEVMODE*/ lpInitData) 
         {
             IntPtr hdc = System.Internal.HandleCollector.Add(IntCreateDC(lpszDriverName, lpszDeviceName, lpszOutput, lpInitData), IntSafeNativeMethods.CommonHandles.HDC);
-            DbgUtil.AssertWin32(hdc != IntPtr.Zero, "CreateDC([driverName={0}], [deviceName={1}], [fileName={2}], [devMode={3}]) failed.", lpszDriverName, lpszDeviceName, lpszOutput, unchecked((int)lpInitData.Handle) );
+            DbgUtil.AssertWin32(hdc != IntPtr.Zero, "CreateDC([driverName={0}], [deviceName={1}], [fileName={2}], [devMode={3}]) failed.", lpszDriverName, lpszDeviceName, lpszOutput, lpInitData.Handle);
             return hdc;
         }
 
@@ -98,7 +98,7 @@ namespace System.Experimental.Gdi
         public static IntPtr CreateIC(string lpszDriverName, string lpszDeviceName, string lpszOutput, HandleRef /*DEVMODE*/ lpInitData) 
         {
             IntPtr hdc = System.Internal.HandleCollector.Add(IntCreateIC(lpszDriverName, lpszDeviceName, lpszOutput, lpInitData), IntSafeNativeMethods.CommonHandles.HDC);
-            DbgUtil.AssertWin32(hdc != IntPtr.Zero, "CreateIC([driverName={0}], [deviceName={1}], [fileName={2}], [devMode={3}]) failed.", lpszDriverName, lpszDeviceName, lpszOutput, unchecked((int)lpInitData.Handle) );
+            DbgUtil.AssertWin32(hdc != IntPtr.Zero, "CreateIC([driverName={0}], [deviceName={1}], [fileName={2}], [devMode={3}]) failed.", lpszDriverName, lpszDeviceName, lpszOutput, lpInitData.Handle);
             return hdc;
         }
 
@@ -114,7 +114,7 @@ namespace System.Experimental.Gdi
         public static IntPtr CreateCompatibleDC(HandleRef hDC)
         {
             IntPtr compatibleDc = System.Internal.HandleCollector.Add(IntCreateCompatibleDC(hDC), IntSafeNativeMethods.CommonHandles.GDI);
-            DbgUtil.AssertWin32(compatibleDc != IntPtr.Zero, "CreateCompatibleDC([hdc=0x{0:X8}]) failed", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(compatibleDc != IntPtr.Zero, "CreateCompatibleDC([hdc=0x{0:X8}]) failed", hDC.Handle);
             return compatibleDc;
         }
 
@@ -125,7 +125,7 @@ namespace System.Experimental.Gdi
         public static int SaveDC(HandleRef hDC)
         {
             int state = IntSaveDC(hDC);
-            DbgUtil.AssertWin32(state != 0, "SaveDC([hdc=0x{0:X8}]) failed", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(state != 0, "SaveDC([hdc=0x{0:X8}]) failed", hDC.Handle);
             return state;
         }
         
@@ -156,7 +156,7 @@ namespace System.Experimental.Gdi
         public static bool OffsetViewportOrgEx(HandleRef hDC, int nXOffset, int nYOffset, [In, Out] IntNativeMethods.POINT point)
         {
             bool retVal = IntOffsetViewportOrgEx(hDC, nXOffset, nYOffset, point);
-            DbgUtil.AssertWin32(retVal, "OffsetViewportOrgEx([hdc=0x{0:X8}], dx=[{1}], dy=[{2}], [out pPoint]) failed.", unchecked((int)hDC.Handle), nXOffset, nYOffset);
+            DbgUtil.AssertWin32(retVal, "OffsetViewportOrgEx([hdc=0x{0:X8}], dx=[{1}], dy=[{2}], [out pPoint]) failed.", hDC.Handle, nXOffset, nYOffset);
             return retVal;
         }
 
@@ -166,7 +166,7 @@ namespace System.Experimental.Gdi
         public static int SetGraphicsMode(HandleRef hDC, int iMode)
         {
             iMode = IntSetGraphicsMode(hDC, iMode);
-            DbgUtil.AssertWin32(iMode != 0, "SetGraphicsMode([hdc=0x{0:X8}], [GM_ADVANCED]) failed.", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(iMode != 0, "SetGraphicsMode([hdc=0x{0:X8}], [GM_ADVANCED]) failed.", hDC.Handle);
             return iMode;
         }
 
@@ -205,7 +205,7 @@ namespace System.Experimental.Gdi
         public static extern int IntGetClipRgn(HandleRef hDC, HandleRef hRgn);
         public static int GetClipRgn(HandleRef hDC, HandleRef hRgn) {
             int retVal = IntGetClipRgn(hDC, hRgn);
-            DbgUtil.AssertWin32(retVal != -1, "IntGetClipRgn([hdc=0x{0:X8}], [hRgn]) failed.", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(retVal != -1, "IntGetClipRgn([hdc=0x{0:X8}], [hRgn]) failed.", hDC.Handle);
             return retVal;
         }
 
@@ -215,7 +215,7 @@ namespace System.Experimental.Gdi
         public static IntNativeMethods.RegionFlags SelectClipRgn(HandleRef hDC, HandleRef hRgn)
         {
             IntNativeMethods.RegionFlags result = IntSelectClipRgn(hDC, hRgn);
-            DbgUtil.AssertWin32(result != IntNativeMethods.RegionFlags.ERROR, "SelectClipRgn([hdc=0x{0:X8}], [hRegion=0x{1:X8}]) failed.", unchecked((int)hDC.Handle), unchecked((int)hRgn.Handle));
+            DbgUtil.AssertWin32(result != IntNativeMethods.RegionFlags.ERROR, "SelectClipRgn([hdc=0x{0:X8}], [hRegion=0x{1:X8}]) failed.", hDC.Handle, hRgn.Handle);
             return result;
         }
 
@@ -225,7 +225,7 @@ namespace System.Experimental.Gdi
         public static IntNativeMethods.RegionFlags GetRgnBox(HandleRef hRgn, [In, Out] ref IntNativeMethods.RECT clipRect)
         {
             IntNativeMethods.RegionFlags result = IntGetRgnBox(hRgn, ref clipRect);
-            DbgUtil.AssertWin32(result != IntNativeMethods.RegionFlags.ERROR, "GetRgnBox([hRegion=0x{0:X8}], [out rect]) failed.", unchecked((int)hRgn.Handle));
+            DbgUtil.AssertWin32(result != IntNativeMethods.RegionFlags.ERROR, "GetRgnBox([hRegion=0x{0:X8}], [out rect]) failed.", hRgn.Handle);
             return result;
         }
 
@@ -252,7 +252,7 @@ namespace System.Experimental.Gdi
         {
             System.Internal.HandleCollector.Remove((IntPtr)hObject, IntSafeNativeMethods.CommonHandles.GDI);
             bool retVal = IntDeleteObject(hObject);
-            DbgUtil.AssertWin32(retVal, "DeleteObject(hObj=[0x{0:X8}]) failed.", unchecked((int) hObject.Handle));
+            DbgUtil.AssertWin32(retVal, "DeleteObject(hObj=[0x{0:X8}]) failed.", hObject.Handle);
             return retVal;
         }
 
@@ -262,7 +262,7 @@ namespace System.Experimental.Gdi
         public static int GetObject(HandleRef hBrush, IntNativeMethods.LOGBRUSH lb) 
         {
             int retVal = IntGetObject(hBrush, System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntNativeMethods.LOGBRUSH)), lb);
-            DbgUtil.AssertWin32(retVal != 0, "GetObject(hObj=[0x{0:X8}], [LOGBRUSH]) failed.", unchecked((int) hBrush.Handle) );
+            DbgUtil.AssertWin32(retVal != 0, "GetObject(hObj=[0x{0:X8}], [LOGBRUSH]) failed.", hBrush.Handle);
             return retVal;
         }
         
@@ -273,7 +273,7 @@ namespace System.Experimental.Gdi
         public static int GetObject(HandleRef hFont, IntNativeMethods.LOGFONT lp) 
         {
             int retVal = IntGetObject(hFont, System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntNativeMethods.LOGFONT)), lp);
-            DbgUtil.AssertWin32(retVal != 0, "GetObject(hObj=[0x{0:X8}], [LOGFONT]) failed.", unchecked((int) hFont.Handle) );
+            DbgUtil.AssertWin32(retVal != 0, "GetObject(hObj=[0x{0:X8}], [LOGFONT]) failed.", hFont.Handle);
             return retVal;
         }
 
@@ -285,7 +285,7 @@ namespace System.Experimental.Gdi
         public static IntPtr SelectObject(HandleRef hdc, HandleRef obj)
         {
             IntPtr oldObj = IntSelectObject(hdc, obj);
-            DbgUtil.AssertWin32(oldObj != IntPtr.Zero, "SelectObject(hdc=hObj=[0x{0:X8}], hObj=[0x{1:X8}]) failed.", unchecked((int) hdc.Handle), unchecked((int) obj.Handle) );
+            DbgUtil.AssertWin32(oldObj != IntPtr.Zero, "SelectObject(hdc=hObj=[0x{0:X8}], hObj=[0x{1:X8}]) failed.", hdc.Handle, obj.Handle);
             return oldObj;
         }
                        
@@ -343,7 +343,7 @@ namespace System.Experimental.Gdi
         public static int SetBkMode(HandleRef hDC, int nBkMode)
         {
             int oldMode = IntSetBkMode( hDC, nBkMode );
-            DbgUtil.AssertWin32(oldMode != 0, "SetBkMode(hdc=[0x{0:X8}], Mode=[{1}]) failed.", unchecked((int)hDC.Handle), nBkMode );
+            DbgUtil.AssertWin32(oldMode != 0, "SetBkMode(hdc=[0x{0:X8}], Mode=[{1}]) failed.", hDC.Handle, nBkMode );
             return oldMode;
         }
 
@@ -353,7 +353,7 @@ namespace System.Experimental.Gdi
         public static int GetBkMode(HandleRef hDC)
         {
             int mode = IntGetBkMode( hDC );
-            DbgUtil.AssertWin32(mode != 0, "GetBkMode(hdc=[0x{0:X8}]) failed.", unchecked((int)hDC.Handle) );
+            DbgUtil.AssertWin32(mode != 0, "GetBkMode(hdc=[0x{0:X8}]) failed.", hDC.Handle);
             return mode;
         }
 
@@ -397,7 +397,7 @@ namespace System.Experimental.Gdi
                 retVal = DrawTextW( hDC, text, text.Length, ref lpRect, nFormat );
             }
 
-            DbgUtil.AssertWin32( retVal != 0, "DrawText(hdc=[0x{0:X8}], text=[{1}], rect=[{2}], flags=[{3}] failed.", unchecked((int) hDC.Handle), text, lpRect, nFormat );
+            DbgUtil.AssertWin32( retVal != 0, "DrawText(hdc=[0x{0:X8}], text=[{1}], rect=[{2}], flags=[{3}] failed.", hDC.Handle, text, lpRect, nFormat );
             return retVal;
         }
 
@@ -436,7 +436,7 @@ namespace System.Experimental.Gdi
                 retVal = DrawTextExW( hDC, text, text.Length, ref lpRect, nFormat, lpDTParams  );
             }
 
-            DbgUtil.AssertWin32(retVal != 0, "DrawTextEx(hdc=[0x{0:X8}], text=[{1}], rect=[{2}], flags=[{3}] failed.", unchecked((int)hDC.Handle), text, lpRect, nFormat );
+            DbgUtil.AssertWin32(retVal != 0, "DrawTextEx(hdc=[0x{0:X8}], text=[{1}], rect=[{2}], flags=[{3}] failed.", hDC.Handle, text, lpRect, nFormat );
             return retVal;
         }
 
@@ -471,7 +471,7 @@ namespace System.Experimental.Gdi
                 retVal = GetTextExtentPoint32W(hDC, text, text.Length, size);
             }
 
-            DbgUtil.AssertWin32(retVal != 0, "GetTextExtentPoint32(hdc=[0x{0:X8}], text=[{1}], size=[{2}] failed.", unchecked((int)hDC.Handle), text, size );
+            DbgUtil.AssertWin32(retVal != 0, "GetTextExtentPoint32(hdc=[0x{0:X8}], text=[{1}], size=[{2}] failed.", hDC.Handle, text, size );
             return retVal;
         }
 
@@ -489,7 +489,7 @@ namespace System.Experimental.Gdi
         public static bool LineTo(HandleRef hdc, int x, int y)
         {
             bool retVal = IntLineTo(hdc, x, y);
-            DbgUtil.AssertWin32(retVal, "LineTo(hdc=[0x{0:X8}], x=[{1}], y=[{2}] failed.", unchecked((int) hdc.Handle), x, y );
+            DbgUtil.AssertWin32(retVal, "LineTo(hdc=[0x{0:X8}], x=[{1}], y=[{2}] failed.", hdc.Handle, x, y );
             return retVal;
         }
 
@@ -499,7 +499,7 @@ namespace System.Experimental.Gdi
         public static bool MoveToEx(HandleRef hdc, int x, int y, IntNativeMethods.POINT pt)
         {
             bool retVal = IntMoveToEx(hdc, x, y, pt);
-            DbgUtil.AssertWin32(retVal, "MoveToEx(hdc=[0x{0:X8}], x=[{1}], y=[{2}], pt=[{3}] failed.", unchecked((int) hdc.Handle), x, y, pt );
+            DbgUtil.AssertWin32(retVal, "MoveToEx(hdc=[0x{0:X8}], x=[{1}], y=[{2}], pt=[{3}] failed.", hdc.Handle, x, y, pt );
             return retVal;
         }
 
@@ -509,7 +509,7 @@ namespace System.Experimental.Gdi
         public static bool Rectangle(HandleRef hdc, int left, int top, int right, int bottom)
         {
             bool retVal = IntRectangle(hdc,left, top, right, bottom);
-            DbgUtil.AssertWin32(retVal, "Rectangle(hdc=[0x{0:X8}], left=[{1}], top=[{2}], right=[{3}], bottom=[{4}] failed.", unchecked((int) hdc.Handle), left, top, right, bottom );
+            DbgUtil.AssertWin32(retVal, "Rectangle(hdc=[0x{0:X8}], left=[{1}], top=[{2}], right=[{3}], bottom=[{4}] failed.", hdc.Handle, left, top, right, bottom );
             return retVal;
         }
 
@@ -519,7 +519,7 @@ namespace System.Experimental.Gdi
         public static bool FillRect(HandleRef hDC, [In] ref IntNativeMethods.RECT rect, HandleRef hbrush)
         {
             bool retVal = IntFillRect(hDC, ref rect, hbrush);
-            DbgUtil.AssertWin32(retVal, "FillRect(hdc=[0x{0:X8}], rect=[{1}], hbrush=[{2}]", unchecked((int)hDC.Handle), rect, hbrush.Handle);
+            DbgUtil.AssertWin32(retVal, "FillRect(hdc=[0x{0:X8}], rect=[{1}], hbrush=[{2}]", hDC.Handle, rect, hbrush.Handle);
             return retVal;
         }
 
@@ -529,7 +529,7 @@ namespace System.Experimental.Gdi
         public static int SetMapMode(HandleRef hDC, int nMapMode)
         {
             int oldMapMode = IntSetMapMode(hDC, nMapMode);
-            DbgUtil.AssertWin32(oldMapMode != 0, "SetMapMode(hdc=[0x{0:X8}], MapMode=[{1}]", unchecked((int)hDC.Handle), nMapMode);
+            DbgUtil.AssertWin32(oldMapMode != 0, "SetMapMode(hdc=[0x{0:X8}], MapMode=[{1}]", hDC.Handle, nMapMode);
             return oldMapMode;
         }
 
@@ -539,7 +539,7 @@ namespace System.Experimental.Gdi
         public static int GetMapMode(HandleRef hDC)
         {
             int mapMode = IntGetMapMode(hDC);
-            DbgUtil.AssertWin32(mapMode != 0, "GetMapMode(hdc=[0x{0:X8}]", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(mapMode != 0, "GetMapMode(hdc=[0x{0:X8}]", hDC.Handle);
             return mapMode;
         }
 
@@ -549,7 +549,7 @@ namespace System.Experimental.Gdi
         public static bool GetViewportExtEx( HandleRef hdc, [In, Out] IntNativeMethods.SIZE lpSize )
         {
             bool retVal = IntGetViewportExtEx( hdc, lpSize );
-            DbgUtil.AssertWin32(retVal, "GetViewportExtEx([hdc=0x{0:X8}], [out size]) failed.", unchecked((int)hdc.Handle));
+            DbgUtil.AssertWin32(retVal, "GetViewportExtEx([hdc=0x{0:X8}], [out size]) failed.", hdc.Handle);
             return retVal;
         }
        
@@ -559,7 +559,7 @@ namespace System.Experimental.Gdi
         public static bool GetViewportOrgEx( HandleRef hdc, [In, Out] IntNativeMethods.POINT lpPoint )
         {
             bool retVal = IntGetViewportOrgEx( hdc, lpPoint );
-            DbgUtil.AssertWin32(retVal, "GetViewportOrgEx([hdc=0x{0:X8}], [out point]) failed.", unchecked((int)hdc.Handle));
+            DbgUtil.AssertWin32(retVal, "GetViewportOrgEx([hdc=0x{0:X8}], [out point]) failed.", hdc.Handle);
             return retVal;
         }
 
@@ -569,7 +569,7 @@ namespace System.Experimental.Gdi
         public static bool SetViewportExtEx(HandleRef hDC, int x, int y, [In, Out] IntNativeMethods.SIZE size)
         {
             bool retVal = IntSetViewportExtEx(hDC, x, y, size);
-            DbgUtil.AssertWin32(retVal, "SetViewportExtEx([hdc=0x{0:X8}], x=[{1}], y=[{2}], [out size]) failed.", unchecked((int)hDC.Handle), x, y);
+            DbgUtil.AssertWin32(retVal, "SetViewportExtEx([hdc=0x{0:X8}], x=[{1}], y=[{2}], [out size]) failed.", hDC.Handle, x, y);
             return retVal;
         }
         [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, EntryPoint="SetViewportOrgEx", CharSet=System.Runtime.InteropServices.CharSet.Auto)]
@@ -578,7 +578,7 @@ namespace System.Experimental.Gdi
         public static bool SetViewportOrgEx(HandleRef hDC, int x, int y, [In, Out] IntNativeMethods.POINT point)
         {
             bool retVal = IntSetViewportOrgEx(hDC, x, y, point);
-            DbgUtil.AssertWin32(retVal, "SetViewportOrgEx([hdc=0x{0:X8}], x=[{1}], y=[{2}], [out point]) failed.", unchecked((int)hDC.Handle), x, y);
+            DbgUtil.AssertWin32(retVal, "SetViewportOrgEx([hdc=0x{0:X8}], x=[{1}], y=[{2}], [out point]) failed.", hDC.Handle, x, y);
             return retVal;
         }
 
@@ -629,7 +629,7 @@ namespace System.Experimental.Gdi
                 retVal = IntUnsafeNativeMethods.GetTextMetricsW(hDC, ref lptm);
             }
 
-            DbgUtil.AssertWin32(retVal != 0, "GetTextMetrics(hdc=[0x{0:X8}], [out TEXTMETRIC] failed.", unchecked((int)hDC.Handle) );
+            DbgUtil.AssertWin32(retVal != 0, "GetTextMetrics(hdc=[0x{0:X8}], [out TEXTMETRIC] failed.", hDC.Handle );
             return retVal;
         }
 
@@ -639,7 +639,7 @@ namespace System.Experimental.Gdi
         public static bool BeginPath(HandleRef hDC)
         {
             bool retVal = IntBeginPath(hDC);
-            DbgUtil.AssertWin32(retVal, "BeginPath(hdc=[0x{0:X8}]failed.", unchecked((int)hDC.Handle) );
+            DbgUtil.AssertWin32(retVal, "BeginPath(hdc=[0x{0:X8}]failed.", hDC.Handle );
             return retVal;
         }
        
@@ -649,7 +649,7 @@ namespace System.Experimental.Gdi
         public static bool EndPath(HandleRef hDC)
         {
             bool retVal = IntEndPath(hDC);
-            DbgUtil.AssertWin32(retVal, "EndPath(hdc=[0x{0:X8}]failed.", unchecked(((int)hDC.Handle)) );
+            DbgUtil.AssertWin32(retVal, "EndPath(hdc=[0x{0:X8}]failed.", hDC.Handle);
             return retVal;
         }
 
@@ -659,7 +659,7 @@ namespace System.Experimental.Gdi
         public static bool StrokePath(HandleRef hDC)
         {
             bool retVal = IntStrokePath(hDC);
-            DbgUtil.AssertWin32(retVal, "StrokePath(hdc=[0x{0:X8}]failed.", unchecked((int)hDC.Handle) );
+            DbgUtil.AssertWin32(retVal, "StrokePath(hdc=[0x{0:X8}]failed.", hDC.Handle );
             return retVal;
         }
 
@@ -669,7 +669,7 @@ namespace System.Experimental.Gdi
         public static bool AngleArc(HandleRef hDC, int x, int y, int radius, float startAngle, float endAngle)
         {
             bool retVal = IntAngleArc(hDC, x, y, radius, startAngle, endAngle);
-            DbgUtil.AssertWin32(retVal, "AngleArc(hdc=[0x{0:X8}], ...) failed.", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(retVal, "AngleArc(hdc=[0x{0:X8}], ...) failed.", hDC.Handle);
             return retVal;
         }
 
@@ -699,7 +699,7 @@ namespace System.Experimental.Gdi
             )
         {
             bool retVal = IntArc(hDC, nLeftRect, nTopRect, nRightRect, nBottomRect, nXStartArc, nYStartArc, nXEndArc, nYEndArc);
-            DbgUtil.AssertWin32(retVal, "Arc(hdc=[0x{0:X8}], ...) failed.", unchecked((int)hDC.Handle));
+            DbgUtil.AssertWin32(retVal, "Arc(hdc=[0x{0:X8}], ...) failed.", hDC.Handle);
             return retVal;
         }
 
@@ -715,7 +715,7 @@ namespace System.Experimental.Gdi
         public static bool Ellipse(HandleRef hDc, int x1, int y1, int x2, int y2)
         {
             bool retVal = IntEllipse(hDc, x1, y1, x2, y2);
-            DbgUtil.AssertWin32(retVal, "Ellipse(hdc=[0x{0:X8}], x1=[{1}], y1=[{2}], x2=[{3}], y2=[{4}]) failed.", unchecked((int) hDc.Handle), x1, y1, x2, y2);
+            DbgUtil.AssertWin32(retVal, "Ellipse(hdc=[0x{0:X8}], x1=[{1}], y1=[{2}], x2=[{3}], y2=[{4}]) failed.", hDc.Handle, x1, y1, x2, y2);
             return retVal;
         }
 

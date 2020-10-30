@@ -883,7 +883,7 @@ namespace System.Windows.Forms {
                     // This will return UTF-8 strings as an array of ANSI characters, which makes it the wrong behavior.
                     // Since there are enough samples online how to workaround that, we will continue to return the
                     // incorrect value to applications targeting netfx 4.0
-                    // DevDiv2 
+                    // DevDiv2 bug 862524
                     hr = SaveStringToHandle(medium.unionmember, data.ToString(), false);
                 }
             }
@@ -1454,16 +1454,16 @@ namespace System.Windows.Forms {
                         || format.Equals(DataFormats.Rtf)
                         || format.Equals(DataFormats.OemText)) {
                         data = ReadStringFromHandle(hglobal, false);
-                    }
+                    } 
                     else if (format.Equals(DataFormats.Html)) {
                         if (WindowsFormsUtils.TargetsAtLeast_v4_5) {
                             data = ReadHtmlFromHandle(hglobal);
-                        }
+                        } 
                         else {
                             // This will return UTF-8 strings as an array of ANSI characters, which makes it the wrong behavior.
                             // Since there are enough samples online how to workaround that, we will continue to return the
                             // incorrect value to applications targeting netfx 4.0
-                            // DevDiv2 
+                            // DevDiv2 bug 862524
                             data = ReadStringFromHandle(hglobal, false);
                         }
                     }
@@ -1480,8 +1480,35 @@ namespace System.Windows.Forms {
                     else if (format.Equals(CF_DEPRECATED_FILENAMEW)) {
                         data = new string[] {ReadStringFromHandle(hglobal, true)};
                     }
+                    else if (!LocalAppContextSwitches.EnableLegacyDangerousClipboardDeserializationMode) {
+                        // We are restricting all formats that might eventually be processed by the BinaryFormatter 
+                        // in ReadObjectFromHandleDeserializer to allow only primitive types.
+                        // Application might opt-out from the secure deserialization mode by adding this
+                        // switch to app.config file, unless the machine has device guard enabled, in that case 
+                        // applications can't can't opt out from restricted deserialization:
+                        // <runtime>
+                        // <AppContextSwitchOverrides value = "Switch.System.Windows.Forms.EnableLegacyDangerousClipboardDeserializationMode=true" />
+                        //</runtime>
+                        bool restrictDeserialization = 
+                            (format.Equals(DataFormats.StringFormat) ||
+                            format.Equals(typeof(Bitmap).FullName) ||
+                            format.Equals(DataFormats.CommaSeparatedValue) ||
+                            format.Equals(DataFormats.Dib) ||
+                            format.Equals(DataFormats.Dif) ||
+                            format.Equals(DataFormats.Locale) ||
+                            format.Equals(DataFormats.PenData) ||
+                            format.Equals(DataFormats.Riff) ||
+                            format.Equals(DataFormats.SymbolicLink) ||
+                            format.Equals(DataFormats.Tiff) ||
+                            format.Equals(DataFormats.WaveAudio) ||
+                            format.Equals(DataFormats.Bitmap) ||
+                            format.Equals(DataFormats.EnhancedMetafile) ||
+                            format.Equals(DataFormats.Palette) ||
+                            format.Equals(DataFormats.MetafilePict));
+                    data = ReadObjectFromHandle(hglobal, restrictDeserialization);
+                    }
                     else {
-                        data = ReadObjectFromHandle(hglobal);
+                        data = ReadObjectFromHandle(hglobal, restrictDeserialization: false);
                         /*
                         spb - 93835 dib support is a mess
                         if (format.Equals(DataFormats.Dib)
@@ -1489,7 +1516,7 @@ namespace System.Windows.Forms {
                             data = new Bitmap((Stream)data);
                         }
                         */
-                    }
+                    } 
 
                     UnsafeNativeMethods.GlobalFree(new HandleRef(null, hglobal));
                 }
@@ -1502,7 +1529,8 @@ namespace System.Windows.Forms {
             ///     Uses HGLOBALs and retrieves the specified format from the bound IComDatabject.
             /// </devdoc>
             /// <internalonly/>
-            private Object GetDataFromOleHGLOBAL(string format) {
+            private Object GetDataFromOleHGLOBAL(string format, out bool done) {
+                done = false;
                 Debug.Assert(innerData != null, "You must have an innerData on all DataObjects");
 
                 FORMATETC formatetc = new FORMATETC();
@@ -1530,6 +1558,9 @@ namespace System.Windows.Forms {
                         if (medium.unionmember != IntPtr.Zero) {
                             data = GetDataFromHGLOBLAL(format, medium.unionmember);
                         }
+                    }
+                    catch (RestrictedTypeDeserializationException) {
+                        done = true;
                     }
                     catch {
                     }
@@ -1631,17 +1662,17 @@ namespace System.Windows.Forms {
             ///     format. This is the base of the OLE to managed conversion.
             /// </devdoc>
             /// <internalonly/>
-            private Object GetDataFromBoundOleDataObject(string format) {
-
+            private Object GetDataFromBoundOleDataObject(string format, out bool done) {
                 Object data = null;
-                try
+                done = false;
+                try 
                 {
                     data = GetDataFromOleOther(format);
                     if (data == null)
                     {
-                        data = GetDataFromOleHGLOBAL(format);
+                        data = GetDataFromOleHGLOBAL(format, out done);
                     }
-                    if (data == null)
+                    if (data == null && !done)
                     {
                         data = GetDataFromOleIStream(format);
                     }
@@ -1706,7 +1737,7 @@ namespace System.Windows.Forms {
             ///     handle.
             /// </devdoc>
             /// <internalonly/>
-            private Object ReadObjectFromHandle(IntPtr handle)
+            private Object ReadObjectFromHandle(IntPtr handle, bool restrictDeserialization)
             {
                 object value = null;
                 
@@ -1714,19 +1745,87 @@ namespace System.Windows.Forms {
                 Stream stream = ReadByteStreamFromHandle(handle, out isSerializedObject);
                 
                 if (isSerializedObject) {
-                    value = ReadObjectFromHandleDeserializer(stream);
+                    value = ReadObjectFromHandleDeserializer(stream, restrictDeserialization);
                 }
                 else {
-                    value = stream;
+                    value = stream;  
                 }
 
                 return value;
             }
 
-            private static Object ReadObjectFromHandleDeserializer(Stream stream) {
+            private static Object ReadObjectFromHandleDeserializer(Stream stream, bool restrictDeserialization) {
                 BinaryFormatter formatter = new BinaryFormatter();
+
+                if (restrictDeserialization) {
+                    formatter.Binder = new RestrictiveBinder();
+                }
                 formatter.AssemblyFormat = FormatterAssemblyStyle.Simple;
                 return formatter.Deserialize(stream);
+            }
+            
+            /// <summary>
+            /// Binder that restricts dataobject content deserialization to safe types.
+            /// </summary>
+            private class RestrictiveBinder : SerializationBinder {
+                private static string s_allowedTypeName;
+                private static string s_allowedAssemblyName;
+                private static byte[] s_allowedToken;
+
+                static RestrictiveBinder() {
+                    s_allowedTypeName = typeof(Bitmap).FullName;
+                    AssemblyName assemblyName = new AssemblyName(typeof(Bitmap).Assembly.FullName);
+                    if (assemblyName != null) {
+                        s_allowedAssemblyName = assemblyName.Name;
+                        s_allowedToken = assemblyName.GetPublicKeyToken();
+                    }
+                }
+
+                /// <summary>
+                ///  Only safe to deserialize types are bypassing this callback, Strings 
+                ///  and arrays of primitive types in particular. We are explicitly allowing
+                ///  System.Drawing.Bitmap type to bind using the default binder.
+                /// </summary>
+                /// <param name="assemblyName"></param>
+                /// <param name="typeName"></param>
+                /// <returns></returns>
+                public override Type BindToType(string assemblyName, string typeName) {
+                    if (string.CompareOrdinal(typeName, s_allowedTypeName) == 0)  {
+                        AssemblyName nameToBind = null;
+                        try {
+                            nameToBind = new AssemblyName(assemblyName);
+                        }
+                        catch {
+                        }
+                        if (nameToBind != null) {
+                            if (string.CompareOrdinal(nameToBind.Name, s_allowedAssemblyName) == 0) {
+                                byte[] tokenToBind = nameToBind.GetPublicKeyToken();
+                                if ((tokenToBind != null) && 
+                                    (s_allowedToken != null) && 
+                                    (tokenToBind.Length == s_allowedToken.Length)) {
+                                    bool block = false;
+                                    for (int i = 0; i < s_allowedToken.Length; i++) {
+                                        if (s_allowedToken[i] != tokenToBind[i]) {
+                                            block = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!block) {
+                                        return null;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    throw new RestrictedTypeDeserializationException();
+                }
+            }
+
+            /// <summary>
+            /// This exceptionm is used to indicate that clipboard contains a serialized 
+            /// managed object that contains unexpected types. 
+            /// </summary>
+            private class RestrictedTypeDeserializationException : Exception {
             }
 
             /// <include file='doc\DataObject.uex' path='docs/doc[@for="DataObject.OleConverter.ReadFileListFromHandle"]/*' />
@@ -1811,16 +1910,17 @@ namespace System.Windows.Forms {
             // IDataObject
             //=------------------------------------------------------------------------=
             public virtual Object GetData(string format, bool autoConvert) {
-                Object baseVar = GetDataFromBoundOleDataObject(format);
+                bool done = false;
+                Object baseVar = GetDataFromBoundOleDataObject(format, out done);
                 Object original = baseVar;
 
-                if (autoConvert && (baseVar == null || baseVar is MemoryStream)) {
+                if (!done && autoConvert && (baseVar == null || baseVar is MemoryStream)) {
                     string[] mappedFormats = GetMappedFormats(format);
                     if (mappedFormats != null) {
-                        for (int i=0; i<mappedFormats.Length; i++) {
+                        for (int i=0; ((!done) && (i<mappedFormats.Length)); i++) {
                             if (!format.Equals(mappedFormats[i])) {
-                                baseVar = GetDataFromBoundOleDataObject(mappedFormats[i]);
-                                if (baseVar != null && !(baseVar is MemoryStream)) {
+                                baseVar = GetDataFromBoundOleDataObject(mappedFormats[i], out done);
+                                if (!done && baseVar != null && !(baseVar is MemoryStream)) {
                                     original = null;
                                     break;
                                 }

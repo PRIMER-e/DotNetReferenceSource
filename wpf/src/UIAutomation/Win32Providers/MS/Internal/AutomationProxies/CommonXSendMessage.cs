@@ -1339,17 +1339,17 @@ namespace MS.Internal.AutomationProxies
         // This method retrieves the group text on WinXP OS
         private static string ListView_V6_GetGroupTextOnWinXp(IntPtr hwnd, NativeMethods.LVGROUP group)
         {
-            // Due to the ListView Group 
-
-
-
-
-
-
-
-
-
-
+            // Due to the ListView Group bug on WinXP we need to have a special implementation
+            // for retrieving a text of the group for WinXP
+            // On WinXP the code to give back the header text looks something like that:
+            //            if (plvgrp->mask & LVGF_HEADER)
+            //            {
+            //                plvgrp->pszHeader = pgrp->pszHeader;
+            //            }
+            // Instead of something along the lines of StringCchCopy(plvgrp->pszHeader, plvgrp->cchHeader, pgrp->pszHeader);
+            // Hence after the call to CommCtrl.Common_GetSetText() we will get back an internal buffer pointer
+            // and not the text itself (ref string str will be ""). It makes no sense to call CommCtrl.Common_GetSetText()
+            // Use XSendMessage to get the internal buffer pointer and than "manually" read the string
 
             // get internal buffer pointer (group.pszHeader)
             // NOTE: do no check XSendMessage.XSend since, LVM_GETGROUPINFO returns id of the group which can be 0, hence
@@ -1387,17 +1387,17 @@ namespace MS.Internal.AutomationProxies
 
         private static string ListView_V6_GetGroupTextOnWinXp(IntPtr hwnd, LVGROUP_32 group)
         {
-            // Due to the ListView Group 
-
-
-
-
-
-
-
-
-
-
+            // Due to the ListView Group bug on WinXP we need to have a special implementation
+            // for retrieving a text of the group for WinXP
+            // On WinXP the code to give back the header text looks something like that:
+            //            if (plvgrp->mask & LVGF_HEADER)
+            //            {
+            //                plvgrp->pszHeader = pgrp->pszHeader;
+            //            }
+            // Instead of something along the lines of StringCchCopy(plvgrp->pszHeader, plvgrp->cchHeader, pgrp->pszHeader);
+            // Hence after the call to CommCtrl.Common_GetSetText() we will get back an internal buffer pointer
+            // and not the text itself (ref string str will be ""). It makes no sense to call CommCtrl.Common_GetSetText()
+            // Use XSendMessage to get the internal buffer pointer and than "manually" read the string
 
             // get internal buffer pointer (group.pszHeader)
             // NOTE: do no check XSendMessage.XSend since, LVM_GETGROUPINFO returns id of the group which can be 0, hence
@@ -1435,17 +1435,17 @@ namespace MS.Internal.AutomationProxies
 
         private static string ListView_V6_GetGroupTextOnWinXp(IntPtr hwnd, LVGROUP_64 group)
         {
-            // Due to the ListView Group 
-
-
-
-
-
-
-
-
-
-
+            // Due to the ListView Group bug on WinXP we need to have a special implementation
+            // for retrieving a text of the group for WinXP
+            // On WinXP the code to give back the header text looks something like that:
+            //            if (plvgrp->mask & LVGF_HEADER)
+            //            {
+            //                plvgrp->pszHeader = pgrp->pszHeader;
+            //            }
+            // Instead of something along the lines of StringCchCopy(plvgrp->pszHeader, plvgrp->cchHeader, pgrp->pszHeader);
+            // Hence after the call to CommCtrl.Common_GetSetText() we will get back an internal buffer pointer
+            // and not the text itself (ref string str will be ""). It makes no sense to call CommCtrl.Common_GetSetText()
+            // Use XSendMessage to get the internal buffer pointer and than "manually" read the string
 
             // get internal buffer pointer (group.pszHeader)
             // NOTE: do no check XSendMessage.XSend since, LVM_GETGROUPINFO returns id of the group which can be 0, hence

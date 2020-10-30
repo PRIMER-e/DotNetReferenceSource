@@ -363,11 +363,25 @@ namespace MS.Internal.Data
                 ReplaceDependencySources();
             }
 
-            // if there's a revised value (i.e. not during initialization
-            // and shutdown), transfer it.
-            if (!initialValue && Status != BindingStatusInternal.AsyncRequestPending)
+            if (Status != BindingStatusInternal.AsyncRequestPending)
             {
-                parent.ScheduleTransfer(isASubPropertyChange);
+                // if there's a revised value (i.e. not during initialization
+                // and shutdown), transfer it.
+                if (!initialValue)
+                {
+                    parent.ScheduleTransfer(isASubPropertyChange);
+                }
+                else
+                {
+                    // "initialValue" should really be called "suppressTransfer".
+                    // It's true when we don't want to transfer the new value:
+                    //  a) initial activation
+                    //  b) shutdown
+                    //  c) DataContext={DisconnectedItem}
+                    // Even in these cases, at least clear the pending flag,
+                    // so that future source changes aren't ignored (DDVSO 850536)
+                    SetTransferIsPending(false);
+                }
             }
         }
 
@@ -386,7 +400,7 @@ namespace MS.Internal.Data
             int level;
 
             // ignore changes that don't affect this binding.
-            // This test must come before any marshalling to the right context (
+            // This test must come before any marshalling to the right context (bug 892484)
             if (!IgnoreSourcePropertyChange && (level = PW.LevelForPropertyChange(o, propName)) >= 0)
             {
                 // if notification was on the right thread, just do the work (normal case)
@@ -675,6 +689,10 @@ namespace MS.Internal.Data
                 ClearValue(Feature.PendingGetValueRequest);
                 int k = (int)request.Args[1];
 
+                // if the target has gone away, ignore the request (DDVSO 195760)
+                if (CheckTarget() == null)
+                    return;
+
                 switch (request.Status)
                 {
                 case AsyncRequestStatus.Completed:
@@ -752,6 +770,10 @@ namespace MS.Internal.Data
             {
                 ClearValue(Feature.PendingSetValueRequest);
 
+                // if the target has gone away, ignore the request (DDVSO 195760)
+                if (CheckTarget() == null)
+                    return;
+
                 switch (request.Status)
                 {
                 case AsyncRequestStatus.Completed:
@@ -784,12 +806,16 @@ namespace MS.Internal.Data
         {
             MemberInfo mi;
             PropertyDescriptor pd;
+            DynamicObjectAccessor doa;
 
             if ((mi = info as MemberInfo) != null)
                 return mi.Name;
 
             if ((pd = info as PropertyDescriptor) != null)
                 return pd.Name;
+
+            if ((doa = info as DynamicObjectAccessor) != null)
+                return doa.PropertyName;
 
             return null;
         }

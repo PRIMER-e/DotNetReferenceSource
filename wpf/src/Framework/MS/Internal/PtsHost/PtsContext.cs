@@ -142,7 +142,7 @@ namespace MS.Internal.PtsHost
                                 obj is BaseParagraph ||
                                 obj is Section ||
                                 obj is MS.Internal.PtsHost.LineBreakRecord,  // Suppress line break record leak, looks like a PTS issue but we cannot 
-                                                                             // get a firm repro for now. Workaround for 
+                                                                             // get a firm repro for now. Workaround for bug #1294210.
                                 "One of PTS Client objects is not properly disposed.");
 
 #if DEBUG

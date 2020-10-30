@@ -930,7 +930,7 @@ protected:
     // keyword in the current line. During scanning XML, multiline statement 
     // lambda will be scanned in a single call of ScanVBLine(). Therefore, 
     // a stack is needed to track all Async or Iterator keywords.
-    // 
+    // Bug Dev11 157250 can repro if not using stack.
     Stack<MethodDeclKind> m_SeenAsyncOrIteratorInCurrentLine;
 
     MethodDeclKind m_MethodDeclKind;

@@ -429,7 +429,7 @@ namespace MS.Internal.Data
 
                     for (int i=args.OldItems.Count-1, index=args.OldStartingIndex+i; i>=0; --i, --index)
                     {
-                        if (!Object.Equals(args.OldItems[i], _snapshot[index]))
+                        if (!System.Windows.Controls.ItemsControl.EqualsEx(args.OldItems[i], _snapshot[index]))
                             // 
                             throw new InvalidOperationException(SR.Get(SRID.AddedItemNotAtIndex, index));
                         _snapshot.RemoveAt(index);
@@ -439,7 +439,7 @@ namespace MS.Internal.Data
                 case NotifyCollectionChangedAction.Replace:
                     for (int i=args.NewItems.Count-1, index=args.NewStartingIndex+i; i>=0; --i, --index)
                     {
-                        if (!Object.Equals(args.OldItems[i], _snapshot[index]))
+                        if (!System.Windows.Controls.ItemsControl.EqualsEx(args.OldItems[i], _snapshot[index]))
                             // 
                             throw new InvalidOperationException(SR.Get(SRID.AddedItemNotAtIndex, index));
                         _snapshot[index] = args.NewItems[i];
@@ -458,7 +458,7 @@ namespace MS.Internal.Data
                             i >= 0;
                             --i, --oldIndex, --newIndex)
                         {
-                            if (!Object.Equals(args.OldItems[i], _snapshot[oldIndex]))
+                            if (!System.Windows.Controls.ItemsControl.EqualsEx(args.OldItems[i], _snapshot[oldIndex]))
                                 // 
                                 throw new InvalidOperationException(SR.Get(SRID.AddedItemNotAtIndex, oldIndex));
                             _snapshot.Move(oldIndex, newIndex);
@@ -472,7 +472,7 @@ namespace MS.Internal.Data
                             i < args.OldItems.Count;
                             ++i, ++oldIndex, ++newIndex)
                         {
-                            if (!Object.Equals(args.OldItems[i], _snapshot[oldIndex]))
+                            if (!System.Windows.Controls.ItemsControl.EqualsEx(args.OldItems[i], _snapshot[oldIndex]))
                                 // 
                                 throw new InvalidOperationException(SR.Get(SRID.AddedItemNotAtIndex, oldIndex));
                             _snapshot.Move(oldIndex, newIndex);

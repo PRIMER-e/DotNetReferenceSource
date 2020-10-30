@@ -579,7 +579,7 @@ namespace System.Data.Odbc{
             dataSourceInformation[DbMetaDataColumnNames.DataSourceProductVersionNormalized] = ServerVersionNormalized;
 
             
-            // values that are the same for all ODBC drivers. See 
+            // values that are the same for all ODBC drivers. See bug 105333
             dataSourceInformation[DbMetaDataColumnNames.ParameterMarkerFormat] =  "?";
             dataSourceInformation[DbMetaDataColumnNames.ParameterMarkerPattern] =  "\\?";
             dataSourceInformation[DbMetaDataColumnNames.ParameterNameMaxLength] = 0;

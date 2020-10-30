@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -86,6 +87,8 @@ namespace System.Windows.Controls
             LanguageProperty.OverrideMetadata(typeof(Calendar), new FrameworkPropertyMetadata(new PropertyChangedCallback(OnLanguageChanged)));
 
             EventManager.RegisterClassHandler(typeof(Calendar), UIElement.GotFocusEvent, new RoutedEventHandler(OnGotFocus));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.Calendar);
         }
 
         /// <summary>

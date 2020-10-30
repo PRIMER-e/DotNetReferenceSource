@@ -348,7 +348,8 @@ namespace System.Windows.Documents
                     parserContext.BaseUri = entryPartUri;
 
                     // Call xaml parser
-                    xamlObject = XamlReader.Load(xamlEntryPart.GetStream(), parserContext);
+                    bool useRestrictiveXamlReader = !Clipboard.UseLegacyDangerousClipboardDeserializationMode();
+                    xamlObject = XamlReader.Load(xamlEntryPart.GetStream(), parserContext, useRestrictiveXamlReader);
 
                     // Remove the temporary uri from the PackageStore
                     PackageStore.RemovePackage(packageUri);

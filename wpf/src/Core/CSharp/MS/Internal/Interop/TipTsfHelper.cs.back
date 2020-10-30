@@ -11,8 +11,10 @@ using System.Security;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Automation.Peers;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 using MS.Internal.WindowsRuntime.Windows.UI.ViewManagement;
 
 namespace MS.Internal.Interop
@@ -37,9 +39,58 @@ namespace MS.Internal.Interop
     internal static class TipTsfHelper
     {
         /// <summary>
-        /// Cache if the API call is supported on the current platform
+        /// Cache if the API call is supported on the current platform.
         /// </summary>
         private static bool s_PlatformSupported = true;
+
+        /// <summary>
+        /// Cache any in progress operation in case we get multiple calls.
+        /// </summary>
+        [ThreadStatic]
+        private static DispatcherOperation s_KbOperation = null;
+
+        /// <summary>
+        /// If DispatcherProcessing is disabled, this will BeginInvoke the appropriate KB operation
+        /// for later processing.  It also will cancel any pending operations so only one op can be in
+        /// flight at a time.
+        /// </summary>
+        /// <param name="kbCall">The kb function to call.</param>
+        /// <param name="focusedObject">The object being focused</param>
+        /// <returns>True if an operation has been scheduled, false otherwise</returns>
+        private static bool CheckAndDispatchKbOperation(Action<DependencyObject> kbCall, DependencyObject focusedObject)
+        {
+            // Abort the current operation if we reach another call and it is
+            // still pending.
+            if (s_KbOperation?.Status == DispatcherOperationStatus.Pending)
+            {
+                s_KbOperation.Abort();
+            }
+
+            s_KbOperation = null;
+            
+            // DDVSO:403574
+            // Don't call any KB operations under disabled processing as a COM wait could
+            // cause re-entrancy and an InvalidOperationException.
+            if (Dispatcher.CurrentDispatcher._disableProcessingCount > 0)
+            {
+                // Retry when processing resumes
+                s_KbOperation =
+                    Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Input,
+                    new Action(() =>
+                    {
+                        // Since this action is happening sometime later, the focus 
+                        // may have already changed.
+                        if (Keyboard.FocusedElement == focusedObject)
+                        {
+                            kbCall(focusedObject);
+                        }
+                    }));
+
+                return true;
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Attempts to show the touch keyboard.
@@ -57,8 +108,19 @@ namespace MS.Internal.Interop
         {
             // DDVSO:222625
             // We need to only show if applicable to this focused object
-            // so guard the calls to TryShow here.
-            if (s_PlatformSupported && ShouldShow(focusedObject))
+            // so guard the calls to TryShow here.           
+            // DDVSO:197685
+            // If the touch stack is disabled or the WM_POINTER touch stack 
+            // is enabled, we get touch KB support for free.  So don't 
+            // attempt any calls into InputPane for these scenarios. 
+            // DDVSO:362756
+            // Don't show if implicit invocation is turned off.
+            if (s_PlatformSupported
+                && !CoreAppContextSwitches.DisableImplicitTouchKeyboardInvocation
+                && StylusLogic.IsStylusAndTouchSupportEnabled
+                && !StylusLogic.IsPointerStackEnabled
+                && !CheckAndDispatchKbOperation(Show, focusedObject)
+                && ShouldShow(focusedObject))
             {
                 InputPane ip;
 
@@ -88,7 +150,14 @@ namespace MS.Internal.Interop
         [SecuritySafeCritical]
         internal static void Hide(DependencyObject focusedObject)
         {
-            if (s_PlatformSupported)
+            // DDVSO:197685
+            // If the touch stack is disabled or the WM_POINTER touch stack 
+            // is enabled, we get touch KB support for free.  So don't 
+            // attempt any calls into InputPane for these scenarios. 
+            if (s_PlatformSupported
+                && StylusLogic.IsStylusAndTouchSupportEnabled
+                && !StylusLogic.IsPointerStackEnabled
+                && !CheckAndDispatchKbOperation(Hide, focusedObject))
             {
                 InputPane ip;
 

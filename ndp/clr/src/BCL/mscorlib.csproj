@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{20f34c38-8c60-44e7-b703-0e341d274957}</ProjectGuid>
+    <ProjectGuid>{43e44db7-dc97-46cb-b868-751d11c60bf1}</ProjectGuid>
     <OutputPath>.</OutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>mscorlib</AssemblyName>
@@ -383,6 +383,7 @@
     <Compile Include="system\io\memorystream.cs" />
     <Compile Include="system\io\path.cs" />
     <Compile Include="system\io\pathhelper.cs" />
+    <Compile Include="system\io\pathinternal.cs" />
     <Compile Include="system\io\pathtoolongexception.cs" />
     <Compile Include="system\io\pinnedbuffermemorystream.cs" />
     <Compile Include="system\io\ReadLinesIterator.cs" />

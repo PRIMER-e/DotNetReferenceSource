@@ -1128,6 +1128,12 @@ namespace System.Windows.Controls
             paddingHeader.Width = Double.NaN;
             paddingHeader.HorizontalAlignment = HorizontalAlignment.Stretch;
 
+            if (!AccessibilitySwitches.UseNetFx472CompatibleAccessibilityFeatures)
+            {
+                // DDVSO 559546: There is no point in this padding column header being focusable.
+                paddingHeader.Focusable = false;
+            }
+
             InternalChildren.AddInternal(paddingHeader);
             _paddingHeader = paddingHeader;
         }

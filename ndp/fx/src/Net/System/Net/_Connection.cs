@@ -10,12 +10,13 @@ namespace System.Net {
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
+    using System.Net.Configuration;
     using System.Net.Sockets;
     using System.Threading;
     using System.Security;
-    using System.Globalization;
-    using System.Net.Configuration;
-    using System.Diagnostics.CodeAnalysis;
+    using System.Security.Authentication;
 
     internal enum ReadState {
         Start,
@@ -134,9 +135,9 @@ namespace System.Net {
 
         internal static void AddExceptionRange(ref ConnectionReturnResult returnResult, HttpWebRequest [] requests, Exception exception)
         {
-            AddExceptionRange(ref returnResult, requests, exception, exception);
+            AddExceptionRange(ref returnResult, requests, 0, exception, exception);
         }
-        internal static void AddExceptionRange(ref ConnectionReturnResult returnResult, HttpWebRequest [] requests, Exception exception, Exception firstRequestException)
+        internal static void AddExceptionRange(ref ConnectionReturnResult returnResult, HttpWebRequest [] requests, int abortedPipelinedRequestIndex, Exception exception, Exception firstRequestException)
         {
 
             //This may cause duplicate requests if we let it through in retail
@@ -157,7 +158,12 @@ namespace System.Net {
                         throw new InternalException();
 #endif
 
-                if (i == 0)
+                // The request being aborted might be part of a series of pipelined requests.
+                // The 'abortedPipelinedRequestIndex' represents the index of the request in the
+                // connection's m_WriteList array. These are requests that have started and whose
+                // request headers have been sent to the server. But the server has not yet sent
+                // back the response readers.
+                if (i == abortedPipelinedRequestIndex)
                     returnResult.m_Context.Add(new RequestContext(requests[i], firstRequestException));
                 else
                     returnResult.m_Context.Add(new RequestContext(requests[i], exception));
@@ -326,6 +332,8 @@ namespace System.Net {
         //  of a errand writer still banging away on another thread.
         //
 
+        private DateTime        m_PrepareCloseConnectionSocketCalledUtc;
+        private DateTime        m_AbortSocketCalledUtc;
         private DateTime        m_IdleSinceUtc;
         private HttpWebRequest  m_LockedRequest;
         private HttpWebRequest  m_CurrentRequest; // This is the request whose response is being parsed, same as WriteList[0] but could be different if request was aborted.
@@ -472,8 +480,17 @@ namespace System.Net {
             }
             m_ResponseData = new CoreResponseData();
             m_ConnectionGroup = connectionGroup;
-            m_ReadBuffer = s_PinnableBufferCache.AllocateBuffer();
-            m_ReadBufferFromPinnableCache = true;
+
+            if (ServicePointManager.UseHttpPipeliningAndBufferPooling)
+            {
+                m_ReadBuffer = s_PinnableBufferCache.AllocateBuffer();
+                m_ReadBufferFromPinnableCache = true;
+            }
+            else
+            {
+                m_ReadBuffer = new byte[CachedBufferSize];
+            }
+
             m_ReadState = ReadState.Start;
             m_WaitList = new List<WaitListItem>();
             m_WriteList = new ArrayList();
@@ -506,7 +523,8 @@ namespace System.Net {
         }
 
         // If the buffer came from the the pinnable cache, return it to the cache.
-        // NOTE: This method is called from this object's finalizer and should not access any member objects.
+        // NOTE: This method is called from multiple places in the Connection object
+        // including this object's finalizer and thus should not access any member objects.
         void FreeReadBuffer() {
             if (m_ReadBufferFromPinnableCache) {
                 s_PinnableBufferCache.FreeBuffer(m_ReadBuffer);
@@ -519,7 +537,6 @@ namespace System.Net {
             if (PinnableBufferCacheEventSource.Log.IsEnabled()) {
                 PinnableBufferCacheEventSource.Log.DebugMessage1("In System.Net.Connection.Dispose()", this.GetHashCode());
             }
-            FreeReadBuffer();
             base.Dispose(disposing);
         }
 
@@ -562,7 +579,8 @@ namespace System.Net {
                     forcedsubmit            - Queue the request even if connection is going to close.
 
             Returns:
-                    true when the request was correctly submitted
+                    True when the request will be handled by this connection.
+                    False when the request cannot be handled by this connection.
 
         --*/
         // userReqeustThread says whether we can post IO from this thread or not.
@@ -625,6 +643,17 @@ namespace System.Net {
                     m_RecycleTimer = ServicePoint.ConnectionLeaseTimerQueue.CreateTimer();
                 }
 
+                //
+                // If the connection level KeepAlive timer has expired, we need to ensure that the connection will
+                // be closed. In order to avoid failing any requests that may currently be written and waiting for
+                // a response, we just set the current request up so that it will close the connection on completion.
+                // Modifying the submitted request like this is a bad pattern, but changing this now would potentially
+                // introduce side-effects that might affect application compatibility.
+                //
+                // This will result in m_NonKeepAliveRequestPipelined being set to true at the connection level later
+                // in this method, which causes the ConnectionGroup to avoid queueing requests to this connection if
+                // possible.
+                //
                 if (m_RecycleTimer.HasExpired) {
                     request.KeepAlive = false;
                 }
@@ -633,7 +662,6 @@ namespace System.Net {
                 // If the connection has already been locked by another request, then
                 // we fail the submission on this Connection.
                 //
-
                 if (LockedRequest != null && LockedRequest != request) {
                     GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::SubmitRequest", "false");
                     return false;
@@ -654,7 +682,20 @@ namespace System.Net {
                     m_NonKeepAliveRequestPipelined = (!request.KeepAlive && !request.NtlmKeepAlive);
                 }
 
-                if (m_Free && m_WriteDone && !forcedsubmit && (m_WriteList.Count == 0 || (request.Pipelined && !request.HasEntityBody && m_CanPipeline && m_Pipelining && !m_IsPipelinePaused))) {
+                //
+                // This statement determines if a request will be placed on m_WriteList or on m_WaitList.
+                //
+                // Several conditions have to be true for a write to be possible. First, there must not be
+                // a write in progress, and the connection must not have received or sent a "connection: close"
+                // header. Those conditions are tracked by m_Free and m_WriteDone. If both are true, the
+                // m_WriteList must also either be empty, or able to pipeline another request.
+                //
+                // The connection should never pipeline a force submitted request, as this implies a non
+                // keep-alive request is ahead in the pipeline, and the request will likely fail. However,
+                // if no requests are on m_WriteList then we can assume that the non-keep alive request was
+                // cancelled, and it is safe to write the force submitted request.
+                //
+                if (m_Free && m_WriteDone && (m_WriteList.Count == 0 || (request.Pipelined && !request.HasEntityBody && m_CanPipeline && m_Pipelining && !m_IsPipelinePaused && !forcedsubmit))) {
 
                     // Connection is free. Mark it as busy and see if underlying
                     // socket is up.
@@ -666,14 +707,19 @@ namespace System.Net {
                     startRequestResult = StartRequest(request, true);
                     if (startRequestResult == TriState.Unspecified)
                     {
+                        Debug.Assert(m_WriteList.Count == 0);
                         expiredIdleConnection = true;
                         PrepareCloseConnectionSocket(ref returnResult);
                         // Hard Close the socket.
                         Close(0);
-                        FreeReadBuffer();	// Do it after close completes to insure buffer not in use
                     }
                 }
                 else {
+                    //
+                    // Requests that are added to m_WaitList will not be written to the connection until another
+                    // completed request pulls them from m_WaitList to m_WriteList. If the connection is later closed,
+                    // the requests waiting in m_WaitList will be retried on another connection.
+                    //
                     m_WaitList.Add(new WaitListItem(request, NetworkingPerfCounters.GetTimestamp()));
                     NetworkingPerfCounters.Instance.Increment(NetworkingPerfCounterName.HttpWebRequestQueued);
                     GlobalLog.Print("Connection#" + ValidationHelper.HashString(this) + "::SubmitRequest - Request added to WaitList#"+ValidationHelper.HashString(request));
@@ -763,6 +809,10 @@ namespace System.Net {
             not, it queues a request to get it going. If the connection
             was alive we call the callback delegate of the request.
 
+            CompleteStartRequest should be called with the result of StartRequest,
+            in order to handle any necessary socket reconnects and call the request
+            write callback.
+
             This routine MUST BE called with the critcal section held.
 
             Input:
@@ -772,7 +822,9 @@ namespace System.Net {
                                               being closed by the server.
 
             Returns:
-                    True if request was started, false otherwise.
+                    True if the underlying socket is closed and needs to be connected.
+                    False if the underlying socket is healthy and the request is started.
+                    Unspecified if the socket is open but is otherwise unhealthy.
 
         --*/
 
@@ -810,13 +862,9 @@ namespace System.Net {
                         ValidationHelper.HashString(request));
                     return TriState.Unspecified; // don't use it
                 } else if (canPollRead) {
-                    // Not timed out from our perspective but...
-                    // Check if remote has:
-                    //   1) closed an idle connection (TCP FIN)
-                    // or
-                    //   2) sent some errant data on an idle connection.
-                    bool pollRead = PollRead();
-                    if (pollRead) {
+                    // Not timed out from our perspective.
+                    // Check if the connection can be reused.
+                    if (!IsConnectionReusable()) {
                         GlobalLog.Leave(
                             "Connection#" + ValidationHelper.HashString(this) +
                             "::StartRequest() " +
@@ -870,6 +918,26 @@ namespace System.Net {
 
             GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::StartRequest", needReConnect.ToString());
             return needReConnect;
+        }
+
+        private bool IsConnectionReusable() {
+            try {
+                if (PollRead()) {
+                    // PollRead() returns true if there is
+                    // data still left to read from the socket or
+                    // the socket has been closed (FIN). So, we can't
+                    // reuse this connection.
+                    return false;
+                }
+            }
+            catch (SocketException ex) {
+                // PollRead() can also throw SocketException for other problems
+                // with the socket (i.e. RST).
+                if (Logging.On) Logging.PrintError(Logging.Web, this, "IsConnectionReusable", ex.ToString());
+                return false;
+            }
+
+            return true;
         }
 
         private void CompleteStartRequest(bool onSubmitThread, HttpWebRequest request, TriState needReConnect) {
@@ -1087,8 +1155,14 @@ namespace System.Net {
                 try {
 #if !FEATURE_PAL
                     if (request.Address.Scheme == Uri.UriSchemeHttps) {
-                        TlsStream tlsStream = new TlsStream(request.GetRemoteResourceUri().IdnHost,
-                            NetworkStream, request.ClientCertificates, ServicePoint, request,
+                        TlsStream tlsStream = new TlsStream(
+                            request.GetRemoteResourceUri().IdnHost,
+                            NetworkStream,
+                            request.CheckCertificateRevocationList,
+                            request.SslProtocols,
+                            request.ClientCertificates,
+                            ServicePoint,
+                            request,
                             request.Async ? request.GetConnectingContext().ContextCopy : null);
                         NetworkStream = tlsStream;
                     }
@@ -1207,6 +1281,31 @@ namespace System.Net {
                 }
             } // lock
         }
+
+        /*++
+
+            WriteStartNextRequest           - Complete the write of a request.
+
+            This routine is called when we finish writing a request. It is
+            one of the two locations where we may pull an item from the m_WaitList and
+            place it on the m_WriteList. This can also occur in ReadStartNextRequest.
+
+            There are two situations under which WriteStartNextRequest will
+            move an item to m_WriteList:
+
+            (1) When we're pipelining, and can pipeline another request.
+
+            (2) When a server sends a response before we finish writing the
+                associated request. This keeps ReadStartNextRequest from queueing
+                the next request, so in order to keep requests flowing from
+                m_WaitList to m_WriteList we need to move it here.
+
+            Input:
+                    request                 - request that just completed.
+                    returnResult            - used to return an error to the
+                                              caller if the request fails.
+
+        --*/
 
         internal void WriteStartNextRequest(HttpWebRequest request, ref ConnectionReturnResult returnResult) {
             GlobalLog.Enter("Connection#" + ValidationHelper.HashString(this) + "::WriteStartNextRequest" + " WriteDone:" + m_WriteDone + " ReadDone:" + m_ReadDone + " WaitList:" + m_WaitList.Count + " WriteList:" + m_WriteList.Count);
@@ -1336,6 +1435,13 @@ namespace System.Net {
 
                                 // PrepareCloseConnectionSocket has to be called with the critical section held.
                                 PrepareCloseConnectionSocket(ref returnResult);
+
+                                HttpWebRequest httpWebRequest = currentRequest as HttpWebRequest;
+                                if (httpWebRequest != null && httpWebRequest.TunnelConnection != null)
+                                {
+                                    httpWebRequest.TunnelConnection.RemoveFromConnectionList();
+                                }
+
                                 calledCloseConnection = true;
                                 Close();
                             }
@@ -1456,6 +1562,7 @@ namespace System.Net {
         {
             lock (this)
             {
+                Debug.Assert(request.WriteBuffer == null);
                 request.HeadersCompleted = true;
                 if (m_WriteList.Count == 0)
                 {
@@ -1891,7 +1998,13 @@ quit:
                         // Make sure there was enough, and exactly one space.
                         if (byteBuffer[bytesParsed] != ' ' || statusLineValues.StatusCode < 1000)
                         {
-                            if(byteBuffer[bytesParsed] == '\r' && statusLineValues.StatusCode >= 1000){
+                            if(byteBuffer[bytesParsed] == '\r' && statusLineValues.StatusCode >= 1000)
+                            {
+                                // If server/proxy sends back a HTTP status line without a space
+                                // before Carriage Return, i.e., empty status description,
+                                // make sure StatusDescription value is set and not null.
+                                statusLineValues.StatusDescription = statusLineValues.StatusDescription ?? string.Empty;
+
                                 statusLineValues.StatusCode -= 1000;
                                 statusState = AfterCarriageReturn;
                                 if (++bytesParsed == effectiveMax)
@@ -2037,7 +2150,10 @@ quit:
                 ServicePoint.HttpBehaviour = m_ResponseData.m_IsVersionHttp11 ? HttpBehaviour.HTTP11 : HttpBehaviour.HTTP10;
             }
 
-            m_CanPipeline = ServicePoint.SupportsPipelining;
+            if (ServicePointManager.UseHttpPipeliningAndBufferPooling)
+            {
+                m_CanPipeline = ServicePoint.SupportsPipelining;
+            }
         }
 
         /*++
@@ -2578,7 +2694,11 @@ quit:
                                 }
                             }
 
-                            if (m_ResponseData.m_StatusCode == HttpStatusCode.Continue || m_ResponseData.m_StatusCode == HttpStatusCode.BadRequest) {
+                            // The 1xx (Informational) class of status code indicates an interim response. .NET Framework supports 100-Continue
+                            // and 101-Switching Protocols. Other interim responses will be dropped by default.
+                            bool isUnknownInterimResponse = ServicePointManager.UseStrictRfcInterimResponseHandling ? ((int)m_ResponseData.m_StatusCode > 101 && (int)m_ResponseData.m_StatusCode < 200) : false;
+
+                            if (m_ResponseData.m_StatusCode == HttpStatusCode.Continue || m_ResponseData.m_StatusCode == HttpStatusCode.BadRequest || isUnknownInterimResponse) {
 
                                 GlobalLog.Assert(m_CurrentRequest != null, "Connection#{0}::ParseResponseData()|m_CurrentRequest == null", ValidationHelper.HashString(this));
                                 GlobalLog.Print("Connection#" + ValidationHelper.HashString(this) + "::ParseResponseData() HttpWebRequest#" + ValidationHelper.HashString(m_CurrentRequest));
@@ -2596,27 +2716,31 @@ quit:
                                     }
                                 }
                                 else {
-                                    // If we have an HTTP continue, eat these headers and look
-                                    //  for the 200 OK
-                                    //
-                                    // we got a 100 Continue. set this on the HttpWebRequest
-                                    //
-                                    m_CurrentRequest.Saw100Continue = true;
-                                    if (!ServicePoint.Understands100Continue) {
+                                    // If we have an 1xx response, eat these headers and look
+                                    // for a final response.
+
+                                    if (m_ResponseData.m_StatusCode == HttpStatusCode.Continue)
+                                    {
                                         //
-                                        // and start expecting it again if this behaviour was turned off
+                                        // we got a 100 Continue. set this on the HttpWebRequest
                                         //
-                                        GlobalLog.Print("Connection#" + ValidationHelper.HashString(this) + "::ParseResponseData() HttpWebRequest#" + ValidationHelper.HashString(m_CurrentRequest) + " ServicePoint#" + ValidationHelper.HashString(ServicePoint) + " sent UNexpected 100 Continue");
-                                        ServicePoint.Understands100Continue = true;
+                                        m_CurrentRequest.Saw100Continue = true;
+                                        if (!ServicePoint.Understands100Continue) {
+                                            //
+                                            // and start expecting it again if this behaviour was turned off
+                                            //
+                                            GlobalLog.Print("Connection#" + ValidationHelper.HashString(this) + "::ParseResponseData() HttpWebRequest#" + ValidationHelper.HashString(m_CurrentRequest) + " ServicePoint#" + ValidationHelper.HashString(ServicePoint) + " sent UNexpected 100 Continue");
+                                            ServicePoint.Understands100Continue = true;
+                                        }
+
+                                        //
+                                        // set Continue Ack on request.
+                                        //
+                                        GlobalLog.Print("Connection#" + ValidationHelper.HashString(this) + "::ParseResponseData() calling SetRequestContinue()");
+                                        continueResponseData = m_ResponseData;
                                     }
 
-                                    //
-                                    // set Continue Ack on request.
-                                    //
-                                    GlobalLog.Print("Connection#" + ValidationHelper.HashString(this) + "::ParseResponseData() calling SetRequestContinue()");
-                                    continueResponseData = m_ResponseData;
-
-                                    //if we got a 100continue we ---- it and start looking for a final response
+                                    // If we got a 1xx response we ---- it and start looking for a final response.
                                     goto case ReadState.Start;
                                 }
                             }
@@ -2711,16 +2835,7 @@ quit:
                         UnlockIfNeeded(foundItem.Request);
                     }
 
-                    GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::AbortOrDisassociate()", "Request was wisassociated");
-                    return true;
-                }
-                else if (idx != 0)
-                {
-                    // Make this connection Keep-Alive=false, remove the request and do not close the connection
-                    // When the active request completes, the rest of the pipeline (minus aborted request) will be resubmitted.
-                    m_WriteList.RemoveAt(idx);
-                    m_KeepAlive = false;
-                    GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::AbortOrDisassociate()", "Request was Disassociated from the Write List, idx = " + idx);
+                    GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::AbortOrDisassociate()", "Request was disassociated");
                     return true;
                 }
 
@@ -2739,10 +2854,9 @@ quit:
                     m_Error = WebExceptionStatus.RequestCanceled;
                 }
 
-                PrepareCloseConnectionSocket(ref result);
+                PrepareCloseConnectionSocket(ref result, idx);
                 // Hard Close the socket.
                 Close(0);
-                FreeReadBuffer();	// Do it after close completes to insure buffer not in use
 #if DEBUG
                 }
                 catch (Exception exception)
@@ -2766,6 +2880,8 @@ quit:
 
         internal void AbortSocket(bool isAbortState)
         {
+            m_AbortSocketCalledUtc = DateTime.UtcNow;
+
             // The timer/finalization thread is allowed to call this.  (It doesn't call user code and doesn't block.)
             GlobalLog.ThreadContract(ThreadKinds.Unknown, ThreadKinds.SafeSources | ThreadKinds.Timer | ThreadKinds.Finalization, "Connection#" + ValidationHelper.HashString(this) + "::AbortSocket");
             GlobalLog.Enter("Connection#" + ValidationHelper.HashString(this) + "::Abort", "isAbortState:" + isAbortState.ToString());
@@ -2783,7 +2899,6 @@ quit:
             lock (this)
             {
                 Close(0);
-                FreeReadBuffer();	// Do it after close completes to insure buffer not in use
             }
 
             GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::Abort", "isAbortState:" + isAbortState.ToString());
@@ -2806,9 +2921,11 @@ quit:
 
         --*/
 
-        private void PrepareCloseConnectionSocket(ref ConnectionReturnResult returnResult)
+        private void PrepareCloseConnectionSocket(ref ConnectionReturnResult returnResult, int abortedPipelinedRequestIndex = 0)
         {
             GlobalLog.Enter("Connection#" + ValidationHelper.HashString(this) + "::PrepareCloseConnectionSocket", m_Error.ToString());
+
+            m_PrepareCloseConnectionSocketCalledUtc = DateTime.UtcNow;
 
             // Effectivelly, closing a connection makes it exempted from the "Idling" logic
             m_IdleSinceUtc = DateTime.MinValue;
@@ -2968,7 +3085,7 @@ quit:
 
                     requestArray = new HttpWebRequest[m_WriteList.Count];
                     m_WriteList.CopyTo(requestArray, 0);
-                    ConnectionReturnResult.AddExceptionRange(ref returnResult, requestArray, pipelineException, theException);
+                    ConnectionReturnResult.AddExceptionRange(ref returnResult, requestArray, abortedPipelinedRequestIndex, pipelineException, theException);
                 }
 
 #if TRAVE
@@ -2999,13 +3116,18 @@ quit:
             }
             if (!m_RemovedFromConnectionList && ConnectionGroup != null)
             {
-                m_RemovedFromConnectionList = true;
-                ConnectionGroup.Disassociate(this);
+                RemoveFromConnectionList();
             }
 
             GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::PrepareCloseConnectionSocket");
         }
 
+        // This function must be called with the critical section held.
+        internal void RemoveFromConnectionList()
+        {
+            m_RemovedFromConnectionList = true;
+            ConnectionGroup.Disassociate(this);
+        }
 
         /*++
 
@@ -3071,7 +3193,6 @@ quit:
                 // This will kill the socket
                 // Must be done inside the lock.  (Stream Close() isn't threadsafe.)
                 Close(0);
-                FreeReadBuffer();	// Do it after close completes to insure buffer not in use
             }
         }
 
@@ -3630,6 +3751,10 @@ done:
                 conn.NetworkStream = new NetworkStream(connectStream.Connection.NetworkStream, true);
                 // This will orphan the original connect stream now owned by tunnelStream
                 connectStream.Connection.NetworkStream.ConvertToNotSocketOwner();
+
+                // Set a pointer to the Tunneled Connection, will free later.
+                originalReq.TunnelConnection = connectStream.Connection;
+
                 success = true;
             }
 
@@ -3683,6 +3808,7 @@ done:
                 connectRequest.Credentials = originalRequest.InternalProxy == null ? null : originalRequest.InternalProxy.Credentials;
                 connectRequest.InternalProxy = null;
                 connectRequest.PreAuthenticate = true;
+                connectRequest.UserAgent = originalRequest.UserAgent;
 
                 if(async){
                     TunnelStateObject o = new TunnelStateObject(originalRequest, this);

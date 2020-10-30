@@ -160,9 +160,9 @@ namespace MS.Internal.PtsHost
             // so it gets broken. PTS creates BR with delayed figure and broken para.
             // PTS will format the next page starting from delayed figure, which can produce MCS.
             // So when the next paragraph is continued from BR, it has MCS.
-            // This problem is currently investigated by PTS team: PTSLS 
-
-
+            // This problem is currently investigated by PTS team: PTSLS bug 915.
+            // For now, MCS gets ignored here.
+            //Debug.Assert(pbrkrecIn == IntPtr.Zero || mcs == null, "Broken paragraph cannot have margin collapsing state.");
             if (mcs != null && pbrkrecIn != IntPtr.Zero)
             {
                 mcs = null;
@@ -253,8 +253,8 @@ namespace MS.Internal.PtsHost
 
             if (PTS.ToBoolean(fsbbox.fDefined))
             {
-                // Workaround for PTS 
-
+                // Workaround for PTS bug 860: get max of the page rect and 
+                // bounding box of the page.
                 dvrUsed = Math.Max(dvrUsed, fsbbox.fsrc.dv + fsbbox.fsrc.v);
                 fsrcToFill.du = Math.Max(fsrcToFill.du, fsbbox.fsrc.du + fsbbox.fsrc.u);
             }
@@ -461,8 +461,8 @@ namespace MS.Internal.PtsHost
 
                 if (PTS.ToBoolean(fsbbox.fDefined))
                 {
-                    // Workaround for PTS 
-
+                    // Workaround for PTS bug 860: get max of the page rect and 
+                    // bounding box of the page.
                     dvrUsed = Math.Max(dvrUsed, fsbbox.fsrc.dv + fsbbox.fsrc.v);
                     durTrack = Math.Max(durTrack, fsbbox.fsrc.du + fsbbox.fsrc.u);
                 }
@@ -629,8 +629,8 @@ namespace MS.Internal.PtsHost
 
                 if (PTS.ToBoolean(fsbbox.fDefined))
                 {
-                    // Workaround for PTS 
-
+                    // Workaround for PTS bug 860: get max of the page rect and 
+                    // bounding box of the page.
                     dvrUsed = Math.Max(dvrUsed, fsbbox.fsrc.dv + fsbbox.fsrc.v);
                     durTrack = Math.Max(durTrack, fsbbox.fsrc.du + fsbbox.fsrc.u);
                 }

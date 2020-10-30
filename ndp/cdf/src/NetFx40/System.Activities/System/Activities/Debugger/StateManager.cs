@@ -37,7 +37,6 @@ namespace System.Activities.Debugger
 
         static Type threadWorkerControllerType = typeof(ThreadWorkerController);
         static MethodInfo islandWorkerMethodInfo = threadWorkerControllerType.GetMethod("IslandWorker", BindingFlags.Static | BindingFlags.Public);
-        const string Md5Identifier = "406ea660-64cf-4c82-b6f0-42d48172a799";
         internal const string MethodWithPrimingPrefix = "_";
 
         List<LogicalThread> threads;
@@ -791,7 +790,7 @@ namespace System.Activities.Debugger
 
                     if (checksumBytes != null)
                     {
-                        documentWriter.SetCheckSum(new Guid(Md5Identifier), checksumBytes);
+                        documentWriter.SetCheckSum(SymbolHelper.ChecksumProviderId, checksumBytes);
                     }
                 }
                 return documentWriter;

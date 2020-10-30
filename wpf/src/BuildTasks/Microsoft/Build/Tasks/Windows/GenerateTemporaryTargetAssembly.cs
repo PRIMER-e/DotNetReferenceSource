@@ -17,6 +17,9 @@
 //
 // History:
 //  05/10/05: weibz   Created.
+//  11/29/17: 
+//      Use MSBUILD supported project extensions (.csproj, .vbproj etc.) instead of .tmp_proj
+//      Support for diagnostic inspection of the temporary project file
 //
 //---------------------------------------------------------------------------
 
@@ -90,6 +93,8 @@ namespace Microsoft.Build.Tasks.Windows
         /// ITask Execute method
         /// </summary>
         /// <returns></returns>
+        /// <remarks>Catching all exceptions in this method is appropriate - it will allow the build process to resume if possible after logging errors</remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public override bool Execute()
         {
             bool retValue = true;
@@ -120,53 +125,64 @@ namespace Microsoft.Build.Tasks.Windows
                 // Add GeneratedCodeFiles to Compile item list.
                 AddNewItems(xmlProjectDoc, CompileTypeName, GeneratedCodeFiles);
 
+                string currentProjectName = Path.GetFileNameWithoutExtension(CurrentProject);
+                string currentProjectExtension = Path.GetExtension(CurrentProject);
 
                 // Create a random file name
                 // This can fix the problem of project cache in VS.NET environment.
                 //
+                // GetRandomFileName( ) could return any possible file name and extension
+                // Since this temporary file will be used to represent an MSBUILD project file, 
+                // we will use the same extension as that of the current project file
+                //
+                string randomFileName = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
 
-                // GetRandomFileName( ) could return any possible file name and extension, but
-                // some file externsion has special meaning in MSBUILD system, such as a ".sln"
-                // means the file is a solution file with special file format. Since the temporary
-                // file is just for a project, we can use a fixed extension here, but the basic 
-                // file name is still random which can fix above VS.NET 
+                // Don't call Path.ChangeExtension to append currentProjectExtension. It will do 
+                // odd things with project names that already contains a period (like System.Windows.
+                // Contols.Ribbon.csproj). Instead, just append the extension - after all, we already know
+                // for a fact that this name (i.e., tempProj) lacks a file extension.
+                string tempProj = string.Join("_", currentProjectName, randomFileName, WPFTMP);
+                tempProj = tempProj  + currentProjectExtension;
 
-                string randProj = Path.ChangeExtension(Path.GetRandomFileName(), TEMP_PROJ_EXT);
 
                 // Save the xmlDocument content into the temporary project file.
-                xmlProjectDoc.Save(randProj);
+                xmlProjectDoc.Save(tempProj);
 
                 //
                 // Invoke MSBUILD engine to build this temporary project file.
                 //
 
-                Hashtable globalProperties = new Hashtable(2);
+                Hashtable globalProperties = new Hashtable(3);
 
-                // Add AssemblyName and IntermediateOutputPath to the global property list
+                // Add AssemblyName, IntermediateOutputPath and _TargetAssemblyProjectName to the global property list
+                // Note that _TargetAssemblyProjectName is not defined as a property with Output attribute - that doesn't do us much 
+                // good here. We need _TargetAssemblyProjectName to be a well-known property in the new (temporary) project
+                // file, and having it be available in the current MSBUILD process is not useful.
                 globalProperties[intermediateOutputPathPropertyName] = IntermediateOutputPath;
                 globalProperties[assemblyNamePropertyName] = AssemblyName;
+                globalProperties[targetAssemblyProjectNamePropertyName] = currentProjectName;
 
-                retValue = BuildEngine.BuildProjectFile(randProj, new string[] { CompileTargetName }, globalProperties, null);
+                retValue = BuildEngine.BuildProjectFile(tempProj, new string[] { CompileTargetName }, globalProperties, null);
 
-                try 
+                // Delete the temporary project file unless diagnostic mode has been requested
+                if (!GenerateTemporaryTargetAssemblyDebuggingInformation)
                 {
-                    // Delete the random project file from disk.
-                    File.Delete(randProj);
+                    try
+                    {
+                        File.Delete(tempProj);
+                    }
+                    catch (IOException e)
+                    {
+                        // Failure to delete the file is a non fatal error
+                        Log.LogWarningFromException(e);
+                    }
                 }
-                catch (IOException e)
-                {
-                    // Failure to delete the file is a non fatal error
-                    Log.LogWarningFromException(e);
-                }
-
             }
-#pragma warning disable 6500
             catch (Exception e)
             {
                 Log.LogErrorFromException(e);
                 retValue = false;
             }
-#pragma warning retore 6500
 
             return retValue;
         }
@@ -299,6 +315,23 @@ namespace Microsoft.Build.Tasks.Windows
         {
             get { return _compileTargetName; }
             set { _compileTargetName = value; }
+        }
+
+        /// <summary>
+        /// Optional <see cref="Boolean"/> task parameter
+        /// 
+        /// When <code>true</code>, debugging information is enabled for the <see cref="GenerateTemporaryTargetAssembly"/>
+        /// Task. At this time, the only debugging information that is generated consists of the temporary project that is 
+        /// created to generate the temporary target assembly. This temporary project is normally deleted at the end of this
+        /// MSBUILD task; when <see cref="GenerateTemporaryTargetAssemblyDebuggingInformation"/> is enable, this temporary project 
+        /// will be retained for inspection by the developer. 
+        ///
+        /// This is a diagnostic parameter, and it defaults to <code>false</code>.
+        /// </summary>
+        public bool GenerateTemporaryTargetAssemblyDebuggingInformation 
+        { 
+            get { return _generateTemporaryTargetAssemblyDebuggingInformation; }
+            set { _generateTemporaryTargetAssemblyDebuggingInformation = value; } 
         }
 
         #endregion Public Properties
@@ -496,9 +529,11 @@ namespace Microsoft.Build.Tasks.Windows
         private string  _intermediateOutputPath;
         private string  _assemblyName;
         private string  _compileTargetName;
+        private bool _generateTemporaryTargetAssemblyDebuggingInformation = false;
 
         private const string intermediateOutputPathPropertyName = "IntermediateOutputPath";
         private const string assemblyNamePropertyName = "AssemblyName";
+        private const string targetAssemblyProjectNamePropertyName = "_TargetAssemblyProjectName";
 
         private const string ALIASES = "Aliases";
         private const string REFERENCETYPENAME = "Reference";
@@ -512,8 +547,7 @@ namespace Microsoft.Build.Tasks.Windows
         private const string INCLUDE_ATTR_NAME = "Include";
 
         private const string TRUE = "True";
-
-        private const string TEMP_PROJ_EXT = ".tmp_proj";
+        private const string WPFTMP = "wpftmp";
 
         #endregion Private Fields
 

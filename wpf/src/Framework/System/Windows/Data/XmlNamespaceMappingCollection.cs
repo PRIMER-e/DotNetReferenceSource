@@ -246,8 +246,8 @@ namespace System.Windows.Data
 
         // The iterator above cannot access base.GetEnumerator directly - this
         // causes build warning 1911, and makes MoveNext throw a security
-        // exception under partial trust (
-
+        // exception under partial trust (bug 1785518).  Accessing it indirectly
+        // through this property fixes the problem.
         private IEnumerator BaseEnumerator
         {
             get { return base.GetEnumerator(); }

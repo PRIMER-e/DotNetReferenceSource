@@ -112,7 +112,7 @@ namespace System.Windows.Forms
                     result = this.CreateAccessibilityInstance();
                     this.Properties.SetObject(PropCellAccessibilityObject, result);
                 }
-
+                
                 return result;
             }
         }
@@ -1168,8 +1168,8 @@ namespace System.Windows.Forms
         /// <include file='doc\DataGridViewCell.uex' path='docs/doc[@for="DataGridViewCell.Clone"]/*' />
         public virtual object Clone()
         {
-            // SECREVIEW : Late-binding does not represent a security thread, see 
-
+            // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+            //
             DataGridViewCell dataGridViewCell = (DataGridViewCell) System.Activator.CreateInstance(this.GetType());
             CloneInternal(dataGridViewCell);
             return dataGridViewCell;
@@ -1334,6 +1334,24 @@ namespace System.Windows.Forms
                 Debug.Assert(dgv.EditingPanel.Controls.Contains(dgv.EditingControl));
                 dgv.EditingPanel.Controls.Remove(dgv.EditingControl);
                 Debug.Assert(dgv.EditingControl.ParentInternal == null);
+
+                if (AccessibilityImprovements.Level3)
+                {
+                    if (dgv.EditingControl is DataGridViewTextBoxEditingControl)
+                    {
+                        dgv.TextBoxControlWasDetached = true;
+                    }
+
+                    if (dgv.EditingControl is DataGridViewComboBoxEditingControl)
+                    {
+                        dgv.ComboBoxControlWasDetached = true;
+                    }
+
+                    dgv.EditingControlAccessibleObject.SetParent(null);
+                    AccessibilityObject.SetDetachableChild(null);
+
+                    AccessibilityObject.RaiseStructureChangedEvent(UnsafeNativeMethods.StructureChangeType.ChildRemoved, dgv.EditingControlAccessibleObject.RuntimeId);
+                }
             }
             if (dgv.EditingPanel.ParentInternal != null)
             {
@@ -2724,6 +2742,24 @@ namespace System.Windows.Forms
             }
             Debug.Assert(dgv.EditingControl.ParentInternal == dgv.EditingPanel);
             Debug.Assert(dgv.EditingPanel.ParentInternal == dgv);
+
+            if (AccessibilityImprovements.Level3)
+            {
+                if ((dgv.ComboBoxControlWasDetached && dgv.EditingControl is DataGridViewComboBoxEditingControl) ||
+                    (dgv.TextBoxControlWasDetached && dgv.EditingControl is DataGridViewTextBoxEditingControl))
+                {
+                    // Recreate control handle is necessary for cases when the same control was detached and then
+                    // reattached to clear accessible hierarchy cache and not announce previous editing cell.
+                    dgv.EditingControl.RecreateHandleCore();
+
+                    dgv.ComboBoxControlWasDetached = false;
+                    dgv.TextBoxControlWasDetached = false;
+                }
+
+                dgv.EditingControlAccessibleObject.SetParent(AccessibilityObject);
+                AccessibilityObject.SetDetachableChild(dgv.EditingControl.AccessibilityObject);
+                AccessibilityObject.RaiseStructureChangedEvent(UnsafeNativeMethods.StructureChangeType.ChildAdded, dgv.EditingControlAccessibleObject.RuntimeId);
+            }
         }
 
         /// <include file='doc\DataGridViewCell.uex' path='docs/doc[@for="DataGridViewCell.KeyDownUnsharesRow"]/*' />
@@ -3351,8 +3387,8 @@ namespace System.Windows.Forms
                     OnCellErrorAreaMouseLeaveInternal();
                     break;
                 case DATAGRIDVIEWCELL_flagAreaNotSet:
-                    // Microsoft: there seems to be a 
-
+                    // Microsoft: there seems to be a bug in setting the HorizontalOffset when scrolling
+                    // Debug.Assert(false, "if we leave the cell we should already have set the CurrentMouseLocation to Data Area or Error Area");
                     break;
                 default:
                     Debug.Assert(false, "there are only three possible choices for the CurrentMouseLocation");
@@ -4700,11 +4736,11 @@ namespace System.Windows.Forms
         }
 
         /// <include file='doc\DataGridViewCell.uex' path='docs/doc[@for="DataGridViewCellAccessibleObject"]/*' />
-        [
-            System.Runtime.InteropServices.ComVisible(true)
-        ]
         protected class DataGridViewCellAccessibleObject : AccessibleObject
         {
+            private int[] runtimeId = null; // Used by UIAutomation
+            private AccessibleObject _child = null;
+
             DataGridViewCell owner;
 
             /// <include file='doc\DataGridViewCell.uex' path='docs/doc[@for="DataGridViewCellAccessibleObject.DataGridViewCellAccessibleObject1"]/*' />
@@ -4752,6 +4788,11 @@ namespace System.Windows.Forms
             {
                 get
                 {
+                    if (AccessibilityImprovements.Level2)
+                    {
+                        return null;
+                    }
+
                     return this.owner.GetType().Name + "(" + owner.GetType().BaseType.Name + ")";
                 }
             }
@@ -4767,7 +4808,27 @@ namespace System.Windows.Forms
                     }
                     if (this.owner.OwningColumn != null)
                     {
-                        return SR.GetString(SR.DataGridView_AccDataGridViewCellName, this.owner.OwningColumn.HeaderText, this.owner.OwningRow.Index);
+                        string name = SR.GetString(SR.DataGridView_AccDataGridViewCellName, this.owner.OwningColumn.HeaderText, this.owner.OwningRow.Index);
+
+                        if (AccessibilityImprovements.Level3 && owner.OwningColumn.SortMode != DataGridViewColumnSortMode.NotSortable)
+                        {
+                            DataGridViewCell dataGridViewCell = this.Owner;
+                            DataGridView dataGridView = dataGridViewCell.DataGridView;
+
+                            if (dataGridViewCell.OwningColumn != null &&
+                                dataGridViewCell.OwningColumn == dataGridView.SortedColumn)
+                            {
+                                name += ", " + (dataGridView.SortOrder == SortOrder.Ascending
+                                    ? SR.GetString(SR.SortedAscendingAccessibleStatus)
+                                    : SR.GetString(SR.SortedDescendingAccessibleStatus));
+                            }
+                            else
+                            {
+                                name += ", " + SR.GetString(SR.NotSortedAccessibleStatus);
+                            }
+                        }
+
+                        return name;
                     }
                     else
                     {
@@ -4850,6 +4911,11 @@ namespace System.Windows.Forms
                     if (this.owner.Selected)
                     {
                         state |= AccessibleStates.Selected;
+                    }
+
+                    if (AccessibilityImprovements.Level1 && this.owner.ReadOnly)
+                    {
+                        state |= AccessibleStates.ReadOnly;
                     }
 
                     Rectangle cellBounds;
@@ -5341,6 +5407,232 @@ namespace System.Windows.Forms
                     (flags & (AccessibleSelection.AddSelection | AccessibleSelection.TakeSelection)) == 0)
                 {
                     this.owner.Selected = false;
+                }
+            }
+
+            /// <summary>
+            /// Sets the detachable child accessible object which may be added or removed to/from hierachy nodes.
+            /// </summary>
+            /// <param name="child">The child accessible object.</param>
+            internal override void SetDetachableChild(AccessibleObject child)
+            {
+                _child = child;
+            }
+
+            internal override void SetFocus()
+            {
+                base.SetFocus();
+
+                RaiseAutomationEvent(NativeMethods.UIA_AutomationFocusChangedEventId);
+            }
+
+            internal override int[] RuntimeId
+            {
+                get
+                {
+                    if (runtimeId == null)
+                    {
+                        runtimeId = new int[2];
+                        runtimeId[0] = RuntimeIDFirstItem; // first item is static - 0x2a
+                        runtimeId[1] = this.GetHashCode();
+                    }
+
+                    return runtimeId;
+                }
+            }
+
+            private string AutomationId
+            {
+                get
+                {
+                    string automationId = string.Empty;
+                    foreach (int runtimeIdPart in RuntimeId)
+                    {
+                        automationId += runtimeIdPart.ToString();
+                    }
+
+                    return automationId;
+                }
+            }
+
+            internal override bool IsIAccessibleExSupported()
+            {
+                if (AccessibilityImprovements.Level2)
+                {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            #region IRawElementProviderFragment Implementation
+
+            internal override Rectangle BoundingRectangle
+            {
+                get
+                {
+                    return this.Bounds;
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot
+            {
+                get
+                {
+                    return owner.DataGridView.AccessibilityObject;
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction)
+            {
+                if (this.owner == null)
+                {
+                    throw new InvalidOperationException(SR.GetString(SR.DataGridViewCellAccessibleObject_OwnerNotSet));
+                }
+
+                if (this.owner.OwningColumn == null || this.owner.OwningRow == null)
+                {
+                    return null;
+                }
+
+                switch (direction)
+                {
+                    case UnsafeNativeMethods.NavigateDirection.Parent:
+                        return this.owner.OwningRow.AccessibilityObject;
+                    case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                        return NavigateForward(false);
+                    case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                        return NavigateBackward(false);
+                    case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                    case UnsafeNativeMethods.NavigateDirection.LastChild:
+                        if (this.owner.DataGridView.CurrentCell == this.owner &&
+                            this.owner.DataGridView.IsCurrentCellInEditMode &&
+                            this.owner.DataGridView.EditingControl != null)
+                        {
+                            return _child;
+                        }
+                        break;
+                    default:
+                        return null;
+                }
+
+                return null;
+            }
+
+            #endregion
+
+            #region IRawElementProviderSimple Implementation
+
+            internal override object GetPropertyValue(int propertyID)
+            {
+                if (AccessibilityImprovements.Level3)
+                {
+                    switch (propertyID)
+                    {
+                        case NativeMethods.UIA_NamePropertyId:
+                            return this.Name;
+                        case NativeMethods.UIA_HasKeyboardFocusPropertyId:
+                            return (State & AccessibleStates.Focused) == AccessibleStates.Focused; // Announce the cell when focusing.
+                        case NativeMethods.UIA_IsEnabledPropertyId:
+                            return owner.DataGridView.Enabled;
+                        case NativeMethods.UIA_AutomationIdPropertyId:
+                            return AutomationId;
+                        case NativeMethods.UIA_HelpTextPropertyId:
+                            return Help ?? string.Empty;
+                        case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                            return (State & AccessibleStates.Focusable) == AccessibleStates.Focusable;
+                        case NativeMethods.UIA_IsPasswordPropertyId:
+                            return false;
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                            return (State & AccessibleStates.Offscreen) == AccessibleStates.Offscreen;
+                        case NativeMethods.UIA_AccessKeyPropertyId:
+                            return string.Empty;
+                        case NativeMethods.UIA_GridItemContainingGridPropertyId:
+                            return Owner.DataGridView.AccessibilityObject;
+                    }
+                }
+
+                if (propertyID == NativeMethods.UIA_IsTableItemPatternAvailablePropertyId)
+                {
+                    return IsPatternSupported(NativeMethods.UIA_TableItemPatternId);
+                }
+                else if (propertyID == NativeMethods.UIA_IsGridItemPatternAvailablePropertyId)
+                {
+                    return IsPatternSupported(NativeMethods.UIA_GridItemPatternId);
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
+            internal override bool IsPatternSupported(int patternId)
+            {
+                if (AccessibilityImprovements.Level3 && 
+                    (patternId.Equals(NativeMethods.UIA_LegacyIAccessiblePatternId) ||
+                    patternId.Equals(NativeMethods.UIA_InvokePatternId) ||
+                    patternId.Equals(NativeMethods.UIA_ValuePatternId)))
+                {
+                    return true;
+                }
+
+                if ((patternId == NativeMethods.UIA_TableItemPatternId ||
+                    patternId == NativeMethods.UIA_GridItemPatternId) && 
+                    // We don't want to implement patterns for header cells
+                    this.owner.ColumnIndex != -1 && this.owner.RowIndex != -1)
+                {
+                    return true;
+                }
+
+                return base.IsPatternSupported(patternId);
+            }
+
+            #endregion
+
+            [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
+            internal override UnsafeNativeMethods.IRawElementProviderSimple[] GetRowHeaderItems()
+            {
+                if (this.owner.DataGridView.RowHeadersVisible && this.owner.OwningRow.HasHeaderCell)
+                {
+                    return new UnsafeNativeMethods.IRawElementProviderSimple[1] { this.owner.OwningRow.HeaderCell.AccessibilityObject };
+                }
+
+                return null;
+            }
+
+            [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
+            internal override UnsafeNativeMethods.IRawElementProviderSimple[] GetColumnHeaderItems()
+            {
+                if (this.owner.DataGridView.ColumnHeadersVisible && this.owner.OwningColumn.HasHeaderCell)
+                {
+                    return new UnsafeNativeMethods.IRawElementProviderSimple[1] { this.owner.OwningColumn.HeaderCell.AccessibilityObject };
+                }
+
+                return null;
+            }
+
+            internal override int Row
+            {
+                [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
+                get
+                {
+                    return this.owner.OwningRow != null ? this.owner.OwningRow.Index : -1;
+                }
+            }
+
+            internal override int Column
+            {
+                [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
+                get
+                {
+                    return this.owner.OwningColumn != null ? this.owner.OwningColumn.Index : -1;
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderSimple ContainingGrid
+            {
+                [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
+                get
+                {
+                    return this.owner.DataGridView.AccessibilityObject;
                 }
             }
         }

@@ -16,6 +16,7 @@ namespace System.Windows.Forms.ButtonInternal {
     using System.Windows.Forms;
     using System.Windows.Forms.Layout;
     using System.Runtime.Versioning;
+    using Runtime.CompilerServices;
 
     /// <devdoc>
     ///                  PLEASE READ
@@ -67,9 +68,29 @@ namespace System.Windows.Forms.ButtonInternal {
         internal abstract void PaintDown(PaintEventArgs e, CheckState state);
 
         internal abstract void PaintOver(PaintEventArgs e, CheckState state);
-        
-#region Drawing Helpers
-       
+
+        #region Accessibility Helpers
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected bool IsHighContrastHighlighted() {
+            return AccessibilityImprovements.Level1 && IsHighContrastHighlightedInternal();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected bool IsHighContrastHighlighted2() {
+            return AccessibilityImprovements.Level2 && IsHighContrastHighlightedInternal();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsHighContrastHighlightedInternal() {
+            return SystemInformation.HighContrast && Application.RenderWithVisualStyles &&
+                (Control.Focused || Control.MouseIsOver || (Control.IsDefault && Control.Enabled));
+        }
+
+#endregion
+
+        #region Drawing Helpers
+
         internal static Color MixedColor(Color color1, Color color2) {
             byte a1 = color1.A;
             byte r1 = color1.R;
@@ -150,8 +171,9 @@ namespace System.Windows.Forms.ButtonInternal {
 
         private void Draw3DBorderHighContrastRaised(Graphics g, ref Rectangle bounds, ColorData colors) {
             bool stockColor = colors.buttonFace.ToKnownColor() == SystemColors.Control.ToKnownColor();
+            bool disabledHighContrast = (!Control.Enabled) && SystemInformation.HighContrast && AccessibilityImprovements.Level1;
 
-            using( WindowsGraphics wg = WindowsGraphics.FromGraphics(g) ) {
+            using ( WindowsGraphics wg = WindowsGraphics.FromGraphics(g) ) {
             
                 // Draw counter-clock-wise.
                 Point p1 = new Point(bounds.X + bounds.Width - 1, bounds.Y );  // upper inner right.
@@ -166,18 +188,27 @@ namespace System.Windows.Forms.ButtonInternal {
 
                 try {
                     // top + left
-                    penTopLeft  = stockColor ? /*SystemPens.ControlLightLight*/ new WindowsPen(wg.DeviceContext, SystemColors.ControlLightLight) : new WindowsPen(wg.DeviceContext, colors.highlight);
+                    if (disabledHighContrast) {
+                        penTopLeft = new WindowsPen(wg.DeviceContext, colors.windowDisabled);
+                    }
+                    else {
+                        penTopLeft = stockColor ? new WindowsPen(wg.DeviceContext, SystemColors.ControlLightLight) : new WindowsPen(wg.DeviceContext, colors.highlight);
+                    }
                     wg.DrawLine(penTopLeft, p1, p2); // top  (right-left)
                     wg.DrawLine(penTopLeft, p2, p3); // left (up-down)
 
                     // bottom + right
-                    penBottomRight = stockColor ? new WindowsPen(wg.DeviceContext, SystemColors.ControlDarkDark) : new WindowsPen(wg.DeviceContext, colors.buttonShadowDark);
-                    
+                    if (disabledHighContrast) {
+                        penBottomRight = new WindowsPen(wg.DeviceContext, colors.windowDisabled);
+                    }
+                    else {
+                        penBottomRight = stockColor ? new WindowsPen(wg.DeviceContext, SystemColors.ControlDarkDark) : new WindowsPen(wg.DeviceContext, colors.buttonShadowDark);
+                    }
                     p1.Offset(0,-1); // need to paint last pixel too.
                     wg.DrawLine(penBottomRight, p3, p4);  // bottom (left-right)
                     wg.DrawLine(penBottomRight, p4, p1);  // right  (bottom-up )
 
-                    // Draw inset
+                    // Draw inset using the background color to make the top and left lines thinner
                     if (stockColor) {
                         if (SystemInformation.HighContrast) {
                             insetPen = new WindowsPen(wg.DeviceContext, SystemColors.ControlLight);
@@ -205,8 +236,12 @@ namespace System.Windows.Forms.ButtonInternal {
                     wg.DrawLine(insetPen, p2, p3); // left( up-down)
                 
                     // Bottom + right inset           
-
-                    bottomRightInsetPen = stockColor ? new WindowsPen(wg.DeviceContext, SystemColors.ControlDark) : new WindowsPen(wg.DeviceContext, colors.buttonShadow);
+                    if (disabledHighContrast) {
+                        bottomRightInsetPen = new WindowsPen(wg.DeviceContext, colors.windowDisabled);
+                    }
+                    else {
+                        bottomRightInsetPen = stockColor ? new WindowsPen(wg.DeviceContext, SystemColors.ControlDark) : new WindowsPen(wg.DeviceContext, colors.buttonShadow);
+                    }
                     p1.Offset(0,-1); // need to paint last pixel too.
                     wg.DrawLine(bottomRightInsetPen, p3, p4); // bottom (left-right)
                     wg.DrawLine(bottomRightInsetPen, p4, p1); // right  (bottom-up)
@@ -300,6 +335,7 @@ namespace System.Windows.Forms.ButtonInternal {
         
         private void Draw3DBorderRaised(Graphics g, ref Rectangle bounds, ColorData colors) {
             bool stockColor = colors.buttonFace.ToKnownColor() == SystemColors.Control.ToKnownColor();
+            bool disabledHighContrast = (!Control.Enabled) && SystemInformation.HighContrast && AccessibilityImprovements.Level1;
 
             using( WindowsGraphics wg = WindowsGraphics.FromGraphics(g) ) {
 
@@ -312,7 +348,16 @@ namespace System.Windows.Forms.ButtonInternal {
                 // Draw counter-clock-wise.
 
                 // top + left
-                WindowsPen pen = stockColor ? new WindowsPen(wg.DeviceContext, SystemColors.ControlLightLight) : new WindowsPen(wg.DeviceContext, colors.highlight);
+                WindowsPen pen;
+                if (disabledHighContrast) {
+                    pen = new WindowsPen(wg.DeviceContext, colors.windowDisabled);
+                }
+                else if (stockColor) {
+                    pen = new WindowsPen(wg.DeviceContext, SystemColors.ControlLightLight);
+                }
+                else  {
+                    pen = new WindowsPen(wg.DeviceContext, colors.highlight);
+                }
 
                 try {
                     wg.DrawLine(pen, p1, p2);   // top (right-left)
@@ -323,7 +368,10 @@ namespace System.Windows.Forms.ButtonInternal {
                 }
 
                 // bottom + right
-                if (stockColor) {
+                if (disabledHighContrast) {
+                    pen = new WindowsPen(wg.DeviceContext, colors.windowDisabled);
+                }
+                else if (stockColor) {
                     pen = new WindowsPen(wg.DeviceContext, SystemColors.ControlDarkDark);
                 }
                 else {
@@ -331,7 +379,7 @@ namespace System.Windows.Forms.ButtonInternal {
                 }
 
                 try {
-                    p1.Offset(0,-1); // need to paint last pixel too.
+                    p1.Offset(0, -1); // need to paint last pixel too.
                     wg.DrawLine(pen, p3, p4);    // bottom(left-right)
                     wg.DrawLine(pen, p4, p1);    // right (bottom-up)
                 }
@@ -339,11 +387,11 @@ namespace System.Windows.Forms.ButtonInternal {
                     pen.Dispose();
                 }
 
-                // Draw inset
-                p1.Offset(-1, 2); 
-                p2.Offset( 1, 1);
-                p3.Offset( 1,-1);
-                p4.Offset(-1,-1);
+                // Draw inset - use the back ground color here to have a thinner border 
+                p1.Offset(-1, 2);
+                p2.Offset(1, 1);
+                p3.Offset(1, -1);
+                p4.Offset(-1, -1);
 
                 if (stockColor) {
                     if (SystemInformation.HighContrast) {
@@ -367,15 +415,18 @@ namespace System.Windows.Forms.ButtonInternal {
                 }
 
                 // Bottom + right inset                        
-                if (stockColor) {
+                if (disabledHighContrast) {
+                    pen = new WindowsPen(wg.DeviceContext, colors.windowDisabled);
+                }
+                else if (stockColor) {
                     pen = new WindowsPen(wg.DeviceContext, SystemColors.ControlDark);
                 }
                 else {
                     pen = new WindowsPen(wg.DeviceContext, colors.buttonShadow);
-                }                        
+                }
 
                 try {
-                    p1.Offset(0,-1); // need to paint last pixel too.
+                    p1.Offset(0, -1); // need to paint last pixel too.
                     wg.DrawLine(pen, p3, p4);  // bottom(left-right)
                     wg.DrawLine(pen, p4, p1);  // right (bottom-up)
                 }
@@ -562,7 +613,7 @@ namespace System.Windows.Forms.ButtonInternal {
         }
 
         /// <devdoc>
-        ///     Draws the button's text.
+        ///     Draws the button's text. Color c is the foreground color set with enabled/disabled state in mind.
         /// </devdoc>
         void DrawText(Graphics g, LayoutData layout, Color c, ColorData colors)
         {
@@ -576,10 +627,10 @@ namespace System.Windows.Forms.ButtonInternal {
                         r.X -= 1;
                     }
                     r.Width += 1;
-
-                    if (disabledText3D && !Control.Enabled) {
-                        r.Offset(1, 1);
+                    if (disabledText3D && !Control.Enabled && 
+                            (!AccessibilityImprovements.Level1 || (!colors.options.highContrast && AccessibilityImprovements.Level1))) {
                         using (SolidBrush brush = new SolidBrush(colors.highlight)) {
+                            r.Offset(1, 1);
                             g.DrawString(Control.Text, Control.Font, brush, r, stringFormat);
 
                             r.Offset(-1, -1);
@@ -604,10 +655,9 @@ namespace System.Windows.Forms.ButtonInternal {
                     }
                 }
             }
-            else { // Draw text using GDI (Whidbey feature).
+            else { // Draw text using GDI (Whidbey+ feature).
                 TextFormatFlags formatFlags = CreateTextFormatFlags();
-
-                if (disabledText3D && !Control.Enabled) {
+                if (disabledText3D && !Control.Enabled && (!AccessibilityImprovements.Level1 || (!colors.options.highContrast && AccessibilityImprovements.Level1))) {
                     if (Application.RenderWithVisualStyles) {
                         //don't draw chiseled text if themed as win32 app does.
                         TextRenderer.DrawText(g, Control.Text, Control.Font, r, colors.buttonShadow, formatFlags);
@@ -675,7 +725,6 @@ namespace System.Windows.Forms.ButtonInternal {
             internal Color backColor;
             internal Color foreColor;
             internal bool enabled;
-            internal bool disabledTextDim;
             internal bool highContrast;
             internal Graphics graphics;
 
@@ -716,6 +765,7 @@ namespace System.Windows.Forms.ButtonInternal {
                         colors.highlight = ControlPaint.LightLight(backColor);
                     }
                 }
+                colors.windowDisabled = (highContrast && AccessibilityImprovements.Level1) ? SystemColors.GrayText : colors.buttonShadow;
 
                 const float lowlight = .1f;
                 float adjust = 1 - lowlight;
@@ -760,8 +810,12 @@ namespace System.Windows.Forms.ButtonInternal {
                     colors.constrastButtonShadow = colors.buttonShadow;
                 }
                 
-                if (!enabled && disabledTextDim) {
-                    colors.windowText = colors.buttonShadow;
+                if (!enabled) {
+                    colors.windowText = colors.windowDisabled;
+                    if (highContrast && AccessibilityImprovements.Level1) {
+                        colors.windowFrame = colors.windowDisabled;
+                        colors.buttonShadow = colors.windowDisabled;
+                    }
                 }
                 else {
                     colors.windowText = colors.windowFrame;
@@ -781,6 +835,7 @@ namespace System.Windows.Forms.ButtonInternal {
                         colors.lowHighlight = wg.GetNearestColor(colors.lowHighlight);
                         colors.lowButtonFace = wg.GetNearestColor(colors.lowButtonFace);
                         colors.windowFrame = wg.GetNearestColor(colors.windowFrame);
+                        colors.windowDisabled = wg.GetNearestColor(colors.windowDisabled);
                     }
                 }
                 finally
@@ -798,6 +853,7 @@ namespace System.Windows.Forms.ButtonInternal {
             internal Color buttonShadowDark;
             internal Color constrastButtonShadow;
             internal Color windowText;
+            internal Color windowDisabled;
             internal Color highlight;
             internal Color lowHighlight;
             internal Color lowButtonFace;
@@ -1157,7 +1213,7 @@ namespace System.Windows.Forms.ButtonInternal {
                         layout.checkBounds.Y = (field.Y+field.Height)-layout.checkBounds.Height;
                     }
                     else if ((align & LayoutUtils.AnyTop) != 0) {
-                        layout.checkBounds.Y = field.Y + 2; // + 2: this needs to be aligned to the text (
+                        layout.checkBounds.Y = field.Y + 2; // + 2: this needs to be aligned to the text (bug 87483)
                     }
                     else {
                         layout.checkBounds.Y = field.Y + (field.Height - layout.checkBounds.Height)/2;
@@ -1527,35 +1583,25 @@ namespace System.Windows.Forms.ButtonInternal {
         }
 
         protected ColorOptions PaintRender(Graphics g) {
-            ColorOptions colors = CommonRender(g);
-            return colors;
+            return CommonRender(g);
         }
 
         // used by the DataGridViewButtonCell
         internal static ColorOptions PaintFlatRender(Graphics g, Color foreColor, Color backColor, bool enabled) {
-            ColorOptions colors = CommonRender(g, foreColor, backColor, enabled);
-            colors.disabledTextDim = true;
-            return colors;
+            return CommonRender(g, foreColor, backColor, enabled);
         }
 
         protected ColorOptions PaintFlatRender(Graphics g) {
-            ColorOptions colors = CommonRender(g);
-            colors.disabledTextDim = true;
-            return colors;
+            return CommonRender(g);
         }
 
         // used by the DataGridViewButtonCell
-        internal static ColorOptions PaintPopupRender(Graphics g, Color foreColor, Color backColor, bool enabled)
-        {
-            ColorOptions colors = CommonRender(g, foreColor, backColor, enabled);
-            colors.disabledTextDim = true;
-            return colors;
+        internal static ColorOptions PaintPopupRender(Graphics g, Color foreColor, Color backColor, bool enabled) {
+            return CommonRender(g, foreColor, backColor, enabled);
         }
 
         protected ColorOptions PaintPopupRender(Graphics g) {
-            ColorOptions colors = CommonRender(g);
-            colors.disabledTextDim = true;
-            return colors;
+            return CommonRender(g);
         }
 
 #endregion

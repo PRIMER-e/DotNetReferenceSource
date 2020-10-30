@@ -321,6 +321,9 @@ namespace System.Windows.Media.Composition
         [FieldOffset(60)] internal DUCE.ResourceHandle hBitmap;
         [FieldOffset(64)] internal UInt32 stride;
         [FieldOffset(68)] internal UInt32 ePixelFormat;
+        [FieldOffset(72)] internal int DpiAwarenessContext;
+        [FieldOffset(76)] internal double DpiX;
+        [FieldOffset(84)] internal double DpiY;
         };
         [StructLayout(LayoutKind.Explicit, Pack=1)]
         internal struct MILCMD_HWNDTARGET_SUPPRESSLAYERED
@@ -385,6 +388,15 @@ namespace System.Windows.Media.Composition
         [FieldOffset(8)] internal UInt32 flags;
         };
         [StructLayout(LayoutKind.Explicit, Pack=1)]
+        internal struct MILCMD_HWNDTARGET_DPICHANGED
+        {
+        [FieldOffset(0)] internal MILCMD Type;
+        [FieldOffset(4)] internal DUCE.ResourceHandle Handle;
+        [FieldOffset(8)] internal double DpiX;
+        [FieldOffset(16)] internal double DpiY;
+        [FieldOffset(24)] internal BOOL AfterParent;
+        };
+        [StructLayout(LayoutKind.Explicit, Pack=1)]
         internal struct MILCMD_GLYPHRUN_CREATE
         {
         [FieldOffset(0)] internal MILCMD Type;
@@ -413,6 +425,12 @@ namespace System.Windows.Media.Composition
         [FieldOffset(0)] internal MILCMD Type;
         [FieldOffset(4)] internal DUCE.ResourceHandle Handle;
         [FieldOffset(8)] internal UInt64 CopyCompletedEvent;
+        };
+        [StructLayout(LayoutKind.Explicit, Pack=1)]
+        internal struct MILCMD_PARTITION_NOTIFYPOLICYCHANGEFORNONINTERACTIVEMODE
+        {
+        [FieldOffset(0)] internal MILCMD Type;
+        [FieldOffset(4)] internal BOOL ShouldRenderEvenWhenNoDisplayDevicesAreAvailable;
         };
         [StructLayout(LayoutKind.Explicit, Pack=1)]
         internal struct MILCMD_AXISANGLEROTATION3D

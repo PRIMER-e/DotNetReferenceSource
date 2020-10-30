@@ -16,6 +16,7 @@ namespace System.Windows.Forms {
     using System.Windows.Forms;
     using System.Collections;
     using Microsoft.Win32;
+    using Internal;
 
     /// <include file='doc\Screen.uex' path='docs/doc[@for="Screen"]/*' />
     /// <devdoc>
@@ -90,10 +91,6 @@ namespace System.Windows.Forms {
                 SafeNativeMethods.GetMonitorInfo(new HandleRef(null, monitor), info);
                 bounds = Rectangle.FromLTRB(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom);
                 primary = ((info.dwFlags & MONITORINFOF_PRIMARY) != 0);
-                int count = info.szDevice.Length;
-                while (count > 0 && info.szDevice[count - 1] == (char)0) {
-                    count--;
-                }
 
                 deviceName = new string(info.szDevice);
                 deviceName = deviceName.TrimEnd((char)0);
@@ -101,7 +98,6 @@ namespace System.Windows.Forms {
                 if (hdc == IntPtr.Zero) {
                     screenDC = UnsafeNativeMethods.CreateDC(deviceName);
                 }
-
             }
             hmonitor = monitor;
 

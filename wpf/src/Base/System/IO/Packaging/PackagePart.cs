@@ -202,19 +202,19 @@ namespace System.IO.Packaging
                     {
                         // From sarjanas:
                         //
-                        // We have seen this 
-
-
-
-
-
-
-
-
-
-
-
-
+                        // We have seen this bug in the past and have said that this should be
+                        // treated as exception. If we get a null content type, it’s an error.
+                        // We want to throw this exception so that anyone sub-classing this class
+                        // should not be setting the content type to null. Its like any other
+                        // parameter validation. This is the only place we can validate it. We
+                        // throw an ArgumentNullException, when the content type is set to null
+                        // in the constructor.
+                        //
+                        // We cannot get rid of this exception. At most, we can change it to
+                        // Invariant.Assert. But then client code will see an Assert if they make
+                        // a mistake and that is also not desirable.
+                        //
+                        // PackagePart is a public API.
                         #pragma warning suppress 6503
                         throw new InvalidOperationException(SR.Get(SRID.NullContentTypeProvided));
                     }

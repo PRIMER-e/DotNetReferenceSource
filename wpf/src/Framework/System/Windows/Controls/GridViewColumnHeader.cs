@@ -220,7 +220,7 @@ namespace System.Windows.Controls
             // give parent a chance to handle MouseButtonEvent (for GridViewHeaderRowPresenter by default)
             e.Handled = false;
 
-            //If ClickMode is Hover, we must capture mouse in order to let column reorder work correctly (
+            //If ClickMode is Hover, we must capture mouse in order to let column reorder work correctly (Bug#1496673)
             if (ClickMode == ClickMode.Hover && e.ButtonState == MouseButtonState.Pressed)
             {
                 CaptureMouse();
@@ -398,11 +398,11 @@ namespace System.Windows.Controls
             UpdateGripperCursor();
         }
 
-        // Fix for 
-
-
-
-
+        // Fix for bug 1269757 in Windows OS Bugs.  Reset the background visual brush ref to
+        // avoid keeping it alive.  Keeping a VisualBrush alive causes us to assume that the
+        // entire Visual tree is a graph, preventing an optimized render walk of only
+        // the dirty subtree.  We would end up rendering all of our realizations on each
+        // frame, causing high CPU consumption when a large realization tree is present.
         internal void ResetFloatingHeaderCanvasBackground()
         {
             if (_floatingHeaderCanvas != null)

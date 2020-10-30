@@ -399,9 +399,9 @@ namespace MS.Internal.Documents
 
             //Invariant.Assert(textView.TextSegments.Count > 0, "Page cannot be empty.");
             // It is not necessarily WPF's fault if there are no TextSegments.  Dev11
-            // 
-
-
+            // bug 156176 is a case where PTS aborts the formatting because the content
+            // exceeds its capacity.  Rather than crashing in this case, limp along
+            // as if the position couldn't be determined.
             if (textView.TextSegments.Count == 0)
             {
                 return ContentPosition.Missing;

@@ -27,11 +27,11 @@ using SRID=MS.Internal.PresentationCore.SRID;
 
 //------------------------------------------------------------------------------
 // Todo:
-//  - 
-
-
-
-
+//  - Bug: There is an exception thrown inside of ConnectChild which could render
+//         the collection inconsistent.
+//  - Performance: RemoveRange moves and nulls entry. It is better to null out
+//    after we moved all the items.
+//------------------------------------------------------------------------------
 
 
 // Since we disable PreSharp warnings in this file, we first need to disable
@@ -566,7 +566,7 @@ namespace System.Windows.Media
                 {
                     // If the Visual is not in this collection we silently return without
                     // failing. This is the same behavior that ArrayList implements. See
-                    // also Windows OS 
+                    // also Windows OS Bug #1100006.
                     return; 
                 }
 

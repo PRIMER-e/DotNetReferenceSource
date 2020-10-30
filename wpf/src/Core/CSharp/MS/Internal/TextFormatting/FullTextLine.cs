@@ -2019,7 +2019,7 @@ namespace MS.Internal.TextFormatting
                     // actually greater. That's what happen when the client hittest a hidden
                     // run that follows a reverse block. Since it is a hidden run, LS has
                     // to yield the closest non-hidden place which may be the run preceding
-                    // the hidden text. (wchao, PS 
+                    // the hidden text. (wchao, PS bug #930976)
                     return null;
                 }
 
@@ -2534,15 +2534,15 @@ namespace MS.Internal.TextFormatting
                 if (lsTextCell.lscpEndCell < lsTextCell.lscpStartCell)
                 {
                     // When hit-testing is done on a generated hyphen of a hyphenated word, LS can only tell
-                    // the start LSCP and not the end LSCP. Argurably this is LS 
-
-
-
-
-
-
-
-
+                    // the start LSCP and not the end LSCP. Argurably this is LS bug. In such situation they
+                    // should assume the end LSCP being the last LSCP of the line.
+                    //
+                    // However our code assumes that LS must tell both and the text cell must have size greater
+                    // than one codepoint. We count on that to reliably advance the caret position.
+                    //
+                    // The LSPTS bug#1005 has been filed and while we are still debating, we need to unblock
+                    // ourselves. What we can do is to assume that the next caret stop in this case is always
+                    // the next codepoint.
                     lsTextCell.lscpEndCell = lsTextCell.lscpStartCell;
                 }
             }
@@ -2597,15 +2597,15 @@ namespace MS.Internal.TextFormatting
                 if (lsTextCell.lscpEndCell < lsTextCell.lscpStartCell)
                 {
                     // When hit-testing is done on a generated hyphen of a hyphenated word, LS can only tell
-                    // the start LSCP and not the end LSCP. Argurably this is LS 
-
-
-
-
-
-
-
-
+                    // the start LSCP and not the end LSCP. Argurably this is LS bug. In such situation they
+                    // should assume the end LSCP being the last LSCP of the line.
+                    //
+                    // However our code assumes that LS must tell both and the text cell must have size greater
+                    // than one codepoint. We count on that to reliably advance the caret position.
+                    //
+                    // The LSPTS bug#1005 has been filed and while we are still debating, we need to unblock
+                    // ourselves. What we can do is to assume that the next caret stop in this case is always
+                    // the next codepoint.
                     lsTextCell.lscpEndCell = lsTextCell.lscpStartCell;
                 }
             }

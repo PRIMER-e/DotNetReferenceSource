@@ -17,7 +17,7 @@ using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 
 namespace Internal.Cryptography
 {
-    internal sealed class BasicSymmetricCipherCng : BasicSymmetricCipher
+    internal sealed class BasicSymmetricCipherNCrypt : BasicSymmetricCipher
     {
         //
         // The first parameter is a delegate that instantiates a CngKey rather than a CngKey itself. That's because CngKeys are stateful objects
@@ -25,7 +25,7 @@ namespace Internal.Cryptography
         //
         // The delegate must instantiate a new CngKey, based on a new underlying NCryptKeyHandle, each time is called.
         //
-        public BasicSymmetricCipherCng(Func<CngKey> cngKeyFactory, CipherMode cipherMode, int blockSizeInBytes, byte[] iv, bool encrypting)
+        public BasicSymmetricCipherNCrypt(Func<CngKey> cngKeyFactory, CipherMode cipherMode, int blockSizeInBytes, byte[] iv, bool encrypting)
             : base(iv, blockSizeInBytes)
         {
             _encrypting = encrypting;
@@ -109,14 +109,18 @@ namespace Internal.Cryptography
             return output;
         }
 
-        public sealed override void Dispose()
+        protected sealed override void Dispose(bool disposing)
         {
-            if (_cngKey != null)
+            if (disposing)
             {
-                _cngKey.Dispose();
-                _cngKey = null;
+                if (_cngKey != null)
+                {
+                    _cngKey.Dispose();
+                    _cngKey = null;
+                }
             }
-            base.Dispose();
+
+            base.Dispose(disposing);
         }
 
         private void Reset()
@@ -139,5 +143,114 @@ namespace Internal.Cryptography
 
         private readonly static CngProperty s_ECBMode = CreateCngPropertyForCipherMode(Interop.BCrypt.BCRYPT_CHAIN_MODE_ECB);
         private readonly static CngProperty s_CBCMode = CreateCngPropertyForCipherMode(Interop.BCrypt.BCRYPT_CHAIN_MODE_CBC);
+    }
+
+    internal sealed class BasicSymmetricCipherBCrypt : BasicSymmetricCipher
+    {
+        private readonly bool _encrypting;
+        private SafeBCryptKeyHandle _hKey;
+        private byte[] _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
+                                    // The base IV holds a copy of the original IV for Reset(), until it is cleared by Dispose().
+
+        [SecuritySafeCritical]
+        public BasicSymmetricCipherBCrypt(SafeBCryptAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, byte[] iv, bool encrypting)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+        {
+            Debug.Assert(algorithm != null);
+
+            _encrypting = encrypting;
+
+            if (IV != null)
+            {
+                _currentIv = new byte[IV.Length];
+            }
+
+            _hKey = BCryptNative.BCryptImportKey(algorithm, key);
+
+            Reset();
+        }
+
+        [SecuritySafeCritical]
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                SafeBCryptKeyHandle hKey = _hKey;
+                _hKey = null;
+                if (hKey != null)
+                {
+                    hKey.Dispose();
+                }
+
+                byte[] currentIv = _currentIv;
+                _currentIv = null;
+                if (currentIv != null)
+                {
+                    Array.Clear(currentIv, 0, currentIv.Length);
+                }
+            }
+
+            base.Dispose(disposing);
+        }
+
+        [SecuritySafeCritical]
+        public override int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        {
+            Debug.Assert(input != null);
+            Debug.Assert(inputOffset >= 0);
+            Debug.Assert(count > 0);
+            Debug.Assert((count % BlockSizeInBytes) == 0);
+            Debug.Assert(input.Length - inputOffset >= count);
+            Debug.Assert(output != null);
+            Debug.Assert(outputOffset >= 0);
+            Debug.Assert(output.Length - outputOffset >= count);
+
+            int numBytesWritten;
+            if (_encrypting)
+            {
+                numBytesWritten = BCryptNative.BCryptEncrypt(_hKey, input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
+            }
+            else
+            {
+                numBytesWritten = BCryptNative.BCryptDecrypt(_hKey, input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
+            }
+
+            if (numBytesWritten != count)
+            {
+                // CNG gives us no way to tell BCryptDecrypt() that we're decrypting the final block, nor is it performing any
+                // padding /depadding for us. So there's no excuse for a provider to hold back output for "future calls." Though
+                // this isn't technically our problem to detect, we might as well detect it now for easier diagnosis.
+                throw new CryptographicException(SR.Cryptography_UnexpectedTransformTruncation);
+            }
+
+            return numBytesWritten;
+        }
+
+        public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
+        {
+            Debug.Assert(input != null);
+            Debug.Assert(inputOffset >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert((count % BlockSizeInBytes) == 0);
+            Debug.Assert(input.Length - inputOffset >= count);
+
+            byte[] output = new byte[count];
+            if (count != 0)
+            {
+                int numBytesWritten = Transform(input, inputOffset, count, output, 0);
+                Debug.Assert(numBytesWritten == count);  // Our implementation of Transform() guarantees this. See comment above.
+            }
+
+            Reset();
+            return output;
+        }
+
+        private void Reset()
+        {
+            if (IV != null)
+            {
+                Buffer.BlockCopy(IV, 0, _currentIv, 0, IV.Length);
+            }
+        }
     }
 }

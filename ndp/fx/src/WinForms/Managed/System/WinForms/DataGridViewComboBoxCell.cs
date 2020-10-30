@@ -94,6 +94,25 @@ namespace System.Windows.Forms
             }
         }
 
+        /// <summary>
+        /// Creates a new AccessibleObject for this DataGridViewComboBoxCell instance.
+        /// The AccessibleObject instance returned by this method supports ControlType UIA property.
+        /// However the new object is only available in applications that are recompiled to target 
+        /// .NET Framework 4.7.2 or opt-in into this feature using a compatibility switch. 
+        /// </summary>
+        /// <returns>
+        /// AccessibleObject for this DataGridViewComboBoxCell instance.
+        /// </returns>
+        protected override AccessibleObject CreateAccessibilityInstance()
+        {
+            if (AccessibilityImprovements.Level2)
+            {
+                return new DataGridViewComboBoxCellAccessibleObject(this);
+            }
+
+            return base.CreateAccessibilityInstance();
+        }
+
         /// <include file='doc\DataGridViewComboBoxCell.uex' path='docs/doc[@for="DataGridViewComboBoxCell.AutoComplete"]/*' />
         [DefaultValue(true)]
         public virtual bool AutoComplete
@@ -846,7 +865,7 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
                 dataGridViewCell = (DataGridViewComboBoxCell)System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -1129,8 +1148,8 @@ namespace System.Windows.Forms
             if (value == null || ((this.ValueType != null && !this.ValueType.IsAssignableFrom(value.GetType())) && value != System.DBNull.Value))
             {
                 // Do not raise the DataError event if the value is null and the row is the 'new row'.
-                // VS Whidbey 
-
+                // VS Whidbey bug 324054: In fact, unlike for other cell types, do not raise DataError event at all if value is null and therefore invalid.
+                // Using the DataGridViewComboBoxCell.DefaultNewRowValue property would be wrong.
                 if (value == null /* && ((this.DataGridView != null && rowIndex == this.DataGridView.NewRowIndex) || this.Items.Count == 0)*/)
                 {
                     // Debug.Assert(rowIndex != -1 || this.Items.Count == 0);
@@ -2276,6 +2295,14 @@ namespace System.Windows.Forms
                                         DataGridViewComboBoxCellRenderer.DrawReadOnlyButton(g, valBounds, comboBoxState);
                                         DataGridViewComboBoxCellRenderer.DrawDropDownButton(g, dropRect, ComboBoxState.Normal);
                                     }
+
+                                    if (SystemInformation.HighContrast && AccessibilityImprovements.Level1)
+                                    {
+                                        // In the case of ComboBox style, background is not filled in, 
+                                        // in the case of DrawReadOnlyButton uses theming API to render CP_READONLY COMBOBOX part that renders the background,
+                                        // this API does not have "selected" state, thus always uses BackColor
+                                        br = this.DataGridView.GetCachedBrush(cellStyle.BackColor);
+                                    }
                                 }
                                 else
                                 {
@@ -3217,6 +3244,32 @@ namespace System.Windows.Forms
                     visualStyleRenderer.SetParameters(ComboBoxReadOnlyButton.ClassName, ComboBoxReadOnlyButton.Part, (int)state);
                 }
                 visualStyleRenderer.DrawBackground(g, bounds);
+            }
+        }
+
+        /// <include file='doc\DataGridViewComboBoxCell.uex' path='docs/doc[@for="DataGridViewComboBoxCellAccessibleObject"]/*' />
+        [ComVisible(true)]
+        protected class DataGridViewComboBoxCellAccessibleObject : DataGridViewCellAccessibleObject
+        {
+
+            /// <include file='doc\DataGridViewComboBoxCell.uex' path='docs/doc[@for="DataGridViewComboBoxCellAccessibleObject.DataGridViewComboBoxCellAccessibleObject"]/*' />
+            public DataGridViewComboBoxCellAccessibleObject(DataGridViewCell owner) : base(owner)
+            {
+            }
+
+            internal override bool IsIAccessibleExSupported()
+            {
+                return true;
+            }
+
+            internal override object GetPropertyValue(int propertyID)
+            {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId)
+                {
+                    return NativeMethods.UIA_ComboBoxControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
         }
     }

@@ -3,7 +3,7 @@
 // <copyright file=WinEventHandler.cs company=Microsoft>
 //    Copyright (C) Microsoft Corporation.  All rights reserved.
 // </copyright>
-// 
+//
 //
 // Description: WinEventHandler implementation.
 //
@@ -33,7 +33,7 @@ namespace System.Windows.Documents
         //  Constructors
         //
         //------------------------------------------------------
- 
+
         #region Constructors
 
         // ctor that takes a range of events
@@ -51,12 +51,8 @@ namespace System.Windows.Documents
             // Keep the garbage collector from moving things around
             _gchThis = GCHandle.Alloc(_winEventProc.Value);
 
-            // Workaround for 
-            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
-            if (dispatcher != null)
-            {
-                dispatcher.ShutdownFinished += new EventHandler(OnDispatcherShutDown);
-            }
+            // Workaround for bug 150666.
+            _shutdownListener = new WinEventHandlerShutDownListener(this);
         }
 
         ~WinEventHandler()
@@ -71,7 +67,7 @@ namespace System.Windows.Documents
         //  Internal Methods
         //
         //------------------------------------------------------
- 
+
         #region Internal Methods
 
         public void Dispose()
@@ -140,6 +136,12 @@ namespace System.Windows.Documents
                 UnsafeNativeMethods.UnhookWinEvent(_hHook.Value);
                 _hHook.Value = IntPtr.Zero ;
             }
+
+            if (_shutdownListener != null)
+            {
+                _shutdownListener.StopListening();
+                _shutdownListener = null;
+            }
         }
 
         #endregion Internal Methods
@@ -149,7 +151,7 @@ namespace System.Windows.Documents
         //  Private Methods
         //
         //------------------------------------------------------
- 
+
         #region Private Methods
 
         private void WinEventDefaultProc(int winEventHook, int eventId, IntPtr hwnd, int idObject, int idChild, int eventThread, int eventTime)
@@ -157,21 +159,38 @@ namespace System.Windows.Documents
             WinEventProc(eventId , hwnd);
         }
 
-        // Workaround for 
-        private void OnDispatcherShutDown(object sender, EventArgs args)
-        {
-            Stop();
-        }
-
         #endregion Private Methods
 
+        #region Private Types
+
+        private sealed class WinEventHandlerShutDownListener : ShutDownListener
+        {
+            /// <SecurityNote>
+            ///     Critical: accesses AppDomain.DomainUnload event
+            ///     TreatAsSafe: This code does not take any parameter or return state.
+            ///                  It simply attaches private callbacks.
+            /// </SecurityNote>
+            [SecurityCritical,SecurityTreatAsSafe]
+            public WinEventHandlerShutDownListener(WinEventHandler target)
+                : base(target, ShutDownEvents.DispatcherShutdown)
+            {
+            }
+
+            internal override void OnShutDown(object target, object sender, EventArgs e)
+            {
+                WinEventHandler winEventHandler = (WinEventHandler)target;
+                winEventHandler.Stop();
+            }
+        }
+
+        #endregion Private Types
 
         //------------------------------------------------------
         //
         //  Private Fields
         //
         //------------------------------------------------------
- 
+
         #region Private Fields
 
         // min WinEvent.
@@ -188,6 +207,9 @@ namespace System.Windows.Documents
 
         // GCHandle to keep the garbage collector from moving things around
         private GCHandle _gchThis;
+
+        // shutdown listener
+        private WinEventHandlerShutDownListener _shutdownListener;
 
         #endregion Private Fields
     }

@@ -180,7 +180,7 @@ HRESULT __stdcall DelayLoadUICallback(HINSTANCE * phinst)
             SUBLANG_NEUTRAL),
             SORTIDFROMLCID(lcidSystem)),
         0x409,  // even though we embed 0x0409 in the exe, we still look for it on disk in case
-                // LOC ships 
+                // LOC ships bug fixes for the resources.
     };
     UINT uiConsoleOutputCP = GetConsoleOutputCP();
 

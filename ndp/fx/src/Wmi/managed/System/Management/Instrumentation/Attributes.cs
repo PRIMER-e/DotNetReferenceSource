@@ -55,7 +55,7 @@ namespace System.Management.Instrumentation
                 namespaceName = namespaceName.Replace('/', '\\');
 
             if(namespaceName == null || namespaceName.Length == 0)
-                namespaceName = "root\\default"; // 
+                namespaceName = "root\\default"; // bug#60933 Use a default namespace if null
 
 
             bool once = true;
@@ -425,7 +425,7 @@ namespace System.Management.Instrumentation
             Object [] rg = member.GetCustomAttributes(typeof(ManagedNameAttribute), false);
             if(rg.Length > 0)
             {
-                // 
+                // bug#69115 - if null or empty string are passed, we just ignore this attribute
                 ManagedNameAttribute attr = (ManagedNameAttribute)rg[0];
                 if(attr.name != null && attr.name.Length != 0)
                     return attr.name;

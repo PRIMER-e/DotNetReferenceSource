@@ -326,8 +326,8 @@ namespace System.ServiceModel.Configuration
             }
             catch (ConfigurationErrorsException e)
             {
-                // Work-around for 
-
+                // Work-around for bug 219506@CSDMain: if the extension type cannot be loaded, we'll ignore 
+                // the exception when running in win8 app container and reading from machine.config.
                 if (System.ServiceModel.Channels.AppContainerInfo.IsRunningInAppContainer && evaluationContext.IsMachineLevel)
                 {
                     DiagnosticUtility.TraceHandledException(e, TraceEventType.Information);

@@ -318,12 +318,20 @@ using Microsoft.Win32;
         }
 
         private static void InitializeRenderer(int state) {
-           if (visualStyleRenderer == null) {
-               visualStyleRenderer = new VisualStyleRenderer(GroupBoxElement.ClassName, GroupBoxElement.Part, state);
-           }
-           else {
-               visualStyleRenderer.SetParameters(GroupBoxElement.ClassName, GroupBoxElement.Part, state);
-           }
-       }
+            int part = GroupBoxElement.Part;
+            if (AccessibilityImprovements.Level2
+                && SystemInformation.HighContrast
+                && ((GroupBoxState)state == GroupBoxState.Disabled)
+                && VisualStyleRenderer.IsCombinationDefined(GroupBoxElement.ClassName, VisualStyleElement.Button.GroupBox.HighContrastDisabledPart)) {
+                    part = VisualStyleElement.Button.GroupBox.HighContrastDisabledPart;
+            }
+
+            if (visualStyleRenderer == null) {
+                visualStyleRenderer = new VisualStyleRenderer(GroupBoxElement.ClassName, part, state);
+            }
+            else {
+                visualStyleRenderer.SetParameters(GroupBoxElement.ClassName, part, state);
+            }
+        }
     }
 }

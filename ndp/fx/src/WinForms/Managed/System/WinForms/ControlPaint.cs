@@ -39,7 +39,10 @@ namespace System.Windows.Forms {
         private static Pen          focusPen;           // pen used to draw a focus rectangle
         [ThreadStatic]
         private static Pen          focusPenInvert;     // pen used to draw a focus rectangle
+        [ThreadStatic]
         private static Color        focusPenColor;      // the last background color the focus pen was created with
+        [ThreadStatic]
+        private static bool         hcFocusPen;         // cached focus pen intended for high contrast mode
         private static Pen          grabPenPrimary;     // pen used for primary grab handles
         private static Pen          grabPenSecondary;   // pen used for secondary grab handles
         private static Brush        grabBrushPrimary;   // brush used for primary grab handles
@@ -1236,7 +1239,7 @@ namespace System.Windows.Forms {
                                SystemBrushes.Control :
                                SystemBrushes.Window;
             Color foreground = ((state & ButtonState.Inactive) == ButtonState.Inactive) ?
-                               SystemColors.ControlDark :
+                               ((SystemInformation.HighContrast && AccessibilityImprovements.Level1) ? SystemColors.GrayText : SystemColors.ControlDark) :
                                SystemColors.ControlText;
             DrawFlatCheckBox(graphics, rectangle, foreground, background, state);
         }
@@ -1316,16 +1319,25 @@ namespace System.Windows.Forms {
         ///      uses to indicate what control has the current keyboard focus.
         /// </devdoc>
         public static void DrawFocusRectangle(Graphics graphics, Rectangle rectangle, Color foreColor, Color backColor) {
+            DrawFocusRectangle(graphics, rectangle, backColor, false);
+        }
+
+        internal static void DrawHighContrastFocusRectangle(Graphics graphics, Rectangle rectangle, Color color) {
+            DrawFocusRectangle(graphics, rectangle, color, true);
+        }
+
+        private static void DrawFocusRectangle(Graphics graphics, Rectangle rectangle, Color color, bool highContrast) {
             if (graphics == null) {
                 throw new ArgumentNullException("graphics");
             }
             rectangle.Width--;
             rectangle.Height--;
-            graphics.DrawRectangle(GetFocusPen(backColor,
+            graphics.DrawRectangle(GetFocusPen(color,
                 // we want the corner to be penned
                 // see GetFocusPen for more explanation
-                (rectangle.X + rectangle.Y) % 2 == 1),
-                                   rectangle);
+                (rectangle.X + rectangle.Y) % 2 == 1, 
+                highContrast),
+                    rectangle);
         }
 
 
@@ -1912,7 +1924,7 @@ namespace System.Windows.Forms {
         /// <devdoc>
         ///     Draws a string in the style appropriate for disabled items.
         /// </devdoc>
-        public static void DrawStringDisabled(Graphics graphics, string s, Font font, 
+        public static void DrawStringDisabled(Graphics graphics, string s, Font font,
                                               Color color, RectangleF layoutRectangle,
                                               StringFormat format) {
 
@@ -1920,18 +1932,21 @@ namespace System.Windows.Forms {
                 throw new ArgumentNullException("graphics");
             }
 
-            layoutRectangle.Offset(1, 1);
-            SolidBrush brush = new SolidBrush(LightLight(color));
-            try {
-                graphics.DrawString(s, font, brush, layoutRectangle, format);
-
-                layoutRectangle.Offset(-1, -1);
-                color = Dark(color);
-                brush.Color = color;
-                graphics.DrawString(s, font, brush, layoutRectangle, format);
+            if (SystemInformation.HighContrast && AccessibilityImprovements.Level1) {
+                // Ignore the foreground color argument and don't do shading in high contrast, 
+                // as colors should match the OS-defined ones.
+                graphics.DrawString(s, font, SystemBrushes.GrayText, layoutRectangle, format);
             }
-            finally {
-                brush.Dispose();
+            else {
+                layoutRectangle.Offset(1, 1);
+                using (SolidBrush brush = new SolidBrush(LightLight(color))) {
+                    graphics.DrawString(s, font, brush, layoutRectangle, format);
+
+                    layoutRectangle.Offset(-1, -1);
+                    color = Dark(color);
+                    brush.Color = color;
+                    graphics.DrawString(s, font, brush, layoutRectangle, format);
+                }
             }
         }
 
@@ -1944,13 +1959,19 @@ namespace System.Windows.Forms {
             if (dc == null) {
                 throw new ArgumentNullException("dc");
             }
-            layoutRectangle.Offset(1, 1);
-            Color paintcolor = LightLight(color);
+
+            if (SystemInformation.HighContrast && AccessibilityImprovements.Level1) {
+                TextRenderer.DrawText(dc, s, font, layoutRectangle, SystemColors.GrayText, format);
+            }
+            else {
+                layoutRectangle.Offset(1, 1);
+                Color paintcolor = LightLight(color);
            
-            TextRenderer.DrawText(dc, s, font, layoutRectangle, paintcolor, format);
-            layoutRectangle.Offset(-1, -1);
-            paintcolor = Dark(color);
-            TextRenderer.DrawText(dc, s, font, layoutRectangle, paintcolor, format);
+                TextRenderer.DrawText(dc, s, font, layoutRectangle, paintcolor, format);
+                layoutRectangle.Offset(-1, -1);
+                paintcolor = Dark(color);
+                TextRenderer.DrawText(dc, s, font, layoutRectangle, paintcolor, format);
+            }
         }
 
 
@@ -2164,10 +2185,11 @@ namespace System.Windows.Forms {
         /// </devdoc>
         [ResourceExposure(ResourceScope.Process)]
         [ResourceConsumption(ResourceScope.Process | ResourceScope.Machine, ResourceScope.Machine)]
-        private static Pen GetFocusPen(Color backColor, bool odds)   {
+        private static Pen GetFocusPen(Color baseColor, bool odds, bool highContrast) {
             if (focusPen == null ||
-                (focusPenColor.GetBrightness() <= .5 && backColor.GetBrightness() <= .5) ||
-                !focusPenColor.Equals(backColor)) {
+                (!highContrast && focusPenColor.GetBrightness() <= .5 && baseColor.GetBrightness() <= .5) ||
+                focusPenColor.ToArgb() != baseColor.ToArgb() ||
+                hcFocusPen != highContrast) {
 
                 if (focusPen != null) {
                     focusPen.Dispose();
@@ -2176,18 +2198,28 @@ namespace System.Windows.Forms {
                     focusPenInvert = null;
                 }
 
-                focusPenColor = backColor;
+                focusPenColor = baseColor;
+                hcFocusPen = highContrast;
 
                 Bitmap b = new Bitmap(2,2);
                 Color color1 = Color.Transparent;
-                Color color2 = Color.Black;
-
-                if (backColor.GetBrightness() <= .5) {
-                    color1 = color2;
-                    color2 = InvertColor(backColor);
+                Color color2;
+                if (highContrast) {
+                    // in highcontrast mode "baseColor" itself is used as the focus pen color
+                    color2 = baseColor;
                 }
-                else if (backColor == Color.Transparent) {
-                    color1 = Color.White;
+                else {
+                    // in non-highcontrast mode "baseColor" is used to calculate the focus pen colors
+                    // in this mode "baseColor" is expected to contain background color of the control to do this calculation properly
+                    color2 = Color.Black;
+
+                    if (baseColor.GetBrightness() <= .5) {
+                        color1 = color2;
+                        color2 = InvertColor(baseColor);
+                    }
+                    else if (baseColor == Color.Transparent) {
+                        color1 = Color.White;
+                    }
                 }
 
                 b.SetPixel(1, 0, color2);
@@ -2213,7 +2245,7 @@ namespace System.Windows.Forms {
 
             return odds ? focusPen : focusPenInvert;
         }
-      
+
         /// <include file='doc\ControlPaint.uex' path='docs/doc[@for="ControlPaint.GetSelectedBrush"]/*' />
         /// <devdoc>
         ///      Retrieves the brush used to draw selected objects.

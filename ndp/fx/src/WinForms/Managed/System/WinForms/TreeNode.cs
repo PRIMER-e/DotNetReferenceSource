@@ -1267,8 +1267,8 @@ namespace System.Windows.Forms {
                 node = new TreeNode(text, ImageIndexer.Index, SelectedImageIndexer.Index);
             }
             else {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 node = (TreeNode)Activator.CreateInstance(clonedType);
             }
             
@@ -1786,8 +1786,8 @@ namespace System.Windows.Forms {
                     (parent.children[i] = parent.children[i+1]).index = i;
                 }
 
-                // Fix Dev10 
-
+                // Fix Dev10 Bug 473773 - TreeViewNodeCollection.AddRange adds nodes in incorrect order
+                // should always release the last node
                 parent.children[parent.childCount - 1] = null;
                 parent.childCount--;
                 parent = null;

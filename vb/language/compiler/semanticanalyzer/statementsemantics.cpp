@@ -777,11 +777,11 @@ Semantics::InterpretPropertyAssignment
 )
 {
 
-    // This function is created to fix 
-
-
-
-
+    // This function is created to fix bug 772951
+    // The bug is caused by not interpreting source respect to type of property.
+    // The type of property is only available after resulotion, 
+    // then we attach Nothing as the last argument to setter in order to get the 
+    // type of last argument, then we can use it to interpret source.
 
     ILTree::Expression *pBoundSource = NULL;
     BILOP TargetBilop = pTarget->bilop;
@@ -1548,7 +1548,7 @@ Semantics::InterpretCall
             (Result->bilop == SX_SEQ && Result->AsExpressionWithChildren().Left->bilop == SX_CALL)))
         {
             // a byref param will add a SEQ note for copy back on top of the original call in result.
-            // dig and check the original target (
+            // dig and check the original target (bug 575567)
             Procedure *TargetProcedure = (Result->bilop == SX_CALL) ?
                 ViewAsProcedure(Result->AsCallExpression().Left->AsSymbolReferenceExpression().Symbol):
                 ViewAsProcedure(Result->AsExpressionWithChildren().Left->AsCallExpression().Left->AsSymbolReferenceExpression().Symbol);
@@ -1574,8 +1574,8 @@ Semantics::InterpretCall
                 // Indicate that this statement is an initialization statement
                 // in the constructor so that it is generated outside the try
                 // block generated for the on error statement.
-                // 
-
+                // Bug VSWhidbey 204996
+                //
                 SetFlag32(CallStatement, SLF_INIT_ME);
             }
         }
@@ -2004,9 +2004,9 @@ Semantics::InferVariableType
         )
         {
           
-            // MQ 
-
-
+            // MQ Bug 899116
+            // ResultType->IsGenericParam() is added to by pass generic parameter
+            // the error will be caught in ValidateGenericArguments, then in ValidateValueConstraintForType.
             if (!IsValidInLiftedSignature(ResultType) && !ResultType->IsGenericParam())
             {
                 ReportSemanticError
@@ -2273,7 +2273,7 @@ Semantics::InferMultilineLambdaReturnTypeFromReturnStatements
 
     // Interpret the unbound lambda without error reporting to determine the type inside
     // if it fails we will assume object. When interpretting the lambda body we use the Object target type.
-    // This is necessary to deal with cases like Dev10 
+    // This is necessary to deal with cases like Dev10 bug 474772.
     ILTree::LambdaExpression * boundLambda = InterpretUnboundLambda(cloneUnboundLambda, 
                                                                     NULL,
                                                                     NULL, 
@@ -5049,8 +5049,8 @@ Semantics::InterpretForEachArrayStatement
 
     // Copy the control variable reference to maintain a true tree rather than a graph
     //
-    // DevDiv 
-
+    // DevDiv Bug 40236: Do an unsafe copy here.  It's legal for a control variable
+    // to be any LValue and copying the side effect here is completely intentional
     Result->ControlVariableReference = &m_TreeAllocator.xCopyBilTreeUnsafe(ControlVariableReference)->AsExpression();
 
     // Assign the array into a temporary and initialize the indexer to 0.
@@ -5240,8 +5240,8 @@ Semantics::InterpretForEachStringStatement
 
     // Copy the control variable reference to maintain a true tree rather than a graph
     //
-    // DevDiv 
-
+    // DevDiv Bug 40236: Do an unsafe copy here.  It's legal for a control variable
+    // to be any LValue and copying the side effect here is completely intentional
     Result->ControlVariableReference = &m_TreeAllocator.xCopyBilTreeUnsafe(ControlVariableReference)->AsExpression();
 
     // Assign the array into a temporary and initialize the indexer to 0.
@@ -6013,8 +6013,8 @@ Semantics::InterpretForEachStatement
 	
     // Copy the control variable reference to maintain a true tree rather than a graph
     //
-    // DevDiv 
-
+    // DevDiv Bug 40236: Do an unsafe copy here.  It's legal for a control variable
+    // to be any LValue and copying the side effect here is completely intentional
     Result->ControlVariableReference = &m_TreeAllocator.xCopyBilTreeUnsafe(ControlVariableReference)->AsExpression();
     Result->Collection = &m_TreeAllocator.xCopyBilTreeForScratch(Collection)->AsExpression();
 
@@ -8287,9 +8287,9 @@ Semantics::InterpretVariableDeclarationStatement
                 // inside resumables, we have to do a little more checking before we continue...
             }
 
-            // VSW 
-
-
+            // VSW bug 179286. If the declared variable has the same name as the owning function 'foo' then
+            // foo is still a non bad symbol. The declaration is wrongly interpreted: 'dim foo as new bar' will
+            // be interpreted as 'dim foo as new foo'. The resulting assignent can go very bad.
             if ( m_Procedure && // if m_procedure is null we are in an unamed multiline lambda and we do not have to worry about this.
                  m_Procedure->IsProcedure() && // Don't consider properties
                  m_Procedure->GetRawType() && // functions provide a return type
@@ -9624,11 +9624,11 @@ Semantics::InterpretRaiseEventStatement
         // Generate code to test that the delegate is non-null before
         // calling the Invoke method.
 
-        // (Note: Microsoft - 
-
-
-
-
+        // (Note: Microsoft - bug 34453. The use of EventVariableReference in the if first and later in the call is not thread
+        // safe. Another thread could remove the last handler between the two instructions. THe fix is to take the EventVariableReference
+        // into a temporary and use that temporary.
+        //
+        // XML doesn't like temporaries, so in XML generate code without temporary local
 
         ILTree::Expression *FirstEventVariableReference;
         ILTree::Expression *SecondEventVariableReference;

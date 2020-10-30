@@ -13,11 +13,6 @@ namespace System
         /// </summary>
         private const string MessagingProviderName = "Microsoft.DOTNET.System.Messaging";
         
-        /// <summary>
-        /// ID for MessageQueue event
-        /// </summary>
-        private const int MessageQueueEventId = 1;
-        
         /// <summary>  
         /// Constructs a new instance of the TelemetryEventSource class with the  
         /// specified name. Sets the EtwSelfDescribingEventFormat option and joins the  
@@ -31,10 +26,9 @@ namespace System
         /// <summary>
         /// Event fired if MessageQueue is used.
         /// </summary>
-        [Event(MessageQueueEventId, Keywords = MeasuresKeyword)]  
         internal void MessageQueue() 
-        { 
-            WriteEvent(MessageQueueEventId); 
+        {
+            WriteUsageEvent();
         }  
     }
 }

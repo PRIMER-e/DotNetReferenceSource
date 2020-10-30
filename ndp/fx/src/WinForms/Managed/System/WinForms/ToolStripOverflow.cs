@@ -159,7 +159,7 @@ namespace System.Windows.Forms {
             SetLargestItemSize(biggestItemSize);
         }
 
-        private class ToolStripOverflowAccessibleObject : ToolStripAccessibleObject {
+        internal class ToolStripOverflowAccessibleObject : ToolStripAccessibleObject {
             public ToolStripOverflowAccessibleObject(ToolStripOverflow owner)
                 : base(owner) {
             }

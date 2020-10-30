@@ -887,7 +887,7 @@ namespace System.Data {
                     dsElement.SetAttribute(Keywords.MSD_ISDATASET, Keywords.MSDNS, Keywords.TRUE);
                     dsElement.SetAttribute(Keywords.MSD_MAINDATATABLE, Keywords.MSDNS, XmlConvert.EncodeLocalName(((dt.Namespace.Length == 0)?dt.TableName : (dt.Namespace + ":" + dt.TableName))));
 
-                    if (dt.CaseSensitive) { // WebData 111631 :it is a 
+                    if (dt.CaseSensitive) { // WebData 111631 :it is a bug to go and write casesensitive attrib as 'true', by default
                         dsElement.SetAttribute(Keywords.MSD_CASESENSITIVE, Keywords.MSDNS, Keywords.TRUE);
                     }
                     if (dt.ShouldSerializeLocale() || !dt.Locale.Equals(CultureInfo.CurrentCulture)) {
@@ -1582,8 +1582,8 @@ namespace System.Data {
             if (!table.TypeName.IsEmpty) {
                 if (schFormat != SchemaFormat.Remoting)
                     root.SetAttribute( Keywords.TYPE, NewDiffgramGen.QualifiedName((string)prefixes[table.TypeName.Namespace], table.TypeName.Name) );
-// 
-
+// Bug 108292: Since we always write complex type as annonymous type, DO NOT WRITE ITS NAME
+//  DO NOT REVERT THIS CHANGE
             }
 
             XmlElement compositor = null;

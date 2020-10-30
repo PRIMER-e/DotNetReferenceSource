@@ -7705,10 +7705,10 @@ public:
         BCSYM_GenericTypeBinding *pBinding2
     );
 
-    // VS2011 
-
-
-
+    // VS2011 bug 308452. IsEnumerableProxyType is true when 
+    // wrapping a Linq result into SystemCore_EnumerableDebugView.
+    // This bit tells debugger that don't show the actual type(SystemCore_EnumerableDebugView) 
+    // during quick watch.
     bool IsEnumerableProxyType;
 protected:
 
@@ -8682,7 +8682,7 @@ public:
     }
 
 #if IDE 
-    // Devdiv 
+    // Devdiv Bug [26424] Anonymous Type is to support assembly level merging.
     BCSYM_Proc *GetAnonymousTypeProc() const
     {
         SymbolEntryFunction;
@@ -8940,9 +8940,9 @@ protected:
     BCSYM_Class * m_NextPartialType;
 #if IDE 
     BCSYM_Proc * m_AnonymousTypeProc;    // used to store proc that created the anonymous type for method-level merging.
-                                        // Devdiv 
-
-
+                                        // Devdiv Bug [27239] don't union this field with m_NextPartialType because even though
+                                        // Anonymous Type cannot be partial, m_NextPartialType can still be accessed by other code
+                                        // for NULL checks.
 #endif
 
 #if IDE 

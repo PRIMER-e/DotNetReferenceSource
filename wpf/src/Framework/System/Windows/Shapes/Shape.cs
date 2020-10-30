@@ -600,11 +600,11 @@ namespace System.Windows.Shapes
                 // To do that without actually deviding, we check that denominator > numerator / limit.
                 // We take 1/epsilon as the limit, so the check is denominator > numerator * epsilon
 
-                // See Dev10 
-
-
-
-
+                // See Dev10 bug #453150.
+                // If the scale is infinite in both dimensions, return the natural size.
+                // If it's infinite in only one dimension, for non-fill stretch modes we constrain the size based
+                // on the unconstrained dimension.
+                // If our shape is "thin", i.e. a horizontal or vertical line, we can ignore non-fill stretches.
                 if (geometryBounds.Width > xScale * Double.Epsilon)
                 {
                     xScale /= geometryBounds.Width;

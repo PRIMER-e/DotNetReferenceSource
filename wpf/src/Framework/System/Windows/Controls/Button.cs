@@ -12,6 +12,7 @@ using System.Windows.Shapes;
 
 using MS.Utility;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -34,6 +35,8 @@ namespace System.Windows.Controls
             {
                 IsEnabledProperty.OverrideMetadata(typeof(Button), new FrameworkPropertyMetadata(new PropertyChangedCallback(OnIsEnabledChanged)));
             }
+
+            ControlsTraceLogger.AddControl(TelemetryControls.Button);
         }
 
         /// <summary>
@@ -274,7 +277,7 @@ namespace System.Windows.Controls
                 if ((Command == null) && IsCancel)
                 {
                     // Can't invoke Window.DialogCancelCommand directly. Have to raise event.
-                    // Filed 
+                    // Filed bug 936090: Commanding perf issue: can't directly invoke a command.
                     MS.Internal.Commands.CommandHelpers.ExecuteCommand(Window.DialogCancelCommand, null, this);
                 }
             }

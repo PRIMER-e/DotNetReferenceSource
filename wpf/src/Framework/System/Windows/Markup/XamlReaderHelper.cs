@@ -1713,8 +1713,8 @@ namespace System.Windows.Markup
 
             // Known definition namespace attributes such as Key and UID should be checked for
             // first so that we avoid reflecting for properties that we know will not be found.
-            // Windows perf 
-
+            // Windows perf bug 1049597 was caused by too much reflection data being cached
+            // if we don't do this check and there is a UID on every element.
             if (attributeNamespaceUri.Equals(DefinitionNamespaceURI))
             {
                 switch (attributeLocalName)
@@ -1735,7 +1735,7 @@ namespace System.Windows.Markup
 
             // We have a special check for the Metro xaml namespace, which should
             // only allow Key attributes.  Anything else is an error.  See
-            // Windows 
+            // Windows bug # 1100953
             if (attributeNamespaceUri.Equals(DefinitionMetroNamespaceURI))
             {
                 if (attributeLocalName == DefinitionName)
@@ -1790,7 +1790,7 @@ namespace System.Windows.Markup
             // Technically, it should not store these values, but rather retrieve them
             // from the XamlReaderHelper.  The TypeMapper was not updating these
             // values until XamlParser called ProcessXamlNode, and even then not in
-            // all cases (
+            // all cases (Bug #1242940) (e.g. Property okay, PropertyComplex not).
             XamlTypeMapper.LineNumber = LineNumber;
             XamlTypeMapper.LinePosition = LinePosition;
 
@@ -3666,7 +3666,7 @@ namespace System.Windows.Markup
                                 {
                                     // This prevents conditions where ResourceDictionary is followed by a locally defined type,
                                     // the ParentContext needs to know that FirstChildRead is true, else there is a mismatch in
-                                    // StartElement & EndElement nodes. See 
+                                    // StartElement & EndElement nodes. See Bug 131561
                                     if (ParentContext != null && !namespaceURI.Equals(DefinitionNamespaceURI))
                                     {
                                         ParentContext.FirstChildRead = true;
@@ -5086,8 +5086,8 @@ namespace System.Windows.Markup
             else
             {
                 // Assert if it's not ElementContextType.Unknown.  If this is not
-                //  a 
-
+                //  a bug in the calling code, we'll need a new clause in the
+                //  if/else tree above to properly handle the new context type.
                 Debug.Assert (parentNodeType == ElementContextType.Unknown,
                     "This method does not expect to see element context type of " + parentNodeType);
 

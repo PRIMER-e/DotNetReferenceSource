@@ -27,6 +27,7 @@ using System.Windows.Shapes;
 
 using MS.Internal.KnownBoxes;
 using MS.Internal;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -69,6 +70,8 @@ namespace System.Windows.Controls
             IsEnabledProperty.OverrideMetadata(typeof(ComboBox), new UIPropertyMetadata(new PropertyChangedCallback(OnVisualStatePropertyChanged)));
             IsMouseOverPropertyKey.OverrideMetadata(typeof(ComboBox), new UIPropertyMetadata(new PropertyChangedCallback(OnVisualStatePropertyChanged)));
             IsSelectionActivePropertyKey.OverrideMetadata(typeof(ComboBox), new FrameworkPropertyMetadata(new PropertyChangedCallback(OnVisualStatePropertyChanged)));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.ComboBox);
         }
 
         /// <summary>
@@ -704,7 +707,8 @@ namespace System.Windows.Controls
                             _updateTextBoxOperation = null;
                         }
 
-                        int matchedIndex = TextSearch.FindMatchingPrefix(this, newText);
+                        MatchedTextInfo matchedTextInfo = TextSearch.FindMatchingPrefix(this, newText);
+                        int matchedIndex = matchedTextInfo.MatchedItemIndex;
 
                         if (matchedIndex >= 0)
                         {
@@ -719,12 +723,12 @@ namespace System.Windows.Controls
                                 {
                                     // Replace the currently typed text with the text
                                     // from the matched item
-                                    string matchedText = TextSearch.GetPrimaryTextFromItem(this, Items[matchedIndex]);
+                                    string matchedText = matchedTextInfo.MatchedText;
 
                                     if (ShouldPreserveUserEnteredPrefix)
                                     {
                                         // Retain the user entered prefix in the matched text.
-                                        matchedText = String.Concat(newText, matchedText.Substring(newText.Length));
+                                        matchedText = String.Concat(newText, matchedText.Substring(matchedTextInfo.MatchedPrefixLength));
                                     }
 
                                     // If there's an IME, do the replacement asynchronously so that
@@ -737,12 +741,12 @@ namespace System.Windows.Controls
                                     {
                                         _updateTextBoxOperation = Dispatcher.BeginInvoke(DispatcherPriority.Normal,
                                             new DispatcherOperationCallback(UpdateTextBoxCallback),
-                                            new object[] {matchedText, newText} );
+                                            new object[] { matchedText, matchedTextInfo });
                                     }
                                     else
                                     {
                                         // when there's no IME, do it synchronously
-                                        UpdateTextBox(matchedText, newText);
+                                        UpdateTextBox(matchedText, matchedTextInfo);
                                     }
 
 
@@ -753,7 +757,7 @@ namespace System.Windows.Controls
                             else //Text Property Set
                             {
                                 // Require exact matches when setting TextProperty
-                                string matchedText = TextSearch.GetPrimaryTextFromItem(this, Items[matchedIndex]);
+                                string matchedText = matchedTextInfo.MatchedText;
                                 if (!String.Equals(newText, matchedText, StringComparison.CurrentCulture))
                                 {
                                     // Strings not identical, no match
@@ -794,12 +798,12 @@ namespace System.Windows.Controls
 
             object[] args = (object[])arg;
             string matchedText = (string)args[0];
-            string newText = (string)args[1];
+            MatchedTextInfo matchedTextInfo = (MatchedTextInfo)args[1];
 
             try
             {
                 UpdatingText = true;
-                UpdateTextBox(matchedText, newText);
+                UpdateTextBox(matchedText, matchedTextInfo);
             }
             finally
             {
@@ -809,15 +813,14 @@ namespace System.Windows.Controls
             return null;
         }
 
-        void UpdateTextBox(string matchedText, string newText)
+        void UpdateTextBox(string matchedText, MatchedTextInfo matchedTextInfo)
         {
             // Replace the TextBox's text with the matched text and
             // select the text beyond what the user typed
             EditableTextBoxSite.Text = matchedText;
-            EditableTextBoxSite.SelectionStart = newText.Length;
-            EditableTextBoxSite.SelectionLength = matchedText.Length - newText.Length;
+            EditableTextBoxSite.SelectionStart = matchedText.Length - matchedTextInfo.TextExcludingPrefixLength;
+            EditableTextBoxSite.SelectionLength = matchedTextInfo.TextExcludingPrefixLength;
         }
-
         // Updates:
         //    SelectionBox if not editable
         //    EditableTextBox.Text if editable

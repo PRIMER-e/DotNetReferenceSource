@@ -23,15 +23,15 @@ namespace System.Windows.Controls
     /// <summary>
     /// <p>
     /// StyleSelector allows the app writer to provide custom style selection logic.
-    /// For example, with a class 
-
-
-
-
-
-
-
-
+    /// For example, with a class Bug as the Content,
+    /// use a particular style for Pri1 bugs and a different style for Pri2 bugs.
+    /// </p>
+    /// <p>
+    /// An application writer can override the SelectStyle method in a derived
+    /// selector class and assign an instance of this class to the StyleSelector property on
+    /// <seealso cref="ContentPresenter"/> class.
+    /// </p>
+    /// </summary>
     public class StyleSelector
     {
         /// <summary>

@@ -436,7 +436,7 @@ namespace System.Windows.Forms {
                 // PRINTDLG.nCopies or PRINTDLG.nCopies indicates the number of copies the user wants
                 // to print, and the PD_COLLATE flag in the Flags member indicates 
                 // whether the user wants to print them collated.
-                // Due to a Windows OS 
+                // Due to a Windows OS Bug 558734, we don't need to consider Windows XP and before
                 if ((data.Flags & NativeMethods.PD_USEDEVMODECOPIESANDCOLLATE) == 0) {
                     if (Environment.OSVersion.Version.Major >= 6) {
                         PrinterSettings.Copies = data.nCopies;
@@ -534,7 +534,7 @@ namespace System.Windows.Forms {
                 // PRINTDLG.nCopies or PRINTDLG.nCopies indicates the number of copies the user wants
                 // to print, and the PD_COLLATE flag in the Flags member indicates 
                 // whether the user wants to print them collated.
-                // Due to a Windows OS 
+                // Due to a Windows OS Bug 558734, we don't need to consider Windows XP and before
                 if ((data.Flags & NativeMethods.PD_USEDEVMODECOPIESANDCOLLATE) == 0) {
                     if(Environment.OSVersion.Version.Major >= 6) {
                         PrinterSettings.Copies = (short)(data.nCopies);

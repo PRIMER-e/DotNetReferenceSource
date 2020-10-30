@@ -572,8 +572,8 @@ namespace System.Windows.Forms {
         // Don't merge this function into Dispose() -- that base.Dispose() will damage the design time experience
         private void DestroyHandle() {
             if (HandleCreated) {
-                // Fix Dev10 TFS 
-
+                // Fix Dev10 TFS Bug 392946 -
+                // ImageList/NativeImageList leaks HIMAGELIST until finalized
                 nativeImageList.Dispose();
                 nativeImageList = null;
                 originals = new ArrayList();
@@ -851,19 +851,19 @@ namespace System.Windows.Forms {
 
         // PerformRecreateHandle doesn't quite do what you would suspect.
         // Any existing images in the imagelist will NOT be copied to the
-        // new image list -- they really should. This 
-
-
-
-
-
-
-
-
-
-
-
-
+        // new image list -- they really should. This bug has existed for a
+        // loooong time.
+        // The net effect is that if you add images to an imagelist, and
+        // then e.g. change the ImageSize any existing images will be lost
+        // and you will have to add them back. This is probably a corner case
+        // but it should be mentioned.
+        //
+        // The fix isn't as straightforward as you might think, i.e. we
+        // cannot just blindly store off the images and copy them into
+        // the newly created imagelist. E.g. say you change the ColorDepth
+        // from 8-bit to 32-bit. Just copying the 8-bit images would be wrong.
+        // Therefore we are going to leave this as is. Users should make sure
+        // to set these properties before actually adding the images.
 
         // The Designer works around this by shadowing any Property that ends
         // up calling PerformRecreateHandle (ImageSize, ColorDepth, ImageStream).

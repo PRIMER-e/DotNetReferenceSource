@@ -33,7 +33,8 @@
 #include "..\inc\registry.hxx"
 
 
-#define LATEST_VERSION L"0.0.0"
+static LPCWSTR const LATEST_VERSION = L"0.0.0";
+static LPCWSTR const VERSION_4 = L"4.0.0";
 
 CHostShim* CHostShim::m_pInstance = NULL;
 
@@ -548,6 +549,35 @@ STDMETHODIMP CHostShim::GetFriendlyName(__in_ecount(1) LPCWSTR pwzLocation, __de
 }
 
 /******************************************************************************
+  DoNotLaunchVersion3HostedApplicationInVersion4Runtime()
+
+  Reads DWORD registry value DoNotLaunchVersion3HostedApplicationInVersion4Runtime from 
+  HKLM\Software\Microsoft\.NETFramework\Windows Presentation Foundation\Hosting and interprets
+  it as a boolean (non-zero == true, zero == false). 
+
+  When this value is set to true, we will load .NET 3.5 based XBAP's in the .NET 3.5 
+  runtime, and .NET 4.x based XBAP's in the .NET 4.x runtime. In other words, when this value 
+  is set, we will match the runtime to the XBAP's CLR version. 
+
+  When this value is set to false, or when this value is not set (it will default to false), 
+  we will always load XBAP's using the latest CLR version, which is part of the 4.x framework.
+******************************************************************************/
+static bool DoNotLaunchVersion3HostedApplicationInVersion4Runtime()
+{
+    DWORD dwValue = 0U;
+    // Ignore resultant HRESULT - we will default to the assumption that the value is 
+    // false on failure
+    GetRegistryDWORD(HKEY_LOCAL_MACHINE,
+        RegKey_WPF_Hosting,
+        RegValue_DoNotLaunchVersion3HostedApplicationInVersion4Runtime,
+        /*out*/dwValue,
+        /*dwDefaultValue*/ 0U);
+
+    return dwValue != 0;
+}
+
+
+/******************************************************************************
   CHostShim::DetermineRequestedVersion()
   
   This is where we attempt to determine the requested version.
@@ -564,6 +594,19 @@ HRESULT CHostShim::DetermineRequestedVersion()
         // We are going to activate the DLL just for its error page.
         SetRequestedVersion(LATEST_VERSION);
         return S_OK;
+    }
+
+    bool fRequestedVersionIdentified = false;
+    if (!DoNotLaunchVersion3HostedApplicationInVersion4Runtime())
+    {
+        // Always load using v4 runtime
+        // Mark the requested version and continue 
+        // parsing the deployment manifest. The information 
+        // from the manifest is used sometimes in exception
+        // strings etc. Also continue enumerating 
+        // available CLR versions. 
+        CKHR(SetRequestedVersion(VERSION_4));
+        fRequestedVersionIdentified = !!SUCCEEDED(hr);
     }
 
     // To ensure that as much code as possible is tested as often as possible, 
@@ -590,11 +633,15 @@ HRESULT CHostShim::DetermineRequestedVersion()
         {
             SetApplicationIdentity(deploymentManifest.GetApplicationIdentity());
 
-            if (fSingleVersionShortcut && CVersionFactory::GetCount() == 1) 
+            if (fSingleVersionShortcut && CVersionFactory::GetCount() == 1)
             {
-                // If there is only one version of Avalon installed, there isn't any point
-                // in checking the application manifest
-                CKHR(SetRequestedVersion(LATEST_VERSION));
+                if (!fRequestedVersionIdentified)
+                {
+                    // If there is only one version of Avalon installed, there isn't any point
+                    // in checking the application manifest
+                    CKHR(SetRequestedVersion(LATEST_VERSION));
+                    fRequestedVersionIdentified = !!SUCCEEDED(hr);
+                }
             }
             else 
             {
@@ -617,23 +664,46 @@ HRESULT CHostShim::DetermineRequestedVersion()
                         pLargerVersion = &verCLR;
                     }
 
-                    hr = SetRequestedVersion(pLargerVersion->GetValue());
+                    if (!fRequestedVersionIdentified)
+                    {
+                        hr = SetRequestedVersion(pLargerVersion->GetValue());
+                        fRequestedVersionIdentified = !!SUCCEEDED(hr);
+                    }
                 }
             }
         }
 
         if (FAILED(hr))
         {
-            CKHR(SetRequestedVersion(LATEST_VERSION));
+            // We have a failure code (hr) from reading the deployment manifest, 
+            // but our eventual goal is to identify a version, and so the hr
+            // we should return from this method should correspond to the 
+            // success/failure of version selection (and not that of 
+            // reading the deployment manifest).
+            // 
+            // If we already have selected a version (fRequestedVersionIdentified == 
+            // true), then set hr = S_OK, otherwise proceed to the call into 
+            // SetRequestedVersion and allow CKHR macro's side-effect to update
+            // hr appropriately.
+            CKHR(S_OK);
+            if (!fRequestedVersionIdentified)
+            {
+                CKHR(SetRequestedVersion(LATEST_VERSION));
+                fRequestedVersionIdentified = !!SUCCEEDED(hr);
+            }
         }
     }
     else if (m_mimeType == MimeType_Markup)
     {
-        if (fSingleVersionShortcut && CVersionFactory::GetCount() == 1) 
+        if (fSingleVersionShortcut && CVersionFactory::GetCount() == 1)
         {
-            // If there is only one version of Avalon installed, there isn't any point
-            // in checking the application manifest
-            CKHR(SetRequestedVersion(LATEST_VERSION));
+            if (!fRequestedVersionIdentified)
+            {
+                // If there is only one version of Avalon installed, there isn't any point
+                // in checking the application manifest
+                CKHR(SetRequestedVersion(LATEST_VERSION));
+                fRequestedVersionIdentified = !!SUCCEEDED(hr);
+            }
         }
         else 
         {
@@ -669,13 +739,29 @@ HRESULT CHostShim::DetermineRequestedVersion()
                 pPrefixNamespaceNode = pPrefixNamespaceNode->GetNext();
             }
 
-            if (pHighestVersion)
+            // We may have a failure code (hr) from iterating through the deployment manifest, 
+            // but our eventual goal is to identify a version, and so the hr
+            // we should return from this method should correspond to the 
+            // success/failure of version selection (and not that of 
+            // deployment manifest reading).
+            // 
+            // If we have already selected a version (fRequestedVersionIdentified == 
+            // true), then set hr = S_OK, otherwise proceed to the call into 
+            // SetRequestedVersion and allow CKHR macro's side-effect to update
+            // hr appropriately.
+            CKHR(S_OK);
+            if (!fRequestedVersionIdentified)
             {
-                CKHR(SetRequestedVersion(pHighestVersion->GetValue()));
-            }
-            else
-            {
-                CKHR(SetRequestedVersion(LATEST_VERSION));
+                if (pHighestVersion)
+                {
+                    CKHR(SetRequestedVersion(pHighestVersion->GetValue()));
+                }
+                else
+                {
+                    CKHR(SetRequestedVersion(LATEST_VERSION));
+                }
+
+                fRequestedVersionIdentified = !!SUCCEEDED(hr);
             }
         }
     }

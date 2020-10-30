@@ -47,7 +47,7 @@ namespace System.Experimental.Gdi
         internal static void AddDeviceContext(DeviceContext dc) {
             if (activeDeviceContexts == null) {
                 activeDeviceContexts = new ClientUtils.WeakRefCollection();
-                activeDeviceContexts.RefCheckThreshold = 20; // See DevDiv#82664 (the repro app attached to this 
+                activeDeviceContexts.RefCheckThreshold = 20; // See DevDiv#82664 (the repro app attached to this bug was used to determine this number).
             }
 
             if (!activeDeviceContexts.Contains(dc)) {

@@ -14,6 +14,7 @@
 
 using MS.Internal;
 using MS.Internal.PresentationFramework;
+using MS.Internal.Telemetry.PresentationFramework;
 using MS.Utility;
 using System.Diagnostics;
 using System.ComponentModel;
@@ -413,6 +414,8 @@ namespace System.Windows.Controls
                     )
                 );
             Image.DpiChangedEvent = Window.DpiChangedEvent.AddOwner(typeof(Image));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.Image);
         }
 
         private static Style CreateDefaultStyles()

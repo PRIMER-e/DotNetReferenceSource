@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections;       // ICollection
+using System.Collections.Generic; // List<T>
 using System.Collections.Specialized;   // HybridDictionary
 using System.ComponentModel;    // INotifyPropertyChanged
 using System.Diagnostics;       // Debug
@@ -243,6 +244,13 @@ namespace MS.Internal.Data
             }
         }
 
+#if WeakEventTelemetry
+        void LogAllocationRelay(Type type, int count, int bytes)
+        {
+            LogAllocation(type, count, bytes);
+        }
+#endif
+
         #endregion Private Methods
 
         static readonly string AllListenersKey = "<All Listeners>"; // not a legal property name
@@ -451,30 +459,89 @@ namespace MS.Internal.Data
 
                 if (!purgeAll)
                 {
-                    // copy the keys into a separate array, so that later on
-                    // we can change the dictionary while iterating over the keys
-                    ICollection ic = _dict.Keys;
-                    String[] keys = new String[ic.Count];
-                    ic.CopyTo(keys, 0);
-
-                    for (int i=keys.Length-1; i>=0; --i)
+                    if (!MS.Internal.BaseAppContextSwitches.EnableWeakEventMemoryImprovements)
                     {
-                        if (keys[i] == AllListenersKey)
-                            continue;       // ignore the special entry for now
+                        // copy the keys into a separate array, so that later on
+                        // we can change the dictionary while iterating over the keys
+                        ICollection ic = _dict.Keys;
+                        String[] keys = new String[ic.Count];
+                        ic.CopyTo(keys, 0);
 
-                        // for each key, remove dead entries in its list
-                        PropertyRecord pr = (PropertyRecord)_dict[keys[i]];
-                        if (pr.Purge())
+                        for (int i=keys.Length-1; i>=0; --i)
                         {
-                            foundDirt = true;
+                            if (keys[i] == AllListenersKey)
+                                continue;       // ignore the special entry for now
+
+                            // for each key, remove dead entries in its list
+                            PropertyRecord pr = (PropertyRecord)_dict[keys[i]];
+                            if (pr.Purge())
+                            {
+                                foundDirt = true;
+                            }
+
+                            // if there are no more entries, remove the key
+                            if (pr.IsEmpty)
+                            {
+                                pr.StopListening(_type);
+                                _dict.Remove(keys[i]);
+                            }
                         }
 
-                        // if there are no more entries, remove the key
-                        if (pr.IsEmpty)
+#if WeakEventTelemetry
+                        _manager.LogAllocationRelay(ic.GetType(), 1, 12);                   // dict.Keys - Hashtable+KeyCollection
+                        _manager.LogAllocationRelay(typeof(String[]), 1, 12+ic.Count*4);    // keys
+#endif
+                    }
+                    else
+                    {
+                        Debug.Assert(_toRemove.Count == 0, "to-remove list should be empty");
+
+                        // enumerate the dictionary using IDE explicitly rather than
+                        // foreach, to avoid allocating temporary DictionaryEntry objects
+                        IDictionaryEnumerator ide = _dict.GetEnumerator() as IDictionaryEnumerator;
+                        while (ide.MoveNext())
                         {
-                            pr.StopListening(_type);
-                            _dict.Remove(keys[i]);
+                            String key = (String)ide.Key;
+                            if (key == AllListenersKey)
+                                continue;       // ignore the special entry for now
+
+                            // for each key, remove dead entries in its list
+                            PropertyRecord pr = (PropertyRecord)ide.Value;
+                            if (pr.Purge())
+                            {
+                                foundDirt = true;
+                            }
+
+                            // if there are no more entries, remove the key
+                            if (pr.IsEmpty)
+                            {
+                                pr.StopListening(_type);
+                                _toRemove.Add(key);
+                            }
                         }
+
+                        // do the actual removal (outside the dictionary iteration)
+                        if (_toRemove.Count > 0)
+                        {
+                            foreach (String key in _toRemove)
+                            {
+                                _dict.Remove(key);
+                            }
+                            _toRemove.Clear();
+                            _toRemove.TrimExcess();
+                        }
+
+#if WeakEventTelemetry
+                        Type enumeratorType = ide.GetType();
+                        if (enumeratorType.Name.IndexOf("NodeEnumerator") >= 0)
+                        {
+                            _manager.LogAllocationRelay(enumeratorType, 1, 24); // ListDictionary+NodeEnumerator
+                        }
+                        else
+                        {
+                            _manager.LogAllocationRelay(enumeratorType, 1, 36); // Hashtable+HashtableEnumerator
+                        }
+#endif
                     }
 
                     if (foundDirt)
@@ -509,6 +576,7 @@ namespace MS.Internal.Data
             HybridDictionary _dict;     // Property-name -> PropertyRecord
             StaticPropertyChangedEventManager _manager; // owner
             ListenerList<PropertyChangedEventArgs> _proposedAllListenersList;
+            List<String> _toRemove = new List<String>();
         }
 
         #endregion TypeRecord

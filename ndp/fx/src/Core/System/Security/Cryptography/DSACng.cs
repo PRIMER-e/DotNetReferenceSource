@@ -45,6 +45,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">if <paramref name="key" /> is not a DSA key</exception>
         /// <exception cref="ArgumentNullException">if <paramref name="key" /> is null.</exception>
         [SecuritySafeCritical]
+        [SecurityPermission(SecurityAction.Assert, UnmanagedCode = true)]
         public DSACng(CngKey key)
         {
             if (key == null)
@@ -72,6 +73,7 @@ namespace System.Security.Cryptography
         public CngKey Key
         {
             [SecuritySafeCritical]
+            [SecurityPermission(SecurityAction.Assert, UnmanagedCode = true)]
             get
             {
                 // If our key size was changed from the key we're using, we need to generate a new key
@@ -129,6 +131,16 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///     Helper property to get the NCrypt key handle
+        /// </summary>
+        private Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle KeyHandle
+        {
+            [SecuritySafeCritical]
+            [SecurityPermission(SecurityAction.Assert, UnmanagedCode = true)]
+            get { return Key.Handle; }
+        }
+
         public override KeySizes[] LegalKeySizes
         {
             get
@@ -147,8 +159,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException("rgbHash");
 
             rgbHash = AdjustHashSizeIfNecessary(rgbHash);
-            byte[] signature = NCryptNative.SignHash(Key.Handle, rgbHash, rgbHash.Length * 2);
-            return signature;
+            return NCryptNative.SignHash(KeyHandle, rgbHash, rgbHash.Length * 2);
         }
 
         [SecuritySafeCritical]
@@ -162,9 +173,7 @@ namespace System.Security.Cryptography
 
             rgbHash = AdjustHashSizeIfNecessary(rgbHash);
 
-            CngKey cngKey = Key;
-            bool verified = NCryptNative.VerifySignature(cngKey.Handle, rgbHash, rgbSignature);
-            return verified;
+            return NCryptNative.VerifySignature(KeyHandle, rgbHash, rgbSignature);
         }
 
         // Need to override since base methods throw a "override me" exception: makes SignData/VerifyData function.

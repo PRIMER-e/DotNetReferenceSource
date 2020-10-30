@@ -428,7 +428,7 @@ namespace System.Data.SqlTypes
         // 2. GetFullPathName API of kernel32 does not accept paths with length (in chars) greater than 32766
         //    (32766 is actually Int16.MaxValue - 1, while (-1) is for NULL termination)
         // We must check for the lowest value between the the two
-        static private readonly int MaxWin32PathLength = Int16.MaxValue - 1;
+        private const int MaxWin32PathLength = Int16.MaxValue - 1;
 
         [ConditionalAttribute("DEBUG")]
         static private void AssertPathFormat(string path)
@@ -550,8 +550,8 @@ namespace System.Data.SqlTypes
             if (pathTooLong)
             {
                 // SQLBUVSTS bugs 192677 and 203422: currently, FileIOPermission does not support path longer than MAX_PATH (260)
-                // so we cannot demand permissions for long files. We are going to open 
-
+                // so we cannot demand permissions for long files. We are going to open bug for FileIOPermission to
+                // support this.
 
                 // In the meanwhile, we agreed to have try-catch block on the permission demand instead of checking the path length.
                 // This way, if/when the 260-chars limitation is fixed in FileIOPermission, we will not need to change our code

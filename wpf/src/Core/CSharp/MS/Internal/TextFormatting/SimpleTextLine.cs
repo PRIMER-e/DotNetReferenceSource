@@ -548,9 +548,9 @@ namespace MS.Internal.TextFormatting
             // When in TextFormattingMode.Display the math processing performed by SimpleTextLine 
             // involves some rounding operations because of which the decision to collapse the text may 
             // not be unanimous amongst SimpleTextLine and FullTextLine. There are several watson 
-            // crash reports that are testament to this theory. See Win8 PS 
-
-
+            // crash reports that are testament to this theory. See Win8 PS bug# 643676. Hence we 
+            // now allow the case where FullTextLine concludes that it doesnt need to collapse the 
+            // text even though SimpleTextLine thought it should.
             
             if (textLine.HasOverflowed)
             {

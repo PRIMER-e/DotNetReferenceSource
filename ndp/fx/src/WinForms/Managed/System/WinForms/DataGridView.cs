@@ -16,7 +16,7 @@ namespace System.Windows.Forms
     using System.Security.Permissions;
     using System.Collections;
     using System.Windows.Forms;
-    using System.Windows.Forms.Design;    
+    using System.Windows.Forms.Design;
     using System.ComponentModel.Design;
     using System.Drawing;
     using System.Windows.Forms.ComponentModel;
@@ -248,6 +248,10 @@ namespace System.Windows.Forms
         private const int DATAGRIDVIEWOPER_inBeginEdit                   = 0x00200000;
         private const int DATAGRIDVIEWOPER_inEndEdit                     = 0x00400000;
         private const int DATAGRIDVIEWOPER_resizingOperationAboutToStart = 0x00800000;
+        private const int DATAGRIDVIEWOPER_trackKeyboardColResize        = 0x01000000;
+        private const int DATAGRIDVIEWOPER_mouseOperationMask            = DATAGRIDVIEWOPER_trackColResize | DATAGRIDVIEWOPER_trackRowResize | 
+            DATAGRIDVIEWOPER_trackColRelocation | DATAGRIDVIEWOPER_trackColHeadersResize | DATAGRIDVIEWOPER_trackRowHeadersResize;
+        private const int DATAGRIDVIEWOPER_keyboardOperationMask         = DATAGRIDVIEWOPER_trackKeyboardColResize;
 
         private static Size DragSize = SystemInformation.DragSize;
 
@@ -259,6 +263,8 @@ namespace System.Windows.Forms
         private const string DATAGRIDVIEW_htmlPrefix = "Version:1.0\r\nStartHTML:00000097\r\nEndHTML:{0}\r\nStartFragment:00000133\r\nEndFragment:{1}\r\n";
         private const string DATAGRIDVIEW_htmlStartFragment = "<HTML>\r\n<BODY>\r\n<!--StartFragment-->";
         private const string DATAGRIDVIEW_htmlEndFragment = "\r\n<!--EndFragment-->\r\n</BODY>\r\n</HTML>";
+
+        private const int FOCUS_RECT_OFFSET = 2;
 
         private System.Collections.Specialized.BitVector32 dataGridViewState1;  // see DATAGRIDVIEWSTATE1_ consts above
         private System.Collections.Specialized.BitVector32 dataGridViewState2;  // see DATAGRIDVIEWSTATE2_ consts above
@@ -295,6 +301,7 @@ namespace System.Windows.Forms
         private object uneditedFormattedValue;
         private Control editingControl, latestEditingControl, cachedEditingControl;
         private Panel editingPanel;
+        private DataGridViewEditingPanelAccessibleObject editingPanelAccessibleObject;
         private Point ptCurrentCell, ptCurrentCellCache = Point.Empty, ptAnchorCell, ptMouseDownCell, ptMouseEnteredCell, ptToolTipCell, ptMouseDownGridCoord;
 
         private DataGridViewSelectionMode selectionMode;
@@ -379,6 +386,9 @@ namespace System.Windows.Forms
         private int inBulkLayoutCount;
         private int inPerformLayoutCount;
 
+        private int keyboardResizeStep;
+        private Rectangle resizeClipRectangle;
+
         private System.Windows.Forms.Timer vertScrollTimer, horizScrollTimer;
 
         private Hashtable converters;
@@ -403,7 +413,7 @@ namespace System.Windows.Forms
 #if DEBUG
         // set to false when the grid is not in sync with the underlying data store
         // in virtual mode, and OnCellValueNeeded cannot be called.
-// disable csharp compiler warning #0414: field assigned unused value
+        // disable csharp compiler warning #0414: field assigned unused value
 #pragma warning disable 0414
         internal bool dataStoreAccessAllowed = true;
 #pragma warning restore 0414
@@ -519,8 +529,17 @@ namespace System.Windows.Forms
             PerformLayout();
 
             this.toolTipControl = new DataGridViewToolTip(this);
-            
+            this.rowHeadersWidth = ScaleToCurrentDpi(defaultRowHeadersWidth);
+            this.columnHeadersHeight = ScaleToCurrentDpi(defaultColumnHeadersHeight);
             Invalidate();
+        }
+
+        /// <summary>
+        /// Scaling row header width and column header height.
+        /// </summary>
+        private int ScaleToCurrentDpi(int value)
+        {
+            return DpiHelper.EnableDataGridViewControlHighDpiImprovements ? LogicalToDeviceUnits(value) : value;
         }
 
         /// <include file='doc\DataGridView.uex' path='docs/doc[@for="DataGridView.AdjustedTopLeftHeaderBorderStyle"]/*' />
@@ -2068,6 +2087,16 @@ namespace System.Windows.Forms
             }
         }
 
+        /// <summary>
+        /// Indicates whether the ComboBox editing control was just detached. (focused out to another cell)
+        /// </summary>
+        internal bool ComboBoxControlWasDetached { get; set; }
+
+        /// <summary>
+        /// Indicates whether the TextBox editing control was just detached. (focused out to another cell)
+        /// </summary>
+        internal bool TextBoxControlWasDetached { get; set; }
+
         /// <include file='doc\DataGridView.uex' path='docs/doc[@for="DataGridView.ColumnHeadersVisible"]/*' />
         /// <devdoc>
         ///    <para>
@@ -2788,6 +2817,14 @@ namespace System.Windows.Forms
             }
         }
 
+        internal AccessibleObject EditingControlAccessibleObject
+        {
+            get
+            {
+                return EditingControl.AccessibilityObject;
+            }
+        }
+
         /// <include file='doc\DataGridView.uex' path='docs/doc[@for="DataGridView.EditingPanel"]/*' />
         [
             Browsable(false),
@@ -2799,10 +2836,31 @@ namespace System.Windows.Forms
             {
                 if (this.editingPanel == null)
                 {
-                    this.editingPanel = new Panel();
+                    this.editingPanel = AccessibilityImprovements.Level3 ? new DataGridViewEditingPanel(this) : new Panel();
                     this.editingPanel.AccessibleName = SR.GetString(SR.DataGridView_AccEditingPanelAccName);
                 }
                 return this.editingPanel;
+            }
+        }
+
+        internal DataGridViewEditingPanelAccessibleObject EditingPanelAccessibleObject
+        {
+            get
+            {
+                if (this.editingPanelAccessibleObject == null)
+                {
+                    IntSecurity.UnmanagedCode.Assert();
+                    try
+                    {
+                        editingPanelAccessibleObject = new DataGridViewEditingPanelAccessibleObject(this, this.EditingPanel);
+                    }
+                    finally
+                    {
+                        CodeAccessPermission.RevertAssert();
+                    }
+                }
+
+                return editingPanelAccessibleObject;
             }
         }
 
@@ -4976,6 +5034,14 @@ namespace System.Windows.Forms
             }
         }
 
+        internal override bool SupportsUiaProviders
+        {
+            get
+            {
+                return AccessibilityImprovements.Level3 && !DesignMode;
+            }
+        }
+
         /// <include file='doc\DataGridView.uex' path='docs/doc[@for="DataGridView.Text"]/*' />
         [
             Browsable(false), 
@@ -6988,6 +7054,34 @@ namespace System.Windows.Forms
             public int y;
             public int col;
             public int row;
+        }
+
+        internal class DataGridViewEditingPanel : Panel
+        {
+            private DataGridView owningDataGridView;
+
+            public DataGridViewEditingPanel(DataGridView owningDataGridView)
+            {
+                this.owningDataGridView = owningDataGridView;
+            }
+
+            internal override bool SupportsUiaProviders
+            {
+                get
+                {
+                    return AccessibilityImprovements.Level3;
+                }
+            }
+
+            protected override AccessibleObject CreateAccessibilityInstance()
+            {
+                if (AccessibilityImprovements.Level3)
+                {
+                    return new DataGridViewEditingPanelAccessibleObject(owningDataGridView, this);
+                }
+
+                return base.CreateAccessibilityInstance();
+            }
         }
     }
 }

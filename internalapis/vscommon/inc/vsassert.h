@@ -200,8 +200,8 @@ CLINKAGE UINT ENTRYPOINT VsGetStackAddresses(UINT ifrStart, UINT cfrTotal, DWORD
 CLINKAGE BOOL ENTRYPOINT VsResolveSymbols(DWORD_PTR dwAddress, _Out_cap_(uicBuf) char * pszBuf, UINT uicBuf);
 
 #if defined(_X86_) && !defined(PLATFORM_UNIX) && !defined(_M_CEE)
-// Avoid inline assembler in macros because it breaks lambdas; can be changed back when dev10 
-
+// Avoid inline assembler in macros because it breaks lambdas; can be changed back when dev10 bug 658310 is fixed
+// #define Int3 _asm { int 3 }
 #define Int3 DebugBreak();
 #else
 #define Int3 DebugBreak();
@@ -652,8 +652,8 @@ public:
 #endif // DEBUG
 
 // usability improvement (accepting variable number of arguments and with formatting
-// functionality built-in) (
-
+// functionality built-in) (bug: 258645 - move the following definitions from
+// env\msenv\inc\vbmacro.h to vscommon\vsassert\vsassert.h)
 
 #if defined(DEBUG) || defined(VS_RETAIL_ASSERTS)
     #define VSFAIL_FORMATWITHARGS_5(pwszFormat, ARG1, ARG2, ARG3, ARG4, ARG5) \

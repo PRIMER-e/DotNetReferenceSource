@@ -47,6 +47,25 @@ namespace System.Windows.Forms
         {
         }
 
+        /// <summary>
+        /// Creates a new AccessibleObject for this DataGridViewTextBoxCell instance.
+        /// The AccessibleObject instance returned by this method supports ControlType UIA property.
+        /// However the new object is only available in applications that are recompiled to target 
+        /// .NET Framework 4.7.2 or opt-in into this feature using a compatibility switch. 
+        /// </summary>
+        /// <returns>
+        /// AccessibleObject for this DataGridViewTextBoxCell instance.
+        /// </returns>
+        protected override AccessibleObject CreateAccessibilityInstance()
+        {
+            if (AccessibilityImprovements.Level1)
+            {
+                return new DataGridViewTextBoxCellAccessibleObject(this);
+            }
+
+            return base.CreateAccessibilityInstance();
+        }
+
         private DataGridViewTextBoxEditingControl EditingTextBox
         {
             get
@@ -136,8 +155,8 @@ namespace System.Windows.Forms
             }
             else 
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 dataGridViewCell = (DataGridViewTextBoxCell)System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -810,6 +829,28 @@ namespace System.Windows.Forms
         public override string ToString()
         {
             return "DataGridViewTextBoxCell { ColumnIndex=" + ColumnIndex.ToString(CultureInfo.CurrentCulture) + ", RowIndex=" + RowIndex.ToString(CultureInfo.CurrentCulture) + " }";
+        }
+
+        protected class DataGridViewTextBoxCellAccessibleObject : DataGridViewCellAccessibleObject
+        {
+            public DataGridViewTextBoxCellAccessibleObject(DataGridViewCell owner) : base(owner)
+            {
+            }
+
+            internal override bool IsIAccessibleExSupported()
+            {
+                return true;
+            }
+
+            internal override object GetPropertyValue(int propertyID)
+            {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId)
+                {
+                    return NativeMethods.UIA_EditControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
         }
     }
 }

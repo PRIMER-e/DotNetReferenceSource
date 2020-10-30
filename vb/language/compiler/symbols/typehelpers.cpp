@@ -1402,8 +1402,8 @@ bool TypeHelpers::EquivalentTypes
     // under "#if IDE" (and similarly for anonymous types); TypeHelpers::EquivalentTypes doesn't have
     // that feature.
     //
-    // Suggestion: we should investigate merging these two functions. It's likely a 
-
+    // Suggestion: we should investigate merging these two functions. It's likely a bug that
+    // AreTypesEqual has the special "anonymous" functionality but EquivalentTypes doesn't.
 
 
     if (BCSYM::AreTypesEqual(T1, T2, false /* Don't dig into arrays and generic bindings. We will dig later. */))
@@ -2317,12 +2317,12 @@ presence of a TypeIdentifierAttribute. If a type contains such an attribute, we 
 copy of an original type, imported from some other assembly. Local types must have the same qualified 
 name and GUID as the original type, so we can use simple string comparisons to match them. Equivalence 
 is transitive, so this comparison applies if either type or both has the TypeIdentifierAttribute.
-This fixes 
-
-
-
-
-*/
+This fixes bug #513539. This has nothing to do with the diamond-reference problem, despite the use of
+a qualified-name comparison in both places (see the comment in TypeHelpers::EquivalentTypes). That is
+a very narrowly-defined situation where we end up with different pointers to the same type; in the
+TypeIdentifier situation we are dealing with here, there are two completely different .NET types which 
+are considered to be semantically equivalent because they both stand for the same external COM type.
+******************************************************************************/
 bool TypeHelpers::AreTypeIdentitiesEquivalent
 (
     _In_ BCSYM *ptyp1, 
@@ -2356,12 +2356,12 @@ presence of a TypeIdentifierAttribute. If a type contains such an attribute, we 
 copy of an original type, imported from some other assembly. Local types must have the same qualified 
 name and GUID as the original type, so we can use simple string comparisons to match them. Equivalence 
 is transitive, so this comparison applies if either type or both has the TypeIdentifierAttribute.
-This fixes 
-
-
-
-
-*/
+This fixes bug #513539. This has nothing to do with the diamond-reference problem, despite the use of
+a qualified-name comparison in both places (see the comment in TypeHelpers::EquivalentTypes). That is
+a very narrowly-defined situation where we end up with different pointers to the same type; in the
+TypeIdentifier situation we are dealing with here, there are two completely different .NET types which 
+are considered to be semantically equivalent because they both stand for the same external COM type.
+******************************************************************************/
 bool TypeHelpers::AreTypeIdentitiesEquivalent
 (
     _In_ BCSYM_Container *ptyp1, 

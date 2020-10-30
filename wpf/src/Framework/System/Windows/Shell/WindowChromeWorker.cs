@@ -305,6 +305,9 @@ namespace Microsoft.Windows.Shell
                 // actually being applied, so we asynchronously post the fixup operation
                 // at Loaded priority, so it's expected that the visual tree will be
                 // updated before _FixupTemplateIssues is called.
+                // 
+                // Also see comments in RetryFixupTemplateIssuesOnVisualChildrenAdded which is another
+                // place where _FixupTemplateIssues is posted. 
                 _window.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, (_Action)_FixupTemplateIssues);
             }
         }
@@ -342,6 +345,32 @@ namespace Microsoft.Windows.Shell
             NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0, _SwpFlags);
         }
 
+        /// <summary>
+        /// If visual children have been added to <see cref="_window"/>, then repost <see cref="_FixupTemplateIssues"/>
+        /// </summary>
+        /// <SecurityNote>
+        ///   Critical : Accesses Critical method <see cref="_FixupTemplateIssues"/>
+        ///   Safe     : Does not return or expose Critical resources to the caller
+        /// <SecurityNote>
+        [SecuritySafeCritical]
+        [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
+        private void RetryFixupTemplateIssuesOnVisualChildrenAdded(object sender, EventArgs e)
+        {
+            if (sender == _window)
+            {
+                // Remove the handler for Window.VisualChildrenChanged. This will be hooked up 
+                // again in _FixupTemplatedIssues if needed
+                _window.VisualChildrenChanged -= RetryFixupTemplateIssuesOnVisualChildrenAdded;
+
+                // At this point, the Window and the its root element are ready. Repost _FixupTemplateIssues
+                // at Render priority to ensure that it gets the root element fixed up ASAP. 
+                // 
+                // Also see comments in _OnWindowPropertyChangedThatRequiresTemplateFixup which is another
+                // place where _FixupTemplateIssues is posted. 
+                _window.Dispatcher.BeginInvoke(DispatcherPriority.Render, (_Action)_FixupTemplateIssues);
+            }
+        }
+
         /// <SecurityNote>
         ///   Critical : Calls critical methods
         /// <SecurityNote>
@@ -361,8 +390,8 @@ namespace Microsoft.Windows.Shell
             if (VisualTreeHelper.GetChildrenCount(_window) == 0)
             {
                 // The template isn't null, but we don't have a visual tree.
-                // Hope that ApplyTemplate is in the queue and repost this, because there's not much we can do right now.
-                _window.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, (_Action)_FixupTemplateIssues);
+                // Wait for the visual tree after ApplyTemplate, and then repost this  
+                _window.VisualChildrenChanged += RetryFixupTemplateIssuesOnVisualChildrenAdded;
                 return;
             }
 
@@ -913,8 +942,8 @@ namespace Microsoft.Windows.Shell
                     _windowPosAtStartOfUserMove = new Point(_window.Left, _window.Top);
                 }
                 // Realistically we also don't want to update the start position when moving from one docked state to another (or to and from maximized),
-                // but it's tricky to detect and this is already a workaround for a 
-
+                // but it's tricky to detect and this is already a workaround for a bug that's fixed in newer versions of the framework.
+                // Not going to try to handle all cases.
             }
 
             handled = false;
@@ -1507,7 +1536,7 @@ namespace Microsoft.Windows.Shell
             rootElement.Margin = new Thickness();
 
             // This margin is only necessary if the client rect is going to be calculated incorrectly by WPF.
-            // This 
+            // This bug was fixed in V4 of the framework.
             if (Utility.IsPresentationFrameworkVersionLessThan4)
             {
                 Assert.IsTrue(_isFixedUp);

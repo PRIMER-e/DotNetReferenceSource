@@ -7,6 +7,7 @@
 
 using System.Collections.Specialized;
 using System.Windows.Automation.Peers;  // OnCreateAutomationPeer
+using MS.Internal.Telemetry.PresentationFramework;
 
 
 namespace System.Windows.Controls
@@ -41,6 +42,8 @@ namespace System.Windows.Controls
         static ListView()
         {
             SelectionModeProperty.OverrideMetadata(typeof(ListView), new FrameworkPropertyMetadata(SelectionMode.Extended));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.ListView);
         }
 
         #endregion Constructors
@@ -171,10 +174,10 @@ namespace System.Windows.Controls
         /// </summary>
         protected override void ClearContainerForItemOverride(DependencyObject element, object item)
         {
-            // This method no longer does the work it used to (
-
-
-
+            // This method no longer does the work it used to (bug 1445288).
+            // It is called when a container is removed from the tree;  such a
+            // container will be GC'd soon, so there's no point in changing
+            // its properties.
 
             base.ClearContainerForItemOverride(element, item);
         }

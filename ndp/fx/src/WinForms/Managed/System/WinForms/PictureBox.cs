@@ -672,7 +672,7 @@ namespace System.Windows.Forms {
 
             // Invoke BeginGetResponse on a threadpool thread, as it has
             // unpredictable latency, since, on first call, it may load in the
-            // configuration system (this is NCL 
+            // configuration system (this is NCL bug 20605)
             (new WaitCallback(BeginGetResponseDelegate)).BeginInvoke(req, null, null);
         }
 

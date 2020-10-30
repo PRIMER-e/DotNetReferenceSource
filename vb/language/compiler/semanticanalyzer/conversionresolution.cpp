@@ -2288,22 +2288,22 @@ ClassifyCLRConversionForArrayElementTypes
     if (result==ConversionError && HASFLAG(ConversionSemantics, ConversionSemantics::AllowArrayIntegralConversions))
     {
 
-        // 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // Bug Dev10#463550
+        // In doing this check for integral conversions, also consider the case where SourceElementType
+        // is a generic parameter constrained to be something integral-like. You can't write these directly.
+        // But you can through a sneaky trick involving inheritance...
+        //    Enum E : a : End Enum 
+        //    Interface IConstraintInjector(Of C) : Sub f(Of T As C)() : End Interface
+        //    Class HasConstraint : Implements IConstraintInjector(Of E)
+        //        Private Sub fe(Of T As E)() Implements IConstraintInjector(Of E).f
+        //          Dim xx As T() = {}
+        //          Dim yy As Integer() = xx ' uses T()->Integer()
+        // NB. Notionally, if we discovered any ConstraintType->TargetElementType conversion that
+        // was an identity, we should rewrite it as Widening since the extra step
+        // T->ConstraintType->TargetElementType would make it a widening. But on the other hand, putting on
+        // our wizard hats, we can see that any T satisfying ConstraintType here must be identical to
+        // ConstraintType, so maybe it should be left as Identity!
+        // In any case, the point is irrelevant, since none of the conversions here count as identity.
         Type *EffectiveSourceElementType = SourceElementType;
         if (TypeHelpers::IsGenericParameter(SourceElementType))
         {
@@ -2488,9 +2488,9 @@ ClassifyCLRConversionForArrayElementTypes
                 );
     }
 
-    // 
-
-
+    // Bug VSWhidbey 369131.
+    // Array co-variance and back-casting special case for generic parameters.
+    //
     else if (TypeHelpers::IsGenericParameter(SourceElementType) &&
              TypeHelpers::IsGenericParameter(TargetElementType))
     {
@@ -3093,7 +3093,7 @@ Semantics::ClassifyMethodConversion
                     TargetTypeIsByReference = true;
                 }
 
-                // Devdiv 
+                // Devdiv Bug[22903]
                 if (TargetMethodIsDllDeclare &&
                     !TargetParam->GetPWellKnownAttrVals()->GetMarshalAsData() &&
                     TargetType->GetVtype() == t_string)
@@ -3207,7 +3207,7 @@ Semantics::ClassifyReturnTypeForMethodConversion
     if ( (TypeHelpers::IsRootObjectType(DelegateRetType) && TypeHelpers::IsVoidType(TargetRetType)) ||
          (TypeHelpers::IsRootObjectType(TargetRetType) && TypeHelpers::IsVoidType(DelegateRetType)))
     {
-        // 
+        // Bug: 44858: object to void and vice versa are not error, but by default widening/narrowing. We need error to have func/sub logic.
         Conversion = ConversionError;
     }
     else
@@ -3238,10 +3238,10 @@ Semantics::ClassifyReturnTypeForMethodConversion
     {
         ConversionClass ClrConversion = ClassifyPredefinedCLRConversion(DelegateRetType, TargetRetType, ConversionSemantics::Default);
 
-        // 
+        // Bug 73604. Generic Reference type needs to be treated specially.
         if (ClrConversion == ConversionWidening &&
-            // 
-
+            // Bug 114543: The CLR will not relax on value types, only reference types
+            // so treat these as relaxations that needs a stub. For Arguments it works fine.
             TypeHelpers::IsReferenceType(TargetRetType) &&
             TypeHelpers::IsReferenceType(DelegateRetType))
         {
@@ -3345,7 +3345,7 @@ Semantics::ClassifyArgumentForMethodConversion
     }
     else if (Conversion == ConversionWidening)
     {
-        // 
+        // Bug 73604. Generic Reference type needs to be treated specially.
         ConversionClass ClrConversion = ClassifyPredefinedCLRConversion(TargetType, DelegateType, ConversionSemantics::Default);
 
         if (ClrConversion == ConversionWidening &&

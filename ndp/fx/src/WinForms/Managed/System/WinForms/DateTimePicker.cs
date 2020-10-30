@@ -61,6 +61,8 @@ namespace System.Windows.Forms {
 
         private static readonly object EVENT_FORMATCHANGED = new object();
 
+        private static readonly string DateTimePickerLocalizedControlTypeString = SR.GetString(SR.DateTimePickerLocalizedControlType);
+
         private const int TIMEFORMAT_NOUPDOWN = NativeMethods.DTS_TIMEFORMAT & (~NativeMethods.DTS_UPDOWN);
         private EventHandler                    onCloseUp;
         private EventHandler                    onDropDown;
@@ -142,6 +144,10 @@ namespace System.Windows.Forms {
             // Set default flags here...
             //
             format = DateTimePickerFormat.Long;
+
+            if (AccessibilityImprovements.Level3) {
+                SetStyle(ControlStyles.UseTextForAccessibility, false);
+            }
         }
 
         /// <include file='doc\DateTimePicker.uex' path='docs/doc[@for="DateTimePicker.BackColor"]/*' />
@@ -1807,10 +1813,52 @@ namespace System.Windows.Forms {
                     if (role != AccessibleRole.Default) {
                         return role;
                     }
-                    return AccessibleRole.DropList;
+                    return AccessibilityImprovements.Level3 ? AccessibleRole.ComboBox : AccessibleRole.DropList;
                 }
             }
 
+            internal override bool IsIAccessibleExSupported() {
+                if (AccessibilityImprovements.Level3) {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                switch (propertyID) {
+                    case NativeMethods.UIA_IsTogglePatternAvailablePropertyId:
+                        return IsPatternSupported(NativeMethods.UIA_TogglePatternId);
+                    case NativeMethods.UIA_LocalizedControlTypePropertyId:
+                        return DateTimePickerLocalizedControlTypeString;
+                    default:
+                        return base.GetPropertyValue(propertyID);
+                }
+            }
+
+            internal override bool IsPatternSupported(int patternId) {
+                if (patternId == NativeMethods.UIA_TogglePatternId && ((DateTimePicker)Owner).ShowCheckBox) {
+                    return true;
+                }
+
+                return base.IsPatternSupported(patternId);
+            }
+
+            #region Toggle Pattern
+
+            internal override UnsafeNativeMethods.ToggleState ToggleState {
+                get {
+                    return ((DateTimePicker)Owner).Checked ? 
+                        UnsafeNativeMethods.ToggleState.ToggleState_On : 
+                        UnsafeNativeMethods.ToggleState.ToggleState_Off;
+                }
+            }
+
+            internal override void Toggle() {
+                ((DateTimePicker)Owner).Checked = !((DateTimePicker)Owner).Checked;
+            }
+
+            #endregion
         }
     }
 }

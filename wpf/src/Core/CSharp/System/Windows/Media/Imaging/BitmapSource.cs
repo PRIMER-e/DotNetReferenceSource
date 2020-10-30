@@ -1499,28 +1499,28 @@ namespace System.Windows.Media.Imaging
         #endregion
 
         //
-        // Workaround for a behavior change caused by a 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // Workaround for a behavior change caused by a bug fix
+        //
+        // According to the old implementation, CopyCommon will clone the download events as
+        // well (_asdfEvent = sourceBitmap._asdfEvent.Clone();). The problem with this is the
+        // _asdfEvent.Clone() will also clone all the delegates currently attached to _asdfEvent,
+        // so anyone listening to the original would be implicitly listening to the clone as well.
+        //
+        // The bug was that BitmapFrameDecode's clone was broken if it was made while the original
+        // BFD was still downloading. The clone never does anything, so it doesn't update to show
+        // the image after download completes and doesn't fire any events. So the net effect is
+        // that anyone attached to the original BFD would still see only 1 event get fired despite
+        // implicitly listening to the clone as well.
+        //
+        // The problem comes in when the BFD clone got fixed. It'll now update to show the image,
+        // but it will also start firing events. So people listening to the original BFD will now
+        // see a behavior change (used to get download only once, but will now get download from
+        // the fixed clone as well). This flag is introduced as a workaround. When it's true,
+        // CopyCommon works as it did before: delegates get copied. When it's false, delegates do
+        // not get copied. BitmapFrameDecode will override this to return false in order to
+        // simulate the old BFD behavior when clones didn't fire and the listeners on the original
+        // only got the event once.
+        //
         internal virtual bool ShouldCloneEventDelegates
         {
             get { return true; }

@@ -756,12 +756,12 @@ public:
 			else if(this!=&p)
 			{
 				// If this assert fires, it means you attempted to assign one CAutoVectorPtr to another when they both contained
-				// a pointer to the same underlying vector. This means a 
-
+				// a pointer to the same underlying vector. This means a bug in your code, since your vector will get
+				// double-deleted.
 				ATLASSERT(FALSE);
 
 				// For safety, we are going to detach the other CAutoVectorPtr to avoid a double-free. Your code still
-				// has a 
+				// has a bug, though.
 				p.Detach();
 			}
 			else
@@ -880,14 +880,14 @@ public:
 			if(this!=&p)
 			{
 				// If this assert fires, it means you attempted to assign one CAutoPtr to another when they both contained
-				// a pointer to the same underlying object. This means a 
-
+				// a pointer to the same underlying object. This means a bug in your code, since your object will get
+				// double-deleted.
 #ifdef ATL_AUTOPTR_ASSIGNMENT_ASSERT
 				ATLASSERT(FALSE);
 #endif
 
 				// For safety, we are going to detach the other CAutoPtr to avoid a double-free. Your code still
-				// has a 
+				// has a bug, though.
 				p.Detach();
 			}
 			else
@@ -1005,12 +1005,12 @@ public:
 			if(this!=&p)
 			{
 				// If this assert fires, it means you attempted to assign one CAutoPtr to another when they both contained
-				// a pointer to the same underlying object. This means a 
-
+				// a pointer to the same underlying object. This means a bug in your code, since your object will get
+				// double-deleted.
 				ATLASSERT(FALSE);
 
 				// For safety, we are going to detach the other CAutoPtr to avoid a double-free. Your code still
-				// has a 
+				// has a bug, though.
 				p.Detach();
 			}
 			else

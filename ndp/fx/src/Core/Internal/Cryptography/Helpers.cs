@@ -20,7 +20,27 @@ namespace Internal.Cryptography
     {
         public static byte[] CloneByteArray(this byte[] src)
         {
-            return (byte[])(src.Clone());
+            return src == null ? null : (byte[])(src.Clone());
+        }
+
+        public static bool UsesIv(this CipherMode cipherMode)
+        {
+            return cipherMode != CipherMode.ECB;
+        }
+
+        public static byte[] GetCipherIv(this CipherMode cipherMode, byte[] iv)
+        {
+            if (cipherMode.UsesIv())
+            {
+                if (iv == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_MissingIV);
+                }
+
+                return iv;
+            }
+
+            return null;
         }
 
         public static CryptographicException ToCryptographicException(this ErrorCode errorCode)

@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using System.Threading;
 using System.Reflection;
 using System.Windows.Data;
+using System.Windows.Diagnostics;
 using System.Windows.Documents;
 
 using System.Windows.Input;
@@ -802,10 +803,10 @@ namespace System.Windows
         protected internal DependencyObject GetTemplateChild(string childName)
         {
             FrameworkTemplate template = TemplateInternal;
-            /* Calling this before getting a style/template is not a 
-
-
-*/
+            /* Calling this before getting a style/template is not a bug.
+            Debug.Assert(template != null,
+                "The VisualTree should have been created from a Template");
+            */
 
             if (template == null)
             {
@@ -1423,7 +1424,7 @@ namespace System.Windows
         //  types.
         internal static object FindTemplateResourceInternal(DependencyObject target, object item, Type templateType)
         {
-            // Data styling doesn't apply to UIElement (
+            // Data styling doesn't apply to UIElement (bug 1007133).
             if (item == null || (item is UIElement))
             {
                 return null;
@@ -1851,7 +1852,7 @@ namespace System.Windows
                 // If the parent element's style is changing, this instance is
                 // in a visual tree that is being removed, and the value request
                 // is simply a result of tearing down some information in that
-                // tree (e.g. a BindingExpression).  If so, just pretend there is no style (
+                // tree (e.g. a BindingExpression).  If so, just pretend there is no style (bug 991395).
 
                 if (GetValueFromTemplatedParent(dp, ref entry))
                 {
@@ -1960,7 +1961,7 @@ namespace System.Windows
 
         // Climb the framework tree hierarchy and see if we can pick up an
         //  inheritable property value somewhere in that parent chain.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         private object GetInheritableValue(DependencyProperty dp, FrameworkPropertyMetadata fmetadata)
         {
             //
@@ -2065,6 +2066,9 @@ namespace System.Windows
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
             DependencyProperty dp = e.Property;
+
+            // invalid during a VisualTreeChanged event
+            VisualDiagnostics.VerifyVisualTreeChange(this);
 
             base.OnPropertyChanged(e);
 
@@ -3291,10 +3295,10 @@ namespace System.Windows
         /// </summary>
         public void BringIntoView()
         {
-            //dmitryt, 
-
-
-
+            //dmitryt, bug 1126518. On new/updated elements RenderSize isn't yet computed
+            //so we need to postpone the rect computation until layout is done.
+            //this is accomplished by passing Empty rect here and then asking for RenderSize
+            //in IScrollInfo when it actually executes an async MakeVisible command.
             BringIntoView( /*RenderSize*/ Rect.Empty);
         }
 
@@ -3814,9 +3818,9 @@ namespace System.Windows
             set { SetValue(VerticalAlignmentProperty, value); }
         }
 
-        // Need a special value here until 
-
-
+        // Need a special value here until bug 1016350 is fixed.  KeyboardNavigation
+        // treats this as the value to indicate that it should do a resource lookup
+        // to find the "real" default value.
         private static Style _defaultFocusVisualStyle = null;
 
         internal static Style DefaultFocusVisualStyle
@@ -4129,7 +4133,7 @@ namespace System.Windows
             Double xConstr = transformSpaceBounds.Width;
             Double yConstr = transformSpaceBounds.Height;
 
-            //if either of the sizes is 0, return 0,0 to avoid doing math on an empty rect (
+            //if either of the sizes is 0, return 0,0 to avoid doing math on an empty rect (bug 963569)
             if(DoubleUtil.IsZero(xConstr) || DoubleUtil.IsZero(yConstr))
                 return new Size(0,0);
 
@@ -5599,11 +5603,11 @@ namespace System.Windows
                 // LOADED EVENT
 
                 // Broadcast Loaded
-                // Note (see 
-
-
-
-
+                // Note (see bug 1422684): Do not make this conditional on
+                // SubtreeHasLoadedChangeHandler. A layout pass may add loaded
+                // handlers before the callback into BroadcastLoadedEvent occurs.
+                // If we don't post the callback request, these handlers won't get
+                // called. The optimization should be done in the callback.
                 FireLoadedOnDescendentsInternal();
 
                 if (SystemResources.SystemResourcesHaveChanged)
@@ -5837,6 +5841,14 @@ namespace System.Windows
                 // STA Requirement are checked in InputManager cctor where InputManager.Current is used in KeyboardNavigation cctor
                 _keyboardNavigation = new KeyboardNavigation();
                 _popupControlService = new PopupControlService();
+
+                // DDVSO 614397: Tooltips should show on Keyboard focus.
+                // This event lets PopupControlService know when keyboard focus changed, so it can
+                // inspect for tooltips. Don't add the event handler when the compat flag is on.
+                if (!AccessibilitySwitches.UseLegacyToolTipDisplay)
+                {
+                    _keyboardNavigation.FocusChanged += _popupControlService.FocusChangedEventHandler;
+                }
             }
 
             internal KeyboardNavigation _keyboardNavigation;

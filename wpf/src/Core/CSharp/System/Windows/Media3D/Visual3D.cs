@@ -248,6 +248,9 @@ namespace System.Windows.Media.Media3D
                 throw new InvalidOperationException(SR.Get(SRID.CannotModifyVisualChildrenDuringTreeWalk));
             }
 
+            // invalid during a VisualTreeChanged event
+            VisualDiagnostics.VerifyVisualTreeChange(this);
+
             Debug.Assert(child != null);
             Debug.Assert(child.InternalVisualParent == null);
 
@@ -298,6 +301,9 @@ namespace System.Windows.Media.Media3D
 
             Debug.Assert(child != null);
             Debug.Assert(child.InternalVisualParent == this);
+
+            // invalid during a VisualTreeChanged event
+            VisualDiagnostics.VerifyVisualTreeChange(this);
 
             VisualDiagnostics.OnVisualChildChanged(this, child, false);
 

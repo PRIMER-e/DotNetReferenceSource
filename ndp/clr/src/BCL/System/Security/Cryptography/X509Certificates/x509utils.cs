@@ -21,6 +21,8 @@ namespace System.Security.Cryptography.X509Certificates
         internal const uint CRYPT_USER_PROTECTED = 0x00000002;
         internal const uint CRYPT_MACHINE_KEYSET = 0x00000020;
         internal const uint CRYPT_USER_KEYSET    = 0x00001000;
+        internal const uint PKCS12_ALWAYS_CNG_KSP = 0x00000200;
+        internal const uint PKCS12_NO_PERSIST_KEY = 0x00008000;
 
         internal const uint CERT_QUERY_CONTENT_CERT               = 1;
         internal const uint CERT_QUERY_CONTENT_CTL                = 2;
@@ -225,27 +227,27 @@ namespace System.Security.Cryptography.X509Certificates
 
         // this method maps a cert content type returned from CryptQueryObject
         // to a value in the managed X509ContentType enum
-        internal static X509ContentType MapContentType (uint contentType) {
+        internal static X509ContentType MapContentType(uint contentType) {
             switch (contentType) {
-            case X509Constants.CERT_QUERY_CONTENT_CERT:
-                return X509ContentType.Cert;
+                case X509Constants.CERT_QUERY_CONTENT_CERT:
+                    return X509ContentType.Cert;
 #if !FEATURE_CORECLR
-            case X509Constants.CERT_QUERY_CONTENT_SERIALIZED_STORE:
-                return X509ContentType.SerializedStore;
-            case X509Constants.CERT_QUERY_CONTENT_SERIALIZED_CERT:
-                return X509ContentType.SerializedCert;
-            case X509Constants.CERT_QUERY_CONTENT_PKCS7_SIGNED:
-            case X509Constants.CERT_QUERY_CONTENT_PKCS7_UNSIGNED:
-                return X509ContentType.Pkcs7;
-            case X509Constants.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED:
-                return X509ContentType.Authenticode;
+                case X509Constants.CERT_QUERY_CONTENT_SERIALIZED_STORE:
+                    return X509ContentType.SerializedStore;
+                case X509Constants.CERT_QUERY_CONTENT_SERIALIZED_CERT:
+                    return X509ContentType.SerializedCert;
+                case X509Constants.CERT_QUERY_CONTENT_PKCS7_SIGNED:
+                case X509Constants.CERT_QUERY_CONTENT_PKCS7_UNSIGNED:
+                    return X509ContentType.Pkcs7;
+                case X509Constants.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED:
+                    return X509ContentType.Authenticode;
 #if !FEATURE_PAL
-            case X509Constants.CERT_QUERY_CONTENT_PFX:
-                return X509ContentType.Pkcs12;
+                case X509Constants.CERT_QUERY_CONTENT_PFX:
+                    return X509ContentType.Pkcs12;
 #endif // !FEATURE_PAL
 #endif // !FEATURE_CORECLR
-            default:
-                return X509ContentType.Unknown;
+                default:
+                    return X509ContentType.Unknown;
             }
         }
 
@@ -258,8 +260,22 @@ namespace System.Security.Cryptography.X509Certificates
                                                     new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag"), "keyStorageFlags"));
             }            
 #endif
-            if ((keyStorageFlags & (X509KeyStorageFlags) ~0x1F) != 0)
+            if ((keyStorageFlags & X509Certificate.KeyStorageFlagsAll) != keyStorageFlags)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag"), "keyStorageFlags");
+
+            const X509KeyStorageFlags EphemeralPersist =
+                X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.PersistKeySet;
+
+            X509KeyStorageFlags persistenceFlags = keyStorageFlags & EphemeralPersist;
+
+            if (persistenceFlags == EphemeralPersist)
+            {
+                throw new ArgumentException(
+                    Environment.GetResourceString(
+                        "Cryptography_X509_InvalidFlagCombination",
+                        persistenceFlags),
+                    "keyStorageFlags");
+            }
 
 #if !FEATURE_LEGACYNETCF  // CompatibilitySwitches causes problems with CCRewrite
             Contract.EndContractBlock();
@@ -281,6 +297,10 @@ namespace System.Security.Cryptography.X509Certificates
                 dwFlags |= X509Constants.CRYPT_EXPORTABLE;
             if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
                 dwFlags |= X509Constants.CRYPT_USER_PROTECTED;
+
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+                dwFlags |= X509Constants.PKCS12_NO_PERSIST_KEY | X509Constants.PKCS12_ALWAYS_CNG_KSP;
+
 #endif // FEATURE_CORECLR else
 
             return dwFlags;
@@ -289,19 +309,19 @@ namespace System.Security.Cryptography.X509Certificates
 #if !FEATURE_CORECLR
         // this method creates a memory store from a certificate
         [System.Security.SecurityCritical]  // auto-generated
-        internal static SafeCertStoreHandle ExportCertToMemoryStore (X509Certificate certificate) {
+        internal static SafeCertStoreHandle ExportCertToMemoryStore(X509Certificate certificate) {
             SafeCertStoreHandle safeCertStoreHandle = SafeCertStoreHandle.InvalidHandle;
-            X509Utils._OpenX509Store(X509Constants.CERT_STORE_PROV_MEMORY, 
-                                     X509Constants.CERT_STORE_ENUM_ARCHIVED_FLAG | X509Constants.CERT_STORE_CREATE_NEW_FLAG,
-                                     null, 
-                                     ref safeCertStoreHandle);
+            X509Utils.OpenX509Store(X509Constants.CERT_STORE_PROV_MEMORY,
+                                    X509Constants.CERT_STORE_ENUM_ARCHIVED_FLAG | X509Constants.CERT_STORE_CREATE_NEW_FLAG,
+                                    null,
+                                    safeCertStoreHandle);
             X509Utils._AddCertificateToStore(safeCertStoreHandle, certificate.CertContext);
             return safeCertStoreHandle;
         }
 #endif // !FEATURE_CORECLR
 
         [System.Security.SecurityCritical]  // auto-generated
-        internal static IntPtr PasswordToHGlobalUni (object password) {
+        internal static IntPtr PasswordToHGlobalUni(object password) {
             if (password != null) {
                 string pwd = password as string;
                 if (pwd != null)
@@ -328,10 +348,15 @@ namespace System.Security.Cryptography.X509Certificates
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void _AddCertificateToStore(SafeCertStoreHandle safeCertStoreHandle, SafeCertContextHandle safeCertContext);
 #endif // !FEATURE_CORECLR
+
+        // Do not call this method without considering that as an InternalCall the same object goes in and
+        // comes out, even if the handle value changes.  Therefore an input object may have been
+        // SuppressFinalized and will need to be re-registered for finalization.
         [System.Security.SecurityCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void _DuplicateCertContext(IntPtr handle, ref SafeCertContextHandle safeCertContext);
+        private static extern void _DuplicateCertContext(IntPtr handle, ref SafeCertContextHandle safeCertContext);
+
 #if !FEATURE_CORECLR
         [System.Security.SecurityCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
@@ -378,20 +403,33 @@ namespace System.Security.Cryptography.X509Certificates
         [ResourceExposure(ResourceScope.None)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern byte[] _GetThumbprint(SafeCertContextHandle safeCertContext);
+
+        // Do not call this method without considering that as an InternalCall the same object goes in and
+        // comes out, even if the handle value changes.  Therefore an input object may have been
+        // SuppressFinalized and will need to be re-registered for finalization.
         [System.Security.SecurityCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void _LoadCertFromBlob(byte[] rawData, IntPtr password, uint dwFlags, bool persistKeySet, ref SafeCertContextHandle pCertCtx);
+        private static extern void _LoadCertFromBlob(byte[] rawData, IntPtr password, uint dwFlags, bool persistKeySet, ref SafeCertContextHandle pCertCtx);
+
+        // Do not call this method without considering that as an InternalCall the same object goes in and
+        // comes out, even if the handle value changes.  Therefore an input object may have been
+        // SuppressFinalized and will need to be re-registered for finalization.
         [System.Security.SecurityCritical]  // auto-generated
         [ResourceExposure(ResourceScope.Machine)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void _LoadCertFromFile(string fileName, IntPtr password, uint dwFlags, bool persistKeySet, ref SafeCertContextHandle pCertCtx);
+        private static extern void _LoadCertFromFile(string fileName, IntPtr password, uint dwFlags, bool persistKeySet, ref SafeCertContextHandle pCertCtx);
+
 #if !FEATURE_CORECLR
+        // Do not call this method without considering that as an InternalCall the same object goes in and
+        // comes out, even if the handle value changes.  Therefore an input object may have been
+        // SuppressFinalized and will need to be re-registered for finalization.
         [System.Security.SecurityCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void _OpenX509Store(uint storeType, uint flags, string storeName, ref SafeCertStoreHandle safeCertStoreHandle);
+        private static extern void _OpenX509Store(uint storeType, uint flags, string storeName, ref SafeCertStoreHandle safeCertStoreHandle);
 #endif // !FEATURE_CORECLR
+
         [System.Security.SecurityCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -400,5 +438,42 @@ namespace System.Security.Cryptography.X509Certificates
         [ResourceExposure(ResourceScope.Machine)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern uint _QueryCertFileType(string fileName);
+
+        [System.Security.SecurityCritical]  // auto-generated
+        internal static void DuplicateCertContext(IntPtr handle, SafeCertContextHandle safeCertContext)
+        {
+            _DuplicateCertContext(handle, ref safeCertContext);
+
+            if (!safeCertContext.IsInvalid) {
+                GC.ReRegisterForFinalize(safeCertContext);
+            }
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated
+        internal static void LoadCertFromBlob(byte[] rawData, IntPtr password, uint dwFlags, bool persistKeySet, SafeCertContextHandle pCertCtx) {
+            _LoadCertFromBlob(rawData, password, dwFlags, persistKeySet, ref pCertCtx);
+
+            if (!pCertCtx.IsInvalid) {
+                GC.ReRegisterForFinalize(pCertCtx);
+            }
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated
+        internal static void LoadCertFromFile(string fileName, IntPtr password, uint dwFlags, bool persistKeySet, SafeCertContextHandle pCertCtx) {
+            _LoadCertFromFile(fileName, password, dwFlags, persistKeySet, ref pCertCtx);
+
+            if (!pCertCtx.IsInvalid) {
+                GC.ReRegisterForFinalize(pCertCtx);
+            }
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated
+        private static void OpenX509Store(uint storeType, uint flags, string storeName, SafeCertStoreHandle safeCertStoreHandle) {
+            _OpenX509Store(storeType, flags, storeName, ref safeCertStoreHandle);
+
+            if (!safeCertStoreHandle.IsInvalid) {
+                GC.ReRegisterForFinalize(safeCertStoreHandle);
+            }
+        }
     }
 }

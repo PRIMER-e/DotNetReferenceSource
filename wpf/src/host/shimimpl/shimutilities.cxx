@@ -329,7 +329,7 @@ wchar_t *TryDecodeDownloadError(HRESULT hr)
     {
         pErrMsg = TryFormatErrorMessage(hLib, hr);
         // There's a typo in inetcore\urlmon\dll\urlerr.mc: The MessageId for this error is incorrectly 
-        // entered as 0x11. Windows OOB Releases 
+        // entered as 0x11. Windows OOB Releases bug 1068105.
         if(!pErrMsg && hr == INET_E_INVALID_CERTIFICATE/*0x800C0019*/)
         {
             pErrMsg = TryFormatErrorMessage(hLib, 0x800C0011);

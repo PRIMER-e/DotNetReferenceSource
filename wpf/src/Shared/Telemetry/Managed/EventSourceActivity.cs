@@ -1,8 +1,19 @@
-﻿using System;
+using System;
 using System.Diagnostics.Tracing;
 using Contract = System.Diagnostics.Contracts.Contract;
 
+// Use the naming convention MS.Internal.Telemetry.<assemblyname> while adding assemblies to the provider
+#if WINDOWS_BASE
+namespace MS.Internal.Telemetry.WindowsBase
+#elif PRESENTATION_CORE
+namespace MS.Internal.Telemetry.PresentationCore
+#elif PRESENTATIONFRAMEWORK
+namespace MS.Internal.Telemetry.PresentationFramework
+#else
+#error Attempt to use Telemetry provider in an unexpected assembly.
+#error To use the provider in this assembly, update TraceLoggingProvider to support it first.
 namespace MS.Internal.Telemetry
+#endif
 {
     /// <summary>
     /// <para>

@@ -140,7 +140,7 @@ namespace System.Data.Common {
             if (implementsIXmlSerializable) {
                 object Obj = System.Activator.CreateInstance (DataType, true);
 
-                string tempStr =string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader, 
+                string tempStr =string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader, bug 98767
                 StringReader strReader = new  StringReader(tempStr);
 
                 using (XmlTextReader xmlTextReader = new XmlTextReader(strReader)) {

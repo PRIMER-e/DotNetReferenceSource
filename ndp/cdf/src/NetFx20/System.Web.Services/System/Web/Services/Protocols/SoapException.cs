@@ -191,9 +191,9 @@ namespace System.Web.Services.Protocols {
             actor = (string)list["actor"];
             role = (string)list["role"];
             
-            // 
-
-
+            // Bug: 323493: XmlNode is not serializable, and I don't think we want to really want to create
+            // an XmlDocument just to read a XmlNode from string to get the deserialized instance back.
+            // detail = (XmlNode)list["detail"];
 
             subCode = (SoapFaultSubCode)list["subCode"];
             lang = (string)list["lang"];
@@ -280,9 +280,9 @@ namespace System.Web.Services.Protocols {
             list["actor"] = Actor;
             list["role"] = Role;
             
-            // 
-
-
+            // Bug: 323493: XmlNode is not serializable, and I don't think we want to really want to create
+            // an XmlDocument just to read a XmlNode from string to get the deserialized instance back.
+            // list["detail"] = Detail;
             
             list["subCode"] = SubCode;
             list["lang"] = Lang;

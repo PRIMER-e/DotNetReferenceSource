@@ -263,8 +263,7 @@ namespace System.Drawing {
 
             // If we are not scaling for DPI, then the small icon had not been modified
             if (!DpiHelper.IsScalingRequired) {
-                originalBitmap = smallImage as Bitmap;
-                return originalBitmap;
+                return null;
             }
 
             // Get small unscaled icon (toolbox can handle only 16x16).

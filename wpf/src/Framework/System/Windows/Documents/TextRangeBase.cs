@@ -1334,7 +1334,7 @@ namespace System.Windows.Documents
                             // This is because -- unfortunately -- when layout is valid we use ITextView.IsAtCaretUnitBoundary
                             // to normalize unicode offsets, but when layout is dirty we use a different code path
                             // that ignores the current font and simply checks Unicode values for surrogates and
-                            // combining marks.  See 
+                            // combining marks.  See bug 1683515 for an example.
                             explicitInsertPosition = thisRange.Start;
                         }
 

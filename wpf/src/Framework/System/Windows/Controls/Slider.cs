@@ -22,6 +22,7 @@ using System.Windows.Media;
 using MS.Win32;
 using MS.Internal;
 using MS.Internal.Commands;
+using MS.Internal.Telemetry.PresentationFramework;
 
 
 // For typeconverter
@@ -78,6 +79,8 @@ namespace System.Windows.Controls
 
             DefaultStyleKeyProperty.OverrideMetadata(typeof(Slider), new FrameworkPropertyMetadata(typeof(Slider)));
             _dType = DependencyObjectType.FromSystemTypeInternal(typeof(Slider));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.Slider);
         }
 
         #endregion Constructors

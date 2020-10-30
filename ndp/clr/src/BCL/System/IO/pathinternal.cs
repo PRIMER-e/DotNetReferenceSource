@@ -140,7 +140,6 @@ namespace System.IO
         /// <summary>
         /// Returns true if the directory is too long
         /// </summary>
-        /// <param name="leaveSpaceForExtendedPrefix">If the path will have the extended prefix added (if needed) set this to true.</param>
         internal static bool IsDirectoryTooLong(string fullPath)
         {
             if (AppContextSwitches.BlockLongPaths)

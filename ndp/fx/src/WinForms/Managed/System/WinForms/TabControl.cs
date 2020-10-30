@@ -1491,7 +1491,7 @@ namespace System.Windows.Forms {
         internal override void OnParentHandleRecreated()
         {
             // Avoid temporarily resizing the TabControl while the parent 
-            // recreates its handle to avoid 
+            // recreates its handle to avoid bug VSWhidbey 543390.
             this.skipUpdateSize = true;
             try {
                 base.OnParentHandleRecreated();

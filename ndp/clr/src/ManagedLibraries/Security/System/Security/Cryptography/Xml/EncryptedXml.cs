@@ -216,17 +216,36 @@ namespace System.Security.Cryptography.Xml
                     return cipherData.CipherReference.CipherValue;
                 Stream decInputStream = null;
                 // See if the CipherReference is a local URI
+                if (!Utils.GetLeaveCipherValueUnchecked() && cipherData.CipherReference.Uri == null){
+                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UriNotSupported"));
+                }
                 if (cipherData.CipherReference.Uri.Length == 0) {
                     // self referenced Uri
                     string baseUri = (m_document == null ? null : m_document.BaseURI);
                     TransformChain tc = cipherData.CipherReference.TransformChain;
+                    if (!Utils.GetLeaveCipherValueUnchecked() && tc == null) {
+                        throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UriNotSupported"));
+                    }
                     decInputStream = tc.TransformToOctetStream(m_document, m_xmlResolver, baseUri);
                 } else if (cipherData.CipherReference.Uri[0] == '#') {
-                    string idref = Utils.ExtractIdFromLocalUri(cipherData.CipherReference.Uri); 
+                    string idref = Utils.ExtractIdFromLocalUri(cipherData.CipherReference.Uri);
                     // Serialize 
-                    inputStream = new MemoryStream(m_encoding.GetBytes(GetIdElement(m_document, idref).OuterXml));
+                    if (Utils.GetLeaveCipherValueUnchecked()) {
+                        inputStream = new MemoryStream(m_encoding.GetBytes(GetIdElement(m_document, idref).OuterXml));
+                    }
+                    else {
+                        XmlElement idElem = GetIdElement(m_document, idref);
+                        if (idElem == null || idElem.OuterXml == null) {
+                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UriNotSupported"));
+                        }
+                        inputStream = new MemoryStream(m_encoding.GetBytes(idElem.OuterXml));
+                    }
+
                     string baseUri = (m_document == null ? null : m_document.BaseURI);
                     TransformChain tc = cipherData.CipherReference.TransformChain;
+                    if (!Utils.GetLeaveCipherValueUnchecked() && tc == null) {
+                        throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UriNotSupported"));
+                    }
                     decInputStream = tc.TransformToOctetStream(inputStream, m_xmlResolver, baseUri);
                 } else {
                     DownloadCipherValue(cipherData, out inputStream, out decInputStream, out response);
@@ -376,7 +395,10 @@ namespace System.Security.Cryptography.Xml
                 if (key == null)
                     throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_MissingDecryptionKey"));
 
-                SymmetricAlgorithm symAlg = (SymmetricAlgorithm) CryptoConfig.CreateFromName(symmetricAlgorithmUri);
+                SymmetricAlgorithm symAlg = Utils.CreateFromName<SymmetricAlgorithm>(symmetricAlgorithmUri);
+                if (symAlg == null) {
+                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_MissingAlgorithm"));
+                }
                 symAlg.Key = key;
                 return symAlg;
             }
@@ -405,6 +427,9 @@ namespace System.Security.Cryptography.Xml
                     string keyName = kiName.Value;
                     Object kek = m_keyNameMapping[keyName];
                     if (kek != null) {
+                        if (!Utils.GetLeaveCipherValueUnchecked() && (encryptedKey.CipherData == null || encryptedKey.CipherData.CipherValue == null)) {
+                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_MissingAlgorithm"));
+                        }
                         // kek is either a SymmetricAlgorithm or an RSA key, otherwise, we wouldn't be able to insert it in the hash table
                         if (kek is SymmetricAlgorithm)
                             return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, (SymmetricAlgorithm) kek);
@@ -421,6 +446,9 @@ namespace System.Security.Cryptography.Xml
                     foreach (X509Certificate2 certificate in collection) {
                         using (RSA privateKey = certificate.GetRSAPrivateKey()) {
                             if (privateKey != null) {
+                                if (!Utils.GetLeaveCipherValueUnchecked() && (encryptedKey.CipherData == null || encryptedKey.CipherData.CipherValue == null)) {
+                                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_MissingAlgorithm"));
+                                }
                                 fOAEP = (encryptedKey.EncryptionMethod != null && encryptedKey.EncryptionMethod.KeyAlgorithm == EncryptedXml.XmlEncRSAOAEPUrl);
                                 return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, privateKey, fOAEP);
                             }
@@ -456,8 +484,14 @@ namespace System.Security.Cryptography.Xml
                     byte[] encryptionKey = DecryptEncryptedKey(ek);
                     if (encryptionKey != null) {
                         // this is a symmetric algorithm for sure
-                        SymmetricAlgorithm symAlg = (SymmetricAlgorithm) CryptoConfig.CreateFromName(encryptedKey.EncryptionMethod.KeyAlgorithm);
+                        SymmetricAlgorithm symAlg = Utils.CreateFromName<SymmetricAlgorithm>(encryptedKey.EncryptionMethod.KeyAlgorithm);
+                        if (symAlg == null) {
+                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_MissingAlgorithm"));
+                        }
                         symAlg.Key = encryptionKey;
+                        if (!Utils.GetLeaveCipherValueUnchecked()  && (encryptedKey.CipherData == null || encryptedKey.CipherData.CipherValue == null)) {
+                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_MissingAlgorithm"));
+                        }
                         return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, symAlg);
                     }
                 }
@@ -507,16 +541,17 @@ namespace System.Security.Cryptography.Xml
                 EncryptedKey ek = new EncryptedKey();
                 ek.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncRSA15Url);
                 ek.KeyInfo.AddClause(new KeyInfoX509Data(certificate));
-    
+
                 // Create a random AES session key and encrypt it with the public key associated with the certificate.
-                RijndaelManaged rijn = new RijndaelManaged();
-                ek.CipherData.CipherValue = EncryptedXml.EncryptKey(rijn.Key, rsaPublicKey, false);
-    
-                // Encrypt the input element with the random session key that we've created above.
-                KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
-                ed.KeyInfo.AddClause(kek);
-                ed.CipherData.CipherValue = EncryptData(inputElement, rijn, false);
-    
+                using (Aes aes = Aes.Create()) {
+                    ek.CipherData.CipherValue = EncryptedXml.EncryptKey(aes.Key, rsaPublicKey, false);
+
+                    // Encrypt the input element with the random session key that we've created above.
+                    KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
+                    ed.KeyInfo.AddClause(kek);
+                    ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
+                }
+
                 return ed;
             }
         }
@@ -575,13 +610,16 @@ namespace System.Security.Cryptography.Xml
             ek.KeyInfo.AddClause(new KeyInfoName(keyName));
 
             // Create a random AES session key and encrypt it with the public key associated with the certificate.
-            RijndaelManaged rijn = new RijndaelManaged();
-            ek.CipherData.CipherValue = (symKey == null ? EncryptedXml.EncryptKey(rijn.Key, rsa, false) : EncryptedXml.EncryptKey(rijn.Key, symKey));
+            using (Aes aes = Aes.Create()) {
+                ek.CipherData.CipherValue = symKey == null ?
+                    EncryptedXml.EncryptKey(aes.Key, rsa, false) :
+                    EncryptedXml.EncryptKey(aes.Key, symKey);
 
-            // Encrypt the input element with the random session key that we've created above.
-            KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
-            ed.KeyInfo.AddClause(kek);
-            ed.CipherData.CipherValue = EncryptData(inputElement, rijn, false);
+                // Encrypt the input element with the random session key that we've created above.
+                KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
+                ed.KeyInfo.AddClause(kek);
+                ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
+            }
 
             return ed;
         }

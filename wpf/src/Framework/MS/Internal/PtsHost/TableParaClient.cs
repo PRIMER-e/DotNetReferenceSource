@@ -1682,7 +1682,7 @@ namespace MS.Internal.PtsHost
                     cellParaClient.ValidateVisual();
 
                     if (    fskupdCell == PTS.FSKUPDATE.fskupdNew
-                        //  PTS 
+                        //  PTS bug is a suspect here - this is a temp workaround:
                         ||  VisualTreeHelper.GetParent(cellParaClient.Visual) == null   )
                     {
                         Visual currentParent = VisualTreeHelper.GetParent(cellParaClient.Visual) as Visual;

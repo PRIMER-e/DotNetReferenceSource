@@ -1822,7 +1822,7 @@ namespace System.Data {
     }
 
     /// <summary>the auto stepped value with Int64 representation</summary>
-    /// <remarks>use unchecked behavior for Dev10 
+    /// <remarks>use unchecked behavior for Dev10 Bug 568510</remarks>
     internal sealed class AutoIncrementInt64 : AutoIncrementValue {
         /// <summary>the last returned auto incremented value</summary>
         private System.Int64 current;

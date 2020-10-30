@@ -33,10 +33,10 @@
 #define U8TU_IsError(dw)    (0 != ((dw) & 0x80000000))
 
 // NOTE: UTF-8 encoders are supposed to use the shortest possible sequence to represent a character.
-// Overlong sequences are either a 
-
-
-
+// Overlong sequences are either a bug in the UTF-8 encoder, or an attempt to use overlong data
+// as a covert channel or to circumvent security. Overlong sequences generate UCH_REPLACE instead of 
+// the character, and we flag U8TU_OVERLONG, but this is not an error.
+//
 
 // VU16_* flags returned by ValidateUTF16
 #define VU16_NONASCII        0x00000001  // Info : found non-ASCII chars

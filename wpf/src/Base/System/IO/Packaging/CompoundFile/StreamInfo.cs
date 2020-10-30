@@ -742,7 +742,7 @@ namespace System.IO.Packaging
             return;
         }
 
-        // This fixes 
+        // This fixes bug# 4947, a degenerate case of bug #5563
         private Stream CFStreamOfClone( FileAccess access )
         {
             long dummy = 0;

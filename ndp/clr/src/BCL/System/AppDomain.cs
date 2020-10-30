@@ -643,6 +643,16 @@ namespace System {
             return targetFrameworkName;
         }
 
+        [SecuritySafeCritical]
+        private void SetTargetFrameworkName(string targetFrameworkName)
+        {
+            if (!_FusionStore.CheckedForTargetFrameworkName)
+            {
+                _FusionStore.TargetFrameworkName = targetFrameworkName;
+                _FusionStore.CheckedForTargetFrameworkName = true;
+            }
+        }
+
         /// <summary>
         ///     Returns the setting of the corresponding compatibility config switch (see CreateAppDomainManager for the impact).
         /// </summary>
@@ -1853,7 +1863,8 @@ namespace System {
                                        null, // symbol store
                                        null, // evidence
                                        ref stackMark,
-                                       false,
+                                       false, // fIntrospection
+                                       false, // fSkipIntegrityCheck
                                        SecurityContextSource.CurrentAssembly);
 
         }
@@ -1869,6 +1880,7 @@ namespace System {
                                        null, // evidence
                                        ref stackMark,
                                        false, // fIntrospection
+                                       false, // fSkipIntegrityCheck
                                        SecurityContextSource.CurrentAssembly);
         }
 
@@ -1895,6 +1907,7 @@ namespace System {
                                        securityEvidence,
                                        ref stackMark,
                                        false, // fIntrospection
+                                       false, // fSkipIntegrityCheck
                                        SecurityContextSource.CurrentAssembly);
         }
 
@@ -3503,6 +3516,10 @@ namespace System {
         {
             Contract.Requires(info != null);
 
+            // Setup the fusion store so that further calls can use the information stored there
+            // Changes to info should persist to _FusionStore as this is a reference assignment
+            _FusionStore = info;
+
 #if FEATURE_FUSION
             if (oldInfo == null) {
                         
@@ -3565,11 +3582,6 @@ namespace System {
             if (info.LoaderOptimization != LoaderOptimization.NotSpecified || (oldInfo != null && info.LoaderOptimization != oldInfo.LoaderOptimization))
                 UpdateLoaderOptimization(info.LoaderOptimization);
 #endif                        
-
-
-
-            // This must be the last action taken
-            _FusionStore = info;
         }
 
         // used to package up evidence, so it can be serialized

@@ -178,11 +178,11 @@ namespace System.Threading
         private static SynchronizationContext s_threadStaticContext;
 
 		//
-		// NetCF had a 
-
-
-
-
+		// NetCF had a bug where SynchronizationContext.SetThreadStaticContext would set the SyncContext for every thread in the process.  
+		// This was because they stored the value in a regular static field (NetCF has no support for ThreadStatic fields).  This was fixed in 
+		// Mango, but some apps built against pre-Mango WP7 do depend on the broken behavior.  So for those apps we need an AppDomain-wide static
+		// to hold whatever context was last set on any thread.
+		//
         private static SynchronizationContext s_appDomainStaticContext;
 
         [System.Security.SecurityCritical]

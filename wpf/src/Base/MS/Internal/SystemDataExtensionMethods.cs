@@ -31,6 +31,9 @@ namespace MS.Internal
         // identity and change notifications.  We handle these specially.
         internal abstract bool IsDataSetCollectionProperty(PropertyDescriptor pd);
 
+        // Intercept GetValue calls for certain ADO properties
+        internal abstract object GetValue(object item, PropertyDescriptor pd, bool useFollowParent);
+
         // return true if DBNull is a valid value for the given item and column.
         // The column may be specified directly by name, or indirectly by indexer: Item[arg]
         internal abstract bool DetermineWhetherDBNullIsValid(object item, string columnName, object arg);

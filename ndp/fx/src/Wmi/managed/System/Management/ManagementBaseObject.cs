@@ -180,8 +180,8 @@ namespace System.Management
     public class ManagementBaseObject : Component, ICloneable, ISerializable
     {
         // This field holds onto a WbemContext for the lifetime of the appdomain.  This should
-        // preven Fastprox.dll from unloading prematurely (WMI bugs # 2998 and # 4118 - URT 
-
+        // preven Fastprox.dll from unloading prematurely (WMI bugs # 2998 and # 4118 - URT bug # 90889)
+        // 
 
         private static WbemContext lockOnFastProx = System.Management.Instrumentation.WMICapabilities.IsWindowsXPOrHigher()?null:new WbemContext();
 
@@ -336,7 +336,7 @@ namespace System.Management
                 if ((status & 0xfffff000) == 0x80041000)
                     ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                 else
-                    Marshal.ThrowExceptionForHR(status);
+                    Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
             }
 
             return new ManagementBaseObject(theClone);
@@ -457,7 +457,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
                 ManagementPath classPath = new ManagementPath();
@@ -629,7 +629,7 @@ namespace System.Management
                         if ((status & 0xfffff000) == 0x80041000)
                             ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                         else
-                            Marshal.ThrowExceptionForHR(status);
+                            Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                     }
 
                     return objText;
@@ -656,7 +656,7 @@ namespace System.Management
                             if ((status & 0xfffff000) == 0x80041000)
                                 ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                             else
-                                Marshal.ThrowExceptionForHR(status);
+                                Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                         }
                     }
 
@@ -704,8 +704,8 @@ namespace System.Management
                 {
                     //we could wind up here if Initialize() throws (either here or inside CompareTo())
                     //Since we cannot throw from Equals() imprelemtation and it is invalid to assume
-                    //that two objects are different because they fail to initialize (this assumption causes 
-
+                    //that two objects are different because they fail to initialize (this assumption causes bug 100527)
+                    //so, we can just compare these invalid paths "by value"
 
                     if (this is ManagementObject && obj is ManagementObject)
                     {
@@ -802,7 +802,7 @@ namespace System.Management
                 else if ((status & 0xfffff000) == 0x80041000)
                     ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                 else if (status < 0)
-                    Marshal.ThrowExceptionForHR(status);
+                    Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
             }
             
             return result;
@@ -828,7 +828,7 @@ namespace System.Management
                     if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
 
                 if (val is System.DBNull)
@@ -850,7 +850,7 @@ namespace System.Management
                 if ((status & 0xfffff000) == 0x80041000)
                     ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                 else
-                    Marshal.ThrowExceptionForHR(status);
+                    Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
             }
             
             return ((int)val == (int)tag_WBEM_GENUS_TYPE.WBEM_GENUS_CLASS);

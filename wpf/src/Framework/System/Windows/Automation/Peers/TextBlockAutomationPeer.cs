@@ -65,10 +65,17 @@ namespace System.Windows.Automation.Peers
         /// </summary>
         override protected bool IsControlElementCore()
         {
-            // Return true if TextBlock is not part of a ControlTemplate
+            // Return false if TextBlock is part of a ControlTemplate, otherwise return the base method
             TextBlock tb = (TextBlock)Owner;
             DependencyObject templatedParent = tb.TemplatedParent;
-            return templatedParent == null || templatedParent is ContentPresenter; // If the templatedParent is a ContentPresenter, this TextBlock is generated from a DataTemplate
+
+            // If the templatedParent is a ContentPresenter, this TextBlock is generated from a DataTemplate
+            if (templatedParent == null || templatedParent is ContentPresenter)
+            {
+                return base.IsControlElementCore();
+            }
+
+            return false;
         }
     }
 }

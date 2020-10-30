@@ -1758,15 +1758,15 @@ namespace System.Windows.Media
         private CachedMetrics DrawAndCalculateMetrics(DrawingContext dc, Point drawingOffset, bool getBlackBoxMetrics)
         {
             // The calculation for FormattedText.Width and Overhangs was wrong for Right and Center alignment.
-            // Thus the fix of this 
-
-
-
-
-
-
-
-
+            // Thus the fix of this bug is based on the fact that FormattedText always had 0 indent and no 
+            // TextMarkerProperties. These assumptions enabled us to remove TextLine.Start from the calculation 
+            // of the Width. TextLine.Start caused the calculation of FormattedText to be incorrect in cases 
+            // of Right and Center alignment because it took on -ve values when ParagraphWidth was 0 (which indicates infinite width). 
+            // This was a result of how TextFormatter interprets TextLine.Start. In the simplest case, it computes 
+            // TextLine.Start as Paragraph Width - Line Width (for Right alignment).
+            // So, the following two Debug.Asserts verify that the assumptions over which the bug fix was made are still valid 
+            // and not changed by adding features to FormattedText. Incase these assumptions were invalidated, the bug fix 
+            // should be revised and it will possibly involve alot of changes elsewhere.
             Debug.Assert(_defaultParaProps.Indent == 0.0, "FormattedText was assumed to always have 0 indent. This assumption has changed and thus the calculation of Width and Overhangs should be revised.");
             Debug.Assert(_defaultParaProps.TextMarkerProperties == null, "FormattedText was assumed to always have no TextMarkerProperties. This assumption has changed and thus the calculation of Width and Overhangs should be revised.");
             CachedMetrics metrics = new CachedMetrics();

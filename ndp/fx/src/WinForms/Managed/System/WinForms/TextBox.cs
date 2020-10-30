@@ -440,10 +440,10 @@ namespace System.Windows.Forms {
             Size scrollBarPadding = Size.Empty;
 
             if(Multiline && !WordWrap && (ScrollBars & ScrollBars.Horizontal) != 0) {
-                scrollBarPadding.Height += SystemInformation.HorizontalScrollBarHeight;
+                scrollBarPadding.Height += SystemInformation.GetHorizontalScrollBarHeightForDpi(deviceDpi);
             }
             if(Multiline && (ScrollBars & ScrollBars.Vertical) != 0) {
-                scrollBarPadding.Width += SystemInformation.VerticalScrollBarWidth;
+                scrollBarPadding.Width += SystemInformation.GetVerticalScrollBarWidthForDpi(deviceDpi);
             }
 
             // Subtract the scroll bar padding before measuring

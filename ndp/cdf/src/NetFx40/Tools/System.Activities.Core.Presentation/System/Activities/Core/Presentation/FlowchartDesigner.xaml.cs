@@ -1631,9 +1631,9 @@ namespace System.Activities.Core.Presentation
 
                         // the external item may come from other panel (sequence) which is already given
                         // a size by its previous layout panel.  That might give an inaccurate size to the
-                        // dropped object (i.e. 
-
-
+                        // dropped object (i.e. Bug 198290).  Therefore, when the object is dropped externally
+                        // the FC should erases its previous hint size, forcing the FC to recompute an appropriate
+                        // size based on the workflowelementview size.
                         VirtualizedContainerService.SetHintSize(droppedModelItem.GetCurrentValue(), null);
                     }
                     //Tool box drop.

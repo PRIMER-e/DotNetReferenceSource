@@ -320,7 +320,13 @@ namespace System.Windows.Forms {
 
                         case AutoScaleMode.Dpi:
                             // Screen Dpi
-                            currentAutoScaleDimensions = WindowsGraphicsCacheManager.MeasurementGraphics.DeviceContext.Dpi;
+                            if (DpiHelper.EnableDpiChangedMessageHandling) {
+                                currentAutoScaleDimensions = new SizeF((float)deviceDpi, (float)deviceDpi);
+                            } 
+                            else {
+                                // this DPI value comes from the primary monitor.
+                                currentAutoScaleDimensions = WindowsGraphicsCacheManager.MeasurementGraphics.DeviceContext.Dpi;
+                            }
                             break;
 
                         default:
@@ -475,10 +481,10 @@ namespace System.Windows.Forms {
                 }
                 if (selected && this.activeControl != control)
                 {
-                    // 
-
-
-
+                    // Bug 847648.
+                    // Add the check. If it is set to true, do not call into FocusActiveControlInternal().
+                    // The TOP MDI window could be gone and CreateHandle method will fail 
+                    // because it try to create a parking window Parent for the MDI children 
                     if (!this.activeControl.Parent.IsTopMdiWindowClosing) 
                     {                 
                         FocusActiveControlInternal();
@@ -703,6 +709,20 @@ namespace System.Windows.Forms {
             return LayoutEngine.GetPreferredSize(this, proposedSize - totalPadding) + totalPadding;
         }
 
+        internal override Rectangle GetToolNativeScreenRectangle() {
+            if (this.GetTopLevel()) {
+                // Get window's client rectangle (i.e. without chrome) expressed in screen coordinates
+                NativeMethods.RECT clientRectangle = new NativeMethods.RECT();
+                UnsafeNativeMethods.GetClientRect(new HandleRef(this, this.Handle), ref clientRectangle);
+                NativeMethods.POINT topLeftPoint = new NativeMethods.POINT(0, 0);
+                UnsafeNativeMethods.ClientToScreen(new HandleRef(this, this.Handle), topLeftPoint);
+                return new Rectangle(topLeftPoint.x, topLeftPoint.y, clientRectangle.right, clientRectangle.bottom);
+            }
+            else {
+                return base.GetToolNativeScreenRectangle();
+            }
+        }
+
         /// <devdoc>
         ///     This method calcuates the auto scale dimensions based on the
         ///     control's current font.
@@ -820,6 +840,11 @@ namespace System.Windows.Forms {
         internal override void OnChildLayoutResuming(Control child, bool performLayout) {
             base.OnChildLayoutResuming(child, performLayout);
 
+            // do not scale children if AutoScaleMode is set to Dpi
+            if (DpiHelper.EnableSinglePassScalingOfDpiForms && (AutoScaleMode == AutoScaleMode.Dpi)) {
+                return;
+            }
+            
             // We need to scale children before their layout engines get to them.
             // We don't have a lot of opportunity for that because the code
             // generator always generates a PerformLayout() right after a
@@ -874,6 +899,25 @@ namespace System.Windows.Forms {
             }
 
             base.OnFontChanged(e);
+        }
+
+        /// <include file='doc\ContainerControl.uex' path='docs/doc[@for="ContainerControl.FormDpiChanged"]/*' />
+        /// <devdoc>
+        ///   This is called by the top level form to clear the current autoscale cache.
+        /// </devdoc>
+        internal void FormDpiChanged(float factor) {
+            Debug.Assert(this is Form);
+
+            currentAutoScaleDimensions = SizeF.Empty;
+
+            SuspendAllLayout(this);
+            SizeF factorSize = new SizeF(factor, factor);
+            try {
+                ScaleChildControls(factorSize, factorSize, this, true);
+            }
+            finally {
+                ResumeAllLayout(this, false);
+            }
         }
 
         /// <devdoc>
@@ -1847,7 +1891,7 @@ namespace System.Windows.Forms {
                     // Microsoft: Do not raise GotFocus event since the focus
                     //         is given to the visible ActiveControl
                     if (!ActiveControl.Visible) {
-                        OnGotFocus(EventArgs.Empty);
+                        this.InvokeGotFocus(this, EventArgs.Empty);
                     }
                     FocusActiveControlInternal();
                 }

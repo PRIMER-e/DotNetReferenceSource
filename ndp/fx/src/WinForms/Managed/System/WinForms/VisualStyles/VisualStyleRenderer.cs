@@ -48,7 +48,15 @@ namespace System.Windows.Forms.VisualStyles {
             SystemEvents.UserPreferenceChanging += new UserPreferenceChangingEventHandler(OnUserPreferenceChanging);
         }
 
-
+        /// <summary>
+        /// Check if visual styles is supported for client area.
+        /// </summary>
+        private static bool AreClientAreaVisualStylesSupported {
+            get {
+                return (VisualStyleInformation.IsEnabledByUser &&
+                   ((Application.VisualStyleState & VisualStyleState.ClientAreaEnabled) == VisualStyleState.ClientAreaEnabled));
+            }
+        }
         /// <include file='doc\VisualStyleRenderer.uex' path='docs/doc[@for="VisualStyleRenderer.IsSupported"]/*' />
         /// <devdoc>
         ///    <para>
@@ -60,11 +68,7 @@ namespace System.Windows.Forms.VisualStyles {
         /// </devdoc>
         public static bool IsSupported {
             get {
-                bool supported =  (VisualStyleInformation.IsEnabledByUser &&
-                   (Application.VisualStyleState == VisualStyleState.ClientAreaEnabled ||
-                    Application.VisualStyleState == VisualStyleState.ClientAndNonClientAreasEnabled));
-
-                
+                bool supported = AreClientAreaVisualStylesSupported;
                 if (supported) {
                     // VSWhidbey #171915: In some cases, this check isn't enough, since the theme handle creation
                     // could fail for some other reason. Try creating a theme handle here - if successful, return true,
@@ -97,7 +101,7 @@ namespace System.Windows.Forms.VisualStyles {
             return IsCombinationDefined(element.ClassName, element.Part);
         }
 
-        private static bool IsCombinationDefined(string className, int part) {
+        internal static bool IsCombinationDefined(string className, int part) {
             bool returnVal = false;
 
             if (!IsSupported) {
@@ -269,6 +273,10 @@ namespace System.Windows.Forms.VisualStyles {
         ///    </para>
         /// </devdoc>
         public void DrawBackground(IDeviceContext dc, Rectangle bounds) {
+            DrawBackground(dc, bounds, IntPtr.Zero);
+        }
+
+        internal void DrawBackground(IDeviceContext dc, Rectangle bounds, IntPtr hWnd) {
             if (dc == null) {
                 throw new ArgumentNullException("dc");
             }
@@ -278,7 +286,14 @@ namespace System.Windows.Forms.VisualStyles {
 
             using( WindowsGraphicsWrapper wgr = new WindowsGraphicsWrapper( dc, AllGraphicsProperties ) ){
                 HandleRef hdc = new HandleRef(wgr, wgr.WindowsGraphics.DeviceContext.Hdc);
-                lastHResult = SafeNativeMethods.DrawThemeBackground( new HandleRef( this, Handle ), hdc, part, state, new NativeMethods.COMRECT( bounds ), null );
+                if (IntPtr.Zero != hWnd) {
+                    using (ThemeHandle hTheme = ThemeHandle.Create(_class, true, new HandleRef(null, hWnd))) {
+                        lastHResult = SafeNativeMethods.DrawThemeBackground(new HandleRef(this, hTheme.NativeHandle), hdc, part, state, new NativeMethods.COMRECT(bounds), null);
+                    }
+                } 
+                else {
+                    lastHResult = SafeNativeMethods.DrawThemeBackground(new HandleRef(this, Handle), hdc, part, state, new NativeMethods.COMRECT(bounds), null);
+                }
             }
         }
 
@@ -289,6 +304,10 @@ namespace System.Windows.Forms.VisualStyles {
         ///    </para>
         /// </devdoc>
         public void DrawBackground(IDeviceContext dc, Rectangle bounds, Rectangle clipRectangle) {
+            DrawBackground(dc, bounds, clipRectangle, IntPtr.Zero);
+        }
+
+        internal void DrawBackground(IDeviceContext dc, Rectangle bounds, Rectangle clipRectangle, IntPtr hWnd) {
             if( dc == null ){
                 throw new ArgumentNullException("dc");
             }
@@ -301,7 +320,14 @@ namespace System.Windows.Forms.VisualStyles {
 
             using( WindowsGraphicsWrapper wgr = new WindowsGraphicsWrapper( dc, AllGraphicsProperties ) ) {
                 HandleRef hdc = new HandleRef( wgr, wgr.WindowsGraphics.DeviceContext.Hdc );
-                lastHResult = SafeNativeMethods.DrawThemeBackground( new HandleRef( this, Handle ), hdc, part, state, new NativeMethods.COMRECT( bounds ), new NativeMethods.COMRECT( clipRectangle ) );
+                if (IntPtr.Zero != hWnd) {
+                    using (ThemeHandle hTheme = ThemeHandle.Create(_class, true, new HandleRef(null, hWnd))) {
+                        lastHResult = SafeNativeMethods.DrawThemeBackground(new HandleRef(this, hTheme.NativeHandle), hdc, part, state, new NativeMethods.COMRECT(bounds), new NativeMethods.COMRECT(clipRectangle));
+                    }
+                } 
+                else {
+                    lastHResult = SafeNativeMethods.DrawThemeBackground(new HandleRef(this, Handle), hdc, part, state, new NativeMethods.COMRECT(bounds), new NativeMethods.COMRECT(clipRectangle));
+                }
             }
         }
 
@@ -386,7 +412,7 @@ namespace System.Windows.Forms.VisualStyles {
             }
 
             // VSWhidbey #282742: DrawThemeIcon currently seems to do nothing, but still return S_OK. As a workaround,
-            // we call DrawImage on the graphics object itself for now. A 
+            // we call DrawImage on the graphics object itself for now. A bug has been opened in Windows OS Bugs on this.
 
             //int returnVal = NativeMethods.S_FALSE;
             //using( WindowsGraphicsWrapper wgr = new WindowsGraphicsWrapper( dc, AllGraphicsProperties ) ) {
@@ -709,20 +735,31 @@ namespace System.Windows.Forms.VisualStyles {
         ///    </para>
         /// </devdoc>
         public Size GetPartSize(IDeviceContext dc, ThemeSizeType type) {
-            if( dc == null ){
+            return GetPartSize(dc, type, IntPtr.Zero);
+        }
+
+        internal Size GetPartSize(IDeviceContext dc, ThemeSizeType type, IntPtr hWnd) {
+            if (dc == null) {
                 throw new ArgumentNullException("dc");
             }
             
-            //valid values are 0x0 to 0x2
-            if (!ClientUtils.IsEnumValid(type, (int)type, (int)ThemeSizeType.Minimum, (int)ThemeSizeType.Draw)){
+            // valid values are 0x0 to 0x2
+            if (!ClientUtils.IsEnumValid(type, (int)type, (int)ThemeSizeType.Minimum, (int)ThemeSizeType.Draw)) {
                 throw new InvalidEnumArgumentException("type", (int)type, typeof(ThemeSizeType));
             }
 
             NativeMethods.SIZE size = new NativeMethods.SIZE();
 
-            using( WindowsGraphicsWrapper wgr = new WindowsGraphicsWrapper( dc, AllGraphicsProperties ) ) {
+            using (WindowsGraphicsWrapper wgr = new WindowsGraphicsWrapper( dc, AllGraphicsProperties)) {
                 HandleRef hdc = new HandleRef( wgr, wgr.WindowsGraphics.DeviceContext.Hdc );
-                lastHResult = SafeNativeMethods.GetThemePartSize( new HandleRef( this, Handle ), hdc, part, state, null, type, size );
+                if (DpiHelper.EnableDpiChangedMessageHandling && (IntPtr.Zero != hWnd)) {
+                    using (ThemeHandle hTheme = ThemeHandle.Create(_class, true, new HandleRef(null, hWnd))) {
+                        lastHResult = SafeNativeMethods.GetThemePartSize(new HandleRef(this, hTheme.NativeHandle), hdc, part, state, null, type, size);
+                    }
+                } 
+                else {
+                    lastHResult = SafeNativeMethods.GetThemePartSize( new HandleRef(this, Handle), hdc, part, state, null, type, size);
+                }
             }
 
             return new Size(size.cx, size.cy);
@@ -1017,20 +1054,16 @@ namespace System.Windows.Forms.VisualStyles {
             if (themeHandles != null) {
                 string[] classNames = new string[themeHandles.Keys.Count];
                 themeHandles.Keys.CopyTo(classNames, 0);
-
-                // We don't call IsSupported here, since that could cause RefreshCache to be called again,
-                // leading to stack overflow.
-                bool isSupported = (VisualStyleInformation.IsEnabledByUser &&
-                   (Application.VisualStyleState == VisualStyleState.ClientAreaEnabled ||
-                    Application.VisualStyleState == VisualStyleState.ClientAndNonClientAreasEnabled));
-                
+                                
                 foreach (string className in classNames) {
                     tHandle = (ThemeHandle) themeHandles[className];
                     if (tHandle != null) {
                         tHandle.Dispose();
                     }
 
-                    if (isSupported) {
+                    // We don't call IsSupported here, since that could cause RefreshCache to be called again,
+                    // leading to stack overflow.
+                    if (AreClientAreaVisualStylesSupported) {
                         tHandle = ThemeHandle.Create(className, false);
                         if (tHandle != null) {
                             themeHandles[className] = tHandle;
@@ -1093,12 +1126,16 @@ namespace System.Windows.Forms.VisualStyles {
             }
 
             public static ThemeHandle Create(string className, bool throwExceptionOnFail) {
-                // HThemes don't require an HWND, so just use a null one
+                return Create(className, throwExceptionOnFail, new HandleRef(null, IntPtr.Zero));
+            }
+
+            internal static ThemeHandle Create(string className, bool throwExceptionOnFail, HandleRef hWndRef) {
+                // HThemes require an HWND when display scaling is different between monitors.
                 IntPtr hTheme = IntPtr.Zero;
 
                 try
                 {
-                    hTheme = SafeNativeMethods.OpenThemeData(new HandleRef(null, IntPtr.Zero), className);
+                    hTheme = SafeNativeMethods.OpenThemeData(hWndRef, className);
                 }
                 catch (Exception e)
                 {

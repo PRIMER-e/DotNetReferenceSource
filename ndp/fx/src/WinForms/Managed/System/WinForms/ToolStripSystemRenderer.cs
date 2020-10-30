@@ -147,7 +147,12 @@ namespace System.Windows.Forms {
                     state = ToolBarState.Disabled;
                 }
                 if (item is ToolStripButton && ((ToolStripButton)item).Checked) {
-                    state = ToolBarState.Checked;
+                    if (((ToolStripButton)item).Selected && AccessibilityImprovements.Level1) {
+                        state = ToolBarState.Hot; // we'd prefer HotChecked here, but Color Theme uses the same color as Checked
+                    }
+                    else {
+                        state = ToolBarState.Checked;
+                    }
                 }
                 else if (item.Pressed) {
                     state = ToolBarState.Pressed;
@@ -373,7 +378,7 @@ namespace System.Windows.Forms {
                     if (item.BackgroundImage != null) {
                         ControlPaint.DrawBackgroundImage(g, item.BackgroundImage, item.BackColor, item.BackgroundImageLayout, item.ContentRectangle, item.ContentRectangle);
                     }
-                    else if (item.RawBackColor != Color.Empty) {
+                    else if (item.RawBackColor != Color.Empty) {                        
                         FillBackground(g, item.ContentRectangle, item.BackColor);
                     }
                     // Toplevel menu items do 3D borders.
@@ -391,20 +396,35 @@ namespace System.Windows.Forms {
                        fillRect.Width -= 3; //its already 1 away from the right edge
                    }
 
-                   if (item.Selected || item.Pressed) {
-                        g.FillRectangle(SystemBrushes.Highlight, fillRect);
-                   }
-                   else {
-                       if (item.BackgroundImage != null) {
-                          ControlPaint.DrawBackgroundImage(g, item.BackgroundImage, item.BackColor, item.BackgroundImageLayout, item.ContentRectangle, fillRect);
-                       }
-                       else if (!ToolStripManager.VisualStylesEnabled && (item.RawBackColor != Color.Empty)) {
-                          FillBackground(g, fillRect, item.BackColor);
-                       }
-                   }
+                    if (item.Selected || item.Pressed) {
+                        // VSO 382373 - Legacy behavior is to always paint the menu item background.
+                        // The correct behavior is to only paint the background if the menu item is
+                        // enabled.
+                        if (!AccessibilityImprovements.Level1 || item.Enabled) {
+                            g.FillRectangle(SystemBrushes.Highlight, fillRect);
+                        }
+
+                        if (AccessibilityImprovements.Level1) {
+                            Color borderColor = ToolStripManager.VisualStylesEnabled ?
+                                SystemColors.Highlight : ProfessionalColors.MenuItemBorder;
+
+                            // draw selection border - always drawn regardless of Enabled.
+                            using (Pen p = new Pen(borderColor)) {
+                                g.DrawRectangle(p, bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
+                            }
+                        }
+                    }
+                    else {
+                        if (item.BackgroundImage != null) {
+                            ControlPaint.DrawBackgroundImage(g, item.BackgroundImage, item.BackColor, item.BackgroundImageLayout, item.ContentRectangle, fillRect);
+                        }
+                        else if (!ToolStripManager.VisualStylesEnabled && (item.RawBackColor != Color.Empty)) {
+                            FillBackground(g, fillRect, item.BackColor);
+                        }
+                    }
                 }
-     
-           }
+
+            }
            
         }
         

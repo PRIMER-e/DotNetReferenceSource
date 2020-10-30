@@ -332,27 +332,32 @@ namespace MS.Internal.FontFace
         /// <summary>
         /// DevDiv:1158540
         /// Find the OS specific font family from a collection in the CompositeFont
+        /// 
+        /// DDVSO:368999
+        /// We must compare the OS in the font family against the current version.  The CompositeFont file
+        /// is in descending OS order.
         /// </summary>
         private void ParseFontFamilyCollectionElement()
         {
-            string expectedOS = (OSVersionHelper.IsOsWindows10OrGreater) 
-                ? OperatingSystemVersion.Windows10.ToString() : OperatingSystemVersion.Windows8Point1.ToString();
-
             bool foundOsSection = false;
+
+            OperatingSystemVersion fontFamilyOsVersion;
 
             while (_reader.Read())
             {
                 // Once we find a FontFamilyElement with the proper OS attribute, parse it
-                if (_reader.GetAttribute("OS") == expectedOS)
+                if (Enum.TryParse(_reader.GetAttribute("OS"), out fontFamilyOsVersion)
+                    && OSVersionHelper.IsOsVersionOrGreater(fontFamilyOsVersion))
                 {
                     foundOsSection = true;
                     ParseFontFamilyElement();
+                    return;
                 }
             }
 
             if (!foundOsSection)
             {
-                Fail(string.Format("No FontFamily element found in FontFamilyCollection that matches OS: {0}", expectedOS));
+                Fail(string.Format("No FontFamily element found in FontFamilyCollection that matches current OS or greater: {0}", OSVersionHelper.GetOsVersion().ToString()));
             }
         }
 

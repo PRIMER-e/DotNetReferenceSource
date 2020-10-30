@@ -491,6 +491,12 @@ namespace System.Windows.Forms {
         [DllImport(ExternDll.User32, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
         [ResourceExposure(ResourceScope.None)]
         public static extern bool AdjustWindowRectEx(ref NativeMethods.RECT lpRect, int dwStyle, bool bMenu, int dwExStyle);
+
+        // This API is available only starting Windows 10 RS1 
+        [DllImport(ExternDll.User32, ExactSpelling=true, CharSet=CharSet.Auto)]
+        [ResourceExposure(ResourceScope.None)]
+        public static extern bool AdjustWindowRectExForDpi(ref NativeMethods.RECT lpRect, int dwStyle, bool bMenu, int dwExStyle, uint dpi);
+
         [DllImport(ExternDll.Ole32, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
         [ResourceExposure(ResourceScope.None)]
         public static extern int DoDragDrop(IComDataObject dataObject, UnsafeNativeMethods.IOleDropSource dropSource, int allowedEffects, int[] finalEffect);
@@ -841,6 +847,31 @@ namespace System.Windows.Forms {
         [DllImportAttribute(ExternDll.User32)]
         [ResourceExposure(ResourceScope.None)]
         public static extern bool CloseDesktop(IntPtr hDesktop);
+
+        // for Windows vista to windows 8.
+        [DllImport(ExternDll.User32, SetLastError = true)]
+        [ResourceExposure(ResourceScope.None)]
+        public static extern bool SetProcessDPIAware();
+
+        // for windows 8.1 and above 
+        [DllImport(ExternDll.ShCore, SetLastError = true)]
+        [ResourceExposure(ResourceScope.None)]
+        public static extern int SetProcessDpiAwareness(NativeMethods.PROCESS_DPI_AWARENESS awareness);
+
+        // for Windows 10 version RS2 and above
+        [DllImport(ExternDll.User32, SetLastError = true)]
+        [ResourceExposure(ResourceScope.None)]
+        public static extern bool SetProcessDpiAwarenessContext(int dpiFlag);
+
+        // Available in Windows 10 version RS1 and above.
+        [DllImport(ExternDll.User32)]
+        [ResourceExposure(ResourceScope.None)]
+        public static extern int GetThreadDpiAwarenessContext();
+
+        // Available in Windows 10 version RS1 and above.
+        [DllImport(ExternDll.User32)]
+        [ResourceExposure(ResourceScope.None)]
+        public static extern bool AreDpiAwarenessContextsEqual(int dpiContextA, int dpiContextB);
 
         // Color conversion
         //

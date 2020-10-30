@@ -3941,9 +3941,9 @@ DWORD Tcp::Initialize(PSNI_PROVIDER_INFO pInfo)
 	if( WSAStartup((WORD)0x0202, &wsadata) )
 	{
 		// Failed to start up Version 2.2, let's try starting up Version 1.0
-		//
-
-
+		//Bug: 291912
+		//On WSAStartup failure, we can not use the error code returned by WSAGetLastError() since winsock context is not avaialbe yet.
+		// In this case, we use return value of WSAStartup as the error code when everthing fails.
 		if( dwError = WSAStartup((WORD)0x0101, &wsadata) )
 		{
 			// Everything failed			

@@ -30,6 +30,7 @@
 
 using System;
 using System.Collections;               // ICollection
+using System.Collections.Generic;       // List<T>
 using System.Collections.Specialized;   // HybridDictionary
 using System.ComponentModel;            // PropertyDescriptor
 using System.Diagnostics;               // Debug
@@ -156,37 +157,102 @@ namespace MS.Internal.Data
 
             HybridDictionary dict = (HybridDictionary)data;
 
-            // copy the keys into a separate array, so that later on
-            // we can change the dictionary while iterating over the keys
-            ICollection ic = dict.Keys;
-            PropertyDescriptor[] keys = new PropertyDescriptor[ic.Count];
-            ic.CopyTo(keys, 0);
-
-            for (int i=keys.Length-1; i>=0; --i)
+            if (!MS.Internal.BaseAppContextSwitches.EnableWeakEventMemoryImprovements)
             {
-                // for each key, remove dead entries in its list
-                bool removeList = purgeAll || source == null;
+                // copy the keys into a separate array, so that later on
+                // we can change the dictionary while iterating over the keys
+                ICollection ic = dict.Keys;
+                PropertyDescriptor[] keys = new PropertyDescriptor[ic.Count];
+                ic.CopyTo(keys, 0);
 
-                ValueChangedRecord record = (ValueChangedRecord)dict[keys[i]];
-
-                if (!removeList)
+                for (int i=keys.Length-1; i>=0; --i)
                 {
-                    if (record.Purge())
-                        foundDirt = true;
+                    // for each key, remove dead entries in its list
+                    bool removeList = purgeAll || source == null;
 
-                    removeList = record.IsEmpty;
-                }
+                    ValueChangedRecord record = (ValueChangedRecord)dict[keys[i]];
 
-                // if there are no more entries, remove the key
-                if (removeList)
-                {
-                    record.StopListening();
-                    if (!purgeAll)
+                    if (!removeList)
                     {
-                        dict.Remove(keys[i]);
+                        if (record.Purge())
+                            foundDirt = true;
+
+                        removeList = record.IsEmpty;
+                    }
+
+                    // if there are no more entries, remove the key
+                    if (removeList)
+                    {
+                        record.StopListening();
+                        if (!purgeAll)
+                        {
+                            dict.Remove(keys[i]);
+                        }
                     }
                 }
+
+#if WeakEventTelemetry
+                LogAllocation(ic.GetType(), 1, 12);                     // dict.Keys - Hashtable+KeyCollection
+                LogAllocation(typeof(String[]), 1, 12+ic.Count*4);      // keys
+#endif
             }
+            else
+            {
+                Debug.Assert(_toRemove.Count == 0, "to-remove list should be empty");
+
+                // enumerate the dictionary using IDE explicitly rather than
+                // foreach, to avoid allocating temporary DictionaryEntry objects
+                IDictionaryEnumerator ide = dict.GetEnumerator() as IDictionaryEnumerator;
+                while (ide.MoveNext())
+                {
+                    // for each key, remove dead entries in its list
+                    bool removeList = purgeAll || source == null;
+
+                    ValueChangedRecord record = (ValueChangedRecord)ide.Value;
+
+                    if (!removeList)
+                    {
+                        if (record.Purge())
+                            foundDirt = true;
+
+                        removeList = record.IsEmpty;
+                    }
+
+                    // if there are no more entries, remove the key
+                    if (removeList)
+                    {
+                        record.StopListening();
+                        if (!purgeAll)
+                        {
+                            _toRemove.Add((PropertyDescriptor)ide.Key);
+                        }
+                    }
+                }
+
+                // do the actual removal (outside the dictionary iteration)
+                if (_toRemove.Count > 0)
+                {
+                    foreach (PropertyDescriptor key in _toRemove)
+                    {
+                        dict.Remove(key);
+                    }
+                    _toRemove.Clear();
+                    _toRemove.TrimExcess();
+                }
+
+#if WeakEventTelemetry
+                Type enumeratorType = ide.GetType();
+                if (enumeratorType.Name.IndexOf("NodeEnumerator") >= 0)
+                {
+                    LogAllocation(enumeratorType, 1, 24);                    // ListDictionary+NodeEnumerator
+                }
+                else
+                {
+                    LogAllocation(enumeratorType, 1, 36);                    // Hashtable+HashtableEnumerator
+                }
+#endif
+            }
+
 
             // if there are no more listeners at all, remove the entry from
             // the main table
@@ -329,6 +395,8 @@ namespace MS.Internal.Data
 
         #endregion Private Methods
 
+        List<PropertyDescriptor> _toRemove = new List<PropertyDescriptor>();
+
         #region ValueChangedRecord
 
         private class ValueChangedRecord
@@ -351,7 +419,26 @@ namespace MS.Internal.Data
 
             public bool IsEmpty
             {
-                get { return _listeners.IsEmpty; }
+                get
+                {
+                    bool result = _listeners.IsEmpty;
+                    if (!result && HasIgnorableListeners)
+                    {
+                        // if all the remaining listeners are "ignorable",
+                        // treat the list as empty
+                        result = true;
+                        for (int i=0, n=_listeners.Count; i<n; ++i)
+                        {
+                            Listener listener = _listeners.GetListener(i);
+                            if (!IsIgnorable(listener.Target))
+                            {
+                                result = false;
+                                break;
+                            }
+                        }
+                    }
+                    return result;
+                }
             }
 
             // add a listener
@@ -365,6 +452,10 @@ namespace MS.Internal.Data
                 if (handler != null)
                 {
                     _listeners.AddHandler(handler);
+                    if (!HasIgnorableListeners && IsIgnorable(handler.Target))
+                    {
+                        HasIgnorableListeners = true;
+                    }
                 }
                 else
                 {
@@ -390,7 +481,7 @@ namespace MS.Internal.Data
                 }
 
                 // when the last listener goes away, remove the callback
-                if (_listeners.IsEmpty)
+                if (IsEmpty)
                 {
                     StopListening();
                 }
@@ -434,6 +525,22 @@ namespace MS.Internal.Data
                 {
                     _listeners.EndUse();
                 }
+            }
+
+            // Some listeners are used only for internal bookkeeping.  These
+            // shouldn't count as real listeners for the purpose of deciding
+            // if anyone is still listening to the change event;  otherwise
+            // we'd never release the event and we'd have a memory leak (DDVSO 297912).
+            // Call such listeners "ignorable";  the add, remove, and purge logic has
+            // special cases for ignorable listeners.  Ignorable listeners are
+            // rare, so we optimize for their absence.
+
+            private bool HasIgnorableListeners { get; set; }
+
+            private bool IsIgnorable(object target)
+            {
+                // ValueTable listens for changes from malfeasant ADO properties
+                return (target is MS.Internal.Data.ValueTable);
             }
 
             PropertyDescriptor          _pd;

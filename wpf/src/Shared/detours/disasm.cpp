@@ -7,8 +7,14 @@
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 //
 
+// Prevent min/max macros from being defeind
+// We are going to std::use numeric_limits<>::max()
+// later
+#define NOMINMAX 
+
 #include <windows.h>
 #include <limits.h>
+#include <limits>
 
 // #define DETOUR_DEBUG 1
 #define DETOURS_INTERNAL
@@ -2015,7 +2021,7 @@ LONG CDetourDis::DecodeBranch20(ULONG opcode)
 
     // Sign extend
     if (target.Sign) {
-        target.Padding2 = UINT_MAX;
+        target.Padding2 = std::numeric_limits<decltype(Branch20Target::Padding2)>::max();
     }
 
     return (LONG&)target;
@@ -2054,7 +2060,7 @@ LONG CDetourDis::DecodeBranch24(ULONG opcode, BOOL& fLink)
 
     // Sign extend
     if (target.Sign) {
-        target.Padding2 = UINT_MAX;
+        target.Padding2 = std::numeric_limits<decltype(Branch24Target::Padding2)>::max();
     }
 
     return (LONG&)target;

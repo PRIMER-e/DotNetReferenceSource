@@ -26,8 +26,8 @@ using System.Security;
 using System.Security.Permissions;
 using System.IO;
 
-using SR=MS.Internal.PresentationCore.SR;
-using SRID=MS.Internal.PresentationCore.SRID;
+using SR = MS.Internal.PresentationCore.SR;
+using SRID = MS.Internal.PresentationCore.SRID;
 
 #pragma warning disable 1634, 1691  // suppressing PreSharp warnings
 
@@ -249,6 +249,7 @@ namespace System.Windows.Interop
         {
             Initialize(parameters);
         }
+
         /// <summary>
         ///    HwndSource Ctor
         /// </summary>
@@ -263,6 +264,7 @@ namespace System.Windows.Interop
         {
             _mouse = new SecurityCriticalDataClass<HwndMouseInputProvider>(new HwndMouseInputProvider(this));
             _keyboard = new SecurityCriticalDataClass<HwndKeyboardInputProvider>(new HwndKeyboardInputProvider(this));
+
             _layoutHook = new HwndWrapperHook(LayoutFilterMessage);
             _inputHook = new HwndWrapperHook(InputFilterMessage);
             _hwndTargetHook = new HwndWrapperHook(HwndTargetFilterMessage);
@@ -316,8 +318,6 @@ namespace System.Windows.Interop
                                        wrapperHooks);
 
             _hwndTarget = new HwndTarget(_hwndWrapper.Handle);
-            //_hwndTarget.ColorKey = parameters.ColorKey;
-            //_hwndTarget.Opacity = parameters.Opacity;
             _hwndTarget.UsesPerPixelOpacity = parameters.EffectivePerPixelOpacity;
             if(_hwndTarget.UsesPerPixelOpacity)
             {
@@ -333,7 +333,7 @@ namespace System.Windows.Interop
 
             _adjustSizingForNonClientArea = parameters.AdjustSizingForNonClientArea;
             _treatAncestorsAsNonClientArea = parameters.TreatAncestorsAsNonClientArea;
-            
+
             // Listen to the UIContext.Disposed event so we can clean up.
             // The HwndTarget cannot work without a MediaContext which
             // is disposed when the UIContext is disposed.  So we need to
@@ -348,7 +348,24 @@ namespace System.Windows.Interop
             // ourselves if the HWND is destroyed out from underneath us.
             _hwndWrapper.Disposed += new EventHandler(OnHwndDisposed);
 
-            _stylus = new SecurityCriticalDataClass<HwndStylusInputProvider>(new HwndStylusInputProvider(this));
+            // DDVSO:221075
+            // HwndStylusInputProvider must be initialized after _hwndWrapper as the wrapper
+            // is used in setting up PenContexts for the Wisp based Stylus stack.
+            // If stylus and touch are disabled, simply do not instantiate the provider.
+            // This will prevent any HWND from being registered in StylusLogic and therefore
+            // the stack will never receive input.
+            if (StylusLogic.IsStylusAndTouchSupportEnabled)
+            {
+                // Choose between Wisp and Pointer stacks
+                if (StylusLogic.IsPointerStackEnabled)
+                {
+                    _stylus = new SecurityCriticalDataClass<IStylusInputProvider>(new HwndPointerInputProvider(this));
+                }
+                else
+                {
+                    _stylus = new SecurityCriticalDataClass<IStylusInputProvider>(new HwndStylusInputProvider(this));
+                }
+            }
 
             // WM_APPCOMMAND events are handled thru this.
             _appCommand = new SecurityCriticalDataClass<HwndAppCommandInputProvider>(new HwndAppCommandInputProvider(this));
@@ -435,7 +452,7 @@ namespace System.Windows.Interop
             SecurityHelper.DemandUIWindowPermission();
 
             //this.VerifyAccess();
-            
+
             _hooks -= hook;
             if(_hooks == null)
             {
@@ -478,20 +495,108 @@ namespace System.Windows.Interop
         }
 
         /// <summary>
+        /// Change DPI per info in <paramref name="e"/>
+        /// </summary>
+        internal void ChangeDpi(HwndDpiChangedAfterParentEventArgs e)
+        {
+            OnDpiChangedAfterParent(e);
+        }
+
+        /// <summary>
         ///     Announces when the DPI is going to change for the window. If the user handles this event,
         ///     WPF does not scale any visual.
         /// </summary>
         /// <SecurityNote>
         ///     Critical: This code accesses critical data *hwndTarget*
+        ///     Safe: Does not expose Critical data to caller
         /// </SecurityNote>
-        [SecurityCritical]
+        [SecuritySafeCritical]
         protected virtual void OnDpiChanged(HwndDpiChangedEventArgs e)
         {
             DpiChanged?.Invoke(this, e);
 
             if (!e.Handled)
             {
-                _hwndTarget?.OnMonitorDPIChanged(e.SuggestedRect, e.NewDpi.PixelsPerInchX, e.NewDpi.PixelsPerInchY);
+                _hwndTarget?.OnDpiChanged(e);
+
+                // New world transform has been set-up by HwndTarget
+                // set the layouts size again to account for this
+                if (IsLayoutActive() == true)
+                {
+                    // Call the helper method SetLayoutSize to set Layout's size
+                    // We may already be inside a call to SetLayoutSize - schedule another call
+                    // asynchronously
+                    this.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SetLayoutSize));
+
+                    // Post the firing of ContentRendered as Input priority work item so that ContentRendered will be
+                    // fired after render query empties.
+                    this.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new DispatcherOperationCallback(FireContentRendered), this);
+                }
+                else
+                {
+                    // Even though layout won't run (the root visual is either null or not
+                    // a UIElement), the hit-test results will certainly have changed.
+                    InputManager.SafeCurrentNotifyHitTestInvalidated();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Announces that the DPI for a window is going to change.
+        /// </summary>
+        /// <remarks>
+        /// This method only applies when the root-visual HWND has WS_CHILD, i.e.,
+        /// when a WPF window/control is parented under another HWND (native window, or a Microsoft control),
+        /// it will only receive WM_DPICHANGED_AFTERPARENT (and WM_DPICHANTED_BEFOREPARENT), and
+        /// it will NOT receive WM_DPICHANGED.
+        /// This method is called in response to WM_DPICHANGED_AFTERPARENT, and it does not
+        /// receive any data as part of the Window Message (unlike WM_DPICHANGED, which receives
+        /// the suggested rectangle for the window).
+        /// We calculate the current client rect size (by asking <see cref="_hwndTarget"/>),
+        /// and then use that rect as a proxy for the "suggested rectangle" when notifying listeners
+        /// of DPI change via the <see cref="DpiChanged"/> event.
+        /// </remarks>
+        /// <securitynote>
+        /// Critical: Accesses <see cref="_hwndTarget"/>
+        /// Safe: Does not expose Critical data to callers
+        /// </securitynote>
+        [SecuritySafeCritical]
+        private void OnDpiChangedAfterParent(HwndDpiChangedAfterParentEventArgs e)
+        {
+            if (_hwndTarget != null)
+            {
+                var dpiChangedEventArgs = (HwndDpiChangedEventArgs)e;
+                DpiChanged?.Invoke(this, dpiChangedEventArgs);
+                if (!dpiChangedEventArgs.Handled)
+                {
+                    _hwndTarget?.OnDpiChangedAfterParent(e);
+                }
+
+                // New world transform has been set-up by HwndTarget
+                // Set/update the layout size again to account for this.
+                //
+                // This should be called regardless of whether it was WPF
+                // or user code that handled the DpiChanged event. Presumably,
+                // whichever code handles the DPI changes set up updated
+                // window sizes etc. in screen/client coordinates, and now
+                // we must adapt and update the corresponding layout sizes as well.
+                if (IsLayoutActive() == true)
+                {
+                    // Call the helper method SetLayoutSize to set Layout's size
+                    // We may already be inside a call to SetLayoutSize - schedule another call
+                    // asynchronously
+                    this.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(SetLayoutSize));
+
+                    // Post the firing of ContentRendered as Input priority work item so that ContentRendered will be
+                    // fired after render query empties.
+                    this.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new DispatcherOperationCallback(FireContentRendered), this);
+                }
+                else
+                {
+                    // Even though layout won't run (the root visual is either null or not
+                    // a UIElement), the hit-test results will certainly have changed.
+                    InputManager.SafeCurrentNotifyHitTestInvalidated();
+                }
             }
         }
 
@@ -620,6 +725,15 @@ namespace System.Windows.Interop
                     {
                         _keyboard.Value.OnRootChanged(oldRoot, _rootVisual.Value);
                     }
+                }
+
+                // when automation listeners are present, ensure that the top-level
+                // peer is on the layout manager's AutomationEvents list.
+                // [See <see cref="EventMap.NotifySources"/> for full discussion.  This is part (a)]
+                if (value != null && _hwndTarget != null && !_hwndTarget.IsDisposed &&
+                    MS.Internal.Automation.EventMap.HasListeners)
+                {
+                    _hwndTarget.EnsureAutomationPeer(value);
                 }
             }
         }
@@ -781,7 +895,7 @@ namespace System.Windows.Interop
             if(IsInExclusiveMenuMode)
             {
                 Debug.Assert(_weakMenuModeMessageHandler != null);
-                
+
                 // Unsubscribe the special menu-mode handler since we don't need to go first anymore.
                 _weakMenuModeMessageHandler.Dispose();
                 _weakMenuModeMessageHandler = null;
@@ -794,7 +908,7 @@ namespace System.Windows.Interop
         }
 
         internal bool IsInExclusiveMenuMode{get; private set;}
-        
+
         /// <summary>
         ///     Event invoked when the layout causes the HwndSource to resize automatically.
         /// </summary>
@@ -880,7 +994,7 @@ namespace System.Windows.Interop
         /// This shows the system menu for the top level window that this HwndSource is in.
         /// </summary>
         /// <SecurityNote>
-        ///     Critical: Accesses GetAncestor & PostMessage.  This method is deemed inherently unsafe 
+        ///     Critical: Accesses GetAncestor & PostMessage.  This method is deemed inherently unsafe
         ///               because opening the system menu will eat user input.
         /// </SecurityNote>
         [SecurityCritical]
@@ -1208,76 +1322,6 @@ namespace System.Windows.Interop
             }
             rootUIElement.UpdateLayout();
         }
-
-        // /// <summary>
-        // ///     Specifies the color to display as transparent.
-        // /// </summary>
-        // /// <remarks>
-        // ///     Use null to indicate that no color should be transparent.
-        // /// </remarks>
-        // public Nullable<Color> ColorKey
-        // {
-        //     get
-        //     {
-        //         CheckDisposed(true);
-        //
-        //         HwndTarget hwndTarget = CompositionTarget; // checks for disposed
-        //         if(_hwndTarget != null)
-        //         {
-        //             return _hwndTarget.ColorKey;
-        //         }
-        //         else
-        //         {
-        //             return null;
-        //         }
-        //     }
-        //
-        //     set
-        //     {
-        //         CheckDisposed(true);
-        //
-        //         HwndTarget hwndTarget = CompositionTarget; // checks for disposed
-        //         if(_hwndTarget != null)
-        //         {
-        //             _hwndTarget.ColorKey = value;
-        //         }
-        //     }
-        // }
-
-        // /// <summary>
-        // ///     Specifies the constant opacity to apply to the window.
-        // /// </summary>
-        // /// <remarks>
-        // ///     The valid values range from [0..1].  Values outside of this range are clamped.
-        // /// </remarks>
-        // public double Opacity
-        // {
-        //     get
-        //     {
-        //         CheckDisposed(true);
-        //
-        //         HwndTarget hwndTarget = CompositionTarget; // checks for disposed
-        //         if(_hwndTarget != null)
-        //         {
-        //             return _hwndTarget.Opacity;
-        //         }
-        //         else
-        //         {
-        //             return 1.0;
-        //         }
-        //     }
-        //
-        //     set
-        //     {
-        //         CheckDisposed(true);
-        //
-        //         HwndTarget hwndTarget = CompositionTarget; // checks for disposed
-        //         if(_hwndTarget != null)
-        //         {
-        //             _hwndTarget.Opacity = value;
-        //         }
-        //     }
-        // }
 
         /// <summary>
         ///     Specifies whether or not the per-pixel opacity of the window content
@@ -1699,9 +1743,9 @@ namespace System.Windows.Interop
                 // hamidm - 10/27/2005
                 // 1348020 Window expereience layout issue when SizeToContent is being turned
                 // off by user interaction
-                // This 
-
-
+                // This bug was caused b/c we were giving rootUIElement.DesiredSize as input
+                // to Measure/Arrange below.  That is incorrect since rootUIElement.DesiredSize may not
+                // cover the entire hwnd client area.
 
                 // GetSizeFromHwnd returns either the outside size or the client size of the hwnd based on
                 // _adjustSizeingForNonClientArea flag in logical units.
@@ -1731,7 +1775,7 @@ namespace System.Windows.Interop
         private void GetNonClientRect(ref NativeMethods.RECT rc)
         {
             Debug.Assert(_adjustSizingForNonClientArea == true);
-            
+
             IntPtr hwndRoot = IntPtr.Zero;
 
             if(_treatAncestorsAsNonClientArea)
@@ -1742,7 +1786,7 @@ namespace System.Windows.Interop
             {
                 hwndRoot = CriticalHandle;
             }
-            
+
             SafeNativeMethods.GetWindowRect(new HandleRef(this, hwndRoot), ref rc);
         }
 
@@ -1813,8 +1857,12 @@ namespace System.Windows.Interop
 
         /// <summary>
         ///    Called from HwndWrapper on all window messages.
+        ///    Assumes Context.Access() is held.
         /// </summary>
-        // assumes Context.Access() is held.
+        /// <SecurityNote>
+        ///     Critical:  Accesses security critical HwndStylusInputProvider.Dispose
+        /// </SecurityNote>
+        [SecurityCritical]
         private IntPtr PublicHooksFilterMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             // The default result for messages we handle is 0.
@@ -1837,15 +1885,55 @@ namespace System.Windows.Interop
                     }
                 }
             }
-            if (WindowMessage.WM_NCDESTROY == message)
+
+            switch (message)
             {
-                // We delivered the message to the hooks and the message
-                // is WM_NCDESTROY, so our commitments should be finished
-                // we can do final teardown. (like disposing the _hooks)
-                OnNoMoreWindowMessages();
+                case WindowMessage.WM_NCDESTROY:
+                    {
+                        // We delivered the message to the hooks and the message
+                        // is WM_NCDESTROY, so our commitments should be finished
+                        // we can do final teardown. (like disposing the _hooks)
+                        OnNoMoreWindowMessages();
+                    }
+                    break;
+                case WindowMessage.WM_DESTROY:
+                    {
+                        // DDVSO:174153
+                        // This used to be called under Dispose triggered from WM_NCDESTROY.
+                        // The problem there is that this is the wrong time for WISP to undelegate
+                        // input.  Thus shutting down the stack would lead to an assert since the
+                        // HWND in no longer in a good state.  Move this to WM_DESTROY, the start
+                        // of the HWND destruction, allows us to shut down the stylus stack safely.
+                        // Previously input was never properly undelegated as the COM references were
+                        // not properly clearing from WISP.  Fixes to those issues in WISP and WPF have
+                        // exposed this issue.
+                        DisposeStylusInputProvider();
+                    }
+                    break;
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Disposes the HwndStylusInputProvider to shutdown stylus/touch input.
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical:  Accesses critical data _stylus
+        ///                Calls IStylusInputProvider.Dispose
+        /// </SecurityNote>
+        [SecurityCritical]
+        private void DisposeStylusInputProvider()
+        {
+            // Dispose the HwndStylusInputProvider BEFORE we destroy the HWND.
+            // This is because the stylus provider has an async channel and
+            // they don't want to process data after the HWND is destroyed.
+            if (_stylus != null)
+            {
+                SecurityCriticalDataClass<IStylusInputProvider> stylus = _stylus;
+                _stylus = null;
+                stylus.Value.Dispose();
+            }
         }
 
 #region IKeyboardInputSink
@@ -1980,7 +2068,7 @@ namespace System.Windows.Interop
                 // pending operations, so that the operation we just posted
                 // is guaranteed to get dispatched after any pending WM_CHAR
                 // messages are dispatched.
-                Dispatcher.CriticalRequestProcessing(true); 
+                Dispatcher.CriticalRequestProcessing(true);
 
                 msgdata.handled = CriticalTranslateAccelerator(ref msgdata.msg, modifierKeys);
                 if(!msgdata.handled)
@@ -2007,10 +2095,10 @@ namespace System.Windows.Interop
                     {
                         UnsafeNativeMethods.TranslateMessage(ref msgdata.msg);
                     }
-                    
+
                     msgdata.handled = true;
                 }
-                
+
                 break;
 
             case WindowMessage.WM_SYSKEYUP:
@@ -2023,7 +2111,7 @@ namespace System.Windows.Interop
                 {
                     msgdata.handled = true;
                 }
-                
+
                 break;
 
             case WindowMessage.WM_CHAR:
@@ -2066,10 +2154,10 @@ namespace System.Windows.Interop
                     {
                         SafeNativeMethods.MessageBeep(0);
                     }
-                    
+
                     msgdata.handled = true;
                 }
-                
+
                 break;
             }
             return msgdata.handled;
@@ -2211,7 +2299,7 @@ namespace System.Windows.Interop
         ///     Setting KeyboardInputSite is not available in Internet Zone.
         ///     We explicitly don't make this property overridable as we want to keep the
         ///     precise implementation as a smart field for _keyboardInputSite fixed.
-        ///     By making the property protected, implementors can still call into it 
+        ///     By making the property protected, implementors can still call into it
         ///     when required. Notice as calls are made through the IKIS interface,
         ///     there's still a way for ---- developers to override the behavior by
         ///     re-implementing the interface.
@@ -2308,8 +2396,8 @@ namespace System.Windows.Interop
                         // is true to force the user to opt-in.
                         DependencyObject focusObject = Keyboard.FocusedElement as DependencyObject;
                         HwndSource mnemonicScope = (focusObject == null ? null : PresentationSource.CriticalFromVisual(focusObject) as HwndSource);
-                        if (mnemonicScope != null && 
-                            mnemonicScope != this && 
+                        if (mnemonicScope != null &&
+                            mnemonicScope != this &&
                             IsInExclusiveMenuMode)
                         {
                             return ((IKeyboardInputSink)mnemonicScope).OnMnemonic(ref msg, modifiers);
@@ -2458,10 +2546,10 @@ namespace System.Windows.Interop
                     // The default value is true, for compat.
                     _defaultAcquireHwndFocusInMenuMode = true;
                 }
-                
+
                 return _defaultAcquireHwndFocusInMenuMode.Value;
             }
-            
+
             set
             {
                 _defaultAcquireHwndFocusInMenuMode = value;
@@ -2576,7 +2664,7 @@ namespace System.Windows.Interop
                     _keyboard.Value.ProcessKeyAction(ref msg, ref handled);
                 }
                 // ELSE the focus is probably in but not on this HwndSource.
-                // Beware: It is possible that someone calls IKIS.TranslateAccelerator() while the focus is 
+                // Beware: It is possible that someone calls IKIS.TranslateAccelerator() while the focus is
                 //   somewhere entirely outside.
                 // Do the once only message input filters etc and Tunnel/Bubble down
                 // to the element that contains the child window with focus.
@@ -2641,7 +2729,7 @@ namespace System.Windows.Interop
                 if (focusElement == null && hasFocus)
                 {
                     focusElement = Keyboard.PrimaryDevice.FocusedElement;
-                    if (focusElement != null && 
+                    if (focusElement != null &&
                         PresentationSource.CriticalFromVisual((DependencyObject)focusElement) != this)
                     {
                         focusElement = null;
@@ -2824,13 +2912,20 @@ namespace System.Windows.Interop
                         SecurityPermission.RevertAssert();
                     }
 
-                    // Dispose the HwndStylusInputProvider BEFORE we destroy the HWND.
-                    // This us because the stylus provider has an async channel and
-                    // they don't want to process data after the HWND is destroyed.
-                    if (_stylus != null)
+                    if (!_inRealHwndDispose)
                     {
-                        _stylus.Value.Dispose();
-                        _stylus = null;
+                        // DDVSO:460192
+                        // Disposing the stylus provider can only be done here when
+                        // we're not actually in an Hwnd WM_NCDESTROY scenario as
+                        // we're then guaranteed that the HWND is still alive.
+                        // DDVSO:546769
+                        // In situations where the PenThread is busy, this dispose can
+                        // cause re-entrancy.  If this re-entrancy triggers a layout
+                        // WPF can throw if the HwndTarget has been disposed since there
+                        // will no longer be a CompositionTarget for this HwndSource.
+                        // Dispose here so any re-entrancy still has a valid
+                        // HwndTarget.
+                        DisposeStylusInputProvider();
                     }
 
                     // Our general shut-down principle is to destroy the window
@@ -2860,7 +2955,9 @@ namespace System.Windows.Interop
                             _hwndWrapper.Disposed -= new EventHandler(OnHwndDisposed);
 
                             if (!_inRealHwndDispose)
+                            {
                                 _hwndWrapper.Dispose();
+                            }
 
                             // Don't null out _hwndWrapper after the Dispose().
                             // Dispose() will start destroying the Window but we
@@ -3030,7 +3127,7 @@ namespace System.Windows.Interop
             {
                 _addToFront = addToFront;
                 _handler = new ThreadMessageEventHandler(this.OnPreprocessMessage);
-                
+
                 if(addToFront)
                 {
                     ComponentDispatcher.CriticalAddThreadPreprocessMessageHandlerFirst(_handler);
@@ -3075,7 +3172,7 @@ namespace System.Windows.Interop
                 {
                     ComponentDispatcher.ThreadPreprocessMessage -= _handler;
                 }
-                
+
                 _handler = null;
             }
 
@@ -3093,7 +3190,7 @@ namespace System.Windows.Interop
 
         private bool                        _adjustSizingForNonClientArea;
         private bool                        _treatAncestorsAsNonClientArea;
-        
+
         private bool                        _myOwnUpdate;
         private bool                        _isWindowInMinimizeState = false;
 
@@ -3119,21 +3216,24 @@ namespace System.Windows.Interop
         private SecurityCriticalDataForSet<Visual>                      _rootVisual;
 
         private event HwndSourceHook _hooks;
+
         /// <SecurityNote>
         ///     Critical:This reference cannot be given out or assigned to outside of a verified
         ///     elevation. This data is considered critical.
         /// </SecurityNote>
         private SecurityCriticalDataClass<HwndMouseInputProvider>      _mouse;
+
         /// <SecurityNote>
         ///     Critical:This reference cannot be given out or assigned to outside of a verified
         ///     elevation. This data is considered critical.
         /// </SecurityNote>
         private SecurityCriticalDataClass<HwndKeyboardInputProvider>   _keyboard;
+
         /// <SecurityNote>
         ///     Critical:This reference cannot be given out or assigned to outside of a verified
         ///     elevation. This data is considered critical.
         /// </SecurityNote>
-        private SecurityCriticalDataClass<HwndStylusInputProvider>     _stylus;
+        private SecurityCriticalDataClass<IStylusInputProvider>        _stylus;
 
         /// <SecurityNote>
         ///     Critical:This reference cannot be given out or assigned to outside of a verified
@@ -3144,7 +3244,7 @@ namespace System.Windows.Interop
         WeakEventDispatcherShutdown _weakShutdownHandler;
         WeakEventPreprocessMessage _weakPreprocessMessageHandler;
         WeakEventPreprocessMessage _weakMenuModeMessageHandler;
-        
+
         private static System.LocalDataStoreSlot _threadSlot;
 
         private RestoreFocusMode _restoreFocusMode;
@@ -3152,7 +3252,7 @@ namespace System.Windows.Interop
         [ThreadStatic]
         private static bool? _defaultAcquireHwndFocusInMenuMode;
         private bool _acquireHwndFocusInMenuMode;
-        
+
         private MSG                         _lastKeyboardMessage;
         private List<HwndSourceKeyboardInputSite> _keyboardInputSinkChildren;
 

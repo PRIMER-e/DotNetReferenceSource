@@ -11,11 +11,13 @@
 
 using System;
 using System.Collections;       // ICollection
+using System.Collections.Generic; // List<T>
 using System.Collections.Specialized;   // HybridDictionary
 using System.ComponentModel;    // INotifyPropertyChanged
 using System.Diagnostics;       // Debug
 using System.Reflection;        // MethodInfo
 using System.Windows;           // WeakEventManager
+using MS.Internal;              // BaseAppContextSwitches
 using MS.Internal.WindowsBase;  // SR
 
 namespace System.ComponentModel
@@ -138,42 +140,160 @@ namespace System.ComponentModel
             if (!purgeAll)
             {
                 HybridDictionary dict = (HybridDictionary)data;
+                int ignoredKeys = 0;
 
-                // copy the keys into a separate array, so that later on
-                // we can change the dictionary while iterating over the keys
-                ICollection ic = dict.Keys;
-                String[] keys = new String[ic.Count];
-                ic.CopyTo(keys, 0);
-
-                for (int i=keys.Length-1; i>=0; --i)
+                if (!BaseAppContextSwitches.EnableWeakEventMemoryImprovements)
                 {
-                    if (keys[i] == AllListenersKey)
-                        continue;       // ignore the special entry for now
+                    // copy the keys into a separate array, so that later on
+                    // we can change the dictionary while iterating over the keys
+                    ICollection ic = dict.Keys;
+                    String[] keys = new String[ic.Count];
+                    ic.CopyTo(keys, 0);
 
-                    // for each key, remove dead entries in its list
-                    bool removeList = purgeAll || source == null;
-
-                    if (!removeList)
+                    for (int i=keys.Length-1; i>=0; --i)
                     {
-                        ListenerList list = (ListenerList)dict[keys[i]];
+                        if (keys[i] == AllListenersKey)
+                        {
+                            ++ignoredKeys;
+                            continue;       // ignore the special entry for now
+                        }
 
-                        if (ListenerList.PrepareForWriting(ref list))
-                            dict[keys[i]] = list;
+                        // for each key, remove dead entries in its list
+                        bool removeList = purgeAll || source == null;
 
-                        if (list.Purge())
-                            foundDirt = true;
+                        if (!removeList)
+                        {
+                            ListenerList list = (ListenerList)dict[keys[i]];
 
-                        removeList = (list.IsEmpty);
+                            if (ListenerList.PrepareForWriting(ref list))
+                                dict[keys[i]] = list;
+
+                            if (list.Purge())
+                                foundDirt = true;
+
+                            removeList = (list.IsEmpty);
+                        }
+
+                        // if there are no more entries, remove the key
+                        if (removeList)
+                        {
+                            dict.Remove(keys[i]);
+                        }
+                    }
+#if WeakEventTelemetry
+                    LogAllocation(ic.GetType(), 1, 12);                     // dict.Keys - Hashtable+KeyCollection
+                    LogAllocation(typeof(String[]), 1, 12+ic.Count*4);      // keys
+#endif
+                }
+                else
+                {
+                    Debug.Assert(_toRemove.Count == 0, "to-remove list should be empty");
+
+                    // If an "in-use" list is changed, we will re-install its clone
+                    // back into the dictionary.  Doing this inside the loop
+                    // causes an exception "collection was modified after the enumerator
+                    // was instantiated" (DDVSO 812614), so instead just record
+                    // what to do and do the actual work after the loop.
+                    // This is a rare case - it only arises if a PropertyChanged event
+                    // handler calls (indirectly) into the cleanup code - so allocate
+                    // the temporary memory lazily on the stack.
+                    // [In the bug, the indirect call comes about because the app's
+                    // event handler calls ShowDialog(), which pushes a dispatcher
+                    // frame to run a nested message pump. Then a pending cleanup task
+                    // reaches the front of the dispatcher queue before the dialog
+                    // is dismissed, effectively calling this method while the
+                    // PropertyChanged event delivery is in progress.]
+                    HybridDictionary toInstall = null;
+
+                    // enumerate the dictionary using IDE explicitly rather than
+                    // foreach, to avoid allocating temporary DictionaryEntry objects
+                    IDictionaryEnumerator ide = dict.GetEnumerator() as IDictionaryEnumerator;
+                    while (ide.MoveNext())
+                    {
+                        String key = (String)ide.Key;
+                        if (key == AllListenersKey)
+                        {
+                            ++ignoredKeys;
+                            continue;       // ignore the special entry for now
+                        }
+
+                        // for each key, remove dead entries in its list
+                        bool removeList = purgeAll || source == null;
+
+                        if (!removeList)
+                        {
+                            ListenerList list = (ListenerList)ide.Value;
+
+                            bool inUse = ListenerList.PrepareForWriting(ref list);
+                            bool isChanged = false;
+
+                            if (list.Purge())
+                            {
+                                isChanged = true;
+                                foundDirt = true;
+                            }
+
+                            removeList = (list.IsEmpty);
+
+                            // if a cloned list changed, remember the details
+                            // so that the clone can be installed back into the
+                            // dictionary outside the iteration (DDVSO 812614)
+                            if (!removeList && inUse && isChanged)
+                            {
+                                if (toInstall == null)
+                                {
+                                    // lazy allocation
+                                    toInstall = new HybridDictionary();
+                                }
+
+                                toInstall[key] = list;
+                            }
+                        }
+
+                        // if there are no more entries, remove the key
+                        if (removeList)
+                        {
+                            _toRemove.Add(key);
+                        }
                     }
 
-                    // if there are no more entries, remove the key
-                    if (removeList)
+                    // do the actual removal (outside the dictionary iteration)
+                    if (_toRemove.Count > 0)
                     {
-                        dict.Remove(keys[i]);
+                        foreach (String key in _toRemove)
+                        {
+                            dict.Remove(key);
+                        }
+                        _toRemove.Clear();
+                        _toRemove.TrimExcess();
                     }
+
+                    // do the actual re-install of "in-use" lists that changed
+                    if (toInstall != null)
+                    {
+                        IDictionaryEnumerator installDE = toInstall.GetEnumerator() as IDictionaryEnumerator;
+                        while (installDE.MoveNext())
+                        {
+                            String key = (String)installDE.Key;
+                            ListenerList list = (ListenerList)installDE.Value;
+                            dict[key] = list;
+                        }
+                    }
+
+#if WeakEventTelemetry
+                    Type enumeratorType = ide.GetType();
+                    if (enumeratorType.Name.IndexOf("NodeEnumerator") >= 0)
+                    {
+                        LogAllocation(enumeratorType, 1, 24);                    // ListDictionary+NodeEnumerator
+                    }
+                    else
+                    {
+                        LogAllocation(enumeratorType, 1, 36);                    // Hashtable+HashtableEnumerator
+                    }
+#endif
                 }
 
-                if (dict.Count == 0)
+                if (dict.Count == ignoredKeys)
                 {
                     // if there are no more listeners at all, remove the entry from
                     // the main table, and prepare to stop listening
@@ -390,7 +510,7 @@ namespace System.ComponentModel
                 {
                     // this can happen when the last listener stops listening, but the
                     // source raises the event on another thread after the dictionary
-                    // has been removed (
+                    // has been removed (bug 1235351)
                     list = ListenerList.Empty;
                 }
                 else if (!String.IsNullOrEmpty(propertyName))
@@ -514,6 +634,7 @@ namespace System.ComponentModel
         #endregion Private Methods
 
         ListenerList _proposedAllListenersList;
+        List<String> _toRemove = new List<String>();
         static readonly string AllListenersKey = "<All Listeners>"; // not a legal property name
     }
 }

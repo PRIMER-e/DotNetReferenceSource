@@ -36,9 +36,11 @@ namespace System.Windows.Forms.ButtonInternal {
                 PaintImage(e, layout);
                 
                 DrawCheckBackground(e, layout.checkBounds, colors.windowText, colors.options.highContrast ? colors.buttonFace : colors.highlight, true, colors);
-                DrawFlatBorder(e.Graphics, layout.checkBounds, colors.buttonShadow);
-                DrawCheckOnly(e, layout, colors, colors.windowText, colors.highlight, true);
+                DrawFlatBorder(e.Graphics, layout.checkBounds, 
+                    (colors.options.highContrast && !Control.Enabled && AccessibilityImprovements.Level1) ? colors.windowFrame : colors.buttonShadow);
+                DrawCheckOnly(e, layout, colors, colors.windowText, colors.highlight);
 
+                AdjustFocusRectangle(layout);
                 PaintField(e, layout, colors, colors.windowText, true);
             }
         }
@@ -60,11 +62,14 @@ namespace System.Windows.Forms.ButtonInternal {
                 
                 DrawCheckBackground(e, layout.checkBounds, colors.windowText, colors.options.highContrast ? colors.buttonFace : colors.highlight, true, colors);
                 DrawPopupBorder(g, layout.checkBounds, colors);
-                DrawCheckOnly(e, layout, colors, colors.windowText, colors.highlight, true);
+                DrawCheckOnly(e, layout, colors, colors.windowText, colors.highlight);
 
-                e.Graphics.Clip = original;
-                e.Graphics.ExcludeClip(layout.checkArea);
+                if (!AccessibilityImprovements.Level2 || !String.IsNullOrEmpty(Control.Text)) {
+                    e.Graphics.Clip = original;
+                    e.Graphics.ExcludeClip(layout.checkArea);
+                }
 
+                AdjustFocusRectangle(layout);
                 PaintField(e, layout, colors, colors.windowText, true);
             }
         }
@@ -86,8 +91,9 @@ namespace System.Windows.Forms.ButtonInternal {
                 
                 DrawCheckBackground(e, layout.checkBounds, colors.windowText, colors.buttonFace, true, colors);
                 DrawPopupBorder(g, layout.checkBounds, colors);
-                DrawCheckOnly(e, layout, colors, colors.windowText, colors.buttonFace, true);
+                DrawCheckOnly(e, layout, colors, colors.windowText, colors.buttonFace);
 
+                AdjustFocusRectangle(layout);
                 PaintField(e, layout, colors, colors.windowText, true);
             }
         }
@@ -109,15 +115,16 @@ namespace System.Windows.Forms.ButtonInternal {
 
         [SuppressMessage("Microsoft.Performance", "CA1801:AvoidUnusedParameters")]  // removed graphics, may have to put it back
         internal static LayoutOptions PaintPopupLayout(Graphics g, bool show3D, int checkSize, Rectangle clientRectangle, Padding padding,
-                                                       bool isDefault, Font font, string text, bool enabled, ContentAlignment textAlign, RightToLeft rtl)
+                                                       bool isDefault, Font font, string text, bool enabled, ContentAlignment textAlign, RightToLeft rtl,
+                                                       Control control = null)
         {
             LayoutOptions layout = CommonLayout(clientRectangle, padding, isDefault, font, text, enabled, textAlign, rtl);
             layout.shadowedText = false;
             if (show3D) {
-                layout.checkSize = (int)(checkSize * GetDpiScaleRatio(g) + 1);
+                layout.checkSize = (int)(checkSize * GetDpiScaleRatio(g, control) + 1);
             }
             else {
-                layout.checkSize = (int)(checkSize * GetDpiScaleRatio(g));
+                layout.checkSize = (int)(checkSize * GetDpiScaleRatio(g, control));
                 layout.checkPaddingSize = 1;
             }
             return layout;

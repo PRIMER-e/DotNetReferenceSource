@@ -5,6 +5,7 @@
 //---------------------------------------------------------------------------
 
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 using System.Windows.Automation.Peers;
 
 namespace System.Windows.Controls
@@ -22,6 +23,8 @@ namespace System.Windows.Controls
             _dType = DependencyObjectType.FromSystemTypeInternal(typeof(Separator));
 
             IsEnabledProperty.OverrideMetadata(typeof(Separator), new FrameworkPropertyMetadata(BooleanBoxes.FalseBox));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.Separator);
         }
 
         internal static void PrepareContainer(Control container)

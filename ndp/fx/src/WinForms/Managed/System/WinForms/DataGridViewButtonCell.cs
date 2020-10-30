@@ -194,8 +194,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see 
-
+                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                //
                 dataGridViewCell = (DataGridViewButtonCell)System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -1139,6 +1139,26 @@ namespace System.Windows.Forms
             public override int GetChildCount()
             {
                 return 0;
+            }
+
+            internal override bool IsIAccessibleExSupported()
+            {
+                if (AccessibilityImprovements.Level2)
+                {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            internal override object GetPropertyValue(int propertyID)
+            {
+                if (propertyID == NativeMethods.UIA_ControlTypePropertyId)
+                {
+                    return NativeMethods.UIA_ButtonControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
         }
     }

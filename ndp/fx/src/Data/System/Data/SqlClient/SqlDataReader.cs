@@ -1989,8 +1989,8 @@ namespace System.Data.SqlClient {
                             CheckDataIsReady(columnIndex: i, allowPartiallyReadColumn: true, methodName: "GetChars");
                         }
                         catch (Exception ex) {
-                            // Dev11 
-
+                            // Dev11 Bug #315513: Exception type breaking change from 4.0 RTM when calling GetChars on null xml
+                            // We need to wrap all exceptions inside a TargetInvocationException to simulate calling CreateSqlReader via MethodInfo.Invoke
                             if (ADP.IsCatchableExceptionType(ex)) {
                                 throw new TargetInvocationException(ex);
                             }
@@ -2426,8 +2426,8 @@ namespace System.Data.SqlClient {
         // NOTE: This method is called by the fast-paths in Async methods and, therefore, should be resilient to the DataReader being closed
         //       Always make sure to take reference copies of anything set to null in TryCloseInternal()
         private object GetSqlValueFromSqlBufferInternal(SqlBuffer data, _SqlMetaData metaData) {
-            // Dev11 
-
+            // Dev11 Bug #336820, Dev10 Bug #479607 (SqlClient: IsDBNull always returns false for timestamp datatype)
+            // Due to a bug in TdsParser.GetNullSqlValue, Timestamps' IsNull is not correctly set - so we need to bypass the following check
             Debug.Assert(!data.IsEmpty || data.IsNull || metaData.type == SqlDbType.Timestamp, "Data has been read, but the buffer is empty");
 
             // Convert Katmai types to string
@@ -2579,8 +2579,8 @@ namespace System.Data.SqlClient {
         // NOTE: This method is called by the fast-paths in Async methods and, therefore, should be resilient to the DataReader being closed
         //       Always make sure to take reference copies of anything set to null in TryCloseInternal()
         private object GetValueFromSqlBufferInternal(SqlBuffer data, _SqlMetaData metaData) {
-            // Dev11 
-
+            // Dev11 Bug #336820, Dev10 Bug #479607 (SqlClient: IsDBNull always returns false for timestamp datatype)
+            // Due to a bug in TdsParser.GetNullSqlValue, Timestamps' IsNull is not correctly set - so we need to bypass the following check
             Debug.Assert(!data.IsEmpty || data.IsNull || metaData.type == SqlDbType.Timestamp, "Data has been read, but the buffer is empty");
 
             if (_typeSystem <= SqlConnectionString.TypeSystem.SQLServer2005 && metaData.IsNewKatmaiDateTimeType) {
@@ -2785,9 +2785,9 @@ namespace System.Data.SqlClient {
                             moreResults = true;
                             return true;
                         
-                        // VSTFDEVDIV 926281: DONEINPROC case is missing here; we have decided to reject this 
-
-
+                        // VSTFDEVDIV 926281: DONEINPROC case is missing here; we have decided to reject this bug as it would result in breaking change
+                        // from Orcas RTM/SP1 and Dev10 RTM. See the bug for more details.
+                        // case TdsEnums.DONEINPROC:
                         case TdsEnums.SQLDONE:
                             Debug.Assert(_altRowStatus == ALTROWSTATUS.Done || _altRowStatus == ALTROWSTATUS.Null, "invalid AltRowStatus");
                             _altRowStatus = ALTROWSTATUS.Null;
@@ -2800,10 +2800,10 @@ namespace System.Data.SqlClient {
                             return true;
                     }
 
-                    // Dev11 
-
-
-
+                    // Dev11 Bug 316483:Hang on SqlDataReader::TryHasMoreResults using MARS
+                    // http://vstfdevdiv:8080/web/wi.aspx?pcguid=22f9acc9-569a-41ff-b6ac-fac1b6370209&id=316483
+                    // TryRun() will immediately return if the TdsParser is closed\broken, causing us to enter an infinite loop
+                    // Instead, we will throw a closed connection exception
                     if (_parser.State == TdsParserState.Broken || _parser.State == TdsParserState.Closed) {
                         throw ADP.ClosedConnectionError();
                     }
@@ -2839,8 +2839,8 @@ namespace System.Data.SqlClient {
                 }
                 if (_stateObj._pendingData) {
                     // Consume error's, info's, done's on HasMoreRows, so user obtains error on Read.
-                    // Previous 
-
+                    // Previous bug where Read() would return false with error on the wire in the case
+                    // of metadata and error immediately following.  See MDAC 78285 and 75225.
 
                     // 
 
@@ -2875,10 +2875,10 @@ namespace System.Data.SqlClient {
                             ParsedDoneToken = true;
                         }
 
-                        // Dev11 
-
-
-
+                        // Dev11 Bug 316483:Hang on SqlDataReader::TryHasMoreResults using MARS
+                        // http://vstfdevdiv:8080/web/wi.aspx?pcguid=22f9acc9-569a-41ff-b6ac-fac1b6370209&id=316483
+                        // TryRun() will immediately return if the TdsParser is closed\broken, causing us to enter an infinite loop
+                        // Instead, we will throw a closed connection exception
                         if (_parser.State == TdsParserState.Broken || _parser.State == TdsParserState.Closed) {
                             throw ADP.ClosedConnectionError();
                         }
@@ -2916,10 +2916,10 @@ namespace System.Data.SqlClient {
 
         override public bool IsDBNull(int i) {
             if ((IsCommandBehavior(CommandBehavior.SequentialAccess)) && ((_sharedState._nextColumnHeaderToRead > i + 1) || (_lastColumnWithDataChunkRead > i))) {
-                // 
-
-
-
+                // Bug 447026 : A breaking change in System.Data .NET 4.5 for calling IsDBNull on commands in SequentialAccess mode
+                // http://vstfdevdiv:8080/web/wi.aspx?pcguid=22f9acc9-569a-41ff-b6ac-fac1b6370209&id=447026
+                // In .Net 4.0 and previous, it was possible to read a previous column using IsDBNull when in sequential mode
+                // However, since it had already gone past the column, the current IsNull value is simply returned
 
                 // To replicate this behavior we will skip CheckHeaderIsReady\ReadColumnHeader and instead just check that the reader is ready and the column is valid
                 CheckMetaDataIsReady(columnIndex: i);
@@ -3452,8 +3452,8 @@ namespace System.Data.SqlClient {
                     Debug.Assert(i == _sharedState._nextColumnDataToRead ||                                                          // Either we haven't read the column yet
                         ((i + 1 < _sharedState._nextColumnDataToRead) && (IsCommandBehavior(CommandBehavior.SequentialAccess))) ||   // Or we're in sequential mode and we've read way past the column (i.e. it was not the last column we read)
                         (!_data[i].IsEmpty || _data[i].IsNull) ||                                                       // Or we should have data stored for the column (unless the column was null)
-                        (_metaData[i].type == SqlDbType.Timestamp),                                                     // Or Dev11 
-                                                                                                                        //    Due to a 
+                        (_metaData[i].type == SqlDbType.Timestamp),                                                     // Or Dev11 Bug #336820, Dev10 Bug #479607 (SqlClient: IsDBNull always returns false for timestamp datatype)
+                                                                                                                        //    Due to a bug in TdsParser.GetNullSqlValue, Timestamps' IsNull is not correctly set - so we need to bypass the check
                         "Gone past column, be we have no data stored for it");
                     return true;
                 }
@@ -3510,7 +3510,7 @@ namespace System.Data.SqlClient {
                     _sharedState._nextColumnDataToRead = _sharedState._nextColumnHeaderToRead;
                     _sharedState._nextColumnHeaderToRead++;  // We read this one
 
-                    if (isNull && columnMetaData.type != SqlDbType.Timestamp /* Maintain behavior for known */)
+                    if (isNull && columnMetaData.type != SqlDbType.Timestamp /* Maintain behavior for known bug (Dev10 479607) rejected as breaking change - See comments in GetNullSqlValue for timestamp */)
                     {
                         TdsParser.GetNullSqlValue(_data[_sharedState._nextColumnDataToRead], 
                             columnMetaData,
@@ -4628,9 +4628,7 @@ namespace System.Data.SqlClient {
                 }
 
                 if (task.IsCompleted) {
-                    // If we've completed sync, then don't bother handling the TaskCompletionSource - we'll just return the completed task
                     CompleteRetryable(task, source, objectToDispose);
-                    return task;
                 }
                 else {
                     task.ContinueWith((t) => CompleteRetryable(t, source, objectToDispose), TaskScheduler.Default);

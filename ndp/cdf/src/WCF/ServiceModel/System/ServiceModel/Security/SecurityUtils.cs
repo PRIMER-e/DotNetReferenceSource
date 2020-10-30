@@ -1438,7 +1438,7 @@ namespace System.ServiceModel.Security
             }
         }
 
-        // work-around to Windows SE 
+        // work-around to Windows SE Bug 141614
         [Fx.Tag.SecurityNote(Critical = "Uses unsafe critical method UnsafeGetPassword to access the credential password without a Demand.",
             Safe = "Only uses the password to construct a cloned NetworkCredential instance, does not leak password value.")]
         [SecuritySafeCritical]
@@ -2262,7 +2262,7 @@ namespace System.ServiceModel.Security
             if (keyIdentifierClause is EncryptedKeyIdentifierClause)
             {
                 EncryptedKeyIdentifierClause keyClause = (EncryptedKeyIdentifierClause)keyIdentifierClause;
-                // PreSharp 
+                // PreSharp Bug: Parameter 'keyClause' to this public method must be validated: A null-dereference can occur here.
 #pragma warning suppress 56506 // keyClause will not be null due to the if condition above.
                 for (int i = 0; i < keyClause.EncryptingKeyIdentifier.Count; i++)
                 {

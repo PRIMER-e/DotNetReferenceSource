@@ -108,6 +108,16 @@ using System.Security.Permissions;
             }
         }
 
+        /// Produces a color for visited links using SystemColors
+        public static Color GetVisitedLinkColor()
+        {
+            int r = (SystemColors.Window.R + SystemColors.WindowText.R + 1) / 2;
+            int g = SystemColors.WindowText.G;
+            int b = (SystemColors.Window.B + SystemColors.WindowText.B + 1) / 2;
+
+            return Color.FromArgb(r, g, b);
+        }
+
         /// <include file='doc\LinkUtilities.uex' path='docs/doc[@for="LinkUtilities.GetIELinkBehavior"]/*' />
         /// <devdoc>
         ///     Retrieves the IE settings for link behavior from the registry.

@@ -31,8 +31,8 @@ namespace MS.Internal.Ink.InkSerializedFormat
     internal class StrokeCollectionSerializer
     {
         #region Constants (Static Fields)
-        internal static readonly double AvalonToHimetricMultiplier = 2540F / 96.0F;
-        internal static readonly double HimetricToAvalonMultiplier = 96.0F / 2540.0F;
+        internal static readonly double AvalonToHimetricMultiplier = 2540.0d / 96.0d;
+        internal static readonly double HimetricToAvalonMultiplier = 96.0d / 2540.0d;
         internal static readonly TransformDescriptor IdentityTransformDescriptor;
 
         static StrokeCollectionSerializer()

@@ -1621,7 +1621,7 @@ namespace Microsoft.SqlServer.Server {
             new SqlMetaData("nvarchar", SqlDbType.NVarChar,
                     x_lServerMaxUnicode, 0, 0, 0, x_eDefaultStringCompareOptions, false),                // Placeholder for value 28
             new SqlMetaData("udt", SqlDbType.Udt,
-                    0, 0, 0, 0, SqlCompareOptions.None, false),            // SqlDbType.Udt = 29  
+                    0, 0, 0, 0, SqlCompareOptions.None, false),            // SqlDbType.Udt = 29  Bug Fix: 302698
             new SqlMetaData("table", SqlDbType.Structured,
                     0, 0, 0, 0, SqlCompareOptions.None, false),                // SqlDbType.Structured
             new SqlMetaData("date", SqlDbType.Date,

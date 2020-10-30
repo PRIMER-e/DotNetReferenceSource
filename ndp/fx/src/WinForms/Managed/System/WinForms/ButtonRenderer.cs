@@ -103,6 +103,33 @@ namespace System.Windows.Forms {
                 }
         }
 
+        /// <summary>
+        /// Method to draw visualstyle themes in case of per-monitor scenarios where Hwnd is necessary
+        /// </summary>
+        /// <param name="g"> graphics object</param>
+        /// <param name="bounds"> button bounds</param>
+        /// <param name="focused"> is focused?</param>
+        /// <param name="state"> state</param>
+        /// <param name="handle"> handle to the control</param>
+        internal static void DrawButtonForHandle(Graphics g, Rectangle bounds, bool focused, PushButtonState state, IntPtr handle) {
+            Rectangle contentBounds;
+
+            if (RenderWithVisualStyles) {
+                InitializeRenderer((int)state);
+
+                visualStyleRenderer.DrawBackground(g, bounds, handle);
+                contentBounds = visualStyleRenderer.GetBackgroundContentRectangle(g, bounds);
+            }
+            else {
+                ControlPaint.DrawButton(g, bounds, ConvertToButtonState(state));
+                contentBounds = Rectangle.Inflate(bounds, -3, -3);
+            }
+
+            if (focused) {
+                ControlPaint.DrawFocusRectangle(g, contentBounds);
+            }
+        }
+
         /// <include file='doc\ButtonRenderer.uex' path='docs/doc[@for="ButtonRenderer.DrawButton1"]/*' />
         /// <devdoc>
         ///    <para>
@@ -110,22 +137,7 @@ namespace System.Windows.Forms {
         ///    </para>
         /// </devdoc>
         public static void DrawButton(Graphics g, Rectangle bounds, bool focused, PushButtonState state) {
-                Rectangle contentBounds;
-
-                if (RenderWithVisualStyles) {
-                    InitializeRenderer((int)state);
-
-                    visualStyleRenderer.DrawBackground(g, bounds);
-                    contentBounds = visualStyleRenderer.GetBackgroundContentRectangle(g, bounds);
-                }
-                else {
-                    ControlPaint.DrawButton(g, bounds, ConvertToButtonState(state));
-                    contentBounds = Rectangle.Inflate(bounds, -3, -3);
-                }
-
-                if (focused) {
-                    ControlPaint.DrawFocusRectangle(g, contentBounds);
-                }
+            DrawButtonForHandle(g, bounds, focused, state, IntPtr.Zero);
         }
 
         /// <include file='doc\ButtonRenderer.uex' path='docs/doc[@for="ButtonRenderer.DrawButton2"]/*' />

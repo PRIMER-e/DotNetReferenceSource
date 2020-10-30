@@ -413,8 +413,8 @@ namespace System.Workflow.ComponentModel.Design
             {
                 if (this.avoidDuplication)
                 {
-                    // WinOE 
-
+                    // WinOE Bug 10442: should only prefix with "(Parameter)" if there is and existing
+                    // member of the same name.
                     return GetParameterPropertyName(this.componentType, base.Name);
                 }
                 else

@@ -32,7 +32,7 @@ namespace System.Web.UI.WebControls {
             }
 
             ParameterExpression parameter = Expression.Parameter(source.ElementType, String.Empty);
-            //VSO 
+            //VSO bug 173528-- Add support for sorting by nested property names
             MemberExpression property = null;
             string[] sortExpressionFields = sortExpression.Split('.');
             foreach (string sortExpressionField in sortExpressionFields) {

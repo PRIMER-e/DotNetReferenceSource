@@ -53,6 +53,50 @@ namespace System.Windows.Controls
 
         #region Public Properties
 
+        /// DDVSO: 614397
+        /// Tooltips should show on Keyboard focus.
+        /// To allow for tooltips to show on Keyboard focus correctly PopupControlService, Popup and Tooltip 
+        /// need to know that this particular tooltip showing was caused by keyboard, PopupControlService sets 
+        /// FromKeyboard when it determines it must show the tooltip, when the Popup for the tooltip is created 
+        /// a binding between Tooltip's FromKeyboard and Popup's TreatMousePlacementAsBottom is also created, 
+        /// this chain effectively lets Popup place itself correctly upon Keyboard focus.
+
+        /// <summary>
+        /// The DependencyProperty for the FromKeyboard property.
+        /// Default: false
+        /// </summary>
+        internal static readonly DependencyProperty FromKeyboardProperty =
+            DependencyProperty.Register(
+                                "FromKeyboard",
+                                typeof(bool),
+                                typeof(ToolTip),
+                                new FrameworkPropertyMetadata(
+                                            false));
+
+        /// <summary>
+        /// Whether or not the tooltip showing was caused by a Keyboard focus.
+        /// </summary>
+        [Bindable(true), Category("Behavior")]
+        internal bool FromKeyboard
+        {
+            get
+            {
+                return (bool)GetValue(FromKeyboardProperty);
+            }
+            set
+            {
+                SetValue(FromKeyboardProperty, value);
+            }
+        }
+
+        internal virtual bool ShouldShowOnKeyboardFocus
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         /// <summary>
         /// The DependencyProperty for the HorizontalOffset property.
         /// Default: Length(0.0)
@@ -483,7 +527,7 @@ namespace System.Windows.Controls
 
             // Hooks up the popup properties from this menu to the popup so that
             // setting them on this control will also set them on the popup.
-            Popup.CreateRootPopup(_parentPopup, this);
+            Popup.CreateRootPopupInternal(_parentPopup, this, true);
         }
 
         internal void ForceClose()
@@ -544,5 +588,12 @@ namespace System.Windows.Controls
         private static DependencyObjectType _dType;
 
         #endregion DTypeThemeStyleKey
+
+        internal enum ToolTipTrigger
+        {
+            Mouse,
+            KeyboardFocus,
+            KeyboardShortcut
+        }
     }
 }

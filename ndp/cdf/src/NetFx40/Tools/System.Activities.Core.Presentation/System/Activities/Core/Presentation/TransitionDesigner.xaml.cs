@@ -370,9 +370,9 @@ namespace System.Activities.Core.Presentation
                 bool isAlreadyExpanded = topmostWFViewElement != null ? topmostWFViewElement.ShowExpanded : false;
                 if (!isAlreadyExpanded)
                 {
-                    // Handling the DragEnter would not only disable Auot-expand but also Auto-surround UI gesture (
-
-
+                    // Handling the DragEnter would not only disable Auot-expand but also Auto-surround UI gesture (Bug 202880).
+                    // To circumvent this problem, a new method (ShowSpacerHelperOnDraggedItems) is used to show
+                    // the spacer directly.
                     presenter.ShowSpacerHelperOnDraggedItems(e);
                     e.Handled = true;
                 }

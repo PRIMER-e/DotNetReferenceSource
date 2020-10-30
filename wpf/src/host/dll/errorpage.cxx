@@ -188,8 +188,27 @@ void CErrorPage::DisplayOnAnyThread(__in_ecount(1) BSTR pErrorMsg)
 #pragma warning(disable:4509)
     __try
     {
-#endif
+#endif 
 
+    DisplayOnAnyThreadImpl(pErrorMsg);
+
+#ifdef DEBUG
+    }
+    // The msg box is in the filter expression so that it's run before the stack is unwound.
+    __except (MessageBox(g_pOleDoc ? g_pOleDoc->GetTopWindow() : 0,
+        L"An exception occurred in PresentationHostDLL!CErrorPage.\n"
+        L"** This is a bug. **\nPlease report it to wpfdev, preferably with a\n"
+        L"memory dump of PresentationHost.exe (or XPSViewer.exe)\n"
+        L"taken before closing this.", 0, 0),
+        false)
+    {
+    }
+#pragma warning(default:4509)
+#endif 
+}
+
+void CErrorPage::DisplayOnAnyThreadImpl(__in_ecount(1) BSTR pErrorMsg)
+{
     HRESULT hr = S_OK;
     CString strStartupUri, strAppIdentity;
     _bstr_t htmlTemplate;
@@ -344,20 +363,6 @@ Cleanup:
     { 
         MessageBox(0, pErrorMsg, L"XAML Browser Application Error", MB_ICONSTOP);
     }
-
-#ifdef DEBUG
-    }
-    // The msg box is in the filter expression so that it's run before the stack is unwound.
-    __except(MessageBox(g_pOleDoc ? g_pOleDoc->GetTopWindow() : 0, 
-            L"An exception occurred in PresentationHostDLL!CErrorPage.\n"
-            L"** This is a bug. **\nPlease report it to ActApp/Microsoft, preferably with a\n"
-            L"memory dump of PresentationHost.exe (or XPSViewer.exe)\n"
-            L"taken before closing this.", 0, 0), 
-        false)
-    {
-    }
-#pragma warning(default:4509)
-#endif
 }
 
 HRESULT CErrorPage::SetUpHostWindow()

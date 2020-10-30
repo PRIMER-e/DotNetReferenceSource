@@ -181,9 +181,9 @@ namespace System.Drawing {
 
 // Due to conditions at shutdown, we can't be sure all objects will be finalized here: e.g. a Global variable 
 // in the application/domain may still be holding a GDI+ object. If so, calling GdiplusShutdown will free the GDI+ heap,
-// causing AppVerifier exceptions due to active crit sections. See DevDiv2 
-
-
+// causing AppVerifier exceptions due to active crit sections. See DevDiv2 Bug # 358109 for further details. 
+// For now, we will simply not call shutdown, the resultant heap leak should occur most often during shutdown anyway. 
+// If GDI+ moves their allocations to the standard heap we can revisit.
 #if GDIP_SHUTDOWN
                     // Let any thread data collect and finalize before
                     // we tear down GDI+
@@ -4083,7 +4083,14 @@ namespace System.Drawing {
             return AddFontResourceEx( fileName, /*FR_PRIVATE*/ 0x10, IntPtr.Zero);
         }
 
-        
+        [DllImport(ExternDll.Gdi32, SetLastError = true, CharSet = CharSet.Unicode)]
+        [ResourceExposure(ResourceScope.None)]
+        public static extern int RemoveFontResourceEx(string lpszFilename, int fl, IntPtr pdv);
+
+        public static int RemoveFontFile(string fileName) {
+            return RemoveFontResourceEx(fileName, /*FR_PRIVATE*/ 0x10, IntPtr.Zero);
+        }
+
         /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
         [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
         public static extern int ExcludeClipRect(HandleRef hDC, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);

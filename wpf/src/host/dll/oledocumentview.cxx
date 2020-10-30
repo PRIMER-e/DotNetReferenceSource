@@ -205,10 +205,10 @@ void COleDocumentView::MoveViewportHelper(int x, int y, int nWidth, int nHeight)
     // update the dimensions of the top dockobj hwnd using the dimensions provided
 
     // A 0x0 rect is passed to IOleDocumentView::SetRect() or IOleInPlaceObject::SetObjectRects()
-    // (depending on the hosting mode) when the top-level window is minimized. This appears to be a 
-
-
-
+    // (depending on the hosting mode) when the top-level window is minimized. This appears to be a bug
+    // in the ATL host, which gets 0x0 in its WM_SIZE handler but ignores the SIZE_MINIMIZED flag.
+    // IE probably does something similar. But normally child windows are not resized or moved when the
+    // top-level window is minimized.
     if(nWidth > 0 || nHeight > 0)
     {
         // Drawing optimization (last param of MoveWindow): don't paint the background of the top window if the 

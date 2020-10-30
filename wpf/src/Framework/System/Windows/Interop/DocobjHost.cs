@@ -362,9 +362,9 @@ namespace System.Windows.Interop
                     //[Microsoft, 01/06/08]
                     // This mitigates TFS Dev10 451830 by showing an actionable message instead of crashing
                     // deep inside the Input code where MSCTF gets loaded and fails to do so. More info on the
-                    // conditions leading to this 
-
-
+                    // conditions leading to this bug and how we detect those can be found in the method used
+                    // for the check below and in the TFS bug database.
+                    // See KB article http://support.microsoft.com/kb/954494 (linked in the displayed message).
                     if (IsAffectedByCtfIssue())
                     {
                         exitCode = -1;
@@ -410,9 +410,9 @@ namespace System.Windows.Interop
         }
 
         /// <summary>
-        /// Checks for the conditions in which 
-
-
+        /// Checks for the conditions in which bug 451830 affects browser-hosted applications.
+        /// </summary>
+        /// <returns>true if the configuration is affected; false if not.</returns>
         private bool IsAffectedByCtfIssue()
         {
             // There's an issue in MSCTF.dll (Language Bar supporting DLL) that affects Windows XP users

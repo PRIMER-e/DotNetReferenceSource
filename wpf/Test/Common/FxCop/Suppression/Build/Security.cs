@@ -59,4 +59,6 @@ using System.Diagnostics.CodeAnalysis;
 // Reason: We do not need the hash for cryptographic reasons and we need to match the hash algorithm used by CodeChecksumPragma.ChecksumAlgorithmId
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Cryptographic.Standard","CA5350:MD5CannotBeUsed", Scope="member", Target="MS.Internal.MarkupCompiler.#GenerateSource()")]
+[module: SuppressMessage("Microsoft.Cryptographic.Standard","CA5354:SHA1CannotBeUsed", Scope="member", Target="MS.Internal.MarkupCompiler.#GenerateSource()")]
 [module: SuppressMessage("Microsoft.Cryptographic.Standard","CA5350:MD5CannotBeUsed", Scope="member", Target="MS.Internal.TaskFileService.#GetChecksum(System.String,System.Guid)")]
+[module: SuppressMessage("Microsoft.Cryptographic.Standard","CA5354:SHA1CannotBeUsed", Scope="member", Target="MS.Internal.TaskFileService.#GetChecksum(System.String,System.Guid)")]

@@ -85,7 +85,7 @@ namespace System.Windows.Controls
             get { return _status; }
         }
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
         private void SetStatus(GeneratorStatus value)
         {
             if (value != _status)
@@ -441,7 +441,7 @@ namespace System.Windows.Controls
 
         internal void RemoveAllInternal(bool saveRecycleQueue)
         {
-            // Take _itemMap offline, to protect against reentrancy (
+            // Take _itemMap offline, to protect against reentrancy (bug 1285179)
             ItemBlock itemMap = _itemMap;
             _itemMap = null;
 
@@ -599,7 +599,7 @@ namespace System.Windows.Controls
             int index;
 
             DoLinearSearch(
-                delegate(object o, DependencyObject d) { return Object.Equals(o, item); },
+                delegate(object o, DependencyObject d) { return ItemsControl.EqualsEx(o, item); },
                 out dummy, out container, out index, false);
 
             return container;
@@ -869,7 +869,7 @@ namespace System.Windows.Controls
             if (!IsGrouping || returnLocalIndex)
             {
                 // when the UI is not grouping, each item counts as 1, even
-                // groups (
+                // groups (bug 1761421)
                 return end;
             }
 
@@ -942,7 +942,7 @@ namespace System.Windows.Controls
 #if DEBUG
                     object item = (Parent == null) && (container != null) ?
                                 container.ReadLocalValue(ItemForItemContainerProperty) : null;
-                    Debug.Assert(item == null || Object.Equals(item, target),
+                    Debug.Assert(item == null || ItemsControl.EqualsEx(item, target),
                         "Generator's data structure is corrupt - ContainerFromIndex found wrong item");
 #endif
                     return container;
@@ -951,7 +951,7 @@ namespace System.Windows.Controls
                 index -= block.ItemCount;
             }
 
-            return null;  // *not* throw new IndexOutOfRangeException(); - 
+            return null;  // *not* throw new IndexOutOfRangeException(); - bug 890195
         }
 
 
@@ -1039,7 +1039,7 @@ namespace System.Windows.Controls
                         int index = blockIndex + offset;
                         object genItem = rib.ItemAt(offset);
                         object actualItem = (index < _items.Count) ? _items[index] : null;
-                        if (!Object.Equals(genItem, actualItem))
+                        if (!ItemsControl.EqualsEx(genItem, actualItem))
                         {
                             if (reportedItems < 3)
                             {
@@ -1354,17 +1354,17 @@ namespace System.Windows.Controls
             //------------------------------------------------------
 
 /* This method was requested for virtualization.  It's not being used right now
-(
-
-
-
-
-
-
-
-
-
-
+(bug 1079525) but it probably will be when UI virtualization comes back.
+            /// <summary>
+            /// returns false if a call to GenerateNext is known to return null (indicating
+            /// that the generator is done).  Does not generate anything or change the
+            /// generator's state;  cheaper than GenerateNext.  Returning true does not
+            /// necessarily mean GenerateNext will produce anything.
+            /// </summary>
+            public bool IsActive
+            {
+                get { return !_done; }
+            }
 */
 
             //------------------------------------------------------
@@ -2222,7 +2222,7 @@ namespace System.Windows.Controls
                     rib = block.Prev as RealizedItemBlock;
                     if (rib != null && rib.ContainerCount > 0)
                     {
-                        Debug.Assert(Object.Equals(rib.ItemAt(rib.ContainerCount - 1),
+                        Debug.Assert(ItemsControl.EqualsEx(rib.ItemAt(rib.ContainerCount - 1),
                                                     ItemsInternal[correctIndex - 1]),
                                     "Generator data structure is corrupt");
                     }
@@ -2236,7 +2236,7 @@ namespace System.Windows.Controls
                         // the deleted item likely comes from the current
                         // unrealized block.
                         itemIsInCurrentBlock =
-                                Object.Equals(rib.ItemAt(0),
+                                ItemsControl.EqualsEx(rib.ItemAt(0),
                                     ItemsInternal[correctIndex + block.ItemCount - deletionOffset]);
                     }
                     else if (block.Next == _itemMap)
@@ -2309,32 +2309,32 @@ namespace System.Windows.Controls
             //          possibly re-enters the tree at some point, usually with a
             //          different item.
             //
-            // As Dev10 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            // As Dev10 bug 452669 and some "subtle issues" that arose in the
+            // container recycling work illustrate, it's important that the container
+            // and its subtree sever their connection to the data item.  Otherwise
+            // you can get aliasing - a dead container reacting to the same item as a live
+            // container.  Even without aliasing, it's a perf waste for a dead container
+            // to continue reacting to its former data item.
+            //
+            // On the other hand, it's a perf waste to spend too much effort cleaning
+            // up the container and its subtree, since they will often just get GC'd
+            // in the near future.
+            //
+            // WPF initially did a full cleanup of the container, removing all properties
+            // that were set in PrepareContainerForItem.  This avoided aliasing, but
+            // was deemed too expensive, especially for scrolling.  For Windows OS Bug
+            // 1445288, all this cleanup work was removed.  This sped up scrolling, but
+            // introduced the problems cited in Dev10 452669 and the recycling "subtle
+            // issues".  A compromise is needed.
+            //
+            // The compromise is tell the container to attach to a sentinel item
+            // BindingExpressionBase.DisconnectedItem.  We allow this to propagate into the
+            // conainer's subtree through properties like DataContext and
+            // ContentControl.Content that are normally set by PrepareItemForContainer.
+            // A Binding that sees the sentinel as the data item will disconnect its
+            // event listeners from the former data item, but will not change its
+            // own value or invalidate its target property.  This avoids the cost
+            // of re-measuring most of the subtree.
 
             container.ClearValue(ItemForItemContainerProperty);
 
@@ -2386,7 +2386,7 @@ namespace System.Windows.Controls
             {
                 // this check is expensive - Items[index] potentially iterates through
                 // the collection.  So trust the sender to tell us the truth in retail bits.
-                Debug.Assert(Object.Equals(item, ItemsInternal[index]), "Event contains the wrong index");
+                Debug.Assert(ItemsControl.EqualsEx(item, ItemsInternal[index]), "Event contains the wrong index");
             }
             else
             {
@@ -3063,7 +3063,7 @@ namespace System.Windows.Controls
             {
                 for (int k=0; k < ItemCount; ++k)
                 {
-                    if (Object.Equals(_entry[k].Item, item))
+                    if (ItemsControl.EqualsEx(_entry[k].Item, item))
                         return k;
                 }
 

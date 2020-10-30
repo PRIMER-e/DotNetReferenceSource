@@ -277,7 +277,7 @@ namespace System.Management.Instrumentation
 
         public void RegisterNonAssemblySpecificSchema(InstallContext installContext)
         {
-            SecurityHelper.UnmanagedCode.Demand(); // 
+            SecurityHelper.UnmanagedCode.Demand(); // Bug#112640 - Close off any potential use from anything but fully trusted code
             
             // Make sure the 'Client' key has the correct permissions
             WmiNetUtilsHelper.VerifyClientKey_f();
@@ -324,7 +324,7 @@ namespace System.Management.Instrumentation
               [ResourceExposure(ResourceScope.None),ResourceConsumption(ResourceScope.Machine,ResourceScope.Machine)]
 		public void RegisterAssemblySpecificSchema()
 		{
-			SecurityHelper.UnmanagedCode.Demand(); // 
+			SecurityHelper.UnmanagedCode.Demand(); // Bug#112640 - Close off any potential use from anything but fully trusted code
 
 			Type[] types = InstrumentedAttribute.GetInstrumentedTypes(assembly);
 			StringCollection events = new StringCollection();
@@ -375,7 +375,7 @@ namespace System.Management.Instrumentation
 			{
 				SchemaMapping mapping = new SchemaMapping(types[i], this, mapTypeToConverterClassName);
 
-				codeCCTOR.Line(String.Format("mapTypeToConverter[typeof({0})] = typeof({1});", mapping.ClassType.FullName.Replace('+', '.'), mapping.CodeClassName));  // 
+				codeCCTOR.Line(String.Format("mapTypeToConverter[typeof({0})] = typeof({1});", mapping.ClassType.FullName.Replace('+', '.'), mapping.CodeClassName));  // bug#92918 - watch for nested classes
 				// [Microsoft] VSUQFE#2248 (VSWhidbey 231885)
 				if (bSchemaToBeCompared == true && IsClassAlreadyPresentInRepository(mapping.NewClass) == false)
 				{

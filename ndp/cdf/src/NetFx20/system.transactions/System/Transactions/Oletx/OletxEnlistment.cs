@@ -680,8 +680,8 @@ namespace System.Transactions.Oletx
             {
                 // We are dealing with the committable transaction.  If Commit or BeginCommit has NOT been
                 // called, then we are dealing with a situation where the TM went down and we are getting
-                // a bogus Phase0Request with abortHint = false (COMPlus 
-
+                // a bogus Phase0Request with abortHint = false (COMPlus bug 36760/36758).  This is an attempt
+                // to not send the app a Prepare request when we know the transaction is going to abort.
                 if (!committableTx.CommitCalled )
                 {
                     commitNotYetCalled = true;
@@ -709,8 +709,8 @@ namespace System.Transactions.Oletx
                             {
                                 this.phase0Shim.Phase0Done( false );
                             }
-                            // I am not going to check for XACT_E_PROTOCOL here because that check is a workaround for a 
-
+                            // I am not going to check for XACT_E_PROTOCOL here because that check is a workaround for a bug
+                            // that only shows up if abortingHint is false.
                             catch ( COMException ex )
                             {
                                 if ( DiagnosticTrace.Verbose )
@@ -1081,13 +1081,13 @@ namespace System.Transactions.Oletx
                             ex );
                     }
                 }
-                // In the case of Phase0, there is a 
-
-
-
-
-
-
+                // In the case of Phase0, there is a bug in the proxy that causes an XACT_E_PROTOCOL
+                // error if the TM goes down while the enlistment is still active.  The Phase0Request is
+                // sent out with abortHint false, but the state of the proxy object is not changed, causing
+                // Phase0Done request to fail with XACT_E_PROTOCOL.
+                // For Prepared, we want to make sure the proxy aborts the transaction.  We don't need
+                // to drive the abort to the application here because the Phase1 enlistment will do that.
+                // In other words, treat this as if the proxy said Phase0Request( abortingHint = true ).
                 else if ( NativeMethods.XACT_E_PROTOCOL == ex.ErrorCode )
                 {
                     this.Phase0EnlistmentShim = null;

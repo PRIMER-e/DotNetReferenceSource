@@ -453,7 +453,7 @@ TemporaryManager::GetNextTemporaryName
     if (TemporaryVtype >= 0 && TemporaryVtype < _countof(m_CountOfTemporariesOfVtype))
     {
         StringBuffer NameBuffer;
-        WCHAR CharacterBuffer[32];  // VS Everett security 
+        WCHAR CharacterBuffer[32];  // VS Everett security bug #515087
 
         NameBuffer.AppendString(VBTemporaryPrefix);
 

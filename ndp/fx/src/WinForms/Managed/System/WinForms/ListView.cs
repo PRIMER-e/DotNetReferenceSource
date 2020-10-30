@@ -228,12 +228,17 @@ namespace System.Windows.Forms {
         /// </devdoc>
         public ListView() : base() {
 
-            listViewState = new System.Collections.Specialized.BitVector32(LISTVIEWSTATE_scrollable |
-                                                                           LISTVIEWSTATE_multiSelect |
-                                                                           LISTVIEWSTATE_labelWrap |
-                                                                           LISTVIEWSTATE_hideSelection |
-                                                                           LISTVIEWSTATE_autoArrange |
-                                                                           LISTVIEWSTATE_showGroups);
+            int listViewStateFlags = LISTVIEWSTATE_scrollable |
+                                     LISTVIEWSTATE_multiSelect |
+                                     LISTVIEWSTATE_labelWrap |
+                                     LISTVIEWSTATE_autoArrange |
+                                     LISTVIEWSTATE_showGroups;
+            if (!AccessibilityImprovements.Level3) {
+                // Show grey rectangle around the selected list item if the list view is out of focus.
+                listViewStateFlags |= LISTVIEWSTATE_hideSelection;
+            }
+
+            listViewState = new System.Collections.Specialized.BitVector32(listViewStateFlags);
 
             listViewState1 = new System.Collections.Specialized.BitVector32(LISTVIEWSTATE1_useCompatibleStateImageBehavior);
             SetStyle(ControlStyles.UserPaint, false);
@@ -1714,9 +1719,9 @@ namespace System.Windows.Forms {
                 EnsureVisible(value.Index);
                 ListViewItem topItem = TopItem;
 
-                if ((topItem == null) && (topIndex == Items.Count)) // HACK ALERT! VSWhidbey 
-                {                                                   // There's a 
-                    topItem = value;                                // a single item.  Result of the 
+                if ((topItem == null) && (topIndex == Items.Count)) // HACK ALERT! VSWhidbey bug 154094/Windows OS Bugs bug 872012
+                {                                                   // There's a bug in the common controls when the listview window is too small to fully display
+                    topItem = value;                                // a single item.  Result of the bug is that the return value from a LVM_GETTOPINDEX
                     if (Scrollable)                                 // message is the number of items in the list rather than an index of an item in the list.
                     {                                               // This causes TopItem to return null.  A side issue is that EnsureVisible doesn't do too well
                         EnsureVisible(0);                           // here either, because it causes the listview to go blank rather than displaying anything useful.
@@ -3111,7 +3116,7 @@ namespace System.Windows.Forms {
             // the win32 ListView::FindNearestItem does some pretty weird things to determine the nearest item.
             // simply passing the (x,y) coordinates will cause problems when we call FindNearestItem for a point inside an item.
             // so we have to do some special processing when (x,y) falls inside an item;
-            // take a look at VSWHIDBEY 
+            // take a look at VSWHIDBEY bug 178646 and the attached ListView_IFindNearestItem.c file for a complete story.
             ListViewItem lvi = this.GetItemAt(x,y);
 
             if (lvi != null) {
@@ -4248,10 +4253,10 @@ namespace System.Windows.Forms {
             this.FlipViewToLargeIconAndSmallIcon = false;
 
             base.OnHandleCreated(e);
-            //ComCtl 5 has some 
-
-
-
+            //ComCtl 5 has some bug fixes that, to enable, require us to send the control
+            //a CCM_SETVERSION with 5 as the version. The one we want in particular is
+            //the fix for the node clipping issue when a font is set by means of CDRF_NEWFONT.
+            //The fix is not perfect, but the behavior is better than before.
             int version = unchecked((int)(long)SendMessage(NativeMethods.CCM_GETVERSION, 0, 0));
             if (version < 5) {
                 SendMessage(NativeMethods.CCM_SETVERSION, 5, 0);
@@ -5109,8 +5114,8 @@ namespace System.Windows.Forms {
 
             Debug.Assert(IsHandleCreated, "SetItemText with no handle");
 
-            // 
-
+            // bug 185563 : a listView in list mode will not increase the item width if the length of the item's text increases
+            // We have to make sure that the width of the "column" contains the string
             if (this.View == View.List && subItemIndex == 0) {
                 int colWidth = unchecked( (int) (long)UnsafeNativeMethods.SendMessage(new HandleRef(this, this.Handle), NativeMethods.LVM_GETCOLUMNWIDTH, 0, 0));
 
@@ -5418,13 +5423,21 @@ namespace System.Windows.Forms {
             //If Validation is cancelled dont fire any events through the Windows ListView's message loop...
             if (!ValidationCancelled) {
 
-                if (CheckBoxes && imageListState != null && imageListState.Images.Count < 2) {
-                    // vsw 156366: when the user clicks on the check box and the listView's state image list
-                    // does not have 2 images, comctl will give us an AttemptToDivideByZero exception.
-                    // So don't send the message to DefWndProc in this situation.
-                    ListViewHitTestInfo lvhti = this.HitTest(x,y);
-                    if (lvhti.Location != ListViewHitTestLocations.StateImage)
-                    {
+                if (CheckBoxes) {
+                    ListViewHitTestInfo lvhti = this.HitTest(x, y);
+                    if (imageListState != null && imageListState.Images.Count < 2) {
+                        // vsw 156366: when the user clicks on the check box and the listView's state image list
+                        // does not have 2 images, comctl will give us an AttemptToDivideByZero exception.
+                        // So don't send the message to DefWndProc in this situation.
+                        if (lvhti.Location != ListViewHitTestLocations.StateImage) {
+                            DefWndProc(ref m);
+                        }
+                    }
+                    else {
+                        // When a user clicks on the state image, focus the item.
+                        if (AccessibilityImprovements.Level2 && lvhti.Item != null && lvhti.Location == ListViewHitTestLocations.StateImage) {
+                            lvhti.Item.Focused = true;
+                        }
                         DefWndProc(ref m);
                     }
                 }
@@ -5895,6 +5908,10 @@ namespace System.Windows.Forms {
                             if (newValue != oldValue) {
                                 ItemCheckedEventArgs e = new ItemCheckedEventArgs(Items[nmlv->iItem]);
                                 OnItemChecked(e);
+                                if (AccessibilityImprovements.Level1) {
+                                    AccessibilityNotifyClients(AccessibleEvents.StateChange, nmlv->iItem);
+                                    AccessibilityNotifyClients(AccessibleEvents.NameChange, nmlv->iItem);
+                                }
                             }
 
                             int oldState = nmlv->uOldState & NativeMethods.LVIS_SELECTED;
@@ -6017,7 +6034,7 @@ namespace System.Windows.Forms {
                     if (nmhdr->code == NativeMethods.LVN_GETDISPINFO) {
                         // we use the LVN_GETDISPINFO message only in virtual mode
                         if (this.VirtualMode && m.LParam != IntPtr.Zero) {
-                            // we HAVE to use unsafe code because of a 
+                            // we HAVE to use unsafe code because of a bug in the CLR: WHIDBEY bug 20313
                             NativeMethods.NMLVDISPINFO_NOTEXT dispInfo= (NativeMethods.NMLVDISPINFO_NOTEXT) m.GetLParam(typeof(NativeMethods.NMLVDISPINFO_NOTEXT));
 
                             RetrieveVirtualItemEventArgs rVI = new RetrieveVirtualItemEventArgs(dispInfo.item.iItem);
@@ -9179,6 +9196,55 @@ namespace System.Windows.Forms {
                 return items.GetEnumerator();
             }
         }
+        
+        /// <summary>
+        /// Creates the new instance of AccessibleObject for this ListView control.
+        /// Returning ListViewAccessibleObject is only available in applications that
+        /// are recompiled to target .NET Framework 4.7.3 or opt-in into this feature
+        /// using a compatibility switch.
+        /// </summary>
+        /// <returns>
+        /// The AccessibleObject for this ListView instance.
+        /// </returns>
+        protected override AccessibleObject CreateAccessibilityInstance() {
+            if (AccessibilityImprovements.Level3) {
+                return new ListViewAccessibleObject(this);
+            }
+
+            return base.CreateAccessibilityInstance();
+        }
+
+        internal class ListViewAccessibleObject : ControlAccessibleObject {
+
+            private ListView owner;
+
+            internal ListViewAccessibleObject(ListView owner) : base(owner) {
+                this.owner = owner;
+            }
+
+            internal override bool IsIAccessibleExSupported()
+            {
+                if (owner != null) {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_ItemStatusPropertyId) {
+                    switch (owner.Sorting) {
+                        case SortOrder.None:
+                            return SR.GetString(SR.NotSortedAccessibleStatus);
+                        case SortOrder.Ascending:
+                            return SR.GetString(SR.SortedAscendingAccessibleStatus);
+                        case SortOrder.Descending:
+                            return SR.GetString(SR.SortedDescendingAccessibleStatus);
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+        }
     }
 }
-

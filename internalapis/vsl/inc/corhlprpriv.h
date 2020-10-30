@@ -395,7 +395,7 @@ private:
     inline
     BOOL CheckOverflowNoThrow(SIZE_T iItems)
     {
-        // We can not use S_SIZE_T here since corhdr.h is public header file, 
+        // We can not use S_SIZE_T here since corhdr.h is public header file, bug safemath.h is not
         SIZE_T totalSize = iItems * sizeof(T);
 
         if (totalSize / sizeof(T) != iItems)
@@ -637,7 +637,7 @@ CorSigUncompressElementType_EndPtr(
 {
     _ASSERTE(pData <= pDataEnd);
     // We don't expect pData > pDataEnd, but the runtime check doesn't cost much and it is more secure in 
-    // case caller has a 
+    // case caller has a bug
     if (pData >= pDataEnd)
     {   // No data
         return META_E_BAD_SIGNATURE;

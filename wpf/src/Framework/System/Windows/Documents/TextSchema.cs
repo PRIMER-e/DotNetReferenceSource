@@ -1154,7 +1154,7 @@ namespace System.Windows.Documents
                 //TextElement.TextEffectsProperty, -- the property is not supported in text editor
             };
 
-        // List of all non-inheritable properties applicable to TextElement element
+        // List of all non-inheritable properties applicable to Image element
         private static readonly DependencyProperty[] _imagePropertyList = new DependencyProperty[]
             {
                 Image.SourceProperty,
@@ -1199,6 +1199,9 @@ namespace System.Windows.Documents
                 UIElement.ClipToBoundsProperty,
                 UIElement.ClipProperty,
                 UIElement.SnapsToDevicePixelsProperty,
+
+                // Inherits TextBlock properties
+                TextBlock.BaselineOffsetProperty,
             };
 
         // Behavioral property list

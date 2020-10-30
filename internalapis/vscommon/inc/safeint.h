@@ -253,8 +253,8 @@ Version 1.0.3
 *                 Consistently used _int16, _int32 and _int64 to ensure
 *                 portability
 *  May 10, 2003 - 1.0.3
-*                 Corrected 
-
+*                 Corrected bug in one case of GreaterThan
+*                 
 */
 
 #pragma warning(push)
@@ -2146,10 +2146,10 @@ private:
 	}
 
 	//this is almost certainly not the best optimized version of atoi,
-	//but it does not display a typical 
-
-
-
+	//but it does not display a typical bug where it isn't possible to set MinInt
+	//and it won't allow you to overflow your integer
+	//This is here because it is useful, and it is an example of what
+	//can be done easily with SafeInt
 	template <typename U>
 	static SafeInt<T> SafeTtoI(U* input)
 	{

@@ -88,9 +88,9 @@ Cleanup:
 
 void CCookieShim::Uninit()
 {
-    // Undetouring on shutdown is needed specifically to avoid DevDiv 
-
-
+    // Undetouring on shutdown is needed specifically to avoid DevDiv bug 161831: WMNetMgr.dll (part of the
+    // Windows Media control) somehow manages to make an (asynchronous) call to InternetGetCookieEx() after 
+    // PHDLL is unloaded.
     if(s_pfInternetSetCookieEx != InternetSetCookieEx) // detoured?
     {
         if(DetourTransactionBegin() == NOERROR &&

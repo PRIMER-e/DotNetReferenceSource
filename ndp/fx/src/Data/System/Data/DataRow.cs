@@ -1307,9 +1307,9 @@ namespace System.Data {
                     version = DataRowVersion.Current;
                 }
                 // There are various known issues detected by this assert for non-default versions, 
-                // for example DevDiv2 
-
-
+                // for example DevDiv2 bug 73753
+                // Since changes consitutute breaking change (either way customer will get another result), 
+                // we decided not to fix them in Dev 11
                 Debug.Assert(valueFromStorage.Equals(column.DataExpression.Evaluate(this, version)),
                     "Value from storage does lazily computed expression value"); 
             }

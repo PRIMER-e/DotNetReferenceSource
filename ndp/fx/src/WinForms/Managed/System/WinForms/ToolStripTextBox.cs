@@ -30,10 +30,20 @@ namespace System.Windows.Forms {
         internal static readonly object EventMultilineChanged                                     = new object();
         internal static readonly object EventModifiedChanged                                      = new object();
         
+        private static readonly Padding defaultMargin = new Padding(1, 0, 1, 0);
+        private static readonly Padding defaultDropDownMargin = new Padding(1);
+        private Padding scaledDefaultMargin = defaultMargin;
+        private Padding scaledDefaultDropDownMargin = defaultDropDownMargin;
+
         /// <include file='doc\ToolStripTextBox.uex' path='docs/doc[@for="ToolStripTextBox.ToolStripTextBox"]/*' />
         public ToolStripTextBox() : base(CreateControlInstance()) {
             ToolStripTextBoxControl textBox = Control as ToolStripTextBoxControl;
             textBox.Owner = this;
+
+            if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                scaledDefaultMargin = DpiHelper.LogicalToDeviceUnits(defaultMargin);
+                scaledDefaultDropDownMargin = DpiHelper.LogicalToDeviceUnits(defaultDropDownMargin);
+            }
         }
 
         public ToolStripTextBox(string name) : this() {
@@ -82,10 +92,10 @@ namespace System.Windows.Forms {
         protected internal override Padding DefaultMargin {
             get {
                 if (IsOnDropDown) {
-                    return new Padding(1);
+                    return scaledDefaultDropDownMargin;
                 }
                 else {
-                    return new Padding(1, 0, 1, 0);
+                    return scaledDefaultMargin;
                 }
             }
         }
@@ -101,6 +111,45 @@ namespace System.Windows.Forms {
         public TextBox TextBox {
             get{
                 return Control as TextBox;
+            }
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        protected override AccessibleObject CreateAccessibilityInstance() {
+            if (AccessibilityImprovements.Level3) {
+                return new ToolStripTextBoxAccessibleObject(this);
+            }
+
+            return base.CreateAccessibilityInstance();
+        }
+
+        [System.Runtime.InteropServices.ComVisible(true)]
+        internal class ToolStripTextBoxAccessibleObject : ToolStripItemAccessibleObject {
+            private ToolStripTextBox ownerItem = null;
+
+            public ToolStripTextBoxAccessibleObject(ToolStripTextBox ownerItem) : base(ownerItem) {
+              this.ownerItem = ownerItem;
+            }
+         
+            public override AccessibleRole Role {
+               get {
+                   AccessibleRole role = Owner.AccessibleRole;
+                   if (role != AccessibleRole.Default) {
+                       return role;
+                   }
+
+                   return AccessibleRole.Text;
+               }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                if (direction == UnsafeNativeMethods.NavigateDirection.FirstChild ||
+                    direction == UnsafeNativeMethods.NavigateDirection.LastChild) {
+                    return this.ownerItem.TextBox.AccessibilityObject;
+                }
+
+                // Handle Parent and other directions in base ToolStripItem.FragmentNavigate() method.
+                return base.FragmentNavigate(direction);
             }
         }
 
@@ -570,275 +619,337 @@ namespace System.Windows.Forms {
        public void Undo() {  TextBox.Undo(); }
 #endregion
         private class ToolStripTextBoxControl : TextBox {
-                private bool mouseIsOver = false;
-                private ToolStripTextBox ownerItem;
-                private bool isFontSet = true;
-                private bool alreadyHooked;
+            private bool mouseIsOver = false;
+            private ToolStripTextBox ownerItem;
+            private bool isFontSet = true;
+            private bool alreadyHooked;
                 
-               [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]  // FXCop doesnt understand that setting Font changes the value of isFontSet
-                public ToolStripTextBoxControl() {
-                    // required to make the text box height match the combo.
-                    this.Font = ToolStripManager.DefaultFont;      
-                    isFontSet = false;
-                }
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]  // FXCop doesnt understand that setting Font changes the value of isFontSet
+            public ToolStripTextBoxControl() {
+                // required to make the text box height match the combo.
+                this.Font = ToolStripManager.DefaultFont;      
+                isFontSet = false;
+            }
 
               
-                // returns the distance from the client rect to the upper left hand corner of the control
-                private NativeMethods.RECT AbsoluteClientRECT {
-                    get {
-                        NativeMethods.RECT rect = new NativeMethods.RECT();
-                        CreateParams cp = CreateParams;
+            // returns the distance from the client rect to the upper left hand corner of the control
+            private NativeMethods.RECT AbsoluteClientRECT {
+                get {
+                    NativeMethods.RECT rect = new NativeMethods.RECT();
+                    CreateParams cp = CreateParams;
+
+                    AdjustWindowRectEx(ref rect, cp.Style, HasMenu, cp.ExStyle);
+
+                    // the coordinates we get back are negative, we need to translate this back to positive.
+                    int offsetX = -rect.left; // one to get back to 0,0, another to translate
+                    int offsetY = -rect.top;
+
+                    // fetch the client rect, then apply the offset.
+                    UnsafeNativeMethods.GetClientRect(new HandleRef(this, this.Handle), ref rect);
+
+                    rect.left   += offsetX;
+                    rect.right  += offsetX;
+                    rect.top    += offsetY;
+                    rect.bottom += offsetY;
                         
-                        SafeNativeMethods.AdjustWindowRectEx(ref rect, cp.Style, HasMenu, cp.ExStyle);
-
-                        // the coordinates we get back are negative, we need to translate this back to positive.
-                        int offsetX = -rect.left; // one to get back to 0,0, another to translate
-                        int offsetY = -rect.top;
-
-                        // fetch the client rect, then apply the offset.
-                        UnsafeNativeMethods.GetClientRect(new HandleRef(this, this.Handle), ref rect);
-
-                        rect.left   += offsetX;
-                        rect.right  += offsetX;
-                        rect.top    += offsetY;
-                        rect.bottom += offsetY;
-                        
-                        return rect;                        
-                    }
+                    return rect;                        
                 }
-                private Rectangle AbsoluteClientRectangle {
-                    get {
-                        NativeMethods.RECT rect = AbsoluteClientRECT;
-                        return Rectangle.FromLTRB(rect.top, rect.top, rect.right, rect.bottom);
-                    }
+            }
+            private Rectangle AbsoluteClientRectangle {
+                get {
+                    NativeMethods.RECT rect = AbsoluteClientRECT;
+                    return Rectangle.FromLTRB(rect.top, rect.top, rect.right, rect.bottom);
                 }
+            }
 
                 
-                private ProfessionalColorTable ColorTable {
-                     get {
-                         if (Owner != null) {
-                             ToolStripProfessionalRenderer renderer = Owner.Renderer as ToolStripProfessionalRenderer;
-                             if (renderer != null) {
-                                 return renderer.ColorTable;
-                             }
-                         }
-                         return ProfessionalColors.ColorTable;
-                     }
-                }
-                
-                private bool IsPopupTextBox {
-                   get { 
-                        return ((BorderStyle == BorderStyle.Fixed3D) && 
-                                 (Owner != null && (Owner.Renderer is ToolStripProfessionalRenderer)));
-                    }
-                }
-
-                internal bool MouseIsOver {
-                    get { return mouseIsOver; }
-                    set {
-                        if (mouseIsOver != value) {
-                            mouseIsOver = value;
-                            if (!Focused) {
-                                InvalidateNonClient();
+            private ProfessionalColorTable ColorTable {
+                    get {
+                        if (Owner != null) {
+                            ToolStripProfessionalRenderer renderer = Owner.Renderer as ToolStripProfessionalRenderer;
+                            if (renderer != null) {
+                                return renderer.ColorTable;
                             }
+                        }
+                        return ProfessionalColors.ColorTable;
+                    }
+            }
+                
+            private bool IsPopupTextBox {
+                get { 
+                    return ((BorderStyle == BorderStyle.Fixed3D) && 
+                                (Owner != null && (Owner.Renderer is ToolStripProfessionalRenderer)));
+                }
+            }
+
+            internal bool MouseIsOver {
+                get { return mouseIsOver; }
+                set {
+                    if (mouseIsOver != value) {
+                        mouseIsOver = value;
+                        if (!Focused) {
+                            InvalidateNonClient();
                         }
                     }
                 }
+            }
 
-                public override Font Font {
-                    get { return base.Font; }
-                    set { 
-                        base.Font = value;
-                        isFontSet = ShouldSerializeFont();    
-                    }
+            public override Font Font {
+                get { return base.Font; }
+                set { 
+                    base.Font = value;
+                    isFontSet = ShouldSerializeFont();    
                 }
+            }
 
-                public ToolStripTextBox Owner {
-                   get { return ownerItem; }
-                   set { ownerItem = value; }
+            public ToolStripTextBox Owner {
+                get { return ownerItem; }
+                set { ownerItem = value; }
+            }
+
+            internal override bool SupportsUiaProviders {
+                get {
+                    return AccessibilityImprovements.Level3;
                 }
+            }
 
-                private void InvalidateNonClient() {
-                    if (!IsPopupTextBox) {
-                        return;
-                    }
-                    NativeMethods.RECT absoluteClientRectangle = AbsoluteClientRECT;
-                    HandleRef hNonClientRegion = NativeMethods.NullHandleRef;
-                    HandleRef hClientRegion = NativeMethods.NullHandleRef;
-                    HandleRef hTotalRegion = NativeMethods.NullHandleRef;
+            private void InvalidateNonClient() {
+                if (!IsPopupTextBox) {
+                    return;
+                }
+                NativeMethods.RECT absoluteClientRectangle = AbsoluteClientRECT;
+                HandleRef hNonClientRegion = NativeMethods.NullHandleRef;
+                HandleRef hClientRegion = NativeMethods.NullHandleRef;
+                HandleRef hTotalRegion = NativeMethods.NullHandleRef;
                     
-                    try {
-                        // get the total client area, then exclude the client by using XOR
-                        hTotalRegion = new HandleRef(this, SafeNativeMethods.CreateRectRgn(0, 0, this.Width, this.Height));
-                        hClientRegion = new HandleRef(this, SafeNativeMethods.CreateRectRgn(absoluteClientRectangle.left, absoluteClientRectangle.top, absoluteClientRectangle.right, absoluteClientRectangle.bottom));
-                        hNonClientRegion = new HandleRef(this, SafeNativeMethods.CreateRectRgn(0,0,0,0));
+                try {
+                    // get the total client area, then exclude the client by using XOR
+                    hTotalRegion = new HandleRef(this, SafeNativeMethods.CreateRectRgn(0, 0, this.Width, this.Height));
+                    hClientRegion = new HandleRef(this, SafeNativeMethods.CreateRectRgn(absoluteClientRectangle.left, absoluteClientRectangle.top, absoluteClientRectangle.right, absoluteClientRectangle.bottom));
+                    hNonClientRegion = new HandleRef(this, SafeNativeMethods.CreateRectRgn(0,0,0,0));
                         
-                        SafeNativeMethods.CombineRgn(hNonClientRegion, hTotalRegion, hClientRegion, NativeMethods.RGN_XOR);
+                    SafeNativeMethods.CombineRgn(hNonClientRegion, hTotalRegion, hClientRegion, NativeMethods.RGN_XOR);
 
-                        // Call RedrawWindow with the region.
-                        NativeMethods.RECT ignored = new NativeMethods.RECT();
-                        SafeNativeMethods.RedrawWindow(new HandleRef(this, Handle),
-                                                       ref ignored , hNonClientRegion,
-                                                       NativeMethods.RDW_INVALIDATE | NativeMethods.RDW_ERASE |
-                                                       NativeMethods.RDW_UPDATENOW  | NativeMethods.RDW_ERASENOW   | 
-                                                       NativeMethods.RDW_FRAME);
+                    // Call RedrawWindow with the region.
+                    NativeMethods.RECT ignored = new NativeMethods.RECT();
+                    SafeNativeMethods.RedrawWindow(new HandleRef(this, Handle),
+                                                    ref ignored , hNonClientRegion,
+                                                    NativeMethods.RDW_INVALIDATE | NativeMethods.RDW_ERASE |
+                                                    NativeMethods.RDW_UPDATENOW  | NativeMethods.RDW_ERASENOW   | 
+                                                    NativeMethods.RDW_FRAME);
+                }
+                finally {
+                    // clean up our regions.
+                    try {
+                        if (hNonClientRegion.Handle != IntPtr.Zero) {
+                            SafeNativeMethods.DeleteObject(hNonClientRegion);
+                        }
                     }
                     finally {
-                        // clean up our regions.
                         try {
-                            if (hNonClientRegion.Handle != IntPtr.Zero) {
-                                SafeNativeMethods.DeleteObject(hNonClientRegion);
+                            if (hClientRegion.Handle != IntPtr.Zero) {
+                                SafeNativeMethods.DeleteObject(hClientRegion);
                             }
                         }
                         finally {
-                            try {
-                                if (hClientRegion.Handle != IntPtr.Zero) {
-                                    SafeNativeMethods.DeleteObject(hClientRegion);
-                                }
-                            }
-                            finally {
-                                if (hTotalRegion.Handle != IntPtr.Zero) {
-                                    SafeNativeMethods.DeleteObject(hTotalRegion);
-                                }
+                            if (hTotalRegion.Handle != IntPtr.Zero) {
+                                SafeNativeMethods.DeleteObject(hTotalRegion);
                             }
                         }
+                    }
                      
-                    }                  
+                }                  
           
-                }
+            }
 
-                protected override void OnGotFocus(EventArgs e) {
-                    base.OnGotFocus(e);
-                    InvalidateNonClient();
-                }
+            protected override void OnGotFocus(EventArgs e) {
+                base.OnGotFocus(e);
+                InvalidateNonClient();
+            }
 
-                protected override void OnLostFocus(EventArgs e) {
-                    base.OnLostFocus(e);
-                    InvalidateNonClient();
+            protected override void OnLostFocus(EventArgs e) {
+                base.OnLostFocus(e);
+                InvalidateNonClient();
                 
-                }
+            }
            
-                protected override void OnMouseEnter(EventArgs e) {
-                    base.OnMouseEnter(e);
-                    MouseIsOver = true;
+            protected override void OnMouseEnter(EventArgs e) {
+                base.OnMouseEnter(e);
+                MouseIsOver = true;
 
-                }
+            }
 
-                protected override void OnMouseLeave(EventArgs e) {
-                    base.OnMouseLeave(e);
-                    MouseIsOver = false;
-                }
+            protected override void OnMouseLeave(EventArgs e) {
+                base.OnMouseLeave(e);
+                MouseIsOver = false;
+            }
                
                 
-                private void HookStaticEvents(bool hook) {
-                   if (hook) {
-                       if (!alreadyHooked) {
-                          try {
-                             SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
-                          }
-                          finally{
-                             alreadyHooked = true;
-                          } 
-                      }                  
-                   }
-                   else if (alreadyHooked) {
+            private void HookStaticEvents(bool hook) {
+                if (hook) {
+                    if (!alreadyHooked) {
                         try {
-                            SystemEvents.UserPreferenceChanged -= new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
+                            SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
                         }
-                        finally {
-                            alreadyHooked = false;
-                        }
-                   }
-
+                        finally{
+                            alreadyHooked = true;
+                        } 
+                    }                  
                 }
-
-                private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e) {
-                    if (e.Category == UserPreferenceCategory.Window) {
-                        if (!isFontSet) {
-                            this.Font = ToolStripManager.DefaultFont;
-                        }
-                    }
-                }
-
-                protected override void OnVisibleChanged(EventArgs e) {
-                    base.OnVisibleChanged(e);
-                    if (!Disposing && !IsDisposed) {
-                        HookStaticEvents(Visible);
-                    }
-                }
-
-                protected override void Dispose(bool disposing) {
-                    if(disposing) {
-                        HookStaticEvents(false);
-                    }
-                    base.Dispose(disposing);
-                }
-
-                private void WmNCPaint(ref Message m) {
-
-                    if (!IsPopupTextBox) {
-                        base.WndProc(ref m);
-                        return;
-                    }
-
-                    // Paint over the edges of the text box.
-
-                    // Using GetWindowDC instead of GetDCEx as GetDCEx seems to return a null handle and a last error of 
-                    // the operation succeeded.  We're not going to use the clipping rect anyways - so it's not
-                    // that bigga deal.
-                    HandleRef hdc = new HandleRef(this, UnsafeNativeMethods.GetWindowDC(new HandleRef(this,m.HWnd)));
-                    if (hdc.Handle == IntPtr.Zero) {
-                        throw new Win32Exception();
-                    }
+                else if (alreadyHooked) {
                     try {
-                        // Dont set the clipping region based on the WParam - windows seems to hack out the two pixels
-                        // intended for the non-client border.
-                        
-                        Color outerBorderColor = (MouseIsOver || Focused) ? ColorTable.TextBoxBorder : this.BackColor;
-                        Color innerBorderColor = this.BackColor;
-
-                        if (!Enabled) {
-                            outerBorderColor = SystemColors.ControlDark;
-                            innerBorderColor = SystemColors.Control;
-                        }
-                        using (Graphics g = Graphics.FromHdcInternal(hdc.Handle)) {
-
-                            Rectangle clientRect = AbsoluteClientRectangle;
-
-                            // could have set up a clip and fill-rectangled, thought this would be faster.
-                            using (Brush b = new SolidBrush(innerBorderColor)) {
-                                g.FillRectangle(b, 0, 0, this.Width, clientRect.Top); // top border
-                                g.FillRectangle(b, 0, 0, clientRect.Left, this.Height); // left border
-                                g.FillRectangle(b, 0, clientRect.Bottom, this.Width, this.Height - clientRect.Height); // bottom border
-                                g.FillRectangle(b, clientRect.Right, 0, this.Width - clientRect.Right, this.Height); // right border
-                            }
-   
-                            // paint the outside rect.
-                            using (Pen p = new Pen(outerBorderColor)) {
-                                g.DrawRectangle(p, 0, 0, this.Width - 1, this.Height - 1);
-                            }
-                         
-                        }
+                        SystemEvents.UserPreferenceChanged -= new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
                     }
                     finally {
-                        UnsafeNativeMethods.ReleaseDC(new HandleRef(this, this.Handle),hdc);
+                        alreadyHooked = false;
                     }
-                    // we've handled WM_NCPAINT.
-                    m.Result = IntPtr.Zero; 
+                }
 
-                }
-                protected override void WndProc(ref Message m) {
-                    if (m.Msg == NativeMethods.WM_NCPAINT) {
-                        WmNCPaint(ref m);
-                        return;
-                    }
-                    else {
-                        base.WndProc(ref m);
+            }
+
+            private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e) {
+                if (e.Category == UserPreferenceCategory.Window) {
+                    if (!isFontSet) {
+                        this.Font = ToolStripManager.DefaultFont;
                     }
                 }
+            }
+
+            protected override void OnVisibleChanged(EventArgs e) {
+                base.OnVisibleChanged(e);
+                if (!Disposing && !IsDisposed) {
+                    HookStaticEvents(Visible);
+                }
+            }
+
+            protected override AccessibleObject CreateAccessibilityInstance() {
+                if (AccessibilityImprovements.Level3) {
+                    return new ToolStripTextBoxControlAccessibleObject(this);
+                }
+
+                return base.CreateAccessibilityInstance();
+            }
+
+            protected override void Dispose(bool disposing) {
+                if(disposing) {
+                    HookStaticEvents(false);
+                }
+                base.Dispose(disposing);
+            }
+
+            private void WmNCPaint(ref Message m) {
+
+                if (!IsPopupTextBox) {
+                    base.WndProc(ref m);
+                    return;
+                }
+
+                // Paint over the edges of the text box.
+
+                // Using GetWindowDC instead of GetDCEx as GetDCEx seems to return a null handle and a last error of 
+                // the operation succeeded.  We're not going to use the clipping rect anyways - so it's not
+                // that bigga deal.
+                HandleRef hdc = new HandleRef(this, UnsafeNativeMethods.GetWindowDC(new HandleRef(this,m.HWnd)));
+                if (hdc.Handle == IntPtr.Zero) {
+                    throw new Win32Exception();
+                }
+                try {
+                    // Dont set the clipping region based on the WParam - windows seems to hack out the two pixels
+                    // intended for the non-client border.
+                        
+                    Color outerBorderColor = (MouseIsOver || Focused) ? ColorTable.TextBoxBorder : this.BackColor;
+                    Color innerBorderColor = this.BackColor;
+
+                    if (!Enabled) {
+                        outerBorderColor = SystemColors.ControlDark;
+                        innerBorderColor = SystemColors.Control;
+                    }
+                    using (Graphics g = Graphics.FromHdcInternal(hdc.Handle)) {
+
+                        Rectangle clientRect = AbsoluteClientRectangle;
+
+                        // could have set up a clip and fill-rectangled, thought this would be faster.
+                        using (Brush b = new SolidBrush(innerBorderColor)) {
+                            g.FillRectangle(b, 0, 0, this.Width, clientRect.Top); // top border
+                            g.FillRectangle(b, 0, 0, clientRect.Left, this.Height); // left border
+                            g.FillRectangle(b, 0, clientRect.Bottom, this.Width, this.Height - clientRect.Height); // bottom border
+                            g.FillRectangle(b, clientRect.Right, 0, this.Width - clientRect.Right, this.Height); // right border
+                        }
+   
+                        // paint the outside rect.
+                        using (Pen p = new Pen(outerBorderColor)) {
+                            g.DrawRectangle(p, 0, 0, this.Width - 1, this.Height - 1);
+                        }
+                         
+                    }
+                }
+                finally {
+                    UnsafeNativeMethods.ReleaseDC(new HandleRef(this, this.Handle),hdc);
+                }
+                // we've handled WM_NCPAINT.
+                m.Result = IntPtr.Zero; 
+
+            }
+            protected override void WndProc(ref Message m) {
+                if (m.Msg == NativeMethods.WM_NCPAINT) {
+                    WmNCPaint(ref m);
+                    return;
+                }
+                else {
+                    base.WndProc(ref m);
+                }
+            }
         }
 
-        
+        private class ToolStripTextBoxControlAccessibleObject : Control.ControlAccessibleObject {
+            public ToolStripTextBoxControlAccessibleObject(ToolStripTextBoxControl toolStripTextBoxControl) : base(toolStripTextBoxControl) {
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragmentRoot FragmentRoot {
+                get {
+                    var toolStripTextBoxControl = this.Owner as ToolStripTextBoxControl;
+                    if (toolStripTextBoxControl != null) {
+                        return toolStripTextBoxControl.Owner.Owner.AccessibilityObject;
+                    }
+
+                    return base.FragmentRoot;
+                }
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                switch (direction) {
+                    case UnsafeNativeMethods.NavigateDirection.Parent:
+                    case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                    case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                        var toolStripTextBoxControl = Owner as ToolStripTextBoxControl;
+                        if (toolStripTextBoxControl != null) {
+                            return toolStripTextBoxControl.Owner.AccessibilityObject.FragmentNavigate(direction);
+                        }
+                        break;
+                }
+
+                return base.FragmentNavigate(direction);
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                switch (propertyID) {
+                    case NativeMethods.UIA_ControlTypePropertyId:
+                        return NativeMethods.UIA_EditControlTypeId;
+                    case NativeMethods.UIA_HasKeyboardFocusPropertyId:
+                        return (State & AccessibleStates.Focused) == AccessibleStates.Focused;
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
+            internal override bool IsPatternSupported(int patternId) {
+                if (patternId == NativeMethods.UIA_ValuePatternId) {
+                    return true;
+                }
+
+                return base.IsPatternSupported(patternId);
+            }
+        }
     }
 
 }

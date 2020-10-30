@@ -31,6 +31,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
         bool         dontShow;
         Point        lastMouseMove = Point.Empty;
         private int maximumToolTipLength = 1000;
+        private bool _positioned = false;
 
         internal GridToolTip(Control[] controls) {
             this.controls = controls;
@@ -90,7 +91,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
                      if (visible && !dontShow){
                         this.Visible = true;
-                     }
+                    }
                   
                }
             }
@@ -169,6 +170,35 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
+        internal void PositionToolTip(Control parent, Rectangle itemRect) {
+            if (_positioned && DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                return;
+            }
+
+            Visible = false;
+            
+            NativeMethods.RECT rect = NativeMethods.RECT.FromXYWH(itemRect.X, itemRect.Y, itemRect.Width, itemRect.Height);
+
+            SendMessage(NativeMethods.TTM_ADJUSTRECT, 1, ref rect);
+
+            // now offset it back to screen coords
+            Point locPoint = parent.PointToScreen(new Point(rect.left, rect.top));
+
+            Location = locPoint;   // set the position once so it updates it's size with it's real width.
+
+            int overHang = (Location.X + Size.Width) - SystemInformation.VirtualScreen.Width;
+            if (overHang > 0) {
+                locPoint.X -= overHang;
+                Location = locPoint;
+            }
+
+            // tell the control we've repositioned it.
+            Visible = true;
+
+            // _positioned flag is reset to false on mouse move before showing ToolTip with new text.
+            _positioned = true;
+        }
+
         private void SetupToolTip(Control c) {
             if (this.IsHandleCreated) {
                SafeNativeMethods.SetWindowPos(new HandleRef(this, Handle), NativeMethods.HWND_TOPMOST,
@@ -203,6 +233,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
             this.toolTipText = oldText;
             this.SendMessage(NativeMethods.TTM_UPDATE, 0, 0);
+            this._positioned = false;
         }
 
         protected override void WndProc(ref Message msg) {

@@ -6,12 +6,12 @@
 //
 // Description:
 //  Wrapper class for existing SignedXml class that works around
-//  DevDiv Schedule 
-
-
-
-
-
+//  DevDiv Schedule bug: 39530 (mdownen PM)
+//
+// History:
+//  07/08/2005: BruceMac: Initial implementation.
+//
+//-----------------------------------------------------------------------------
 
 using System;
 using System.Xml;

@@ -245,7 +245,7 @@ namespace System.Media {
 
         [SuppressMessage("Microsoft.Security", "CA2103:ReviewImperativeSecurity")] // FileIOPermission based on URI path, but path isn't gonna change during scope of Demand
         private void LoadAndPlay(int flags) {
-            // 
+            // bug 16794: when the user does not specify a sound location nor a stream, play Beep
             if (String.IsNullOrEmpty(soundLocation) && stream == null) {
                 SystemSounds.Beep.Play();
                 return;

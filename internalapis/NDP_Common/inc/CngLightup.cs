@@ -458,21 +458,30 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            // Create an RSACng instance and send it to RSAPKCS1KeyExchangeFormatter. It was adjusted to
-            // be CNG-capable for 4.6.2; and other types in that library also are up-to-date.
+            // RSAPKCS1KeyExchangeFormatter, and other BCL types, were better compatible with RSACng
+            // in .NET 4.6.2 and beyond.
             //
-            // If mscorlib can't handle it properly, then other libraries probably can't, so we'll keep
-            // preferring RSACryptoServiceProvider.
-            RSA rsa = (RSA)Activator.CreateInstance(rsaCng);
+            // DSACng has a 4.6.2 patch-family dependency on mscorlib 4.6.2, so the existence of
+            // DSACng should mean that we can expect the BCL to use the new (4.6) RSA base class
+            // overloads, instead of just casting as RSACryptoServiceProvider.
+            //
+            // But, do one last check: DSA.SignData(byte[], HashAlgorithmName) was added to mscorlib in
+            // .NET 4.6.2.  If that's present, RSACng should have sufficient support.
+            //
+            // A live functionality test would be best, but instantiating an RSACng to generate a new
+            // key may fail in no-profile execution contexts; and custom extending RSA in the lightup
+            // path would cause the lightup path to fail to load if a library with this change got
+            // patched next to mscorlib 4.5.x.
+            Type[] signatureTypes = { typeof(byte[]), s_hashAlgorithmNameType };
+            MethodInfo signDataMethod = typeof(DSA).GetMethod(
+                "SignData",
+                BindingFlags.Public | BindingFlags.Instance,
+                null,
+                signatureTypes,
+                null);
 
-            try
+            if (signDataMethod == null)
             {
-                RSAPKCS1KeyExchangeFormatter formatter = new RSAPKCS1KeyExchangeFormatter(rsa);
-                formatter.CreateKeyExchange(new byte[1]);
-            }
-            catch (NotSupportedException)
-            {
-                // (mscorlib < 4.6.2)
                 return false;
             }
 

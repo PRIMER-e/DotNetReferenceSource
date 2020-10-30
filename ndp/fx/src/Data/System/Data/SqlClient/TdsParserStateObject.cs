@@ -1243,14 +1243,6 @@ namespace System.Data.SqlClient {
                 AssertValidState();
             }
 
-            if ((_messageStatus != TdsEnums.ST_EOM) && ((_inBytesPacket == 0) || (_inBytesUsed == _inBytesRead))) {
-                if (!TryPrepareBuffer()) {
-                    return false;
-                }
-            }
-            
-            AssertValidState();
-
             return true;
         }
 
@@ -1611,9 +1603,9 @@ namespace System.Data.SqlClient {
             Debug.Assert(_syncOverAsync || !_asyncReadWithoutSnapshot, "This method is not safe to call when doing sync over async");
 
             if (null == encoding) {
-                // 
-
-
+                // Bug 462435:CR: TdsParser.DrainData(stateObj) hitting timeout exception after Connection Resiliency change
+                // http://vstfdevdiv:8080/web/wi.aspx?pcguid=22f9acc9-569a-41ff-b6ac-fac1b6370209&id=462435
+                // Need to skip the current column before throwing the error - this ensures that the state shared between this and the data reader is consistent when calling DrainData
                 if (isPlp) {
                     ulong ignored;
                     if (!_parser.TrySkipPlpValue((ulong)length, this, out ignored)) {
@@ -2046,8 +2038,8 @@ namespace System.Data.SqlClient {
                         TaskCompletionSource<object> source = _networkPacketTaskSource;
 
                         if (_parser.Connection.IsInPool) {
-                            // Dev11 
-
+                            // Dev11 Bug 390048 : Timing issue between OnTimeout and ReadAsyncCallback results in SqlClient's packet parsing going out of sync          
+                            // We should never timeout if the connection is currently in the pool: the safest thing to do here is to doom the connection to avoid corruption
                             Debug.Assert(_parser.Connection.IsConnectionDoomed, "Timeout occurred while the connection is in the pool");
                             _parser.State = TdsParserState.Broken;
                             _parser.Connection.BreakConnection();
@@ -3084,7 +3076,7 @@ namespace System.Data.SqlClient {
             Debug.Assert(Parser.Connection._parserLock.ThreadMayHaveLock(), "Thread is writing without taking the connection lock");
             Task task = SNIWritePacket(Handle, packet, out sniError, canAccumulate, callerHasConnectionLock: true);
 
-            // Check to see if the timeout has occured.  This time out code is special case code to allow BCP writes to timeout to fix 
+            // Check to see if the timeout has occured.  This time out code is special case code to allow BCP writes to timeout to fix bug 350558, eventually we should make all writes timeout.
             if (_bulkCopyOpperationInProgress && 0 == GetTimeoutRemaining()) {
                 _parser.Connection.ThreadHasParserLockForClose = true;
                 try {

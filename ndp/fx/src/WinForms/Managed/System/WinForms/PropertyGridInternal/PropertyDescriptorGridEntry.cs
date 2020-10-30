@@ -202,7 +202,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
         }
 
 
-        protected virtual bool IsPropertyReadOnly {
+        internal virtual bool IsPropertyReadOnly {
             get {
                 return propertyInfo.IsReadOnly;
             }
@@ -480,9 +480,9 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 // find the next parent property with a differnet value owner
                 object owner = ge.GetValueOwner();
 
-                // Fix for Dev10 
-
-
+                // Fix for Dev10 bug 584323:
+                // when owner is an instance of a value type, 
+                // we can't just use == in the following while condition testing
                 bool isValueType = owner.GetType().IsValueType;
 
                 // find the next property descriptor with a different parent
@@ -1010,6 +1010,184 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 targetBindingService = null;
                 targetComponent = null;
                 targetEventdesc = null;
+            }
+        }
+
+        /// <summary>
+        /// Creates a new AccessibleObject for this PropertyDescriptorGridEntry instance.
+        /// The AccessibleObject instance returned by this method supports IsEnabled UIA property.
+        /// However the new object is only available in applications that are recompiled to target 
+        /// .NET Framework 4.7.2 or opt in into this feature using a compatibility switch. 
+        /// </summary>
+        /// <returns>
+        /// AccessibleObject for this PropertyDescriptorGridEntry instance.
+        /// </returns>
+        protected override GridEntryAccessibleObject GetAccessibilityObject() {
+            if (AccessibilityImprovements.Level2) {
+                return new PropertyDescriptorGridEntryAccessibleObject(this);
+            }
+
+            return base.GetAccessibilityObject();
+        }
+
+        [ComVisible(true)]
+        protected class PropertyDescriptorGridEntryAccessibleObject : GridEntryAccessibleObject {
+
+            private PropertyDescriptorGridEntry _owningPropertyDescriptorGridEntry;
+
+            public PropertyDescriptorGridEntryAccessibleObject(PropertyDescriptorGridEntry owner) : base(owner) {
+                _owningPropertyDescriptorGridEntry = owner;
+            }
+
+            internal override bool IsIAccessibleExSupported() {
+                return true;
+            }
+
+            /// <summary>
+            /// Returns the element in the specified direction.
+            /// </summary>
+            /// <param name="direction">Indicates the direction in which to navigate.</param>
+            /// <returns>Returns the element in the specified direction.</returns>
+            internal override UnsafeNativeMethods.IRawElementProviderFragment FragmentNavigate(UnsafeNativeMethods.NavigateDirection direction) {
+                if (AccessibilityImprovements.Level3) {
+                    switch (direction) {
+                        case UnsafeNativeMethods.NavigateDirection.NextSibling:
+                            var propertyGridViewAccessibleObject = (PropertyGridView.PropertyGridViewAccessibleObject)Parent;
+                            var propertyGridView = propertyGridViewAccessibleObject.Owner as PropertyGridView;
+                            bool currentGridEntryFound = false;
+                            return propertyGridViewAccessibleObject.GetNextGridEntry(_owningPropertyDescriptorGridEntry, propertyGridView.TopLevelGridEntries, out currentGridEntryFound);
+                        case UnsafeNativeMethods.NavigateDirection.PreviousSibling:
+                            propertyGridViewAccessibleObject = (PropertyGridView.PropertyGridViewAccessibleObject)Parent;
+                            propertyGridView = propertyGridViewAccessibleObject.Owner as PropertyGridView;
+                            currentGridEntryFound = false;
+                            return propertyGridViewAccessibleObject.GetPreviousGridEntry(_owningPropertyDescriptorGridEntry, propertyGridView.TopLevelGridEntries, out currentGridEntryFound);
+                        case UnsafeNativeMethods.NavigateDirection.FirstChild:
+                            return GetFirstChild();
+                        case UnsafeNativeMethods.NavigateDirection.LastChild:
+                            return GetLastChild();
+                    }
+                }
+
+                return base.FragmentNavigate(direction);
+            }
+
+            private UnsafeNativeMethods.IRawElementProviderFragment GetFirstChild() {
+                if (_owningPropertyDescriptorGridEntry.ChildCount > 0) {
+                    return _owningPropertyDescriptorGridEntry.Children.GetEntry(0).AccessibilityObject;
+                }
+
+                var propertyGridView = GetPropertyGridView();
+                if (propertyGridView == null) {
+                    return null;
+                }
+
+                if (_owningPropertyDescriptorGridEntry == propertyGridView.SelectedGridEntry) {
+                    if (propertyGridView.SelectedGridEntry.Enumerable) {
+                        return propertyGridView.DropDownListBoxAccessibleObject;
+                    }
+
+                    return propertyGridView.EditAccessibleObject;
+                }
+
+                return null;
+            }
+
+            private UnsafeNativeMethods.IRawElementProviderFragment GetLastChild() {
+                if (_owningPropertyDescriptorGridEntry.ChildCount > 0) {
+                    return _owningPropertyDescriptorGridEntry.Children
+                        .GetEntry(_owningPropertyDescriptorGridEntry.ChildCount - 1).AccessibilityObject;
+                }
+
+                var propertyGridView = GetPropertyGridView();
+                if (propertyGridView == null) {
+                    return null;
+                }
+
+                if (_owningPropertyDescriptorGridEntry == propertyGridView.SelectedGridEntry) {
+                    if (propertyGridView.SelectedGridEntry.Enumerable && propertyGridView.DropDownButton.Visible) {
+                        return propertyGridView.DropDownButton.AccessibilityObject;
+                    }
+
+                    return propertyGridView.EditAccessibleObject;
+                }
+
+                return null;
+            }
+
+            private PropertyGridView GetPropertyGridView() {
+                var propertyGridViewAccessibleObject = Parent as PropertyGridView.PropertyGridViewAccessibleObject;
+                if (propertyGridViewAccessibleObject == null) {
+                    return null;
+                }
+
+                return propertyGridViewAccessibleObject.Owner as PropertyGridView;
+            }
+
+            internal override bool IsPatternSupported(int patternId) {
+                if (AccessibilityImprovements.Level3 &&
+                    patternId == NativeMethods.UIA_ValuePatternId ||
+                    (patternId == NativeMethods.UIA_ExpandCollapsePatternId && owner.Enumerable)) {
+                    return true;
+                }
+
+                return base.IsPatternSupported(patternId);
+            }
+
+            internal override void Expand() {
+                if (ExpandCollapseState == UnsafeNativeMethods.ExpandCollapseState.Collapsed) {
+                    ExpandOrCollapse();
+                }
+            }
+
+            internal override void Collapse() {
+                if (ExpandCollapseState == UnsafeNativeMethods.ExpandCollapseState.Expanded) {
+                    ExpandOrCollapse();
+                }
+            }
+
+            private void ExpandOrCollapse() {
+                var propertyGridView = GetPropertyGridView();
+                if (propertyGridView == null) {
+                    return;
+                }
+
+                int row = propertyGridView.GetRowFromGridEntryInternal(_owningPropertyDescriptorGridEntry);
+                if (row != -1) {
+                    propertyGridView.PopupDialog(row);
+                }
+            }
+
+            internal override UnsafeNativeMethods.ExpandCollapseState ExpandCollapseState {
+                get {
+                    var propertyGridView = GetPropertyGridView();
+                    if (propertyGridView == null) {
+                        return UnsafeNativeMethods.ExpandCollapseState.Collapsed;
+                    }
+
+                    if (_owningPropertyDescriptorGridEntry == propertyGridView.SelectedGridEntry && propertyGridView.DropDownVisible) {
+                        return UnsafeNativeMethods.ExpandCollapseState.Expanded;
+                    }
+                    else {
+                        return UnsafeNativeMethods.ExpandCollapseState.Collapsed;
+                    }
+                }
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (propertyID == NativeMethods.UIA_IsEnabledPropertyId) {
+                    return !((PropertyDescriptorGridEntry)owner).IsPropertyReadOnly;
+                }
+
+                if (AccessibilityImprovements.Level3) {
+                    if (propertyID == NativeMethods.UIA_LegacyIAccessibleDefaultActionPropertyId) {
+                        return string.Empty;
+                    }
+                    else if (propertyID == NativeMethods.UIA_IsValuePatternAvailablePropertyId) {
+                        return true;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
             }
         }
 

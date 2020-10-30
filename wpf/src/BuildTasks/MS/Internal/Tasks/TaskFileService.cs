@@ -160,7 +160,7 @@ namespace MS.Internal
             return fileStream;
         }
 
-        public byte[] GetChecksum(string fileName, Guid md5HashGuid)
+        public byte[] GetChecksum(string fileName, Guid hashGuid)
         {
             byte[] hashData=null;
 
@@ -172,7 +172,7 @@ namespace MS.Internal
                 {
                     byte[] tempBytes = new byte[1024];
                     int actualSize;
-                    fileChecksummer.CalculateCheckSum(md5HashGuid, tempBytes.Length, tempBytes, out actualSize);
+                    fileChecksummer.CalculateCheckSum(hashGuid, tempBytes.Length, tempBytes, out actualSize);
                     hashData = new byte[actualSize];
                     for (int i = 0; i < actualSize; i++)
                     {
@@ -182,10 +182,31 @@ namespace MS.Internal
             }
             if (hashData == null)
             {
-                HashAlgorithm MD5cryptoProvider = new MD5CryptoServiceProvider();
-                using (Stream fileStream = File.OpenRead(fileName))
+                HashAlgorithm hashAlgorithm;
+
+                if (hashGuid == s_hashSHA256Guid)
                 {
-                    hashData = MD5cryptoProvider.ComputeHash(fileStream);
+                    hashAlgorithm = new SHA256CryptoServiceProvider();
+                }
+                else if (hashGuid == s_hashSHA1Guid)
+                {
+                    hashAlgorithm = new SHA1CryptoServiceProvider();
+                }
+                else if (hashGuid == s_hashMD5Guid)
+                {
+                    hashAlgorithm = new MD5CryptoServiceProvider();
+                }
+                else
+                {
+                    hashAlgorithm = null;
+                }
+
+                if (hashAlgorithm != null)
+                {
+                    using (Stream fileStream = File.OpenRead(fileName))
+                    {
+                        hashData = hashAlgorithm.ComputeHash(fileStream);
+                    }
                 }
             }
             return hashData;
@@ -418,6 +439,9 @@ namespace MS.Internal
         private Task _buildTask;
         private IVsMSBuildTaskFileManager _hostFileManager;
         private Nullable<bool> _isRealBuild;
+        private static Guid s_hashSHA256Guid = new Guid(0x8829d00f, 0x11b8, 0x4213, 0x87, 0x8b, 0x77, 0x0e, 0x85, 0x97, 0xac, 0x16);
+        private static Guid s_hashSHA1Guid = new Guid(0xff1816ec, 0xaa5e, 0x4d10, 0x87, 0xf7, 0x6f, 0x49, 0x63, 0x83, 0x34, 0x60);
+        private static Guid s_hashMD5Guid = new Guid(0x406ea660, 0x64cf, 0x4c82, 0xb6, 0xf0, 0x42, 0xd4, 0x81, 0x72, 0xa7, 0x99);
 
         #endregion private data field
 

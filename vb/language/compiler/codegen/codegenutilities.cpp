@@ -505,8 +505,8 @@ void CodeGenerator::LeaveCodeBuffer
     TRY_BLOCK *ptry = m_tryListPending.GetFirst();
 
     // ptry can be null here when a 'for each' statement do not enclose it's block in a try.
-    // see 
-
+    // see bug DevDiv109887. Consider optimize this leave into a branch opcode.
+    // AssertIfNull(ptry);
 
     if (ExitsCatch)
     {
@@ -516,7 +516,7 @@ void CodeGenerator::LeaveCodeBuffer
 
         if (!g_CompilingTheVBRuntime)
         {
-            GenerateCallToRuntimeHelper(ClearErrorMember, Symbols::GetVoidType(), errorLocation, errorLocation ? Error : Ignore); // 
+            GenerateCallToRuntimeHelper(ClearErrorMember, Symbols::GetVoidType(), errorLocation, errorLocation ? Error : Ignore); // Bug #178026 - DevDiv Bugs: log an error if we have location
         }
     }
 
@@ -533,7 +533,7 @@ void CodeGenerator::LeaveCodeBuffer
         {
             // The "nop" when exiting each "try" and "Catch" is mapped to the "Finally" statement.
             // This enables a better ENC experience without disabling any normal debugging scenarios.
-            // 
+            // Bug VSWhidbey 500839.
 
             UpdateLineTable(ptry->FinallyLocation);
             InsertNOP();
@@ -767,8 +767,8 @@ void CodeGenerator::UpdateLineTable
     }
 
     // Remove hidden sequence points between sequence points that are equal.
-    // 
-
+    // Bug VSWhidbey 293903.
+    //
     for(LINETBL *pltblCurrent = m_pltblCurrent - 1;
         pltblCurrent >= m_pltblLineTbl;
         pltblCurrent = pltblCurrent - 1)
@@ -902,7 +902,7 @@ CodeGenerator::AllocateResumeEntry
         // we make entires I+1 and J branch to T.  For each index K where I+1 < K < J, we make the
         // entry branch to a code block which throws an internal error exception.  In theory, the
         // ResumeTarget state variable should never hold the value K.  But who knows?  ENC may have
-        // a 
+        // a bug.  It's better to throw than to execute code incorrectly.
 
         int GapCount = ResumeIndex - (m_cadrResumeList.NumberOfEntries() - 1) - 1;
 
@@ -1961,7 +1961,7 @@ void CodeGenerator::EmitDebugInformation
                 // Check for duplicate offsets, must be done here.
                 for(LINETBL *pltblDup = pltbl + 1; pltblDup < m_pltblCurrent; pltblDup++)
                 {
-                    // 
+                    // Bug VSWhidbey 137946
                     if (m_Project->GenerateOptimalIL() && !pltblDup->codeaddr.pcblk->fLive)
                     {
                         ptblNext = pltblDup + 1;

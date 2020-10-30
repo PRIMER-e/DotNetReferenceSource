@@ -243,7 +243,7 @@ namespace MS.Internal.PtsHost
             // cells than were allocated.  So we check against the cell count we have -
             // Row.FormatCellCount.  But that's calculated elsewhere.  What if it's stale?
             // There aren't any direct values available to compare against at the start of
-            // this function, so we need two separate asserts.  
+            // this function, so we need two separate asserts.  Bug 1149633.
             Invariant.Assert(cCells >= Row.Cells.Count); // Protect against buffer overflow
 
 

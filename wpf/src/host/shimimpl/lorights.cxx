@@ -121,18 +121,12 @@ BOOL ShouldProcessBeRestricted(void)
     HKEY    hKey = NULL;
     DWORD   dwUnrestricted = 0;
     DWORD   dwSize = sizeof(dwUnrestricted);
-    OSVERSIONINFOEX osVersion ; 
-    osVersion.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX); 
 
-    if ( GetVersionEx( (LPOSVERSIONINFO) & osVersion ) )
-    {
-        if  ((osVersion.dwMajorVersion == 5) && (osVersion.dwMinorVersion == 1))
-        {
-            // We are on XP here, terminate the process if SP level < SP2 
-            if (osVersion.wServicePackMajor < 2)
-                ExitProcess(1);
-        }
-    }
+    // We used to have an OS check here to terminate the 
+    // process if we were running on version < XP SP2. 
+    // We no longer need this check since we are guaranteed to 
+    // be running on version >= Vista 
+    // 
        
     //  Check the RunUnrestricted registry value.
     //  If it exists and is 0 then run PresentationHost with no restrictions or as the user

@@ -1830,8 +1830,8 @@ namespace Microsoft.SqlServer.Server {
                             // In order for us to get here we would have to have an 
                             // invalid instance of SqlDbType, or one would have to add 
                             // new member to SqlDbType without adding a case in this 
-                            // switch, hence the assert - it must be 
-
+                            // switch, hence the assert - it must be bug in our code 
+                            // not invalid user parameters.
                             Debug.Assert( false, "unsupported DbType:" + metaData[i].SqlDbType.ToString() );
                             throw ADP.NotSupported();
                             
@@ -2022,8 +2022,8 @@ namespace Microsoft.SqlServer.Server {
                             // In order for us to get here we would have to have an 
                             // invalid instance of SqlDbType, or one would have to add 
                             // new member to SqlDbType without adding a case in this 
-                            // switch, hence the assert - it must be 
-
+                            // switch, hence the assert - it must be bug in our code 
+                            // not invalid user parameters.
                             Debug.Assert(false, "unsupported DbType:" + metaData[i].SqlDbType.ToString());
                             throw ADP.NotSupported();
 

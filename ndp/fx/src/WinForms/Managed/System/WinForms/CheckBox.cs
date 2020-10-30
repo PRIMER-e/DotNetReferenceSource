@@ -55,6 +55,12 @@ namespace System.Windows.Forms {
         private CheckState checkState;
         private Appearance appearance;
 
+        private const int FlatSystemStylePaddingWidth = 25;
+        private const int FlatSystemStyleMinimumHeight = 13;
+
+        internal int flatSystemStylePaddingWidth = FlatSystemStylePaddingWidth;
+        internal int flatSystemStyleMinimumHeight = FlatSystemStyleMinimumHeight;
+
         /// <include file='doc\CheckBox.uex' path='docs/doc[@for="CheckBox.CheckBox"]/*' />
         /// <devdoc>
         ///    <para>
@@ -64,6 +70,11 @@ namespace System.Windows.Forms {
         public CheckBox()
         : base() {
         
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                flatSystemStylePaddingWidth = LogicalToDeviceUnits(FlatSystemStylePaddingWidth);
+                flatSystemStyleMinimumHeight = LogicalToDeviceUnits(FlatSystemStyleMinimumHeight);
+            }
+
             // Checkboxes shouldn't respond to right clicks, so we need to do all our own click logic
             SetStyle(ControlStyles.StandardClick |
                      ControlStyles.StandardDoubleClick, false);
@@ -336,6 +347,24 @@ namespace System.Windows.Forms {
             }
         }
 
+        /// <summary>
+        /// When overridden in a derived class, handles rescaling of any magic numbers used in control painting.
+        /// For CheckBox controls, scale the width of the system-style padding, and height of the box.
+        /// Must call the base class method to get the current DPI values. This method is invoked only when 
+        /// Application opts-in into the Per-monitor V2 support, targets .NETFX 4.7 and has 
+        /// EnableDpiChangedMessageHandling and EnableDpiChangedHighDpiImprovements config switches turned on.
+        /// </summary>
+        /// <param name="deviceDpiOld">Old DPI value</param>
+        /// <param name="deviceDpiNew">New DPI value</param>
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                flatSystemStylePaddingWidth = LogicalToDeviceUnits(FlatSystemStylePaddingWidth);
+                flatSystemStyleMinimumHeight = LogicalToDeviceUnits(FlatSystemStyleMinimumHeight);
+            }
+        }
+
         internal override Size GetPreferredSizeCore(Size proposedConstraints) {
             if (Appearance == Appearance.Button) {
                 ButtonStandardAdapter adapter = new ButtonStandardAdapter(this);
@@ -348,8 +377,8 @@ namespace System.Windows.Forms {
 
             Size textSize = TextRenderer.MeasureText(this.Text, this.Font);
             Size size = SizeFromClientSize(textSize);
-            size.Width += 25;
-            size.Height += 5;
+            size.Width += flatSystemStylePaddingWidth;
+            size.Height = DpiHelper.EnableDpiChangedHighDpiImprovements ? Math.Max(size.Height + 5, flatSystemStyleMinimumHeight) : size.Height + 5; // ensure minimum height to avoid truncation of check-box or text
             return size + Padding.Size;
         }
 
@@ -588,8 +617,8 @@ namespace System.Windows.Forms {
         /// </devdoc>
         /// <internalonly/>
         protected override void OnKeyDown(KeyEventArgs e) {
-            //this fixes 
-
+            //this fixes bug 235019, but it will be a breaking change from Everett
+            //see the comments attached to bug 235019
             /*
             if (Enabled) {
                 if (e.KeyCode == Keys.Oemplus || e.KeyCode == Keys.Add) {

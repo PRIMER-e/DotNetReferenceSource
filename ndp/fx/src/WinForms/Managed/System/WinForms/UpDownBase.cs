@@ -75,8 +75,7 @@ namespace System.Windows.Forms {
         // Indicates whether we have doubleClicked
         private bool doubleClickFired = false;
 
-        private static bool isScalingInitialized = false;
-        private static int defaultButtonsWidth = DefaultButtonsWidth;
+        internal int defaultButtonsWidth = DefaultButtonsWidth;
 
         /// <include file='doc\UpDownBase.uex' path='docs/doc[@for="UpDownBase.UpDownBase"]/*' />
         /// <devdoc>
@@ -86,12 +85,8 @@ namespace System.Windows.Forms {
         ///    </para>
         /// </devdoc>
         public UpDownBase() {
-
-            if (!isScalingInitialized) {
-                if (DpiHelper.IsScalingRequired) {
-                    defaultButtonsWidth = DpiHelper.LogicalToDeviceUnitsX(DefaultButtonsWidth);
-                }
-                isScalingInitialized = true;
+            if (DpiHelper.IsScalingRequired) {
+                defaultButtonsWidth = LogicalToDeviceUnits(DefaultButtonsWidth);
             }
 
             upDownButtons = new UpDownButtons(this);
@@ -728,6 +723,38 @@ namespace System.Windows.Forms {
             return base.ApplyBoundsConstraints(suggestedX,suggestedY, proposedWidth, PreferredHeight);
         }
 
+        /// <summary>
+        /// Gets an accessible name.
+        /// </summary>
+        /// <param name="baseName">The base name.</param>
+        /// <returns>The accessible name.</returns>
+        internal string GetAccessibleName(string baseName) {
+            if (baseName == null) {
+                if (AccessibilityImprovements.Level3) {
+                    return SR.GetString(SR.SpinnerAccessibleName);
+                }
+                else if (AccessibilityImprovements.Level1) {
+                    return this.GetType().Name;
+                }
+            }
+
+            return baseName;
+        }
+
+        /// <include file='doc\UpDownBase.uex' path='docs/doc[@for="UpDownBase.RescaleConstantsForDpi"]/*' />
+        /// <devdoc>
+        ///       When overridden in a derived class, handles rescaling of any magic numbers used in control painting.
+        ///       For UpDown controls, scale the width of the up/down buttons.
+        ///       Must call the base class method to get the current DPI values. This method is invoked only when 
+        ///       Application opts-in into the Per-monitor V2 support, targets .NETFX 4.7 and has 
+        ///       EnableDpiChangedMessageHandling config switch turned on.
+        /// </devdoc>
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+            defaultButtonsWidth = LogicalToDeviceUnits(DefaultButtonsWidth);
+            upDownButtons.Width = defaultButtonsWidth;
+        }
+
         /// <include file='doc\UpDownBase.uex' path='docs/doc[@for="UpDownBase.OnChanged"]/*' />
         /// <internalonly/>
         /// <devdoc>
@@ -789,10 +816,10 @@ namespace System.Windows.Forms {
                     clipTop.Intersect(clipBounds);
                     clipRight.Intersect(clipBounds);
                     clipBottom.Intersect(clipBounds);
-                    vsr.DrawBackground(e.Graphics, bounds, clipLeft);
-                    vsr.DrawBackground(e.Graphics, bounds, clipTop);
-                    vsr.DrawBackground(e.Graphics, bounds, clipRight);
-                    vsr.DrawBackground(e.Graphics, bounds, clipBottom);
+                    vsr.DrawBackground(e.Graphics, bounds, clipLeft, HandleInternal);
+                    vsr.DrawBackground(e.Graphics, bounds, clipTop, HandleInternal);
+                    vsr.DrawBackground(e.Graphics, bounds, clipRight, HandleInternal);
+                    vsr.DrawBackground(e.Graphics, bounds, clipBottom, HandleInternal);
                     // Draw rectangle around edit control with background color
                     using (Pen pen = new Pen(BackColor)) {
                         Rectangle backRect = editBounds;
@@ -1244,6 +1271,19 @@ namespace System.Windows.Forms {
                 this.parent = parent;
             }
 
+            public override string Text {
+                get {
+                    return base.Text;
+                }
+                set {
+                    bool valueChanged = (value != base.Text);
+                    base.Text = value;      
+                    if (valueChanged && AccessibilityImprovements.Level1) {
+                            AccessibilityNotifyClients(AccessibleEvents.NameChange, -1);
+                    }
+                }
+            }
+
             protected override AccessibleObject CreateAccessibilityInstance() {
                 return new UpDownEditAccessibleObject(this, parent);
             }
@@ -1307,11 +1347,11 @@ namespace System.Windows.Forms {
 
             protected override void OnGotFocus(EventArgs e) {
                 parent.SetActiveControlInternal(this);
-                parent.OnGotFocus(e);
+                parent.InvokeGotFocus(parent, e);
             }
 
             protected override void OnLostFocus(EventArgs e) {
-                parent.OnLostFocus(e);
+                parent.InvokeLostFocus(parent, e);
             }
 
             // Microsoft: Focus fixes. The XXXUpDown control will
@@ -1663,7 +1703,7 @@ namespace System.Windows.Forms {
                         vsr.SetParameters(VisualStyleElement.Spin.Up.Pressed);
                     }
 
-                    vsr.DrawBackground(e.Graphics, new Rectangle(0, 0, defaultButtonsWidth, half_height));
+                    vsr.DrawBackground(e.Graphics, new Rectangle(0, 0, parent.defaultButtonsWidth, half_height), HandleInternal);
 
                     if (!Enabled) {
                         vsr.SetParameters(VisualStyleElement.Spin.Down.Disabled);
@@ -1675,16 +1715,16 @@ namespace System.Windows.Forms {
                         vsr.SetParameters(mouseOver == ButtonID.Down ? VisualStyleElement.Spin.Down.Hot : VisualStyleElement.Spin.Down.Normal);
                     }
 
-                    vsr.DrawBackground(e.Graphics, new Rectangle(0, half_height, defaultButtonsWidth, half_height));
+                    vsr.DrawBackground(e.Graphics, new Rectangle(0, half_height, parent.defaultButtonsWidth, half_height), HandleInternal);
                 }
                 else {
                     ControlPaint.DrawScrollButton(e.Graphics,
-                                                  new Rectangle(0, 0, defaultButtonsWidth, half_height),
+                                                  new Rectangle(0, 0, parent.defaultButtonsWidth, half_height),
                                                   ScrollButton.Up,
                                                   pushed == ButtonID.Up ? ButtonState.Pushed : (Enabled ? ButtonState.Normal : ButtonState.Inactive));
 
                     ControlPaint.DrawScrollButton(e.Graphics,
-                                                  new Rectangle(0, half_height, defaultButtonsWidth, half_height),
+                                                  new Rectangle(0, half_height, parent.defaultButtonsWidth, half_height),
                                                   ScrollButton.Down,
                                                   pushed == ButtonID.Down ? ButtonState.Pushed : (Enabled ? ButtonState.Normal : ButtonState.Inactive));
                 }
@@ -1781,7 +1821,11 @@ namespace System.Windows.Forms {
                     get {
                         string baseName = base.Name;
                         if (baseName == null || baseName.Length == 0) {
-                            return "Spinner";
+                            if (AccessibilityImprovements.Level3) {
+                                // For AI.Level3 spinner is already announced so use type name.
+                                return Owner.ParentInternal.GetType().Name;
+                            }
+                            return SR.GetString(SR.SpinnerAccessibleName);
                         }
                         return baseName;
                     }

@@ -19,22 +19,25 @@ namespace System.Windows.Forms {
     /// </summary>
     public class ToolStripProfessionalRenderer : ToolStripRenderer {
         private const int GRIP_PADDING = 4;
+        private int gripPadding = GRIP_PADDING;
 
         private const int ICON_WELL_GRADIENT_WIDTH = 12;
+        private int iconWellGradientWidth = ICON_WELL_GRADIENT_WIDTH;
 
         private static readonly Size onePix = new Size(1, 1);
 
-        private static bool isScalingInitialized = false;
+        private bool isScalingInitialized = false;
         private const int OVERFLOW_BUTTON_WIDTH = 12;
         private const int OVERFLOW_ARROW_WIDTH = 9;
         private const int OVERFLOW_ARROW_HEIGHT = 5;
         private const int OVERFLOW_ARROW_OFFSETY = 8;
-        private static int overflowButtonWidth = OVERFLOW_BUTTON_WIDTH;
-        private static int overflowArrowWidth = OVERFLOW_ARROW_WIDTH;
-        private static int overflowArrowHeight = OVERFLOW_ARROW_HEIGHT;
-        private static int overflowArrowOffsetY = OVERFLOW_ARROW_OFFSETY;
+        private int overflowButtonWidth = OVERFLOW_BUTTON_WIDTH;
+        private int overflowArrowWidth = OVERFLOW_ARROW_WIDTH;
+        private int overflowArrowHeight = OVERFLOW_ARROW_HEIGHT;
+        private int overflowArrowOffsetY = OVERFLOW_ARROW_OFFSETY;
 
-        private Padding dropDownMenuItemPaintPadding = new Padding(2, 0, 1, 0);
+        private const int DROP_DOWN_MENU_ITEM_PAINT_PADDING_SIZE = 1;
+        private Padding scaledDropDownMenuItemPaintPadding = new Padding(DROP_DOWN_MENU_ITEM_PAINT_PADDING_SIZE + 1, 0, DROP_DOWN_MENU_ITEM_PAINT_PADDING_SIZE, 0);
         private ProfessionalColorTable professionalColorTable;
         private bool roundedEdges = true;
         private ToolStripRenderer toolStripHighContrastRenderer;
@@ -134,7 +137,7 @@ namespace System.Windows.Forms {
 
         /// <include file='doc\ToolStripProfessionalRenderer.uex' path='docs/doc[@for="ToolStripProfessionalRenderer.OnRenderOverflowButton"]/*' />
         protected override void OnRenderOverflowButtonBackground(ToolStripItemRenderEventArgs e) {
-            ScaleOverflowButtonSizesIfNeeded(); 
+            ScaleObjectSizesIfNeeded(e.ToolStrip.DeviceDpi); 
             
             if (RendererOverride != null) {
                 base.OnRenderOverflowButtonBackground(e);
@@ -408,7 +411,8 @@ namespace System.Windows.Forms {
                             edging = new Rectangle(3, bounds.Height -1, bounds.Width -3, bounds.Height - 1);
 
                         }
-                        FillWithDoubleGradient(ColorTable.OverflowButtonGradientBegin, ColorTable.OverflowButtonGradientMiddle, ColorTable.OverflowButtonGradientEnd, e.Graphics, edging, ICON_WELL_GRADIENT_WIDTH, ICON_WELL_GRADIENT_WIDTH, LinearGradientMode.Vertical, /*flipHorizontal=*/false);
+                        ScaleObjectSizesIfNeeded(toolStrip.DeviceDpi);
+                        FillWithDoubleGradient(ColorTable.OverflowButtonGradientBegin, ColorTable.OverflowButtonGradientMiddle, ColorTable.OverflowButtonGradientEnd, e.Graphics, edging, iconWellGradientWidth, iconWellGradientWidth, LinearGradientMode.Vertical, /*flipHorizontal=*/false);
                         RenderToolStripCurve(e);
                     }
                 }
@@ -422,6 +426,8 @@ namespace System.Windows.Forms {
                 return;
             }
 
+            ScaleObjectSizesIfNeeded(e.ToolStrip.DeviceDpi);
+
             Graphics g = e.Graphics;
             Rectangle bounds = e.GripBounds;
             ToolStrip toolStrip = e.ToolStrip;
@@ -431,7 +437,7 @@ namespace System.Windows.Forms {
             int height = (toolStrip.Orientation == Orientation.Horizontal) ? bounds.Height : bounds.Width;
             int width = (toolStrip.Orientation == Orientation.Horizontal) ? bounds.Width : bounds.Height;
             
-            int numRectangles =  (height - (GRIP_PADDING * 2)) / 4;
+            int numRectangles =  (height - (gripPadding * 2)) / 4;
             
 
             if (numRectangles > 0) {
@@ -439,7 +445,7 @@ namespace System.Windows.Forms {
                 int yOffset =  (toolStrip is MenuStrip) ? 2 : 0;
                 
                 Rectangle[] shadowRects = new Rectangle[numRectangles];
-                int startY = GRIP_PADDING + 1 + yOffset;
+                int startY = gripPadding + 1 + yOffset;
                 int startX = (width / 2);
 
                 for (int i = 0; i < numRectangles; i++) {
@@ -495,8 +501,9 @@ namespace System.Windows.Forms {
 
 
             if (item.IsOnDropDown) {
+                ScaleObjectSizesIfNeeded(item.DeviceDpi);
                 
-                bounds = LayoutUtils.DeflateRect(bounds, dropDownMenuItemPaintPadding);
+                bounds = LayoutUtils.DeflateRect(bounds, scaledDropDownMenuItemPaintPadding);
 
                 if (item.Selected) {
                     Color borderColor = ColorTable.MenuItemBorder;
@@ -598,6 +605,8 @@ namespace System.Windows.Forms {
                 return;
             }
 
+            ScaleObjectSizesIfNeeded(e.ToolStrip.DeviceDpi);
+
             Graphics g = e.Graphics;
             Rectangle bounds = e.AffectedBounds;
             bounds.Y += 2;
@@ -606,7 +615,7 @@ namespace System.Windows.Forms {
             Color begin = (rightToLeft == RightToLeft.No) ? ColorTable.ImageMarginGradientBegin :  ColorTable.ImageMarginGradientEnd;
             Color end = (rightToLeft == RightToLeft.No) ? ColorTable.ImageMarginGradientEnd :  ColorTable.ImageMarginGradientBegin;
             
-            FillWithDoubleGradient(begin, ColorTable.ImageMarginGradientMiddle, end, e.Graphics, bounds, ICON_WELL_GRADIENT_WIDTH, ICON_WELL_GRADIENT_WIDTH, LinearGradientMode.Horizontal, /*flipHorizontal=*/(e.ToolStrip.RightToLeft == RightToLeft.Yes));
+            FillWithDoubleGradient(begin, ColorTable.ImageMarginGradientMiddle, end, e.Graphics, bounds, iconWellGradientWidth, iconWellGradientWidth, LinearGradientMode.Horizontal, /*flipHorizontal=*/(e.ToolStrip.RightToLeft == RightToLeft.Yes));
         }
 
         /// <include file='doc\ToolStripProfessionalRenderer.uex' path='docs/doc[@for="ToolStripProfessionalRenderer.OnRenderItemText"]/*' />
@@ -896,7 +905,9 @@ namespace System.Windows.Forms {
 
 
         private void RenderCheckBackground(ToolStripItemImageRenderEventArgs e) {
-            Rectangle bounds = new Rectangle(e.ImageRectangle.Left-2, 1, e.ImageRectangle.Width+4, e.Item.Height -2);
+            // bug# VSO:528418 check box is not centered and not square. Below, position will never be negative as, on a 96% dpi, difference between item height (22) and rectangle height(16) is minimum 6. 
+            Rectangle bounds = DpiHelper.IsScalingRequired ? new Rectangle(e.ImageRectangle.Left-2, (e.Item.Height - e.ImageRectangle.Height )/2- 1, e.ImageRectangle.Width+4, e.ImageRectangle.Height +2) :
+                                new Rectangle(e.ImageRectangle.Left - 2, 1, e.ImageRectangle.Width + 4, e.Item.Height - 2); 
             Graphics g = e.Graphics;
 
             if (!UseSystemColors) {
@@ -996,13 +1007,15 @@ namespace System.Windows.Forms {
 
 
         private void RenderToolStripBackgroundInternal(ToolStripRenderEventArgs e) {
+            ScaleObjectSizesIfNeeded(e.ToolStrip.DeviceDpi);
+
             ToolStrip toolStrip = e.ToolStrip;
             Graphics g = e.Graphics;
             Rectangle bounds = new Rectangle(Point.Empty, e.ToolStrip.Size);
 
             // fill up the background
             LinearGradientMode mode = (toolStrip.Orientation == Orientation.Horizontal) ? LinearGradientMode.Vertical : LinearGradientMode.Horizontal;
-            FillWithDoubleGradient(ColorTable.ToolStripGradientBegin, ColorTable.ToolStripGradientMiddle, ColorTable.ToolStripGradientEnd, e.Graphics, bounds, ICON_WELL_GRADIENT_WIDTH, ICON_WELL_GRADIENT_WIDTH, mode, /*flipHorizontal=*/false);
+            FillWithDoubleGradient(ColorTable.ToolStripGradientBegin, ColorTable.ToolStripGradientMiddle, ColorTable.ToolStripGradientEnd, e.Graphics, bounds, iconWellGradientWidth, iconWellGradientWidth, mode, /*flipHorizontal=*/false);
 
         }
 
@@ -1036,6 +1049,8 @@ namespace System.Windows.Forms {
         }
 
         private void RenderOverflowBackground(ToolStripItemRenderEventArgs e, bool rightToLeft) {
+            ScaleObjectSizesIfNeeded(e.Item.DeviceDpi);
+
             Graphics g = e.Graphics;
             ToolStripOverflowButton item = e.Item as ToolStripOverflowButton;
             Rectangle overflowBoundsFill = new Rectangle(Point.Empty, e.Item.Size);
@@ -1097,7 +1112,7 @@ namespace System.Windows.Forms {
             LinearGradientMode mode = (horizontal) ? LinearGradientMode.Vertical : LinearGradientMode.Horizontal;
 
             // fill main body 
-            FillWithDoubleGradient(overflowButtonGradientBegin, overflowButtonGradientMiddle, overflowButtonGradientEnd, g, overflowBoundsFill, ICON_WELL_GRADIENT_WIDTH, ICON_WELL_GRADIENT_WIDTH, mode, false);
+            FillWithDoubleGradient(overflowButtonGradientBegin, overflowButtonGradientMiddle, overflowButtonGradientEnd, g, overflowBoundsFill, iconWellGradientWidth, iconWellGradientWidth, mode, false);
 
             // render shadow pixels (ToolStrip only)
             if (drawCurve) {
@@ -1383,7 +1398,24 @@ namespace System.Windows.Forms {
             }
         }
 
-        private static void ScaleOverflowButtonSizesIfNeeded() {
+        private void ScaleObjectSizesIfNeeded(int currentDeviceDpi) {
+            if (DpiHelper.EnableToolStripPerMonitorV2HighDpiImprovements) {
+                if (previousDeviceDpi!=currentDeviceDpi) {
+                    ToolStripRenderer.ScaleArrowOffsetsIfNeeded(currentDeviceDpi);
+                    overflowButtonWidth = DpiHelper.LogicalToDeviceUnits(OVERFLOW_BUTTON_WIDTH, currentDeviceDpi);
+                    overflowArrowWidth = DpiHelper.LogicalToDeviceUnits(OVERFLOW_ARROW_WIDTH, currentDeviceDpi);
+                    overflowArrowHeight = DpiHelper.LogicalToDeviceUnits(OVERFLOW_ARROW_HEIGHT, currentDeviceDpi);
+                    overflowArrowOffsetY = DpiHelper.LogicalToDeviceUnits(OVERFLOW_ARROW_OFFSETY, currentDeviceDpi);
+
+                    gripPadding = DpiHelper.LogicalToDeviceUnits(GRIP_PADDING, currentDeviceDpi);
+                    iconWellGradientWidth = DpiHelper.LogicalToDeviceUnits(ICON_WELL_GRADIENT_WIDTH, currentDeviceDpi);
+                    int scaledSize = DpiHelper.LogicalToDeviceUnits(DROP_DOWN_MENU_ITEM_PAINT_PADDING_SIZE, currentDeviceDpi);
+                    scaledDropDownMenuItemPaintPadding = new Padding(scaledSize + 1, 0, scaledSize, 0);
+                    previousDeviceDpi = currentDeviceDpi;
+                    isScalingInitialized = true;
+                    return;
+                }
+            }
             if (isScalingInitialized) {
                 return;
             }          
@@ -1393,6 +1425,13 @@ namespace System.Windows.Forms {
                 overflowArrowWidth = DpiHelper.LogicalToDeviceUnitsX(OVERFLOW_ARROW_WIDTH);
                 overflowArrowHeight = DpiHelper.LogicalToDeviceUnitsY(OVERFLOW_ARROW_HEIGHT);
                 overflowArrowOffsetY = DpiHelper.LogicalToDeviceUnitsY(OVERFLOW_ARROW_OFFSETY);
+
+                if (DpiHelper.EnableToolStripHighDpiImprovements) {
+                    gripPadding = DpiHelper.LogicalToDeviceUnitsY(GRIP_PADDING);
+                    iconWellGradientWidth = DpiHelper.LogicalToDeviceUnitsX(ICON_WELL_GRADIENT_WIDTH);
+                    int scaledSize = DpiHelper.LogicalToDeviceUnitsX(DROP_DOWN_MENU_ITEM_PAINT_PADDING_SIZE);
+                    scaledDropDownMenuItemPaintPadding = new Padding(scaledSize + 1, 0, scaledSize, 0);
+                }
             }
             isScalingInitialized = true;
         }

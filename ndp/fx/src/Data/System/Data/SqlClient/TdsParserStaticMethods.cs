@@ -66,7 +66,7 @@ namespace System.Data.SqlClient {
                         if (index+1 < aliasLookup.Length) {
                             string parsedAliasName = aliasLookup.Substring(index+1);
 
-                            // Fix 
+                            // Fix bug 298286
                             if ("dbnetlib" == parsedProtocol) {
                                     index = parsedAliasName.IndexOf(':');
                                     if (-1 != index && index + 1 < parsedAliasName.Length) {

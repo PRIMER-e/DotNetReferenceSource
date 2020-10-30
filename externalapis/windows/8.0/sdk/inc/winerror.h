@@ -49917,8 +49917,8 @@ FORCEINLINE HRESULT HRESULT_FROM_WIN32(unsigned long x) { return (HRESULT)(x) <=
 //
 // MessageText:
 //
-// An internal error (Direct2D 
-
+// An internal error (Direct2D bug) occurred. On checked builds, we would assert. The application should close this instance of Direct2D and should consider restarting its process.
+//
 #define D2DERR_INTERNAL_ERROR            _HRESULT_TYPEDEF_(0x88990008L)
 
 //
@@ -50814,8 +50814,8 @@ FORCEINLINE HRESULT HRESULT_FROM_WIN32(unsigned long x) { return (HRESULT)(x) <=
 //
 // MessageText:
 //
-// An internal error (MIL 
-
+// An internal error (MIL bug) occurred. On checked builds, an assert would be raised.
+//
 #define MILERR_INTERNALERROR             _HRESULT_TYPEDEF_(0x88980080L)
 
 //

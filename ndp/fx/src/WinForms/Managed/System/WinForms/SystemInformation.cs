@@ -177,6 +177,20 @@ namespace System.Windows.Forms {
             }
         }
 
+        /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.VerticalScrollBarWidth"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       Gets the width of the vertical scroll bar in pixels.
+        ///    </para>
+        /// </devdoc>
+        public static int GetVerticalScrollBarWidthForDpi(int dpi) {
+            if (DpiHelper.EnableDpiChangedMessageHandling) {
+                return UnsafeNativeMethods.TryGetSystemMetricsForDpi(NativeMethods.SM_CXVSCROLL, (uint)dpi);
+            } else {
+                return UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_CXVSCROLL);
+            }
+        }
+
         /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.HorizontalScrollBarHeight"]/*' />
         /// <devdoc>
         ///    <para>
@@ -185,6 +199,20 @@ namespace System.Windows.Forms {
         /// </devdoc>
         public static int HorizontalScrollBarHeight {
             get {
+                return UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_CYHSCROLL);
+            }
+        }
+
+        /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.HorizontalScrollBarHeight"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       Gets the height of the horizontal scroll bar in pixels.
+        ///    </para>
+        /// </devdoc>
+        public static int GetHorizontalScrollBarHeightForDpi(int dpi) {
+            if (DpiHelper.EnableDpiChangedMessageHandling) {
+                return UnsafeNativeMethods.TryGetSystemMetricsForDpi(NativeMethods.SM_CYHSCROLL, (uint)dpi);
+            } else {
                 return UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_CYHSCROLL);
             }
         }
@@ -212,6 +240,22 @@ namespace System.Windows.Forms {
             get {
                 return new Size(UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_CXBORDER),
                                 UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_CYBORDER));
+            }
+        }
+
+        /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.GetBorderSizeForDpi"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       Gets the width and
+        ///       height of a window border in pixels.
+        ///    </para>
+        /// </devdoc>
+        public static Size GetBorderSizeForDpi(int dpi) {
+            if (DpiHelper.EnableDpiChangedMessageHandling) {
+                return new Size(UnsafeNativeMethods.TryGetSystemMetricsForDpi(NativeMethods.SM_CXBORDER, (uint)dpi),
+                                UnsafeNativeMethods.TryGetSystemMetricsForDpi(NativeMethods.SM_CYBORDER, (uint)dpi));
+            } else {
+                return BorderSize;
             }
         }
 
@@ -248,7 +292,6 @@ namespace System.Windows.Forms {
                 return UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_CXHTHUMB);
             }
         }
-
 /*
         /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.IconFont"]/*' />
         public static Font IconFont {
@@ -317,31 +360,50 @@ namespace System.Windows.Forms {
             [ResourceExposure(ResourceScope.Process)]
             [ResourceConsumption(ResourceScope.Process)]
             get {
-                Font menuFont = null;
-
-                //we can get the system's menu font through the NONCLIENTMETRICS structure via SystemParametersInfo
-                //
-                NativeMethods.NONCLIENTMETRICS data = new NativeMethods.NONCLIENTMETRICS();
-                bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
-
-                if (result && data.lfMenuFont != null) {
-                    // SECREVIEW : This assert is safe since we created the NONCLIENTMETRICS struct.
-                    //
-                    IntSecurity.ObjectFromWin32Handle.Assert();
-                    try {
-                        menuFont = Font.FromLogFont(data.lfMenuFont);
-                    }
-                    catch {
-                        // menu font is not true type.  Default to standard control font.
-                        //
-                        menuFont = Control.DefaultFont;
-                    }
-                    finally {
-                        CodeAccessPermission.RevertAssert();
-                    }
-                }
-                return menuFont;
+                return GetMenuFontHelper(0, false);
             }
+        }
+
+        /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.GetMenuFontForDpi"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       Gets the system's font for menus, scaled accordingly to an arbitrary DPI you provide.
+        ///    </para>
+        /// </devdoc>
+        public static Font GetMenuFontForDpi(int dpi) {
+            return GetMenuFontHelper((uint)dpi, DpiHelper.EnableDpiChangedMessageHandling);
+        }
+
+        private static Font GetMenuFontHelper(uint dpi, bool useDpi) {
+            Font menuFont = null;
+
+            //we can get the system's menu font through the NONCLIENTMETRICS structure via SystemParametersInfo
+            //
+            NativeMethods.NONCLIENTMETRICS data = new NativeMethods.NONCLIENTMETRICS();
+            bool result;
+            if (useDpi) {
+                result = UnsafeNativeMethods.TrySystemParametersInfoForDpi(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0, dpi);
+            } else {
+                result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
+            }
+
+            if (result && data.lfMenuFont != null) {
+                // SECREVIEW : This assert is safe since we created the NONCLIENTMETRICS struct.
+                //
+                IntSecurity.ObjectFromWin32Handle.Assert();
+                try {
+                    menuFont = Font.FromLogFont(data.lfMenuFont);
+                }
+                catch {
+                    // menu font is not true type.  Default to standard control font.
+                    //
+                    menuFont = Control.DefaultFont;
+                }
+                finally {
+                    CodeAccessPermission.RevertAssert();
+                }
+            }
+            return menuFont;
         }
 
         /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.MenuHeight"]/*' />
@@ -428,6 +490,14 @@ namespace System.Windows.Forms {
             }
         }
 
+        /// <summary>
+        /// Gets the height of the vertical scroll bar arrow bitmap in pixels.
+        /// </summary>
+        /// <param name="dpi"></param>
+        /// <returns></returns>
+        public static int VerticalScrollBarArrowHeightForDpi(int dpi) {
+                return UnsafeNativeMethods.TryGetSystemMetricsForDpi(NativeMethods.SM_CXHSCROLL, (uint)dpi);
+        }
         /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.HorizontalScrollBarArrowWidth"]/*' />
         /// <devdoc>
         ///    <para>
@@ -436,6 +506,21 @@ namespace System.Windows.Forms {
         /// </devdoc>
         public static int HorizontalScrollBarArrowWidth {
             get {
+                return UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_CXHSCROLL);
+            }
+        }
+
+        /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.VerticalScrollBarWidth"]/*' />
+        /// <devdoc>
+        ///    <para>
+        ///       Gets the width of the horizontal scroll bar arrow bitmap in pixels.
+        ///    </para>
+        /// </devdoc>
+        public static int GetHorizontalScrollBarArrowWidthForDpi(int dpi) {
+            if (DpiHelper.EnableDpiChangedMessageHandling) {
+                return UnsafeNativeMethods.TryGetSystemMetricsForDpi(NativeMethods.SM_CXHSCROLL, (uint)dpi);
+            }
+            else {
                 return UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_CXHSCROLL);
             }
         }
@@ -1730,7 +1815,6 @@ namespace System.Windows.Forms {
         /// </devdoc>
         public static int SizingBorderWidth {
             get {
-                
                 //we can get the system's menu font through the NONCLIENTMETRICS structure via SystemParametersInfo
                 //
                 NativeMethods.NONCLIENTMETRICS data = new NativeMethods.NONCLIENTMETRICS();
@@ -1817,7 +1901,7 @@ namespace System.Windows.Forms {
         }
         */
         
-        /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.SmallCaptionButtonSize"]/*' />
+         /// <include file='doc\SystemInformation.uex' path='docs/doc[@for="SystemInformation.SmallCaptionButtonSize"]/*' />
         /// <devdoc>
         ///    <para>
         ///      Specified the Size, in pixels, of the small caption buttons.
@@ -1864,7 +1948,7 @@ namespace System.Windows.Forms {
 
             }
         }
-        
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
         // End ADDITIONS FOR WHIDBEY                                                                            //
         //////////////////////////////////////////////////////////////////////////////////////////////////////////

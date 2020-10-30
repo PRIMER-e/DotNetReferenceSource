@@ -11,6 +11,7 @@ namespace System.Configuration {
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Configuration;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Reflection;
@@ -60,6 +61,7 @@ namespace System.Configuration {
         protected   const string KEYWORD_LOCATION_INHERITINCHILDAPPLICATIONS    = "inheritInChildApplications";
         protected   const string KEYWORD_CONFIGSOURCE                           = "configSource";
         protected   const string KEYWORD_XMLNS                                  = "xmlns";
+        protected   const string KEYWORD_CONFIG_BUILDER                         = "configBuilders";
         internal    const string KEYWORD_PROTECTION_PROVIDER                    = "configProtectionProvider";
         protected   const string FORMAT_NEWCONFIGFILE                           = "<?xml version=\"1.0\" encoding=\"{0}\"?>\r\n";
         protected   const string FORMAT_CONFIGURATION                           = "<configuration>\r\n";
@@ -115,6 +117,8 @@ namespace System.Configuration {
         protected const int SuggestLocationRemoval              = 0x02000000;
         protected const int NamespacePresentCurrent             = 0x04000000;
 
+        protected const int ConfigBuildersInitialized            = 0x08000000;
+
         internal const char             ConfigPathSeparatorChar = '/';
         internal const string           ConfigPathSeparatorString = "/";
         static internal readonly char[] ConfigPathSeparatorParams = new char[] {ConfigPathSeparatorChar};
@@ -132,6 +136,7 @@ namespace System.Configuration {
         private ConfigRecordStreamInfo          _configStreamInfo;      // stream info for the config record
 
         private object                          _configContext;         // Context for config level
+        private ConfigurationBuildersSection    _configBuilders;         // section containing the general config builders
         private ProtectedConfigurationSection   _protectedConfig;       // section containing the encryption providers
         private PermissionSet                   _restrictedPermissions; // cached restricted permission set
         private ConfigurationSchemaErrors       _initErrors;            // errors encountered during the parse of the configuration file
@@ -169,7 +174,7 @@ namespace System.Configuration {
         protected abstract object CreateSectionFactory(FactoryRecord factoryRecord);
 
         // Create the configuration object
-        protected abstract object CreateSection(bool inputIsTrusted, FactoryRecord factoryRecord, SectionRecord sectionRecord, object parentConfig, ConfigXmlReader reader);
+        protected abstract object CreateSection(bool inputIsTrusted, FactoryRecord factoryRecord, SectionRecord sectionRecord, SectionInput sectionInput, object parentConfig, ConfigXmlReader reader);
 
         // Use the parent result in creating the child
         protected abstract object UseParentResult(string configKey, object parentResult, SectionRecord sectionRecord);
@@ -819,6 +824,10 @@ namespace System.Configuration {
             get {return _configRoot.Host;}
         }
 
+        internal IInternalConfigurationBuilderHost ConfigBuilderHost {
+            get { return _configRoot.ConfigBuilderHost; }
+        }
+
         internal BaseConfigurationRecord Parent {
             get {return _parent;}
         }
@@ -1013,6 +1022,47 @@ namespace System.Configuration {
                         if (   IsInitDelayed
                             && (   factoryRecord == null
                                 || _initDelayedRoot.IsDefinitionAllowed(factoryRecord.AllowDefinition, factoryRecord.AllowExeDefinition))) {
+
+                            if (factoryRecord == null) {
+                                //
+                                // No factory was found in machine or exe config, and
+                                // initialization of the user config levels (roaming and local)
+                                // has been delayed.
+                                //
+                                // As described above, the design in this case is to complete
+                                // initialization of the user config levels now, and then
+                                // search them to see if they contain a matching factory.
+                                //
+                                // Unfortunately situations have emerged where initializing the
+                                // user config levels at this point would introduce significant
+                                // appcompat breaks. In such cases, ignore the user config
+                                // levels and instead return immediately to simulate the
+                                // case where the user config file contains no matching factory.
+                                //
+                                // NOTE: If the factory is present in the user config files,
+                                // callers can observe inconsistent results. Initially, the
+                                // factory will be ignored. Once any unrelated operation forces
+                                // user config initialization to occur, the factory will be
+                                // used and the associated content will be surfaced to the
+                                // caller. While undesirable, this inconsistency is being
+                                // allowed since the relevant factories are expected to rarely
+                                // (if ever) appear in user config files, and addressing the
+                                // inconsistency (e.g., by updating ScanFactoriesRecursive to
+                                // ignore any releveant factories found at user config levels)
+                                // would significantly expand the footprint of this targeted
+                                // appcompat shim.
+                                //
+                                // NOTE: This logic does NOT ignore user config files in
+                                // any case where a factory was found in the machine or exe
+                                // config and contains an attribute (e.g.,
+                                // allowExeDefinition="MachineToLocalUser") which explicitly
+                                // says that user config files are allowed to contribute
+                                // content.
+                                //
+                                if (NeverLoadUserConfigFilesDuringFactorySearch(configKey)) {
+                                    return;
+                                }
+                            }
 
                             //
                             // We are going to remove this record, so get any data we need
@@ -1254,6 +1304,54 @@ namespace System.Configuration {
             }
         }
 
+        //
+        // Note that the "configKey" is generally the section name passed to a GetSection API and
+        // is therefore case-sensitive.
+        //
+        private static bool NeverLoadUserConfigFilesDuringFactorySearch(string configKey) {
+
+            if (!LocalAppContextSwitches.AllowUserConfigFilesToLoadWhenSearchingForWellKnownSqlClientFactories) {
+                //
+                // These two sections control new System.Data.SqlClient features that
+                // were added in .NET 4.7.2. The SqlClient code queries these sections
+                // on demand by calling ConfigurationManager.GetSection from class
+                // constructors triggered during first use of the SqlClient services.
+                //
+                // For many customers, this broke appcompat because:
+                //    - The first SqlClient use happened at point where customer code
+                //      had attached non-serializable values to the logical call context.
+                //    - The new section is not present in the machine or exe config files,
+                //      so the first ConfigurationManager.GetSection loads the user
+                //      config files on demand.
+                //    - An AppDomain.CurrentDomain.Evidence call always occurs as part
+                //      of computing the user config file paths.
+                //    - In most secondary app domains, loading the evidence calls over
+                //      into the default domain, which throws an unhandled
+                //      SerializationException due to the non-serializable call context.
+                //
+                // Investigation showed that new SqlClient ConfigurationManager.GetSection
+                // calls cannot be removed without regressing the new .NET 4.7.2 features
+                // (which have shipped and are in wide use). That said, broad and heavy
+                // impact across large-scale customer scenarios means that some kind of
+                // appcompat mitigation needs to ship via servicing.
+                //
+                // The consensus is that it is very unlikely that customers are using
+                // user config files to configure the new SqlClient features. As a result,
+                // the customer impact is being mitigated via a targeted appcompat shim
+                // which prevents the user config files from ever being loaded during
+                // ConfigurationManager.GetSection calls that target any of the new
+                // sections.
+                //
+                if ((configKey == "SqlColumnEncryptionEnclaveProviders") ||
+                    (configKey == "SqlAuthenticationProviders")) {
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         protected void CreateSectionDefault(
                 string configKey, bool getRuntimeObject, FactoryRecord factoryRecord, SectionRecord sectionRecord,
                 out object result, out object resultRuntimeObject) {
@@ -1269,7 +1367,7 @@ namespace System.Configuration {
                 sectionRecordForDefault = new SectionRecord(configKey);
             }
 
-            object tmpResult = CallCreateSection(true, factoryRecord, sectionRecordForDefault, null, null, null, -1);
+            object tmpResult = CallCreateSection(true, factoryRecord, sectionRecordForDefault, null, null, null);
             object tmpResultRuntimeObject;
             if (getRuntimeObject) {
                 tmpResultRuntimeObject = GetRuntimeObject(tmpResult);
@@ -1635,9 +1733,7 @@ namespace System.Configuration {
                     result = UseParentResult(factoryRecord.ConfigKey, parentResult, sectionRecord);
                 }
                 else {
-                    result = CallCreateSection(
-                            isTrusted, factoryRecord, sectionRecord, parentResult,
-                            reader, input.SectionXmlInfo.Filename, input.SectionXmlInfo.LineNumber);
+                    result = CallCreateSection(isTrusted, factoryRecord, sectionRecord, input, parentResult, reader);
                 }
             }
             catch (Exception e) {
@@ -1757,6 +1853,7 @@ namespace System.Configuration {
             return section;
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3074:ReviewClassesDerivedFromXmlTextReader", Justification="Reading trusted input")]
         private ConfigXmlReader FindSectionRecursive(string [] keys, int iKey, XmlUtil xmlUtil, ref int lineNumber) {
             string name = keys[iKey];
             ConfigXmlReader section = null;
@@ -1819,6 +1916,7 @@ namespace System.Configuration {
             return section;
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3074:ReviewClassesDerivedFromXmlTextReader", Justification="Reading trusted input")]
         private ConfigXmlReader LoadConfigSource(string name, SectionXmlInfo sectionXmlInfo) {
             string configSourceStreamName = sectionXmlInfo.ConfigSourceStreamName;
 
@@ -1847,6 +1945,12 @@ namespace System.Configuration {
                                 sectionXmlInfo.ProtectionProviderName = ValidateProtectionProviderAttribute(protectionProviderAttribute, xmlUtil);
                             }
 
+                            // Check for configBuilder
+                            string configBuilderAttribute = xmlUtil.Reader.GetAttribute(KEYWORD_CONFIG_BUILDER);
+                            if (configBuilderAttribute != null) {
+                                sectionXmlInfo.ConfigBuilderName = ValidateConfigBuilderAttribute(configBuilderAttribute, xmlUtil);
+                            }
+
                             int lineOffset = xmlUtil.Reader.LineNumber;
                             string rawXml = xmlUtil.CopySection();
 
@@ -1872,6 +1976,7 @@ namespace System.Configuration {
             }
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3074:ReviewClassesDerivedFromXmlTextReader", Justification="Reading trusted input")]
         protected ConfigXmlReader GetSectionXmlReader(string[] keys, SectionInput input) {
             ConfigXmlReader reader = null;
             string filename = input.SectionXmlInfo.Filename;
@@ -1896,6 +2001,7 @@ namespace System.Configuration {
                     reader = FindSection(keys, input.SectionXmlInfo, out lineNumber);
                 }
 
+                // Decrypt protected sections
                 if (reader != null) {
                     if (!input.IsProtectionProviderDetermined) {
                         input.ProtectionProvider = GetProtectionProviderFromName(input.SectionXmlInfo.ProtectionProviderName, false);
@@ -1903,6 +2009,29 @@ namespace System.Configuration {
 
                     if (input.ProtectionProvider != null) {
                         reader = DecryptConfigSection(reader, input.ProtectionProvider);
+                    }
+                }
+
+                // Allow configBuilder a chance to modify
+                if (reader != null) {
+                    if (!input.IsConfigBuilderDetermined && !String.IsNullOrWhiteSpace(input.SectionXmlInfo.ConfigBuilderName)) {
+                        input.ConfigBuilder = GetConfigBuilderFromName(input.SectionXmlInfo.ConfigBuilderName);
+                    }
+
+                    if (input.IsConfigBuilderDetermined) {
+                        // Decrypt removes the invalid "configProtectionProvider" attribute simply by returning an xml reader for the
+                        // decrypted inner xml... which persumably does not have the attribute. ConfigBuilders OTOH, will presumably
+                        // return an xml reader based on this whole section as is. And the "configBuilders" attribute will be an
+                        // "unrecognized attribute" further down the road. So let's remove it here.
+                        XmlDocument doc = new XmlDocument();
+                        doc.PreserveWhitespace = true;
+                        doc.Load(reader);
+                        doc.DocumentElement.RemoveAttribute(KEYWORD_CONFIG_BUILDER);
+                        reader = new ConfigXmlReader(doc.DocumentElement.OuterXml, filename, lineNumber);
+                    }
+
+                    if (input.ConfigBuilder != null) {
+                        reader = ProcessRawXml(reader, input.ConfigBuilder);
                     }
                 }
             }
@@ -1960,14 +2089,47 @@ namespace System.Configuration {
             }
         }
 
-        protected object CallCreateSection(bool inputIsTrusted, FactoryRecord factoryRecord, SectionRecord sectionRecord, object parentConfig, ConfigXmlReader reader, string filename, int line) {
+        internal ConfigurationBuilder GetConfigBuilderFromName(string builderName) {
+            if (String.IsNullOrEmpty(builderName) || ConfigBuilders == null) {
+                    throw new ConfigurationErrorsException(SR.GetString(SR.Config_builder_not_found, builderName));
+            }
+
+            return ConfigBuilders.GetBuilderFromName(builderName);
+        }
+
+        private ConfigurationBuildersSection ConfigBuilders {
+            get {
+                if (!_flags[ConfigBuildersInitialized]) {
+                    InitConfigBuildersSection();
+                }
+
+                return _configBuilders;
+            }
+        }
+
+        internal void InitConfigBuildersSection() {
+            if (!_flags[ConfigBuildersInitialized]) {
+                _configBuilders = GetSection(BaseConfigurationRecord.RESERVED_SECTION_CONFIGURATION_BUILDERS, false, false) as ConfigurationBuildersSection;
+
+                _flags[ConfigBuildersInitialized] = true;
+            }
+        }
+
+        protected object CallCreateSection(bool inputIsTrusted, FactoryRecord factoryRecord, SectionRecord sectionRecord, SectionInput sectionInput, object parentConfig, ConfigXmlReader reader) {
             object config;
+            string filename = null;
+            int line = -1;
+
+            if (sectionInput != null && sectionInput.SectionXmlInfo != null) {
+                filename = sectionInput.SectionXmlInfo.Filename;
+                line = sectionInput.SectionXmlInfo.LineNumber;
+            }
 
             // Call into config section while impersonating process or UNC identity
             // so that the section could read files from disk if needed
             try {
                 using (Impersonate()) {
-                    config = CreateSection(inputIsTrusted, factoryRecord, sectionRecord, parentConfig, reader);
+                    config = CreateSection(inputIsTrusted, factoryRecord, sectionRecord, sectionInput, parentConfig, reader);
                     if (config == null && parentConfig != null) {
                         throw new ConfigurationErrorsException(SR.GetString(SR.Config_object_is_null), filename, line);
                     }
@@ -2184,7 +2346,7 @@ namespace System.Configuration {
                             switch (xmlUtil.Reader.Name) {
                                 case KEYWORD_SECTIONGROUP_NAME:
                                     tagName = xmlUtil.Reader.Value;
-                                    VerifySectionName(tagName, xmlUtil, ExceptionAction.Local, false);
+                                    VerifySectionName(tagName, xmlUtil, ExceptionAction.Local, false, false);
                                     break;
 
                                 case KEYWORD_SECTIONGROUP_TYPE:
@@ -2275,7 +2437,7 @@ namespace System.Configuration {
                             switch (xmlUtil.Reader.Name) {
                                 case KEYWORD_SECTION_NAME:
                                     tagName = xmlUtil.Reader.Value;
-                                    VerifySectionName(tagName, xmlUtil, ExceptionAction.Local, false);
+                                    VerifySectionName(tagName, xmlUtil, ExceptionAction.Local, false, true);
                                     break;
 
                                 case KEYWORD_SECTION_TYPE:
@@ -2362,6 +2524,14 @@ namespace System.Configuration {
                                 xmlUtil.AddErrorRequiredAttribute(KEYWORD_SECTION_TYPE, ExceptionAction.Local);
                             }
 
+                            // Disallow names starting with "config" unless it is the special configBuilders section.
+                            if (StringUtil.StartsWith(tagName, "config")) {
+                                Type sectionType = Type.GetType(typeName);
+                                if (!StringUtil.Equals(tagName, RESERVED_SECTION_CONFIGURATION_BUILDERS) || sectionType != ConfigurationBuildersSectionType) {
+                                    throw new ConfigurationErrorsException(SR.GetString(SR.Config_tag_name_cannot_begin_with_config), xmlUtil);
+                                }
+                            }
+
                             string configKey = CombineConfigKey(parentConfigKey, tagName);
 
                             FactoryRecord factoryRecord = (FactoryRecord) factoryList[configKey];
@@ -2443,7 +2613,7 @@ namespace System.Configuration {
                         if (xmlUtil.VerifyRequiredAttribute(
                                 name, KEYWORD_SECTION_NAME, ExceptionAction.NonSpecific)) {
 
-                            VerifySectionName(name, xmlUtil, ExceptionAction.NonSpecific, false);
+                            VerifySectionName(name, xmlUtil, ExceptionAction.NonSpecific, false, true);
                         }
                     }
                     break;
@@ -2864,7 +3034,8 @@ namespace System.Configuration {
                     string configSource             = null;
                     string configSourceStreamName   = null;
                     object configSourceStreamVersion = null;
-                    string protectionProviderName = null;
+                    string configBuilderName         = null;
+                    string protectionProviderName   = null;
                     OverrideMode sectionLockMode = OverrideMode.Inherit;
                     OverrideMode sectionChildLockMode = OverrideMode.Inherit;
                     bool positionedAtNextElement = false;
@@ -2943,6 +3114,16 @@ namespace System.Configuration {
                                     xmlUtil.SchemaErrors.AddError(
                                             new ConfigurationErrorsException(SR.GetString(SR.Protection_provider_syntax_error), xmlUtil),
                                             ExceptionAction.Local);
+                                }
+                            }
+
+                            string configBuilderAttribute = xmlUtil.Reader.GetAttribute(KEYWORD_CONFIG_BUILDER);
+                            if (configBuilderAttribute != null) {
+                                try {
+                                    configBuilderName = ValidateConfigBuilderAttribute(configBuilderAttribute, xmlUtil);
+                                }
+                                catch (ConfigurationException ce) {
+                                    xmlUtil.SchemaErrors.AddError(ce, ExceptionAction.Local);
                                 }
                             }
 
@@ -3047,7 +3228,7 @@ namespace System.Configuration {
                                 configKey, _configPath, targetConfigPath, locationSubPath,
                                 fileName, lineNumber, ConfigStreamInfo.StreamVersion, rawXml,
                                 configSource, configSourceStreamName, configSourceStreamVersion,
-                                protectionProviderName, overrideMode, skipInChildApps);
+                                configBuilderName, protectionProviderName, overrideMode, skipInChildApps);
 
                         if (locationSubPath == null) {
                             //
@@ -3143,17 +3324,17 @@ namespace System.Configuration {
                 locationSubPath = NormalizeLocationSubPath(locationSubPath, xmlUtil);
 
                 // VSWhidbey 535595
-                // See attached email in the 
-
-
-
-
-
-
-
-
-
-
+                // See attached email in the bug.  Basically, we decided to throw if we see one of these
+                // in machine.config or root web.config:
+                //  <location path="." inheritInChildApplications="false" >
+                //  <location inheritInChildApplications="false" >
+                //
+                // To detect whetherewe're machine.config or root web.config, the current fix is to use
+                // Host.IsDefinitionAllowed.  Instead of this we should invent a new method in
+                // IInternalConfigHost to return whether a configPath can be part of an app or not.
+                // But since it's Whidbey RC "Ask Mode" I chose not to do it due to bigger code churn.
+                //
+                // 
                 if (locationSubPath == null &&
                     !inheritInChildApp &&
                     Host.IsDefinitionAllowed(_configPath, ConfigurationAllowDefinition.MachineToWebRoot, ConfigurationAllowExeDefinition.MachineOnly)) {
@@ -3379,9 +3560,9 @@ namespace System.Configuration {
             return Host.IsDefinitionAllowed(_configPath, allowDefinition, allowExeDefinition);
         }
 
-        static protected void VerifySectionName(string name, XmlUtil xmlUtil, ExceptionAction action, bool allowImplicit) {
+        static protected void VerifySectionName(string name, XmlUtil xmlUtil, ExceptionAction action, bool allowImplicit, bool allowConfigNames = false) {
             try {
-                VerifySectionName(name, (IConfigErrorInfo) xmlUtil, allowImplicit);
+                VerifySectionName(name, (IConfigErrorInfo) xmlUtil, allowImplicit, allowConfigNames);
             }
             catch (ConfigurationErrorsException ce) {
                 xmlUtil.SchemaErrors.AddError(ce, action);
@@ -3390,7 +3571,7 @@ namespace System.Configuration {
 
         // Check if the section name contains reserved words from the config system,
         // and is a valid name for an XML Element.
-        static protected void VerifySectionName(string name, IConfigErrorInfo errorInfo, bool allowImplicit) {
+        static protected void VerifySectionName(string name, IConfigErrorInfo errorInfo, bool allowImplicit, bool allowConfigNames = false) {
             if (String.IsNullOrEmpty(name)) {
                 throw new ConfigurationErrorsException(SR.GetString(SR.Config_tag_name_invalid), errorInfo);
             }
@@ -3417,7 +3598,7 @@ namespace System.Configuration {
                 }
             }
 
-            if (StringUtil.StartsWith(name, "config")) {
+            if (!allowConfigNames && StringUtil.StartsWith(name, "config")) {
                 throw new ConfigurationErrorsException(SR.GetString(SR.Config_tag_name_cannot_begin_with_config), errorInfo);
             }
 
@@ -3820,7 +4001,7 @@ namespace System.Configuration {
                         SectionXmlInfo sectionXmlInfo = new SectionXmlInfo(
                             configKey, _configPath, _configPath, null,
                             ConfigStreamInfo.StreamName, 0, null, null,
-                            null, null, null,
+                            null, null, null, null,
                             null, OverrideModeSetting.LocationDefault, false);
 
                         SectionInput fileInput = new SectionInput(sectionXmlInfo, null);
@@ -4001,6 +4182,35 @@ namespace System.Configuration {
             return Host.DecryptSection(encryptedXml, protectionProvider, protectedConfig);
         }
 
+        protected virtual XmlNode CallHostProcessRawXml(XmlNode rawXml, ConfigurationBuilder configBuilder) {
+            if (ConfigBuilderHost != null) {
+                return ConfigBuilderHost.ProcessRawXml(rawXml, configBuilder);
+            }
+
+            return rawXml;
+        }
+
+        protected virtual ConfigurationSection CallHostProcessConfigurationSection(ConfigurationSection configSection, ConfigurationBuilder configBuilder) {
+            if (ConfigBuilderHost != null) {
+                try {
+                    return ConfigBuilderHost.ProcessConfigurationSection(configSection, configBuilder);
+                } catch (Exception e) {
+                    throw ExceptionUtil.WrapAsConfigException(SR.GetString(SR.ConfigBuilder_processSection_error,
+                                                                configBuilder.Name, configSection.SectionInformation.Name), e, null);
+                }
+            }
+
+            return configSection;
+        }
+
+        static internal string ValidateConfigBuilderAttribute(string configBuilder, IConfigErrorInfo errorInfo) {
+            if (String.IsNullOrEmpty(configBuilder)) {
+                throw new ConfigurationErrorsException(SR.GetString(SR.Config_builder_invalid_format), errorInfo);
+            }
+
+            return configBuilder;
+        }
+
         static internal string ValidateProtectionProviderAttribute(string protectionProvider, IConfigErrorInfo errorInfo) {
             if (String.IsNullOrEmpty(protectionProvider)) {
                 throw new ConfigurationErrorsException(SR.GetString(SR.Protection_provider_invalid_format), errorInfo);
@@ -4009,6 +4219,7 @@ namespace System.Configuration {
             return protectionProvider;
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3074:ReviewClassesDerivedFromXmlTextReader", Justification="Reading trusted input")]
         private ConfigXmlReader DecryptConfigSection(ConfigXmlReader reader, ProtectedConfigurationProvider protectionProvider) {
             ConfigXmlReader     clone           = reader.Clone();
             IConfigErrorInfo    err             = (IConfigErrorInfo)clone;
@@ -4078,6 +4289,29 @@ namespace System.Configuration {
             return new ConfigXmlReader(clearTextXml, filename, sectionLineNumber, true);
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3074:ReviewClassesDerivedFromXmlTextReader", Justification="Reading trusted input")]
+        private ConfigXmlReader ProcessRawXml(ConfigXmlReader reader, ConfigurationBuilder configBuilder) {
+            IConfigErrorInfo err = (IConfigErrorInfo)reader;
+            XmlNode processedXml = null;
+
+            string filename = err.Filename;
+            int lineNumber = err.LineNumber;
+
+            try {
+                XmlDocument doc = new XmlDocument();
+                doc.PreserveWhitespace = true;
+                doc.Load(reader);
+                processedXml = CallHostProcessRawXml(doc.DocumentElement, configBuilder);
+            }
+            catch (Exception e) {
+                // 'lineNumber' is actually off by one here for some reason. But this will be caught/rethrown
+                // in GetSectionXmlReader, which will add the correct line number... so long as we don't add it here.
+                throw ExceptionUtil.WrapAsConfigException(SR.GetString(SR.ConfigBuilder_processXml_error_short, configBuilder.Name), e, null);
+            }
+
+            return new ConfigXmlReader(processedXml.OuterXml, filename, lineNumber, true);
+        }
+
         // ConfigContext
         //
         // Retrieve the context for the config
@@ -4122,11 +4356,18 @@ namespace System.Configuration {
         // Note: Some of the per-attribute encryption stuff is moved to the end of the file to minimize
         //       FI merging conflicts
         //
+        const string ConfigurationBuildersSectionTypeName = "System.Configuration.ConfigurationBuildersSection, " + AssemblyRef.SystemConfiguration;
+        internal const string RESERVED_SECTION_CONFIGURATION_BUILDERS = "configBuilders";
+        Type ConfigurationBuildersSectionType = Type.GetType(ConfigurationBuildersSectionTypeName);
         const string ProtectedConfigurationSectionTypeName = "System.Configuration.ProtectedConfigurationSection, " + AssemblyRef.SystemConfiguration;
         internal const string RESERVED_SECTION_PROTECTED_CONFIGURATION       = "configProtectedData";
+        internal const string Microsoft_CONFIGURATION_SECTION = ConfigurationStringConstants.WinformsApplicationConfigurationSectionName;
+        const string SystemConfigurationSectionTypeName = "System.Configuration.AppSettingsSection, " + AssemblyRef.SystemConfiguration;
 
         internal static bool IsImplicitSection(string configKey) {
-            if (configKey == RESERVED_SECTION_PROTECTED_CONFIGURATION) {
+            if (string.Equals(configKey, RESERVED_SECTION_PROTECTED_CONFIGURATION, StringComparison.Ordinal) || 
+                //string.Equals(configKey, RESERVED_SECTION_CONFIGURATION_BUILDERS, StringComparison.Ordinal) ||
+                string.Equals(configKey, Microsoft_CONFIGURATION_SECTION, StringComparison.Ordinal)) {
                 return true;
             }
             else {
@@ -4161,6 +4402,34 @@ namespace System.Configuration {
                                 string.Empty,                               // group
                                 RESERVED_SECTION_PROTECTED_CONFIGURATION,   // name
                                 ProtectedConfigurationSectionTypeName,      // factoryTypeName
+                                true,                                       // allowLocation
+                                ConfigurationAllowDefinition.Everywhere,    // allowDefinition
+                                ConfigurationAllowExeDefinition.MachineToApplication,   // allowExeDefinition
+                                OverrideModeSetting.SectionDefault,         // overrideModeDefault
+                                true,                                       // restartOnExternalChanges
+                                true,                                       // requirePermission
+                                true,                                       // isFromTrustedConfig
+                                true,                                       // isUndeclared
+                                null,                                       // filename
+                                -1);                                        // lineNumber
+                }
+
+                factoryRecord = (FactoryRecord)factoryList[Microsoft_CONFIGURATION_SECTION];
+
+                // If the user has mistakenly declared an implicit section, we should leave the factoryRecord
+                // alone because it contains the error and the error will be thrown later.
+                if (factoryRecord != null)
+                {
+                    Debug.Assert(factoryRecord.HasErrors, "If the user has mistakenly declared an implicit section, we should have recorded an error.");
+                }
+                else
+                {
+                    factoryList[Microsoft_CONFIGURATION_SECTION] =
+                        new FactoryRecord(
+                                Microsoft_CONFIGURATION_SECTION,             // configKey
+                                string.Empty,                               // group
+                                Microsoft_CONFIGURATION_SECTION,             // name
+                                SystemConfigurationSectionTypeName,         // factoryTypeName
                                 true,                                       // allowLocation
                                 ConfigurationAllowDefinition.Everywhere,    // allowDefinition
                                 ConfigurationAllowExeDefinition.MachineToApplication,   // allowExeDefinition

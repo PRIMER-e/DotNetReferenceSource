@@ -148,11 +148,11 @@ namespace System.Management
                 
                 //
                 // [Whidbey RAID (marioh) : 27063]
-                // See 
-
-
-
-
+                // See bug for more detailed comment. We can not use foreach since it
+                // _always_ calls Dispose on the collection invalidating the IEnumWbemClassObject
+                // pointers.
+                // We fi this by doing a manual walk of the collection.
+                //
                 int count = 0;
 
                 IEnumerator enumCol = this.GetEnumerator ( ) ;
@@ -283,19 +283,19 @@ namespace System.Management
 
             //
             // [Everett SP1 (marioh) : 149274]
-            // The crux of the problem with this 
-
-
-
-
-
-
-
-
-
-
-
-
+            // The crux of the problem with this bug is that we we do not clone the enumerator
+            // if its the first enumerator. If it is the first enumerator we pass the reference
+            // to the enumerator implementation rather than a clone. If the enumerator is used 
+            // from within a foreach statement in the client code, the foreach statement will
+            // dec the ref count on the reference which also happens to be the reference to the
+            // original enumerator causing subsequent uses of the collection to fail.
+            // The fix is to always clone the enumerator (assuming its a rewindable enumerator)
+            // to avoid invalidating the collection.
+            //
+            // If its a forward only enumerator we simply pass back the original enumerator (i.e.
+            // not cloned) and if it gets disposed we end up throwing the next time its used. Essentially,
+            // the enumerator becomes the collection.
+            //
             
             // Unless this is the first enumerator, we have
             // to clone. This may throw if we are non-rewindable.
@@ -328,7 +328,7 @@ namespace System.Management
                 else if ((status & 0x80000000) != 0)
                 {
                     // 
-                    Marshal.ThrowExceptionForHR(status);
+                    Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                 }
                 return new ManagementObjectEnumerator (this, enumWbemClone);
             }
@@ -575,7 +575,7 @@ namespace System.Management
                         if ((status & 0xfffff000) == 0x80041000)
                             ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                         else
-                            Marshal.ThrowExceptionForHR(status);
+                            Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                     }
                     else
                     {
@@ -646,7 +646,7 @@ namespace System.Management
                     }
                     else if ((status & 0x80000000) != 0)
                     {
-                        Marshal.ThrowExceptionForHR(status);
+                        Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                     }
 
                     //Flush the current enumeration cache

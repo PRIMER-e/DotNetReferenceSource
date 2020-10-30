@@ -16,14 +16,14 @@ using MS.Win32;
 
 namespace System.Windows.Automation.Peers
 {
-    /// 
+    ///
     public class TreeViewItemAutomationPeer : ItemsControlAutomationPeer, IExpandCollapseProvider, ISelectionItemProvider, IScrollItemProvider
     {
         ///
         public TreeViewItemAutomationPeer(TreeViewItem owner): base(owner)
         {
         }
-    
+
         ///
         override protected string GetClassNameCore()
         {
@@ -36,7 +36,7 @@ namespace System.Windows.Automation.Peers
             return AutomationControlType.TreeItem;
         }
 
-        /// 
+        ///
         override public object GetPattern(PatternInterface patternInterface)
         {
             if (patternInterface == PatternInterface.ExpandCollapse)
@@ -51,8 +51,8 @@ namespace System.Windows.Automation.Peers
             {
                 return this;
             }
-            
-            return base.GetPattern(patternInterface); 
+
+            return base.GetPattern(patternInterface);
         }
 
         ///
@@ -140,7 +140,7 @@ namespace System.Windows.Automation.Peers
                             if (peer != null)
                                 done = callback(peer);
                         }
-                        
+
                         if(peer == null)
                             done = iterate(logicalParentAp, child, callback, dataChildren, oldChildren);
                     }
@@ -174,7 +174,7 @@ namespace System.Windows.Automation.Peers
             {
             	parentPeer = EventsSource as TreeViewDataItemAutomationPeer;
             }
-            
+
             if (peer == null)
                 peer = GetPeerFromWeakRefStorage(item);
 
@@ -196,12 +196,12 @@ namespace System.Windows.Automation.Peers
                     wrapperPeer.EventsSource = peer;
                 }
             }
-            
+
             return peer;
         }
 
 
-        /// 
+        ///
         internal override bool IsPropertySupportedByControlForFindItem(int id)
         {
             if (base.IsPropertySupportedByControlForFindItem(id))
@@ -237,8 +237,8 @@ namespace System.Windows.Automation.Peers
             return new TreeViewDataItemAutomationPeer(item, this, EventsSource as TreeViewDataItemAutomationPeer);
         }
 
-        // 
-        override internal void UpdateChildren()
+        //
+        override internal IDisposable UpdateChildren()
         {
             // To ensure that the Updation of children should be initiated from DataPeer so as to have the right parent value stored for children
             TreeViewDataItemAutomationPeer dataPeer = EventsSource as TreeViewDataItemAutomationPeer;
@@ -247,6 +247,7 @@ namespace System.Windows.Automation.Peers
             else
                 UpdateChildrenInternal(AutomationInteropProvider.ItemsInvalidateLimit);
             WeakRefElementProxyStorage.PurgeWeakRefCollection();
+            return null;
         }
 
         /// <summary>
@@ -255,7 +256,7 @@ namespace System.Windows.Automation.Peers
             EventsSource = dataPeer;
             UpdateWeakRefStorageFromDataPeer();
         }
-        
+
         ///
         internal void UpdateWeakRefStorageFromDataPeer()
         {
@@ -411,7 +412,7 @@ namespace System.Windows.Automation.Peers
                 !isSelected,
                 isSelected);
         }
-        
+
         // Selection Events needs to be raised on DataItem Peers now when they exist.
         internal void RaiseAutomationSelectionEvent(AutomationEvents eventId)
         {
@@ -419,7 +420,7 @@ namespace System.Windows.Automation.Peers
             {
                 EventsSource.RaiseAutomationEvent(eventId);
             }
-            else 
+            else
                 this.RaiseAutomationEvent(eventId);
         }
         #endregion

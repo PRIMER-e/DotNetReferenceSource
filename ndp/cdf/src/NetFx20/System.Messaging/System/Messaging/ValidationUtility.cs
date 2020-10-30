@@ -46,6 +46,9 @@ namespace System.Messaging
                    (value == HashAlgorithm.Md4) ||
                    (value == HashAlgorithm.Md5) ||
                    (value == HashAlgorithm.Sha) ||
+                   (value == HashAlgorithm.Sha256) ||
+                   (value == HashAlgorithm.Sha384) ||
+                   (value == HashAlgorithm.Sha512) ||
                    (value == HashAlgorithm.Mac);
         }
 

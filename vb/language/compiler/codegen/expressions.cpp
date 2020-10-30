@@ -1372,7 +1372,7 @@ bool        fReadOnlyAddr
             // If so, then the address to store and load to this array is the array element itself,
             // but only if it's a simple array (otherwise we use helpers).
             if (IsComplexValueType(ptree->AsExpression().vtype) && IsSimpleArray(ptree) &&
-                ptree->AsExpression().vtype != t_generic)     // 
+                ptree->AsExpression().vtype != t_generic)     // Bug VSWhidbey 545519
             {
                 GenerateLoadArrayAddr(ptree, fReadOnlyAddr);
             }
@@ -1734,7 +1734,7 @@ ILTree::PILNode ptree
     //
     if (IsSimpleArray(ptree))
     {
-        if (vtype == t_generic) // 
+        if (vtype == t_generic) // Bug VSWhidbey 545519
         {
             EmitOpcode_Tok(CEE_LDELEM,
                            m_pmdemit->DefineTypeRefBySymbol(parr->GetRoot(), &ptree->Loc),
@@ -1953,7 +1953,7 @@ Location *pReferencingLocation
     //
     if (IsSimpleArray(ptree))
     {
-        if (vtype == t_generic) // 
+        if (vtype == t_generic) // Bug VSWhidbey 545519
         {
             EmitOpcode_Tok(CEE_STELEM,
                            m_pmdemit->DefineTypeRefBySymbol(parr->GetRoot(), pReferencingLocation),
@@ -2199,7 +2199,7 @@ bool     fReadOnlyAddr
         // if i have a struct and a simple array, then skip loading the address of the
         // element on the stack because GenerateAddr already did this for us
         if (!IsComplexValueType(ptreeLHS->AsExpression().vtype) || !IsSimpleArray(ptreeLHS) ||
-            ptreeLHS->AsExpression().vtype == t_generic)      // 
+            ptreeLHS->AsExpression().vtype == t_generic)      // Bug VSWhidbey 545519
         {
             GenerateLoadArrayAddr(ptreeLHS, fReadOnlyAddr);
         }
@@ -3534,8 +3534,8 @@ void CodeGenerator::GenerateDelegateConstructorArgs
     // If Method is shared, or if object is MyBase or MyClass, or if method is declared in a value type,
     // use LDFTN opcode. Otherwise use LDVIRTFTN.
     // Special-casing value types is required for primitive types (Int32, Double etc), because using LDVIRTFTN
-    // for methods declared in them will produce unverifiable code due to a verifier 
-
+    // for methods declared in them will produce unverifiable code due to a verifier bug. And it doesn't hurt
+    // for other value types.
     BCSYM_Proc *pProc = MethodSymbol->DigThroughAlias()->PProc();
     if
     (

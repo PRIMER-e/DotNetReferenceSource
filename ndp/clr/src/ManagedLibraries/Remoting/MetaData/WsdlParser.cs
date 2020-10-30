@@ -2320,10 +2320,48 @@ namespace System.Runtime.Remoting.MetadataServices
             }
         }
 
+        private static string TransliterateString(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return "\"\"";
+            }
+
+            //UnicodeCategory: (Lu)UppercaseLetter, (Ll)LowercaseLetter, (Lt)TitlecaseLetter, (Lm)ModifierLetter, (Lo)OtherLetter, or (Nd)DecimalDigitNumber.
+
+            StringBuilder sb = new StringBuilder("\"");
+
+            foreach (char c in str)
+            {
+                if (char.IsControl(c))
+                {
+                    continue;
+                }
+
+                if (char.IsLetterOrDigit(c))
+                {
+                    sb.Append(c);
+                }
+                else
+                {
+                    sb.Append("\\u");
+                    sb.Append(Convert.ToInt32(c).ToString("X4"));
+                }
+            }
+
+            sb.Append("\"");
+            return sb.ToString();
+        }
+
         static StringBuilder vsb = new StringBuilder();
         internal static string IsValidUrl(string value)
         {
-            if (value == null) 
+            if (!System.Runtime.Remoting.Configuration.AppSettings.AllowUnsanitizedWSDLUrls)
+            {
+                return WsdlParser.TransliterateString(value);
+            }
+
+            if (value == null)
             {
                 return "\"\"";
             }
@@ -7527,13 +7565,3 @@ namespace System.Runtime.Remoting.MetadataServices
         }
     }
 }
-
-
-
-
-
-
-
-
-
-            

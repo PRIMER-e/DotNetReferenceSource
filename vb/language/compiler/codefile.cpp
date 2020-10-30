@@ -209,7 +209,7 @@ void CodeFile::DumpToFile(Compiler *pCompiler, _In_z_ WCHAR *pText, XMLDumpKind 
 
         HRESULT hr = S_OK;
         {
-            // Dump the XML we are given so that we can tell if a 
+            // Dump the XML we are given so that we can tell if a bug is on our side or not
             CompilerProject::DumpXMLToFile(pCompiler, fileName, DumpKind == Dump_VBCode ? L"xvb" : L"xml", pText);
         }
 

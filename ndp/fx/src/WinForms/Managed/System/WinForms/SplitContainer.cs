@@ -2376,6 +2376,13 @@ namespace System.Windows.Forms {
         //                                                                                               //
         ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+        internal override Rectangle GetToolNativeScreenRectangle() {
+            // Return splitter rectangle instead of the whole container rectangle to be consistent with the mouse ToolTip
+            Rectangle containerRectangle = base.GetToolNativeScreenRectangle();
+            Rectangle splitterRectangle = this.SplitterRectangle;
+            return new Rectangle(containerRectangle.X + splitterRectangle.X, containerRectangle.Y + splitterRectangle.Y, splitterRectangle.Width, splitterRectangle.Height);
+        }
+
         internal override void AfterControlRemoved(Control control, Control oldParent) {
             base.AfterControlRemoved(control, oldParent);
             if (control is SplitContainer && control.Dock == DockStyle.Fill)

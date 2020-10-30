@@ -53,6 +53,13 @@ namespace MS.Internal
             return (extensions != null) ? extensions.IsDataSetCollectionProperty(pd) : false;
         }
 
+        // Intercept GetValue calls for certain ADO properties
+        internal static object GetValue(object item, PropertyDescriptor pd, bool useFollowParent)
+        {
+            SystemDataExtensionMethods extensions = AssemblyHelper.ExtensionsForSystemData();
+            return (extensions != null) ? extensions.GetValue(item, pd, useFollowParent) : null;
+        }
+
         // return true if DBNull is a valid value for the given item and column.
         // The column may be specified directly by name, or indirectly by indexer: Item[arg]
         internal static bool DetermineWhetherDBNullIsValid(object item, string columnName, object arg)

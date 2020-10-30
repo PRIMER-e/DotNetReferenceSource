@@ -46,8 +46,10 @@ namespace System.Windows.Forms {
     using System.Drawing.Imaging;
     using System.Windows.Forms.Layout;
     using System.Runtime.Versioning;
+    using Automation;
 
     using IComDataObject = System.Runtime.InteropServices.ComTypes.IDataObject;
+    using Collections.Generic;
 
     /// <include file='doc\Control.uex' path='docs/doc[@for="Control"]/*' />
     /// <devdoc>
@@ -82,7 +84,8 @@ namespace System.Windows.Forms {
     ISynchronizeInvoke,
     IWin32Window,
     IArrangedElement,
-    IBindableComponent {
+    IBindableComponent,
+    IKeyboardToolTip {
 
 #if FINALIZATION_WATCH
         static readonly TraceSwitch ControlFinalization = new TraceSwitch("ControlFinalization", "Tracks the creation and destruction of finalization");
@@ -217,6 +220,7 @@ namespace System.Windows.Forms {
         private  const int STATE2_ISACTIVEX                         = 0x00000400;
         internal const int STATE2_USEPREFERREDSIZECACHE             = 0x00000800;
         internal const int STATE2_TOPMDIWINDOWCLOSING               = 0x00001000;
+        internal const int STATE2_CURRENTLYBEINGSCALED              = 0x00002000;   // if set, the control is being scaled, currently
 
         private static readonly object EventAutoSizeChanged           = new object();
         private static readonly object EventKeyDown                   = new object();
@@ -225,6 +229,8 @@ namespace System.Windows.Forms {
         private static readonly object EventMouseDown                 = new object();
         private static readonly object EventMouseEnter                = new object();
         private static readonly object EventMouseLeave                = new object();
+        private static readonly object EventDpiChangedBeforeParent    = new object();
+        private static readonly object EventDpiChangedAfterParent     = new object();
         private static readonly object EventMouseHover                = new object();
         private static readonly object EventMouseMove                 = new object();
         private static readonly object EventMouseUp                   = new object();
@@ -320,6 +326,8 @@ namespace System.Windows.Forms {
         private const byte RequiredScalingEnabledMask = 0x10;
         private const byte RequiredScalingMask = 0x0F;
 
+        private const byte HighOrderBitMask = 0x80;
+
         private static Font defaultFont;
 
         // Property store keys for properties.  The property store allocates most efficiently
@@ -374,6 +382,7 @@ namespace System.Windows.Forms {
         private static readonly int PropCacheTextField                      = PropertyStore.CreateKey();
         private static readonly int PropAmbientPropertiesService            = PropertyStore.CreateKey();
 
+        private static bool needToLoadComCtl = true;
 
         // This switch determines the default text rendering engine to use by some controls that support switching rendering engine.
         // CheckedListBox, PropertyGrid, GroupBox, Label and LinkLabel, and ButtonBase controls.
@@ -401,7 +410,7 @@ namespace System.Windows.Forms {
         private Control                       parent;
         private Control                       reflectParent;
         private CreateParams                  createParams;
-        private int                           x;                      // 
+        private int                           x;                      // CONSIDER: changing this to short
         private int                           y;
         private int                           width;
         private int                           height;
@@ -419,6 +428,8 @@ namespace System.Windows.Forms {
         private short                         updateCount;
         private LayoutEventArgs               cachedLayoutEventArgs;
         private Queue                         threadCallbackList;
+        internal int                          deviceDpi;
+
 
         // for keeping track of our ui state for focus and keyboard cues.  using a member variable
         // here because we hit this a lot
@@ -431,7 +442,10 @@ namespace System.Windows.Forms {
         private const int UISTATE_KEYBOARD_CUES_MASK            = 0x00F0;
         private const int UISTATE_KEYBOARD_CUES_HIDDEN          = 0x0010;
         private const int UISTATE_KEYBOARD_CUES_SHOW            = 0x0020;
-        
+
+        [ThreadStatic]
+        private static byte[] tempKeyboardStateArray;
+
         // } End Members
         ///////////////////////////////////////////////////////////////////////
 
@@ -474,6 +488,10 @@ example usage
             }
 #endif
             propertyStore = new PropertyStore();
+
+            DpiHelper.InitializeDpiHelperForWinforms();
+            // Initialize DPI to the value on the primary screen, we will have the correct value when the Handle is created.
+            deviceDpi = DpiHelper.DeviceDpi;
 
             window = new ControlNativeWindow(this);
             RequiredScalingEnabled = true;
@@ -525,7 +543,7 @@ example usage
 
                 CreateParams cp = CreateParams;
 
-                SafeNativeMethods.AdjustWindowRectEx(ref rect, cp.Style, false, cp.ExStyle);
+                AdjustWindowRectEx(ref rect, cp.Style, false, cp.ExStyle);
                 clientWidth = width - (rect.right - rect.left);
                 clientHeight = height - (rect.bottom - rect.top);
             }
@@ -568,6 +586,15 @@ example usage
         public Control( Control parent, string text, int left, int top, int width, int height ) : this( parent, text ) {
             this.Location = new Point( left, top );
             this.Size = new Size( width, height );
+        }
+
+        /// <summary>
+        /// gets or sets control Dpi awareness context value.
+        /// </summary>
+        internal DpiAwarenessContext DpiAwarenessContext {
+            get {
+                return window.DpiAwarenessContext;
+            }
         }
 
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.AccessibilityObject"]/*' />
@@ -647,6 +674,10 @@ example usage
         ///      Returns a specific AccessibleObbject associated w/ the objectID
         /// </devdoc>
         protected virtual AccessibleObject GetAccessibilityObjectById(int objectId) {
+            if (AccessibilityImprovements.Level3 && this is IAutomationLiveRegion) {
+                return this.AccessibilityObject;
+            }
+
             return null;
         }
 
@@ -1540,7 +1571,6 @@ example usage
                 Properties.SetInteger(PropCacheTextCount, cacheTextCounter);
             }                
         }
-           
 
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.CheckForIllegalCrossThreadCalls"]/*' />
         [ Browsable(false), EditorBrowsable(EditorBrowsableState.Advanced),
@@ -1811,8 +1841,11 @@ example usage
             get {
 
                 // CLR4.0 or later, comctl32.dll needs to be loaded explicitly.
-                if (UnsafeNativeMethods.GetModuleHandle(ExternDll.Comctl32) == IntPtr.Zero) {
-                    if (UnsafeNativeMethods.LoadLibrary(ExternDll.Comctl32) == IntPtr.Zero) {
+                if (needToLoadComCtl) {
+                    if ((UnsafeNativeMethods.GetModuleHandle(ExternDll.Comctl32) != IntPtr.Zero)
+                        || (UnsafeNativeMethods.LoadLibraryFromSystemPathIfAvailable(ExternDll.Comctl32) != IntPtr.Zero)) {
+                        needToLoadComCtl = false;
+                    } else {
                         int lastWin32Error = Marshal.GetLastWin32Error();
                         throw new Win32Exception(lastWin32Error, SR.GetString(SR.LoadDLLError, ExternDll.Comctl32));
                     }
@@ -1955,6 +1988,20 @@ example usage
             }
             get {
                 return GetState2(STATE2_TOPMDIWINDOWCLOSING);
+            }
+        }
+
+        /// <devdoc>
+        ///     returns bool indicating whether the control is currently being scaled.
+        ///     This property is set in ScaleControl method to allow method being called to condition code that should not run for scaling.
+        /// </devdoc>
+        /// <internalonly/>
+        internal bool IsCurrentlyBeingScaled {
+            private set {
+                SetState2(STATE2_CURRENTLYBEINGSCALED, value);
+            }
+            get {
+                return GetState2(STATE2_CURRENTLYBEINGSCALED);
             }
         }
 
@@ -2180,6 +2227,25 @@ example usage
             ContextMenuStrip = null;
         }
 
+        /// <include file='doc\Control.uex' path='docs/doc[@for="Control.DeviceDpi"]/*' />
+        /// <devdoc>
+        ///  DPI value either for the primary screen or for the monitor where the top-level parent is displayed when
+        ///  EnableDpiChangedMessageHandling option is on and the application is per-monitor V2 DPI-aware (rs2+)
+        /// </devdoc>
+        [
+            Browsable(false), // don't show in property browser
+            EditorBrowsable(EditorBrowsableState.Always), // do show in the intellisense
+            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden) // do not serialize
+        ]
+        public int DeviceDpi {
+            get {
+                if (DpiHelper.EnableDpiChangedMessageHandling) {
+                    return deviceDpi;
+                } 
+                return DpiHelper.DeviceDpi;
+            }
+        }
+        
         // The color to use when drawing disabled text.  Normally we use BackColor,
         // but that obviously won't work if we're transparent.
         internal Color DisabledColor {
@@ -2506,6 +2572,26 @@ example usage
                             DisposeFontHandle();
                             SetWindowFont();
                         }
+                    }
+                }
+            }
+        }
+
+        internal void ScaleFont(float factor) {
+            Font local = (Font)Properties.GetObject(PropFont);
+            Font resolved = Font;
+            Font newFont = DpiHelper.EnableDpiChangedHighDpiImprovements ?
+                                new Font(this.Font.FontFamily, this.Font.Size * factor, this.Font.Style, this.Font.Unit, this.Font.GdiCharSet, this.Font.GdiVerticalFont) :
+                                new Font(this.Font.FontFamily, this.Font.Size * factor, this.Font.Style);
+
+            if  ((local == null) || !local.Equals(newFont)) {
+                Properties.SetObject(PropFont, newFont);
+
+                if (!resolved.Equals(newFont)) {
+                    DisposeFontHandle();
+
+                    if (Properties.ContainsInteger(PropFontHeight)) {
+                        Properties.SetInteger(PropFontHeight, newFont.Height);
                     }
                 }
             }
@@ -2983,7 +3069,7 @@ example usage
         ///
         ///     There are five functions on a control that are safe to call from any
         ///     thread:  GetInvokeRequired, Invoke, BeginInvoke, EndInvoke and
-        ///     CreateGraphics.  For all other metohd calls, you should use one of the
+        ///     CreateGraphics.  For all other method calls, you should use one of the
         ///     invoke methods.
         /// </devdoc>
         [
@@ -4114,9 +4200,9 @@ example usage
 
                 if ((uiCuesState & UISTATE_KEYBOARD_CUES_MASK) == 0) {
 
-                        // VSWhidbey 362408 -- if we get in here that means this is the windows 
-
-
+                        // VSWhidbey 362408 -- if we get in here that means this is the windows bug where the first top
+                        // level window doesn't get notified with WM_UPDATEUISTATE
+                        //
                         
                         if (SystemInformation.MenuAccessKeysUnderlined) {
                             uiCuesState |= UISTATE_KEYBOARD_CUES_SHOW;
@@ -4124,7 +4210,8 @@ example usage
                         else {
                             // if we're in the hidden state, we need to manufacture an update message so everyone knows it.
                             //
-                            int actionMask = (NativeMethods.UISF_HIDEACCEL | NativeMethods.UISF_HIDEFOCUS) << 16;
+                            int actionMask = (NativeMethods.UISF_HIDEACCEL | 
+                                (AccessibilityImprovements.Level1 ? 0 : NativeMethods.UISF_HIDEFOCUS)) << 16;
                             uiCuesState |= UISTATE_KEYBOARD_CUES_HIDDEN;
 
                             // The side effect of this initial state is that adding new controls may clear the accelerator
@@ -4155,11 +4242,11 @@ example usage
                 }
 
                 // See "How this all works" in ShowKeyboardCues
-                
+
                 if ((uiCuesState & UISTATE_FOCUS_CUES_MASK) == 0) {
-                    // VSWhidbey 362408 -- if we get in here that means this is the windows 
-
-
+                    // VSWhidbey 362408 -- if we get in here that means this is the windows bug where the first top
+                    // level window doesn't get notified with WM_UPDATEUISTATE
+                    //
                     if (SystemInformation.MenuAccessKeysUnderlined) {
                         uiCuesState |= UISTATE_FOCUS_CUES_SHOW;
                     }
@@ -4338,9 +4425,9 @@ example usage
                     throw new InvalidAsynchronousStateException(SR.GetString(SR.ThreadNoLongerValid));
                 }
 
-                //Dev10 
-
-
+                //Dev10 Bug 600316, 905126: Because Control.Invoke() is not fully thread safe, so it is possible that
+                //a ThreadMethodEntry can be sent to a control after it is disposed. In this case, we need to check
+                //if there is any ThreadMethodEntry in the queue. If so, we need "complete" them.
                 if (IsDisposed && threadCallbackList != null && threadCallbackList.Count > 0) {
                     lock (threadCallbackList) {
                         Exception ex = new System.ObjectDisposedException(GetType().Name);
@@ -4788,7 +4875,6 @@ example usage
             }
         }
 
-
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.GotFocus"]/*' />
         /// <devdoc>
         ///    <para>Occurs when the control receives focus.</para>
@@ -4802,7 +4888,6 @@ example usage
                 Events.RemoveHandler(EventGotFocus, value);
             }
         }
-
 
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.KeyDown"]/*' />
         /// <devdoc>
@@ -4877,7 +4962,6 @@ example usage
             }
         }
 
-
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.LostFocus"]/*' />
         /// <devdoc>
         ///    <para>Occurs when the control loses focus.</para>
@@ -4891,7 +4975,6 @@ example usage
                 Events.RemoveHandler(EventLostFocus, value);
             }
         }
-
 
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.MouseClick"]/*' />
         /// <devdoc>
@@ -4967,7 +5050,6 @@ example usage
             }
         }
 
-
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.MouseLeave"]/*' />
         /// <devdoc>
         ///    <para> Occurs when the mouse pointer leaves the control.</para>
@@ -4982,6 +5064,39 @@ example usage
             }
         }
 
+        /// <include file='doc\Control.uex' path='docs/doc[@for="Control.DpiChangedBeforeParent"]/*' />
+        /// <devdoc>
+        ///    <para> Occurs when the DPI resolution of the screen this control is displayed on changes, 
+        ///    either when the top level window is moved between monitors or when the OS settings are changed.
+        ///    This event is raised before the top level parent window recieves WM_DPICHANGED message.
+        ///    </para>
+        /// </devdoc>
+        [SRCategory(SR.CatLayout), SRDescription(SR.ControlOnDpiChangedBeforeParentDescr)]
+        public event EventHandler DpiChangedBeforeParent {
+            add {
+                Events.AddHandler(EventDpiChangedBeforeParent, value);
+            }
+            remove {
+                Events.RemoveHandler(EventDpiChangedBeforeParent, value);
+            }
+        }
+
+        /// <include file='doc\Control.uex' path='docs/doc[@for="Control.DpiChangedAfterParent"]/*' />
+        /// <devdoc>
+        ///    <para> Occurs when the DPI resolution of the screen this control is displayed on changes, 
+        ///    either when the top level window is moved between monitors or when the OS settings are changed.
+        ///    This message is received after the top levet parent window recieves WM_DPICHANGED message.
+        ///    </para>
+        /// </devdoc>
+        [SRCategory(SR.CatLayout), SRDescription(SR.ControlOnDpiChangedAfterParentDescr)]
+        public event EventHandler DpiChangedAfterParent {
+            add {
+                Events.AddHandler(EventDpiChangedAfterParent, value);
+            }
+            remove {
+                Events.RemoveHandler(EventDpiChangedAfterParent, value);
+            }
+        }
 
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.MouseHover"]/*' />
         /// <devdoc>
@@ -5447,7 +5562,7 @@ example usage
         ///
         ///     There are five functions on a control that are safe to call from any
         ///     thread:  GetInvokeRequired, Invoke, BeginInvoke, EndInvoke and CreateGraphics.
-        ///     For all other metohd calls, you should use one of the invoke methods to marshal
+        ///     For all other method calls, you should use one of the invoke methods to marshal
         ///     the call to the control's thread.
         /// </devdoc>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -5469,7 +5584,7 @@ example usage
         ///
         ///     There are five functions on a control that are safe to call from any
         ///     thread:  GetInvokeRequired, Invoke, BeginInvoke, EndInvoke and CreateGraphics.
-        ///     For all other metohd calls, you should use one of the invoke methods to marshal
+        ///     For all other method calls, you should use one of the invoke methods to marshal
         ///     the call to the control's thread.
         /// </devdoc>
         [EditorBrowsable(EditorBrowsableState.Advanced)]        
@@ -5704,7 +5819,7 @@ example usage
                 //
                 if (cp.Parent == IntPtr.Zero && (cp.Style & NativeMethods.WS_CHILD) != 0) {
                     Debug.Assert((cp.ExStyle & NativeMethods.WS_EX_MDICHILD) == 0, "Can't put MDI child forms on the parking form");
-                    Application.ParkHandle(cp);
+                    Application.ParkHandle(cp, this.DpiAwarenessContext);
                 }
 
                 window.CreateHandle(cp);
@@ -6471,7 +6586,7 @@ example usage
             // because windows scales them for us.
             NativeMethods.RECT adornments = new NativeMethods.RECT(0, 0, 0, 0);
             CreateParams cp = CreateParams;
-            SafeNativeMethods.AdjustWindowRectEx(ref adornments, cp.Style, HasMenu, cp.ExStyle);
+            AdjustWindowRectEx(ref adornments, cp.Style, HasMenu, cp.ExStyle);
 
             float dx = factor.Width;
             float dy = factor.Height;
@@ -7230,7 +7345,7 @@ example usage
         ///
         ///     There are five functions on a control that are safe to call from any
         ///     thread:  GetInvokeRequired, Invoke, BeginInvoke, EndInvoke and CreateGraphics.
-        ///     For all other metohd calls, you should use one of the invoke methods to marshal
+        ///     For all other method calls, you should use one of the invoke methods to marshal
         ///     the call to the control's thread.
         /// </devdoc>
         public Object Invoke(Delegate method) {
@@ -7249,7 +7364,7 @@ example usage
         ///
         ///     There are five functions on a control that are safe to call from any
         ///     thread:  GetInvokeRequired, Invoke, BeginInvoke, EndInvoke and CreateGraphics.
-        ///     For all other metohd calls, you should use one of the invoke methods to marshal
+        ///     For all other method calls, you should use one of the invoke methods to marshal
         ///     the call to the control's thread.
         /// </devdoc>
         public Object Invoke(Delegate method, params Object[] args) {
@@ -7608,6 +7723,42 @@ example usage
             else if (listen) {
                 SetState2(STATE2_LISTENINGTOUSERPREFERENCECHANGED, true);
                 SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(this.UserPreferenceChanged);
+            }
+        }
+
+        /// <include file='doc\Control.uex' path='docs/doc[@for="Control.LogicalToDeviceUnits"]/*' />
+        /// <devdoc>
+        /// Transforms an integer coordinate from logical to device units
+        /// by scaling it for the current DPI and rounding down to the nearest integer value.
+        /// </devdoc>
+        public int LogicalToDeviceUnits(int value) {
+            return DpiHelper.LogicalToDeviceUnits(value, DeviceDpi);
+        }
+
+        /// <summary>
+        /// Transforms size from logical to device units
+        /// by scaling it for the current DPI and rounding down to the nearest integer value for width and height.
+        /// </summary>
+        /// <param name="value"> size to be scaled</param>
+        /// <returns> scaled size</returns>
+        public Size LogicalToDeviceUnits(Size value) {
+            return DpiHelper.LogicalToDeviceUnits(value, DeviceDpi);
+        }
+
+        /// <summary>
+        /// Create a new bitmap scaled for the device units.
+        /// When displayed on the device, the scaled image will have same size as the original image would have when displayed at 96dpi.
+        /// </summary>
+        /// <param name="logicalBitmap">The image to scale from logical units to device units</param>
+        public void ScaleBitmapLogicalToDevice(ref Bitmap logicalBitmap) {
+            DpiHelper.ScaleBitmapLogicalToDevice(ref logicalBitmap, DeviceDpi);
+        }
+
+        internal void AdjustWindowRectEx(ref NativeMethods.RECT rect, int style, bool bMenu, int exStyle) { 
+            if (DpiHelper.EnableDpiChangedMessageHandling) {
+                SafeNativeMethods.AdjustWindowRectExForDpi(ref rect, style, bMenu, exStyle, (uint)deviceDpi);
+            } else {
+                SafeNativeMethods.AdjustWindowRectEx(ref rect, style, bMenu, exStyle);
             }
         }
 
@@ -8281,7 +8432,7 @@ example usage
 
             // use SetParent directly so as to not raise ParentChanged events
             if (IsHandleCreated) {
-                Application.ParkHandle(new HandleRef(this, this.Handle));
+                Application.ParkHandle(new HandleRef(this, this.Handle), this.DpiAwarenessContext);
             }
         }
 
@@ -8569,10 +8720,19 @@ example usage
         protected virtual void OnHandleCreated(EventArgs e) {
             Contract.Requires(e != null);
             if (this.IsHandleCreated) {
+                
                 // Setting fonts is for some reason incredibly expensive.
                 // (Even if you exclude font handle creation)
                 if (!GetStyle(ControlStyles.UserPaint)){
                     SetWindowFont();
+                }
+
+                if (DpiHelper.EnableDpiChangedMessageHandling && !(typeof(Form).IsAssignableFrom(this.GetType()))) {
+                    int old = deviceDpi;                   
+                    deviceDpi = (int)UnsafeNativeMethods.GetDpiForWindow(new HandleRef(this, HandleInternal));
+                    if (old != deviceDpi) {
+                        RescaleConstantsForDpi(old, deviceDpi);
+                    }
                 }
 
                 // Restore dragdrop status. Ole Initialize happens
@@ -8844,6 +9004,9 @@ example usage
         protected void InvokeGotFocus(Control toInvoke, EventArgs e) {
             if (toInvoke != null) {
                 toInvoke.OnGotFocus(e);
+                if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                    KeyboardToolTipStateMachine.Instance.NotifyAboutGotFocus(toInvoke);
+                }
             }
         }
 
@@ -9016,6 +9179,9 @@ example usage
         protected void InvokeLostFocus(Control toInvoke, EventArgs e) {
             if (toInvoke != null) {
                 toInvoke.OnLostFocus(e);
+                if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                    KeyboardToolTipStateMachine.Instance.NotifyAboutLostFocus(toInvoke);
+                }
             }
         }
 
@@ -9104,6 +9270,43 @@ example usage
             Contract.Requires(e != null);
             EventHandler handler = (EventHandler)Events[EventMouseLeave];
             if (handler != null) handler(this, e);
+        }
+
+ 
+        /// <include file='doc\Control.uex' path='docs/doc[@for="Control.OnDpiChangedBeforeParent"]/*' />
+        /// <devdoc>
+        /// <para>
+        /// Raises the <see cref='System.Windows.Forms.Control.DpiChangedBeforeParent'/> event.
+        /// Occurs when the form is moved to a monitor with a different resolution (number of dots per inch),
+        /// or when scaling level is changed in the windows setting by the user.
+        /// This message is not sent to the top level windows.
+        /// </para>
+        /// </devdoc>
+        [
+            Browsable(true), 
+            EditorBrowsable(EditorBrowsableState.Always)
+        ]
+        protected virtual void OnDpiChangedBeforeParent(EventArgs e) {
+            Contract.Requires(e != null);
+            ((EventHandler)Events[EventDpiChangedBeforeParent])?.Invoke(this, e);
+        }
+
+        /// <include file='doc\Control.uex' path='docs/doc[@for="Control.OnDpiChangedAfterParent"]/*' />
+        /// <devdoc>
+        /// <para>
+        /// Raises the <see cref='System.Windows.Forms.Control.DpiChangedAfterParent'/> event.
+        /// Occurs when the form is moved to a monitor with a different resolution (number of dots per inch),
+        /// or when scaling level is changed in windows setting by the user.
+        /// This message is not sent to the top level windows.
+        /// </para>
+        /// </devdoc>
+        [
+            Browsable(true), 
+            EditorBrowsable(EditorBrowsableState.Always)
+        ]
+        protected virtual void OnDpiChangedAfterParent(EventArgs e) {
+            Contract.Requires(e != null);
+            ((EventHandler)Events[EventDpiChangedAfterParent])?.Invoke(this, e);
         }
 
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.OnMouseHover"]/*' />
@@ -9364,6 +9567,19 @@ example usage
             Contract.Requires(e != null);
             EventHandler handler = (EventHandler)Events[EventValidated];
             if (handler != null) handler(this, e);
+        }
+
+        /// <include file='doc\Control.uex' path='docs/doc[@for="Control.RescaleConstantsForDpi"]/*' />
+        /// <devdoc>
+        /// Is invoked when the control handle is created or right before the top level parent receives WM_DPICHANGED message.
+        /// This method is an opportunity to rescale any constant sizes, glyphs or bitmaps before re-painting.
+        /// The derived class can choose to not call the base class implementation.
+        /// </devdoc>
+        [
+            Browsable(true), 
+            EditorBrowsable(EditorBrowsableState.Advanced)
+        ]
+        protected virtual void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) {
         }
 
         // This is basically OnPaintBackground, put in a separate method for ButtonBase,
@@ -9692,7 +9908,7 @@ example usage
                 // VSWhidbey 464817 - we need to be careful
                 // about which LayoutEventArgs are used in
                 // SuspendLayout, PerformLayout, ResumeLayout() sequences.
-                // See 
+                // See bug for more info.
                 SetState2(STATE2_CLEARLAYOUTARGS, false);
             }
             else {
@@ -10893,6 +11109,18 @@ example usage
             Update();
         }
 
+        /// <summary>
+        /// /Releases UI Automation provinder for specified window.
+        /// </summary>
+        /// <param name="handle">The window handle.</param>
+        internal virtual void ReleaseUiaProvider(IntPtr handle) {
+            // When a window that previously returned providers has been destroyed, 
+            // you should notify UI Automation by calling the UiaReturnRawElementProvider 
+            // as follows: UiaReturnRawElementProvider(hwnd, 0, 0, NULL). This call tells 
+            // UI Automation that it can safely remove all map entries that refer to the specified window.
+            UnsafeNativeMethods.UiaReturnRawElementProvider(new HandleRef(this, handle), new IntPtr(0), new IntPtr(0), null);
+        }
+
         /// <include file='doc\Control.uex' path='docs/doc[@for="Control.ResetMouseEventArgs"]/*' />
         /// <devdoc>
         ///     Resets the mouse leave listeners.
@@ -10967,7 +11195,7 @@ example usage
             // VSWhidbey 464817 - we need to be careful
             // about which LayoutEventArgs are used in
             // SuspendLayout, PerformLayout, ResumeLayout() sequences.
-            // See 
+            // See bug for more info.
             if (!performedLayout) {
                 SetState2(STATE2_CLEARLAYOUTARGS, true);
             }
@@ -11145,8 +11373,12 @@ example usage
         ///
         ///     The requestingControl property indicates which control has requested
         ///     the scaling function.
+        ///     
+        ///     The updateWindowFontIfNeeded parameter indicates if we need to update Window
+        ///     font for controls that need it, i.e. controls using default or inherited font,
+        ///     that are also not user-painted.
         /// </devdoc>
-        internal void ScaleChildControls(SizeF includedFactor, SizeF excludedFactor, Control requestingControl) {
+        internal void ScaleChildControls(SizeF includedFactor, SizeF excludedFactor, Control requestingControl, bool updateWindowFontIfNeeded = false) {
 
             if (ScaleChildren) {
                 ControlCollection controlsCollection = (ControlCollection)Properties.GetObject(PropControlsCollection);
@@ -11157,9 +11389,25 @@ example usage
                     // enumerate
                     for (int i = 0; i < controlsCollection.Count; i++) {
                         Control c = controlsCollection[i];
+
+                        // Update window font before scaling, as controls often use font metrics during scaling.
+                        if (updateWindowFontIfNeeded) {
+                            c.UpdateWindowFontIfNeeded();
+                        }
+
                         c.Scale(includedFactor, excludedFactor, requestingControl);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Calls SetWindowFont if DpiHelper.EnableDpiChangedHighDpiImprovements is true,
+        /// control uses default or inherited font and is not user-painted.
+        /// </summary>
+        internal void UpdateWindowFontIfNeeded() {
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements && !GetStyle(ControlStyles.UserPaint) && (Properties.GetObject(PropFont) == null)) {
+                SetWindowFont();
             }
         }
 
@@ -11181,33 +11429,40 @@ example usage
         ///     the scaling function.
         /// </devdoc>
         internal void ScaleControl(SizeF includedFactor, SizeF excludedFactor, Control requestingControl) {
-            BoundsSpecified includedSpecified = BoundsSpecified.None;
-            BoundsSpecified excludedSpecified = BoundsSpecified.None;
+            try {
+                IsCurrentlyBeingScaled = true;
 
-            if (!includedFactor.IsEmpty) {
-                includedSpecified = RequiredScaling;
-            }
+                BoundsSpecified includedSpecified = BoundsSpecified.None;
+                BoundsSpecified excludedSpecified = BoundsSpecified.None;
 
-            if (!excludedFactor.IsEmpty) {
-                excludedSpecified |= (~RequiredScaling & BoundsSpecified.All);
-            }
+                if (!includedFactor.IsEmpty) {
+                    includedSpecified = RequiredScaling;
+                }
+
+                if (!excludedFactor.IsEmpty) {
+                    excludedSpecified |= (~RequiredScaling & BoundsSpecified.All);
+                }
 #if DEBUG
-            if (CompModSwitches.RichLayout.TraceInfo) {
-                Debug.WriteLine(string.Format(CultureInfo.InvariantCulture, "Scaling {0} Included: {1}, Excluded: {2}",
-                                  this, includedFactor, excludedFactor));
-            }
+                if (CompModSwitches.RichLayout.TraceInfo) {
+                    Debug.WriteLine(string.Format(CultureInfo.InvariantCulture, "Scaling {0} Included: {1}, Excluded: {2}",
+                                      this, includedFactor, excludedFactor));
+                }
 #endif
 
-            if (includedSpecified != BoundsSpecified.None) {
-                ScaleControl(includedFactor, includedSpecified);
-            }
+                if (includedSpecified != BoundsSpecified.None) {
+                    ScaleControl(includedFactor, includedSpecified);
+                }
 
-            if (excludedSpecified != BoundsSpecified.None) {
-                ScaleControl(excludedFactor, excludedSpecified);
-            }
+                if (excludedSpecified != BoundsSpecified.None) {
+                    ScaleControl(excludedFactor, excludedSpecified);
+                }
 
-            if (!includedFactor.IsEmpty) {
-                RequiredScaling = BoundsSpecified.None;
+                if (!includedFactor.IsEmpty) {
+                    RequiredScaling = BoundsSpecified.None;
+                }
+            }
+            finally {
+                IsCurrentlyBeingScaled = false;
             }
         }
 
@@ -11224,10 +11479,9 @@ example usage
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         protected virtual void ScaleControl(SizeF factor, BoundsSpecified specified) {
 
-
             CreateParams cp = CreateParams;
             NativeMethods.RECT adornments = new NativeMethods.RECT(0, 0, 0, 0);
-            SafeNativeMethods.AdjustWindowRectEx(ref adornments, cp.Style, HasMenu, cp.ExStyle);             
+            AdjustWindowRectEx(ref adornments, cp.Style, HasMenu, cp.ExStyle);
             Size minSize = MinimumSize;
             Size maxSize = MaximumSize;
      
@@ -11298,6 +11552,11 @@ example usage
             Size maximumSize = LayoutUtils.ConvertZeroToUnbounded(maxSize);
             Size scaledSize = LayoutUtils.IntersectSizes(rawScaledBounds.Size, maximumSize);
             scaledSize = LayoutUtils.UnionSizes(scaledSize, minSize);
+
+            if (DpiHelper.EnableAnchorLayoutHighDpiImprovements && (ParentInternal != null) && (ParentInternal.LayoutEngine == DefaultLayout.Instance)) {
+                // We need to scale AnchorInfo to update distances to container edges
+                DefaultLayout.ScaleAnchorInfo((IArrangedElement)this, factor);
+            }
 
             // Set in the scaled bounds as constrained by the newly scaled min/max size.
             SetBoundsCore(rawScaledBounds.X, rawScaledBounds.Y, scaledSize.Width, scaledSize.Height, BoundsSpecified.All);
@@ -11396,6 +11655,17 @@ example usage
         ///     Selects the next control following ctl.
         /// </devdoc>
         public bool SelectNextControl(Control ctl, bool forward, bool tabStopOnly, bool nested, bool wrap) {
+            Control nextSelectableControl = this.GetNextSelectableControl(ctl, forward, tabStopOnly, nested, wrap);
+            if (nextSelectableControl != null) {
+                nextSelectableControl.Select(true, forward);
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+        private Control GetNextSelectableControl(Control ctl, bool forward, bool tabStopOnly, bool nested, bool wrap) {
             if (!Contains(ctl) || !nested && ctl.parent != this) ctl = null;
 
             bool alreadyWrapped = false;
@@ -11405,7 +11675,7 @@ example usage
                 if (ctl == null) {
                     if (!wrap) break;
                     if (alreadyWrapped) {
-                        return false; //VSWhidbey 423098 prevent infinite wrapping.
+                        return null; //VSWhidbey 423098 prevent infinite wrapping.
                     }
                     alreadyWrapped = true;
                 }
@@ -11414,12 +11684,14 @@ example usage
                         && (!tabStopOnly || ctl.TabStop)
                         && (nested || ctl.parent == this)) {
 
-                        ctl.Select(true, forward);
-                        return true;
+                        if (AccessibilityImprovements.Level3 && ctl.parent is ToolStrip) {
+                            continue;
+                        }
+                        return ctl;
                     }
                 }
             } while (ctl != start);
-            return false;
+            return null;
         }
 
 
@@ -11679,8 +11951,9 @@ example usage
 
         internal Size SizeFromClientSize(int width, int height) {
             NativeMethods.RECT rect = new NativeMethods.RECT(0, 0, width, height);
+
             CreateParams cp = CreateParams;
-            SafeNativeMethods.AdjustWindowRectEx(ref rect, cp.Style, HasMenu, cp.ExStyle);
+            AdjustWindowRectEx(ref rect, cp.Style, HasMenu, cp.ExStyle);
             return rect.Size;
         }
 
@@ -11705,7 +11978,7 @@ example usage
 
                     if (recreate) {
                         // We will recreate later, when the MdiChild's visibility
-                        // is set to true (see 
+                        // is set to true (see bug 124232)
                         Form f = this as Form;
                         if (f != null) {
                             if (!f.CanRecreateHandle()) {
@@ -11722,7 +11995,7 @@ example usage
                     }
                     if (!GetTopLevel()) {
                         if (value == IntPtr.Zero) {
-                            Application.ParkHandle(new HandleRef(window, Handle));
+                            Application.ParkHandle(new HandleRef(window, Handle), this.DpiAwarenessContext);
                             UpdateRoot();
                         }
                         else {
@@ -11730,7 +12003,7 @@ example usage
                             if (parent != null) {
                                 parent.UpdateChildZOrder(this);
                             }
-                            Application.UnparkHandle(new HandleRef(window, Handle));
+                            Application.UnparkHandle(new HandleRef(window, Handle), window.DpiAwarenessContext);
                         }
                     }
                 }
@@ -11739,7 +12012,7 @@ example usage
                     // then changed to true so the above call to GetParent returns null even though the parent of the control is 
                     // not null. We need to explicitly set the parent to null.
                     UnsafeNativeMethods.SetParent(new HandleRef(window, Handle), new HandleRef(null, IntPtr.Zero));
-                    Application.UnparkHandle(new HandleRef(window, Handle));
+                    Application.UnparkHandle(new HandleRef(window, Handle), window.DpiAwarenessContext);
                 }
             }
         }
@@ -12268,7 +12541,7 @@ example usage
 
             CreateParams cp = CreateParams;
 
-            SafeNativeMethods.AdjustWindowRectEx(ref rect, cp.Style, false, cp.ExStyle);
+            AdjustWindowRectEx(ref rect, cp.Style, false, cp.ExStyle);
             int clientWidth = width - (rect.right - rect.left);
             int clientHeight = height - (rect.bottom - rect.top);
             UpdateBounds(x, y, width, height, clientWidth, clientHeight);
@@ -12286,7 +12559,7 @@ example usage
                Debug.Indent();
                Debug.WriteLine(String.Format(
                     CultureInfo.CurrentCulture, "oldBounds={{x={0} y={1} width={2} height={3} clientWidth={4} clientHeight={5}}}",
-                    x, y, width, height, clientWidth, clientHeight));
+                    this.x, this.y, this.width, this.height, this.clientWidth, this.clientHeight));
             }
 #endif // DEBUG
 
@@ -12356,6 +12629,15 @@ example usage
         ///     reflect it's index.
         /// </devdoc>
         private void UpdateChildControlIndex(Control ctl) {
+            // VSO 411856
+            // Don't reorder the child control array for tab controls. Implemented as a special case
+            // in order to keep the method private.
+            if (!LocalAppContextSwitches.AllowUpdateChildControlIndexForTabControls) {
+                if (this.GetType().IsAssignableFrom(typeof(TabControl))) {
+                    return;
+                }
+            }
+
             int newIndex = 0;
             int curIndex = this.Controls.GetChildIndex(ctl);
             IntPtr hWnd = ctl.InternalHandle;
@@ -12749,6 +13031,25 @@ example usage
 
             InternalAccessibleObject intAccessibleObject = null;
 
+            if (m.Msg == NativeMethods.WM_GETOBJECT && m.LParam == (IntPtr)NativeMethods.UiaRootObjectId && this.SupportsUiaProviders) {
+                // If the requested object identifier is UiaRootObjectId, 
+                // we should return an UI Automation provider using the UiaReturnRawElementProvider function.
+                IntSecurity.UnmanagedCode.Assert();
+                try {
+                    intAccessibleObject = new InternalAccessibleObject(this.AccessibilityObject);
+                }
+                finally {
+                    CodeAccessPermission.RevertAssert();
+                }
+                m.Result = UnsafeNativeMethods.UiaReturnRawElementProvider(
+                    new HandleRef(this, Handle),
+                    m.WParam,
+                    m.LParam,
+                    intAccessibleObject);
+
+                return;
+            }
+
             AccessibleObject ctrlAccessibleObject = GetAccessibilityObject(unchecked((int)(long)m.LParam));
 
             if (ctrlAccessibleObject != null) {
@@ -12996,6 +13297,11 @@ example usage
                 UnhookMouseEvent();
             }
 
+            if (SupportsUiaProviders)
+            {
+                ReleaseUiaProvider(Handle);
+            }
+
             OnHandleDestroyed(EventArgs.Empty);
 
             if (!Disposing) {
@@ -13031,7 +13337,7 @@ example usage
             Debug.WriteLineIf(Control.FocusTracing.TraceVerbose, "Control::WmKillFocus - " + this.Name);
             WmImeKillFocus();
             DefWndProc(ref m);
-            OnLostFocus(EventArgs.Empty);
+            this.InvokeLostFocus(this, EventArgs.Empty);
         }
 
         /// <devdoc>
@@ -13091,6 +13397,9 @@ example usage
         /// <internalonly/>
         private void WmMouseEnter(ref Message m) {
             DefWndProc(ref m);
+            if (!AccessibilityImprovements.UseLegacyToolTipDisplay) {
+                KeyboardToolTipStateMachine.Instance.NotifyAboutMouseEnter(this);
+            }
             OnMouseEnter(EventArgs.Empty);
         }
 
@@ -13101,6 +13410,46 @@ example usage
         private void WmMouseLeave(ref Message m) {
             DefWndProc(ref m);
             OnMouseLeave(EventArgs.Empty);
+        }
+
+        /// <devdoc>
+        ///     Handles the WM_DPICHANGED_BEFOREPARENT message. This message is not sent to top level windows.
+        /// </devdoc>
+        private void WmDpiChangedBeforeParent(ref Message m) {
+            DefWndProc(ref m);
+
+            if (IsHandleCreated) {
+                int deviceDpiOld = deviceDpi;
+                deviceDpi = (int)UnsafeNativeMethods.GetDpiForWindow(new HandleRef(this, HandleInternal));
+
+                // Controls are by default font scaled. 
+                // Dpi change requires font to be recalculated inorder to get controls scaled with right dpi.
+                if (deviceDpiOld != deviceDpi) {
+                    if (DpiHelper.EnableDpiChangedHighDpiImprovements) {
+                        // Checking if font was inherited from parent. Font inherited from parent will receive OnParentFontChanged() events to scale those controls.
+                        Font local = (Font)Properties.GetObject(PropFont);
+                        if (local != null) {
+                            var factor = (float)deviceDpi / deviceDpiOld;
+                            this.Font = new Font(local.FontFamily, local.Size * factor, local.Style, local.Unit, local.GdiCharSet, local.GdiVerticalFont);
+                        }
+                    }
+
+                    RescaleConstantsForDpi(deviceDpiOld, deviceDpi);
+                }
+            }
+
+            OnDpiChangedBeforeParent(EventArgs.Empty);
+        }
+
+        /// <devdoc>
+        ///     Handles the WM_DPICHANGED_AFTERPARENT message
+        /// </devdoc>
+        private void WmDpiChangedAfterParent(ref Message m) {
+            DefWndProc(ref m);
+
+            uint dpi = UnsafeNativeMethods.GetDpiForWindow(new HandleRef(this, HandleInternal));
+
+            OnDpiChangedAfterParent(EventArgs.Empty);
         }
 
         /// <devdoc>
@@ -13566,7 +13915,7 @@ example usage
             }
 
             DefWndProc(ref m);
-            OnGotFocus(EventArgs.Empty);
+            this.InvokeGotFocus(this, EventArgs.Empty);
         }
 
         /// <devdoc>
@@ -13974,6 +14323,18 @@ example usage
                 case NativeMethods.WM_MOUSELEAVE:
                     WmMouseLeave(ref m);
                     break;
+                case NativeMethods.WM_DPICHANGED_BEFOREPARENT:
+                    if (DpiHelper.EnableDpiChangedMessageHandling) {
+                        WmDpiChangedBeforeParent(ref m);
+                        m.Result = IntPtr.Zero;
+                    }
+                    break;
+                case NativeMethods.WM_DPICHANGED_AFTERPARENT:
+                    if (DpiHelper.EnableDpiChangedMessageHandling) {
+                        WmDpiChangedAfterParent(ref m);
+                        m.Result = IntPtr.Zero;
+                    }
+                    break;
                 case NativeMethods.WM_MOUSEMOVE:
                     WmMouseMove(ref m);
                     break;
@@ -14187,6 +14548,15 @@ example usage
             }
         }
 
+        /// <summary>
+        /// Indicates whether or not the control supports UIA Providers via
+        /// IRawElementProviderFragment/IRawElementProviderFragmentRoot interfaces
+        /// </summary>
+        internal virtual bool SupportsUiaProviders {
+            get {
+                return false;
+            }
+        }
         
         /// <devdoc>
         /// </devdoc>
@@ -14284,7 +14654,7 @@ example usage
                         // correctly...
                         //
                         control.ResetMouseEventArgs();
-                        break;                   
+                        break;
                 }
 
                 target.OnMessage(ref m);
@@ -15709,6 +16079,165 @@ example usage
             // we already have an implementation of this [from IOleObject]
             //
             ((UnsafeNativeMethods.IOleObject)this).GetExtent(dwDrawAspect, lpsizel);
+        }
+
+        #region IKeyboardToolTip implementation
+
+        bool IKeyboardToolTip.CanShowToolTipsNow() {
+            IKeyboardToolTip host = this.ToolStripControlHost;
+            return this.IsHandleCreated && this.Visible && (host == null || host.CanShowToolTipsNow());
+        }
+
+        Rectangle IKeyboardToolTip.GetNativeScreenRectangle() {
+            return this.GetToolNativeScreenRectangle();
+        }
+
+        IList<Rectangle> IKeyboardToolTip.GetNeighboringToolsRectangles() {
+            IKeyboardToolTip host = this.ToolStripControlHost;
+            if (host == null) {
+                return this.GetOwnNeighboringToolsRectangles();
+            }
+            else {
+                return host.GetNeighboringToolsRectangles();
+            }
+        }
+
+        bool IKeyboardToolTip.IsHoveredWithMouse() {
+            return this.ClientRectangle.Contains(this.PointToClient(Control.MousePosition));
+        }
+
+        bool IKeyboardToolTip.HasRtlModeEnabled() {
+            Control topLevelControl = TopLevelControlInternal;
+            return topLevelControl != null && topLevelControl.RightToLeft == RightToLeft.Yes && !this.IsMirrored;
+        }
+
+        bool IKeyboardToolTip.AllowsToolTip() {
+            IKeyboardToolTip host = this.ToolStripControlHost;
+            return (host == null || host.AllowsToolTip()) && this.AllowsKeyboardToolTip();
+        }
+
+        IWin32Window IKeyboardToolTip.GetOwnerWindow() {
+            return this;
+        }
+
+        void IKeyboardToolTip.OnHooked(ToolTip toolTip) {
+            this.OnKeyboardToolTipHook(toolTip);
+        }
+
+        void IKeyboardToolTip.OnUnhooked(ToolTip toolTip) {
+            this.OnKeyboardToolTipUnhook(toolTip);
+        }
+
+        string IKeyboardToolTip.GetCaptionForTool(ToolTip toolTip) {
+            IKeyboardToolTip host  = this.ToolStripControlHost;
+            if (host == null) {
+                return toolTip.GetCaptionForTool(this);
+            }
+            else {
+                return host.GetCaptionForTool(toolTip);
+            }
+        }
+
+        bool IKeyboardToolTip.ShowsOwnToolTip() {
+            IKeyboardToolTip host = this.ToolStripControlHost;
+            return (host == null || host.ShowsOwnToolTip()) && this.ShowsOwnKeyboardToolTip();
+        }
+
+        bool IKeyboardToolTip.IsBeingTabbedTo() {
+            return Control.AreCommonNavigationalKeysDown();
+        }
+
+        bool IKeyboardToolTip.AllowsChildrenToShowToolTips() {
+            return this.AllowsChildrenToShowToolTips();
+        }
+
+        #endregion
+
+        private IList<Rectangle> GetOwnNeighboringToolsRectangles() {
+            Control controlParent = this.ParentInternal;
+            if (controlParent != null) {
+                Control[] neighboringControls = new Control[4] {
+                    // Next and previous control which are accessible with Tab and Shift+Tab
+                    controlParent.GetNextSelectableControl(this, true, true, true, false),
+                    controlParent.GetNextSelectableControl(this, false, true, true, false),
+                    // Next and previous control which are accessible with arrow keys
+                    controlParent.GetNextSelectableControl(this, true, false, false, true),
+                    controlParent.GetNextSelectableControl(this, false, false, false, true)
+                };
+
+                List<Rectangle> neighboringControlsRectangles = new List<Rectangle>(4);
+                foreach (Control neighboringControl in neighboringControls) {
+                    if (neighboringControl != null && neighboringControl.IsHandleCreated) {
+                        neighboringControlsRectangles.Add(((IKeyboardToolTip)neighboringControl).GetNativeScreenRectangle());
+                    }
+                }
+
+                return neighboringControlsRectangles;
+            }
+            else {
+                return new Rectangle[0];
+            }
+        }
+
+        internal virtual bool ShowsOwnKeyboardToolTip() {
+            return true;
+        }
+
+        internal virtual void OnKeyboardToolTipHook(ToolTip toolTip) {
+        }
+
+        internal virtual void OnKeyboardToolTipUnhook(ToolTip toolTip) {
+        }
+
+        internal virtual Rectangle GetToolNativeScreenRectangle() {
+            NativeMethods.RECT rectangle = new NativeMethods.RECT();
+            UnsafeNativeMethods.GetWindowRect(new HandleRef(this, this.Handle), ref rectangle);
+            return Rectangle.FromLTRB(rectangle.left, rectangle.top, rectangle.right, rectangle.bottom);
+        }
+
+        internal virtual bool AllowsKeyboardToolTip() {
+            // This internal method enables keyboard ToolTips for all controls including the foreign descendants of Control unless this method is overridden in a child class belonging to this assembly.
+            // ElementHost is one such control which is located in a different assembly. 
+            // This control doesn't show a mouse ToolTip when hovered and thus should not have a keyboard ToolTip as well.
+            // We are not going to fix it now since it seems unlikely that someone would set ToolTip on such special container control as ElementHost.
+            return true;
+        }
+
+        private static bool IsKeyDown(Keys key) {
+            return (tempKeyboardStateArray[(int)key] & Control.HighOrderBitMask) != 0;
+        }
+
+        internal static bool AreCommonNavigationalKeysDown() {
+            if(tempKeyboardStateArray == null) {
+                tempKeyboardStateArray = new byte[256];
+            }
+            UnsafeNativeMethods.GetKeyboardState(tempKeyboardStateArray);
+            return IsKeyDown(Keys.Tab)
+                || IsKeyDown(Keys.Up)
+                || IsKeyDown(Keys.Down)
+                || IsKeyDown(Keys.Left)
+                || IsKeyDown(Keys.Right)
+                // receiving focus from the ToolStrip
+                || IsKeyDown(Keys.Menu)
+                || IsKeyDown(Keys.F10)
+                || IsKeyDown(Keys.Escape);
+        }
+
+        private readonly WeakReference<ToolStripControlHost> toolStripControlHostReference = new WeakReference<ToolStripControlHost>(null);
+
+        internal ToolStripControlHost ToolStripControlHost {
+            get {
+                ToolStripControlHost value;
+                this.toolStripControlHostReference.TryGetTarget(out value);
+                return value;
+            }
+            set {
+                this.toolStripControlHostReference.SetTarget(value);
+            }
+        }
+
+        internal virtual bool AllowsChildrenToShowToolTips() {
+            return true;
         }
 
         /// <devdoc>
@@ -18881,6 +19410,7 @@ example usage
 
             private IntPtr handle = IntPtr.Zero; // Associated window handle (if any)
             private Control ownerControl = null; // The associated Control for this AccessibleChild (if any)
+            private int[] runtimeId = null; // Used by UIAutomation
 
             // constructors
 
@@ -19061,6 +19591,19 @@ example usage
                 }
             }
 
+            // This is used only if control supports IAccessibleEx
+            internal override int[] RuntimeId {
+                get {
+                    if (runtimeId == null) {
+                        runtimeId = new int[2];
+                        runtimeId[0] = 0x2a;
+                        runtimeId[1] = (int)(long)this.Handle;
+                    }
+
+                    return runtimeId;
+                }
+            }
+
             /// <include file='doc\Control.uex' path='docs/doc[@for="Control.ControlAccessibleObject.Description"]/*' />
             /// <devdoc>
             ///    <para>[To be supplied.]</para>
@@ -19101,7 +19644,7 @@ example usage
                         bool freeLib = false;
 
                         if (oleAccAvailable == NativeMethods.InvalidIntPtr) {
-                            oleAccAvailable = UnsafeNativeMethods.LoadLibrary("oleacc.dll");
+                            oleAccAvailable = UnsafeNativeMethods.LoadLibraryFromSystemPathIfAvailable("oleacc.dll");
                             freeLib = (oleAccAvailable != IntPtr.Zero);
                         }
 
@@ -19356,6 +19899,64 @@ example usage
                                   ", childID = " + childID.ToString(CultureInfo.InvariantCulture));
 
                 UnsafeNativeMethods.NotifyWinEvent((int)accEvent, new HandleRef(this, Handle), objectID, childID + 1);
+            }
+
+            /// <summary>
+            /// Raises the LiveRegionChanged UIA event.
+            /// To make this method effective, the control must implement System.Windows.Forms.Automation.IAutomationLiveRegion interface
+            /// and its LiveSetting property must return either AutomationLiveSetting.Polite or AutomationLiveSetting.Assertive value.
+            /// In addition, the applications must be recompiled to target .NET Framework 4.7.3 or opt in into this feature using compatibility switches.
+            /// </summary>
+            /// <returns>True if operation succeeds, False otherwise.</returns>
+            public override bool RaiseLiveRegionChanged() {
+                if (!(this.Owner is IAutomationLiveRegion)) {
+                    throw new InvalidOperationException(SR.GetString(SR.OwnerControlIsNotALiveRegion));
+                }
+
+                return RaiseAutomationEvent(NativeMethods.UIA_LiveRegionChangedEventId);
+            }
+
+            internal override bool IsIAccessibleExSupported() {
+                if (AccessibilityImprovements.Level3 && this.Owner is IAutomationLiveRegion) {
+                    return true;
+                }
+
+                return base.IsIAccessibleExSupported();
+            }
+
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3 && propertyID == NativeMethods.UIA_LiveSettingPropertyId && Owner is IAutomationLiveRegion) {
+                    return ((IAutomationLiveRegion)Owner).LiveSetting;
+                }
+
+                if (Owner.SupportsUiaProviders) {
+                    switch (propertyID) {
+                        case NativeMethods.UIA_IsKeyboardFocusablePropertyId:
+                            return Owner.CanSelect;
+                        case NativeMethods.UIA_IsOffscreenPropertyId:
+                        case NativeMethods.UIA_IsPasswordPropertyId:
+                            return false;
+                        case NativeMethods.UIA_AccessKeyPropertyId:
+                            return string.Empty;
+                        case NativeMethods.UIA_HelpTextPropertyId:
+                            var help = Help;
+                            return AccessibilityImprovements.Level3 ? (help ?? string.Empty) : help;
+                    }
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
+
+            internal override UnsafeNativeMethods.IRawElementProviderSimple HostRawElementProvider {
+                get {
+                    if (AccessibilityImprovements.Level3) {
+                        UnsafeNativeMethods.IRawElementProviderSimple provider;
+                        UnsafeNativeMethods.UiaHostProviderFromHwnd(new HandleRef(this, Handle), out provider);
+                        return provider;
+                    }
+
+                    return base.HostRawElementProvider;
+                }
             }
 
             /// <include file='doc\Control.uex' path='docs/doc[@for="Control.ControlAccessibleObject.ToString"]/*' />

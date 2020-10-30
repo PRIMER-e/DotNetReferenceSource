@@ -206,7 +206,7 @@ struct LABEL_ENTRY_BIL
                                           //
                                           // This is used to delay on error try block init in
                                           // codegen till after this statement.
-                                          // 
+                                          // Bug VSWhidbey 204996
 
 //****************************************************************
   //*  The following flags can be seen on any SX node
@@ -1086,9 +1086,9 @@ namespace ILTree
 	    SourceFile *ContainingFile;         // Used to indiciate the file in which a partial
 	                                        // class member initializer is present. This is
 	                                        // needed by codegen to emit the correct pdb info.
-	                                        // 
-
-
+	                                        // Bug VSWhidbey 145009.
+	                                        // This is NULL for all other statement except member
+	                                        // level initializers.
 
 	};
 

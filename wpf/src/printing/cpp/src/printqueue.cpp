@@ -23,6 +23,8 @@
 
 #define HRESULT LONG
 
+using namespace MS::Internal::Telemetry::PresentationCore;
+
 using namespace System;
 using namespace System::IO;
 using namespace System::Collections;
@@ -3034,7 +3036,65 @@ IsXpsDeviceSimulationSupported(
     void
     )
 {
-    return PresentationNativeUnsafeNativeMethods::IsStartXpsPrintJobSupported();
+    return (IsXpsOMPrintingSupported() || PresentationNativeUnsafeNativeMethods::IsStartXpsPrintJobSupported());
+}
+
+Boolean
+PrintQueue::
+IsXpsOMPrintingDisabled(
+void
+)
+{
+    bool isXpsOMPrintingDisabled = false;
+
+    try
+    {
+        InternalExceptionResourceManager^ manager = gcnew InternalExceptionResourceManager();
+        System::Globalization::CultureInfo^ culture = System::Threading::Thread::CurrentThread->CurrentUICulture;
+        String^ regKeyBasePath = manager->GetString("RegKeyBasePath", culture);
+        String^ useXPSOMPrintingRegValue = manager->GetString("PrintSystemJobInfo_disableXPSOMPrinting_RegValue", culture);
+        (gcnew RegistryPermission(RegistryPermissionAccess::Read, regKeyBasePath))->Assert(); // BlessedAssert
+
+        DWORD result = 0;
+        Object^ objValue = Microsoft::Win32::Registry::GetValue(regKeyBasePath, useXPSOMPrintingRegValue, result);
+        if (objValue != nullptr && dynamic_cast<Int32^>(objValue))
+        {
+            DWORD result = safe_cast<Int32>(objValue);
+            if (result != 0)
+            {
+                isXpsOMPrintingDisabled = true;
+            }
+        }
+
+        XpsOMPrintingTraceLogger::LogXpsOMStatus(!isXpsOMPrintingDisabled);
+    }
+    // Caller may not have registry read permissions (even for HKCU)
+    catch (SecurityException^)
+    {
+    }
+    // Registry Key may be in the middle of deletion
+    catch (IOException^)
+    {
+    }
+    __finally
+    {
+        CodeAccessPermission::RevertAssert();
+    }
+
+    return isXpsOMPrintingDisabled;
+}
+
+Boolean
+PrintQueue::
+IsXpsOMPrintingSupported(
+void
+)
+{
+    static bool isXpsOMPrintingSupported = !PrintQueue::IsMxdwLegacyDriver(this) &&
+                                            PresentationNativeUnsafeNativeMethods::IsPrintPackageTargetSupported() &&
+                                            !IsXpsOMPrintingDisabled();
+                                            
+    return isXpsOMPrintingSupported;
 }
 
 /*++
@@ -4421,6 +4481,33 @@ get(
     return printerThunkHandler;
 }
 
+bool
+PrintQueue::IsMxdwLegacyDriver(
+    PrintQueue^ printQueue
+    )
+{
+    bool isLegacyDriver = false;
+    if (printQueue->InPartialTrust)
+    {
+        (gcnew PrintingPermission(PrintingPermissionLevel::DefaultPrinting))->Assert();
+    }
+
+    try
+    {
+        isLegacyDriver = printQueue->QueueDriver->Name->Equals("Microsoft XPS Document Writer",
+                                                                    StringComparison::OrdinalIgnoreCase);
+    }
+    __finally
+    {
+        if (printQueue->InPartialTrust)
+        {
+            SecurityPermission::RevertAssert();
+        }
+    }
+    
+    return isLegacyDriver;
+}
+
 /*++
 
     Function Name:
@@ -4474,7 +4561,14 @@ CreateSerializationManager(
     printingIsCancelled = false;
 
     bool supportsXpsSerialization = IsXpsDevice || IsXpsDeviceSimulationSupported();
-    if (!supportsXpsSerialization)
+
+
+    if (IsXpsOMPrintingSupported())
+    {
+        serializationManager = CreateXpsOMSerializationManager(isBatchMode, false /*isAsync*/, printTicket, mustSetJobIdentifier);
+        
+    }
+    else if (!supportsXpsSerialization)
     {
         //
         // If this is a Xps device, we are going to use a Next Generation Conversion Serialization Manager
@@ -4585,7 +4679,7 @@ CreateAsyncSerializationManager(
     bool    isBatchMode
     )
 {
-    return  CreateAsyncSerializationManager(isBatchMode, false);
+    return  CreateAsyncSerializationManager(isBatchMode, false, nullptr);
 }
 
 
@@ -4608,7 +4702,8 @@ PackageSerializationManager^
 PrintQueue::
 CreateAsyncSerializationManager(
     bool    isBatchMode,
-    bool    mustSetJobIdentifier
+    bool    mustSetJobIdentifier,
+    PrintTicket^ printTicket
     )
 {
     PackageSerializationManager^ serializationManager = nullptr;
@@ -4616,7 +4711,12 @@ CreateAsyncSerializationManager(
     printingIsCancelled = false;
 
     bool supportsXpsSerialization = IsXpsDevice || IsXpsDeviceSimulationSupported();
-    if (!supportsXpsSerialization)
+
+    if (IsXpsOMPrintingSupported())
+    {
+        serializationManager = CreateXpsOMSerializationManager(isBatchMode, true /*isAsync*/, printTicket, mustSetJobIdentifier);
+    }
+    else if (!supportsXpsSerialization)
     {
         if (mustSetJobIdentifier)
         {
@@ -4681,6 +4781,61 @@ CreateAsyncSerializationManager(
             {
                 System::Threading::Monitor::Exit(_lockObject);
             }
+        }
+    }
+
+    return serializationManager;
+}
+
+PackageSerializationManager^
+PrintQueue::
+CreateXpsOMSerializationManager(
+    bool            isBatchMode,
+    bool            isAsync,
+    PrintTicket^    printTicket,
+    bool            mustSetPrintJobIdentifier
+    )
+{
+    PackageSerializationManager^ serializationManager = nullptr;
+    if (this->InPartialTrust)
+    {
+        (gcnew PrintingPermission(PrintingPermissionLevel::DefaultPrinting))->Assert();
+    }
+
+    try
+    {
+        xpsCompatiblePrinter = gcnew XpsCompatiblePrinter(FullName);
+
+        String^ printJobName = this->CurrentJobSettings->Description;
+
+        if (printJobName == nullptr)
+        {
+            printJobName = defaultXpsJobName;
+        }
+
+        DocInfoThree^ docInfo = gcnew DocInfoThree(printJobName,
+            QueuePort->Name,
+            DocInfoThree::defaultDataType,
+            0);
+
+        xpsCompatiblePrinter->StartDocPrinter(docInfo, printTicket, mustSetPrintJobIdentifier);
+
+        XpsOMPackagingPolicy^ packagingPolicy = gcnew XpsOMPackagingPolicy(xpsCompatiblePrinter->XpsPackageTarget);
+        packagingPolicy->PrintQueueReference = this;
+        if (isAsync)
+        {
+            serializationManager = gcnew XpsOMSerializationManagerAsync(packagingPolicy, isBatchMode);
+        }
+        else
+        {
+            serializationManager = gcnew XpsOMSerializationManager(packagingPolicy, isBatchMode);
+        }
+    }
+    __finally
+    {
+        if (this->InPartialTrust)
+        {
+            CodeAccessPermission::RevertAssert();
         }
     }
 
@@ -4766,11 +4921,11 @@ DisposeSerializationManager(
 
     if (abort &&
         printStream != nullptr)
-	{
-	    //Notify printstream that we have aborted before calling DisposeXpsDocument which
-	    //will try to write to the spool file.
-	    printStream->Abort();
-	}
+    {
+        //Notify printstream that we have aborted before calling DisposeXpsDocument which
+        //will try to write to the spool file.
+        printStream->Abort();
+    }
 
     if(document != nullptr)
     {
@@ -4782,6 +4937,70 @@ DisposeSerializationManager(
         printStream->Close();
     }
 
+    if (xpsCompatiblePrinter != nullptr)
+    {
+        if (this->InPartialTrust)
+        {
+            (gcnew PrintingPermission(PrintingPermissionLevel::DefaultPrinting))->Assert();
+        }
+
+        try
+        {
+            if (abort)
+            {
+                xpsCompatiblePrinter->AbortPrinter();
+            }
+            xpsCompatiblePrinter->EndDocPrinter();
+        }
+        __finally
+        {
+            if (this->InPartialTrust)
+            {
+                CodeAccessPermission::RevertAssert();
+            }
+        }
+    }
+}
+
+/// <SecurityNote>
+/// Safe: Does not expose any critical info
+/// Critical: Accepts/uses critical type PackageSerializationManager
+/// </SecurityNote>
+[SecuritySafeCritical]
+void
+PrintQueue::
+EnsureJobId(
+    PackageSerializationManager^ manager
+    )
+{
+    if (xpsCompatiblePrinter != nullptr)
+    {
+        manager->JobIdentifier = xpsCompatiblePrinter->JobIdentifier;
+    }
+}
+
+[SecurityCritical]
+void
+PrintQueue::XpsOMPackageWriter::
+set(
+RCW::IXpsOMPackageWriter^ packageWriter
+)
+{
+    if (this->InPartialTrust)
+    {
+        (gcnew PrintingPermission(PrintingPermissionLevel::DefaultPrinting))->Assert();
+    }
+    try
+    {
+        xpsCompatiblePrinter->XpsOMPackageWriter = packageWriter;
+    }
+    __finally
+    {
+        if (this->InPartialTrust)
+        {
+            CodeAccessPermission::RevertAssert();
+        }
+    }
 }
 
 XpsDocumentWriter^
@@ -4833,8 +5052,8 @@ XpsDocumentWriter^
 PrintQueue::
 CreateXpsDocumentWriter(
     PrintDocumentImageableArea^%                        printDocumentImageableArea,
-    System::Windows::Controls::PageRangeSelection%		pageRangeSelection,
-    System::Windows::Controls::PageRange%				pageRange
+    System::Windows::Controls::PageRangeSelection%      pageRangeSelection,
+    System::Windows::Controls::PageRange%               pageRange
     )
 {
     return CreateXpsDocumentWriter(nullptr,
@@ -4880,8 +5099,8 @@ PrintQueue::
 CreateXpsDocumentWriter(
     String^                                             jobDescription,
     PrintDocumentImageableArea^%                        printDocumentImageableArea,
-    System::Windows::Controls::PageRangeSelection%		pageRangeSelection,
-    System::Windows::Controls::PageRange%				pageRange
+    System::Windows::Controls::PageRangeSelection%      pageRangeSelection,
+    System::Windows::Controls::PageRange%               pageRange
     )
 {
     XpsDocumentWriter^  writer = nullptr;
@@ -4915,9 +5134,9 @@ PrintQueue::
 CalculateImagableArea(
     PrintTicket^        partialTrustPrintTicket,
     PrintQueue^         partialTrustPrintQueue,
-	double              height,
-	double              width
-	)
+    double              height,
+    double              width
+    )
 {
     PrintDocumentImageableArea^ documentImageableArea = gcnew PrintDocumentImageableArea();
 
@@ -4952,13 +5171,13 @@ CalculateImagableArea(
         documentImageableArea->ExtentWidth   = documentImageableArea->MediaSizeWidth;
         documentImageableArea->ExtentHeight  = documentImageableArea->MediaSizeHeight;
     }
-	return documentImageableArea;
+    return documentImageableArea;
 }
 
 bool
 PrintQueue::
 ShowPrintDialog(
-	XpsDocumentWriter^%     writer,
+    XpsDocumentWriter^%     writer,
     PrintTicket^%           partialTrustPrintTicket,
     PrintQueue^%            partialTrustPrintQueue,
     double%                 width,
@@ -4986,13 +5205,13 @@ ShowPrintDialog(
 bool
 PrintQueue::
 ShowPrintDialogEnablePageRange(
-	XpsDocumentWriter^%    	                        writer,
+    XpsDocumentWriter^%                             writer,
     PrintTicket^%                                   partialTrustPrintTicket,
     PrintQueue^%                                    partialTrustPrintQueue,
     double%                                         width,
     double%                                         height,
-    System::Windows::Controls::PageRangeSelection%	pageRangeSelection,
-    System::Windows::Controls::PageRange%			pageRange,
+    System::Windows::Controls::PageRangeSelection%  pageRangeSelection,
+    System::Windows::Controls::PageRange%           pageRange,
     String^                                         jobDescription
     )
 {
@@ -5066,7 +5285,7 @@ GatherDataFromPrintDialog(
                                                      &PartialTrustPrintTicketEventHandler::
                                                      SetPrintTicketInPartialTrust);
 
-		width  = printDialog->PrintableAreaWidth;
+        width  = printDialog->PrintableAreaWidth;
         height = printDialog->PrintableAreaHeight;
     }
 

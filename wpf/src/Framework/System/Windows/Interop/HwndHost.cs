@@ -188,9 +188,11 @@ namespace System.Windows.Interop
         /// <summary>
         /// OnDpiChanged is called when the DPI at which this HwndHost is rendered, changes.
         /// </summary>
+        [SecuritySafeCritical]
         protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
         {
             RaiseEvent(new DpiChangedEventArgs(oldDpi, newDpi, HwndHost.DpiChangedEvent, this));
+            UpdateWindowPos();
         }
 
         /// <summary>
@@ -518,9 +520,63 @@ namespace System.Windows.Interop
             NativeMethods.RECT rcClient = PointUtil.FromRect(rectClient);
             NativeMethods.RECT rcClientRTLAdjusted = PointUtil.AdjustForRightToLeft(rcClient, new HandleRef(null, hwndParent));
 
+            if (!CoreAppContextSwitches.DoNotUsePresentationDpiCapabilityTier2OrGreater)
+            {
+                //Adjust for differences in DPI between _hwnd and hwndParent
+                rcClientRTLAdjusted = AdjustRectForDpi(rcClientRTLAdjusted);
+            }
+
             return rcClientRTLAdjusted;
         }
 
+        /// <summary>
+        /// Gets the ratio of the DPI between the parent of <see cref="_hwnd"/>
+        /// and <see cref="_hwnd"/>. Normally, this ratio is 1. 
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical: Calls native methods
+        ///     Safe: Returns only non-Critical information
+        /// </SecurityNote>
+        private double DpiParentToChildRatio
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (!_hasDpiAwarenessContextTransition) return 1;
+                DpiScale2 dpi = DpiUtil.GetWindowDpi(_hwnd.Handle, fallbackToNearestMonitorHeuristic: false);
+                DpiScale2 dpiParent = DpiUtil.GetWindowDpi(UnsafeNativeMethods.GetParent(_hwnd), fallbackToNearestMonitorHeuristic: false);
+
+                if (dpi == null || dpiParent == null)
+                {
+                    // if DPI of the window can not be queried directly, then the platform
+                    // is too old to support mixed mode DPI. The DPI ratio is 1.0
+                    return 1.0d;
+                }
+
+                return dpiParent.DpiScaleX / dpi.DpiScaleX;
+            }
+        }
+
+        /// <summary>
+        /// Adjusts a rectangle to factor in the differences in DPI between 
+        /// the parent of <see cref="_hwnd"/> and <see cref="_hwnd"/>
+        /// </summary>
+        /// <param name="rcRect">The rectangle to adjust</param>
+        /// <returns>The adjusted rectangle</returns>
+        private NativeMethods.RECT AdjustRectForDpi(NativeMethods.RECT rcRect)
+        {
+            if (_hasDpiAwarenessContextTransition)
+            {
+                double dpiRatio = DpiParentToChildRatio;
+                rcRect.left = (int)(rcRect.left / dpiRatio);
+                rcRect.top = (int)(rcRect.top / dpiRatio);
+                rcRect.right = (int)(rcRect.right / dpiRatio);
+                rcRect.bottom = (int)(rcRect.bottom / dpiRatio);
+            }
+
+            return rcRect;
+        }
+        
         /// <summary>
         ///     Disposes this object.
         /// </summary>
@@ -651,7 +707,7 @@ namespace System.Windows.Interop
                     {
                         // Get the rect assigned by layout to us.
                         NativeMethods.RECT assignedRC = CalculateAssignedRC(source);
-
+                        
                         // The lParam is a pointer to a WINDOWPOS structure
                         // that contains information about the size and
                         // position that the window is changing to.  Note that
@@ -1073,11 +1129,11 @@ namespace System.Windows.Interop
         // 2) a parent is present, reparent the child window to it
         // 3) a parent window is not present, hide the child window by parenting it to SystemResources.Hwnd window.
         /// <SecurityNote>
-        /// Critical - calls Critical GetParent
-        /// TreatAsSafe - it doesn't disclose GetParent returned information. also
+        /// Critical - calls Critical GetParent and <see cref="SystemResources.GetDpiAwarenessCompatibleNotificationWindow(HandleRef)"/>
+        /// Safe - it doesn't disclose GetParent returned information. also
         ///               as a defense in depth measure - we demand if not trusted. Setting trusted is critical
         /// </SecurityNote>
-        [SecurityCritical, SecurityTreatAsSafe]
+        [SecuritySafeCritical]
         private void BuildOrReparentWindow()
         {
             DemandIfUntrusted();
@@ -1140,13 +1196,13 @@ namespace System.Windows.Interop
                         UnsafeNativeMethods.SetParent(_hwnd, new HandleRef(null,hwndParent));
                     }
                 }
-                else
+                else if (!FrameworkAppContextSwitches.Enable2019_12_B || _hwnd.Handle != IntPtr.Zero) // When the "knob" is disabled, it would be as if this condition didn't exist - which is equivalent to the code prior to this change. 
                 {
-                    // Reparent the window to the SystemResources.Hwnd
-                    // window.  This keeps the child window around, but it is not
-                    // visible.  We can reparent the window later when a new
-                    // parent is available
-                    UnsafeNativeMethods.SetParent(_hwnd, new HandleRef(null, SystemResources.Hwnd.Handle));
+                    // Reparent the window to notification-only window provided by SystemResources
+                    // This keeps the child window around, but it is not visible.  We can reparent the 
+                    // window later when a new parent is available
+                    var hwnd = SystemResources.GetDpiAwarenessCompatibleNotificationWindow(_hwnd);
+                    UnsafeNativeMethods.SetParent(_hwnd, new HandleRef(null, hwnd.Handle));
                     // ...But we have a potential problem: If the SystemResources listener window gets 
                     // destroyed ahead of the call to HwndHost.OnDispatcherShutdown(), the HwndHost's window
                     // will be destroyed too, before the "logical" Dispose has had a chance to do proper
@@ -1197,6 +1253,12 @@ namespace System.Windows.Interop
             if(hwndParent.Handle != UnsafeNativeMethods.GetParent(_hwnd))
             {
                 throw new InvalidOperationException(SR.Get(SRID.ChildWindowMustHaveCorrectParent));
+            }
+
+            // Test to see if hwndParent and _hwnd have different DPI_AWARENESS_CONTEXT's
+            if (DpiUtil.GetDpiAwarenessContext(_hwnd.Handle) != DpiUtil.GetDpiAwarenessContext(hwndParent.Handle))
+            {
+                _hasDpiAwarenessContextTransition = true;
             }
 
             // Only subclass the child HWND if it is owned by our thread.
@@ -1344,6 +1406,13 @@ namespace System.Windows.Interop
 
         private ArrayList _hooks;
         private Size _desiredSize;
+
+        /// <summary>
+        /// True when the parent of <see cref="_hwnd"/> and <see cref="_hwnd"/>
+        /// have different DPI_AWARENESS_CONTEXT values. This indicates that 
+        /// DPI transitions are possible in content hosted by this <see cref="HwndHost"/>. 
+        /// </summary>
+        private bool _hasDpiAwarenessContextTransition = false;
 
         private SecurityCriticalDataForSet<bool> _fTrusted ;
 

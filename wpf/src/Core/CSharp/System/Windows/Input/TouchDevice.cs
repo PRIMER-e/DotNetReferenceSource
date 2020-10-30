@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Input.StylusWisp;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.Windows.Threading;
@@ -20,7 +21,7 @@ using MS.Internal.PresentationCore;
 using MS.Utility;
 using SR = MS.Internal.PresentationCore.SR;
 using SRID = MS.Internal.PresentationCore.SRID;
-
+using System.Windows.Input.Tracing;
 
 namespace System.Windows.Input
 {
@@ -53,6 +54,16 @@ namespace System.Windows.Input
         {
             _deviceId = deviceId;
             _inputManager = InputManager.UnsecureCurrent;
+
+            // DDVSO:203998
+            // If this is instantiated and the derived type is not a StylusTouchDevice then it is a 3rd party
+            // custom touch device.
+            StylusLogic stylusLogic = StylusLogic.CurrentStylusLogic;
+
+            if (stylusLogic != null && !(this is StylusTouchDeviceBase))
+            {
+                stylusLogic.Statistics.FeaturesUsed |= StylusTraceLogger.FeatureFlags.CustomTouchDeviceUsed;
+            }
         }
 
         /// <SecurityNote>
@@ -1135,7 +1146,7 @@ namespace System.Windows.Input
             }
 
             forManipulation = (routedEvent == Touch.TouchMoveEvent) ||
-                (routedEvent == Touch.TouchDownEvent) || 
+                (routedEvent == Touch.TouchDownEvent) ||
                 (routedEvent == Touch.TouchUpEvent) ||
                 (routedEvent == Touch.GotTouchCaptureEvent) ||
                 (routedEvent == Touch.LostTouchCaptureEvent);

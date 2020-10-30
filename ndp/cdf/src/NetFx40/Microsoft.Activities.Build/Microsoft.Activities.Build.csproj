@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{3d9e2380-8a72-4a13-97a6-5741ae5705f2}</ProjectGuid>
+    <OutputPath>.</OutputPath>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Microsoft.Activities.Build</AssemblyName>
+    <UseVSHostingProcess>False</UseVSHostingProcess>
+    <NoStdLib>True</NoStdLib>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <DefineConstants>CODE_ANALYSIS_BASELINE;NONAPTCA;TRACE;RETAIL;WIN32</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " >
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\clr\src\bcl\mscorlib.csproj">
+      <Project>{43e44db7-dc97-46cb-b868-751d11c60bf1}</Project>
+      <Name>mscorlib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\fx\src\System.csproj">
+      <Project>{d218394f-a89e-455a-8c59-5e3554100e4a}</Project>
+      <Name>System</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\System.Activities\System.Activities.csproj">
+      <Project>{dabaf3db-e90a-4053-839b-93b45d30ae63}</Project>
+      <Name>System.Activities</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\fx\src\Core\System.Core.csproj">
+      <Project>{e7e62ebb-b829-4b6e-9ec0-4ca0c96fe4ac}</Project>
+      <Name>System.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\WCF\Serialization\System.Runtime.Serialization.csproj">
+      <Project>{2d14aaa5-e16c-4c36-92ee-4514f43396ee}</Project>
+      <Name>System.Runtime.Serialization</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.ServiceModel.Internals\System.ServiceModel.Internals.csproj">
+      <Project>{c1031d3a-479a-4360-8bf2-e294bfa8debb}</Project>
+      <Name>System.ServiceModel.Internals</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\fx\src\Xml\System.Xml.csproj">
+      <Project>{23c706b3-6f70-42a4-9476-ee1b30c0cca3}</Project>
+      <Name>System.XML</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\XamlBuildTask\XamlBuildTask.csproj">
+      <Project>{e0e58e4c-ec2b-42fe-96b3-6129b3913baa}</Project>
+      <Name>XamlBuildTask</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Build.Framework" />
+    <Reference Include="Microsoft.Build.Utilities.v4.0" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Microsoft\Activities\Build\BeforeInitializeComponentExtension.cs" />
+    <Compile Include="Microsoft\Activities\Build\Debugger\DebugBuildExtension.cs" />
+    <Compile Include="Microsoft\Activities\Build\Expressions\ExpressionsBuildExtension.cs" />
+    <Compile Include="Microsoft\Activities\Build\Utilities.cs" />
+    <Compile Include="Microsoft\Activities\Build\Validation\DeferredValidationTask.cs" />
+    <Compile Include="Microsoft\Activities\Build\Validation\ReportDeferredValidationErrorsTask.cs" />
+    <Compile Include="Microsoft\Activities\Build\Validation\ValidationBuildExtension.cs" />
+    <Compile Include="Microsoft\Activities\Build\WorkflowBuildMessageTask.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -22,6 +22,9 @@
     Revision History:  
 --*/
 
+using namespace System::Windows::Xps::Serialization;
+using namespace System::Runtime::InteropServices;
+
 namespace MS
 {
 namespace Internal
@@ -491,6 +494,41 @@ namespace Win32ApiThunk
                 printTicketStream);
         }
         
+        ///<SecurityNote>
+        /// Critical    - Calls critical IsPrintPackageTargetSupportedImpl; SUC applied; enables Print Document Package API Interfaces. 
+        ///             - otherwise callers must demand DefaultPrinting
+        ///</SecurityNote>        
+        static
+        BOOL
+        IsPrintPackageTargetSupported(VOID)
+        {
+            LoadPresentationNative();
+            return IsPrintPackageTargetSupportedImpl();
+        }
+
+        ///<SecurityNote>
+        /// Critical    - Calls critical PrintToPackageTargetImpl; SUC applied; enables Print Document Package API Interfaces. 
+        ///             - otherwise callers must demand DefaultPrinting
+        ///</SecurityNote>        
+        static
+            UInt32
+        PrintToPackageTarget(
+            String^ printerName,
+            String^ jobName,
+            ComTypes::IStream^ jobPrintTicketStream,
+            [Out] RCW::IPrintDocumentPackageTarget^ %printDocPackageTarget,
+            [Out] RCW::IXpsDocumentPackageTarget^ %xpsPackageTarget
+        )
+        {
+            LoadPresentationNative();
+
+            return PrintToPackageTargetImpl(
+                printerName,
+                jobName,
+                jobPrintTicketStream,
+                printDocPackageTarget,
+                xpsPackageTarget);
+        }
     private:
         ///<SecurityNote>
         /// Critical    - SUC applied; enables LateBoundStartXpsPrintJob API call. 
@@ -527,6 +565,38 @@ namespace Win32ApiThunk
             VOID **printTicketStream
         );
         
+        ///<SecurityNote>
+        /// Critical    - SUC applied; enables Print Document Package API Interfaces. 
+        ///             - otherwise callers must demand DefaultPrinting
+        ///</SecurityNote>        
+        [DllImportAttribute("PresentationNative_v0400.dll", EntryPoint = "IsPrintPackageTargetSupported",
+            CharSet = CharSet::Unicode,
+            SetLastError = true,
+            CallingConvention = CallingConvention::Winapi)]
+        static
+        BOOL
+        IsPrintPackageTargetSupportedImpl(VOID);
+
+        ///<SecurityNote>
+        /// Critical    - SUC applied; enables Print Document Package API Interfaces. 
+        ///             - otherwise callers must demand DefaultPrinting
+        ///</SecurityNote>        
+        [DllImportAttribute("PresentationNative_v0400.dll", EntryPoint = "PrintToPackageTarget",
+            CharSet = CharSet::Unicode,
+            SetLastError = true,
+            CallingConvention = CallingConvention::Winapi)]
+        static
+        PrintToPackageTargetImpl(
+            String^ printerName,
+            String^ jobName,
+            ComTypes::IStream^ jobPrintTicketStream,
+            [MarshalAs(UnmanagedType::Interface)]
+            [Out] RCW::IPrintDocumentPackageTarget^ %printDocPackageTarget,
+            [MarshalAs(UnmanagedType::Interface)]
+            [Out] RCW::IXpsDocumentPackageTarget^ %xpsPackageTarget
+        );
+
+
         static void LoadPresentationNative()
         {
             static bool isPresentationNativeLoaded = false;

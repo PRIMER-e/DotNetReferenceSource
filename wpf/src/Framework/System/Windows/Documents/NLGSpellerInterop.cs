@@ -1041,6 +1041,10 @@ namespace System.Windows.Documents
                 _disposed = true;                
             }
 
+            /// <SecurityNote>
+            /// Critical: Calls SpellerSentence.Dispose(bool)
+            /// </SecurityNote>
+            [SecurityCritical]
             ~SpellerSentence()
             {
                 Dispose(false);

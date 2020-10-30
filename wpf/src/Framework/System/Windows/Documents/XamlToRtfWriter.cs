@@ -14,6 +14,7 @@ using System.Text;
 using System.Windows.Media; // Color
 using System.Globalization;
 using System.IO;
+using MS.Internal.Globalization;
 
 #if WindowsMetaFile // GetWinMetaFileBits
 using System.Runtime.InteropServices;
@@ -836,6 +837,9 @@ namespace System.Windows.Documents
             {
                 _rtfBuilder.Append("{\\field{\\*\\fldinst { HYPERLINK \"");
 
+                // DDVSO 132397 - Unescape the escape sequences added in Xaml
+                documentNode.NavigateUri = BamlResourceContentUtil.UnescapeString(documentNode.NavigateUri);
+
                 // Add the additional backslash which rtf expected
                 for (int i = 0; i < documentNode.NavigateUri.Length; i++)
                 {
@@ -1223,11 +1227,11 @@ namespace System.Windows.Documents
                 fsThis.Font = fontAll;
             }
 
-            // Workaround for Word 11 \f behavior.  See 
-
-
-
-
+            // Workaround for Word 11 \f behavior.  See bug 1636475.
+            // Word 11 does not respect \f applied above the paragraph
+            // level with \rtlpara.  This is a targeted work-around
+            // which is probably not complete, but additional repros
+            // are currently lacking.
             bool isTopLevelParagraph = dnThis.Type == DocumentNodeType.dnParagraph &&
                                        dnThis.Parent != null &&
                                        dnThis.Parent.Type == DocumentNodeType.dnSection &&
@@ -2096,6 +2100,17 @@ namespace System.Windows.Documents
                                    imageNaturalSize,
                                    imageStretch,
                                    imageStretchDirection);
+
+            // DDVSO 181850 - Add the image baselineoffset data
+            if (documentNode.FormatState.IncludeImageBaselineOffset)
+            {
+                _rtfBuilder.Append("\\dn");
+
+                // RTF format requries the offset property (\dn) in half-points
+                _rtfBuilder.Append(
+                    Converters.PxToHalfPointRounded((imageNaturalSize.Height * scaleFactor.Height) -
+                                                    documentNode.FormatState.ImageBaselineOffset));
+            }
 
             // Add the image(picture) width control
             _rtfBuilder.Append("\\picwgoal");
@@ -3089,6 +3104,16 @@ namespace System.Windows.Documents
                                             double d = 0f;
                                             Converters.StringToDouble(valueString, ref d);
                                             documentNode.FormatState.ImageHeight = d;
+                                        }
+                                        break;
+
+                                    case XamlAttribute.XABaselineOffset:
+                                        if (xamlTag == XamlTag.XTImage)
+                                        {
+                                            double d = 0f;
+                                            Converters.StringToDouble(valueString, ref d);
+                                            documentNode.FormatState.ImageBaselineOffset = d;
+                                            documentNode.FormatState.IncludeImageBaselineOffset = true;
                                         }
                                         break;
 

@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 
 using Internal.Cryptography;
 
@@ -22,11 +23,9 @@ namespace System.Security.Cryptography
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
     public sealed class AesCng : Aes, ICngSymmetricAlgorithm
     {
-        private const string AlgorithmName = Interop.NCrypt.NCRYPT_AES_ALGORITHM;
-
         public AesCng()
         {
-            _core = new CngSymmetricAlgorithmCore(AlgorithmName, this);
+            _core = new CngSymmetricAlgorithmCore(this);
         }
 
         public AesCng(string keyName)
@@ -41,7 +40,7 @@ namespace System.Security.Cryptography
 
         public AesCng(string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
-            _core = new CngSymmetricAlgorithmCore(AlgorithmName, this, keyName, provider, openOptions);
+            _core = new CngSymmetricAlgorithmCore(this, keyName, provider, openOptions);
         }
 
         public override byte[] Key
@@ -113,6 +112,17 @@ namespace System.Security.Cryptography
         bool ICngSymmetricAlgorithm.IsWeakKey(byte[] key)
         {
             return false;
+        }
+
+        [SecurityCritical]
+        SafeBCryptAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
+        {
+            return BCryptNative.AesBCryptModes.GetSharedHandle(Mode);
+        }
+
+        string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()
+        {
+            return Interop.NCrypt.NCRYPT_AES_ALGORITHM;
         }
 
         private CngSymmetricAlgorithmCore _core;

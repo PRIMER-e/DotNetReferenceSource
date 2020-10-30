@@ -22,10 +22,10 @@
 //**
 //** IMPORTANT: Running arbitrary application code in the context of an incoming call from the browser
 //**    should be avoided. This could lead to unexpected reentrancy (on either side) or making the
-//      browser frame unresponsive while the application code is running. 
-
-
-
+//      browser frame unresponsive while the application code is running. Bug 1139336 illustrates
+//      what can happen if the application code enters a local message loop while the browser is
+//      blocked. To avoid such situations in general, use Dispatcher.BeginInvoke() instead of making
+//      direct calls into unknown code.
 
 
 using System;
@@ -342,7 +342,7 @@ namespace MS.Internal.AppModel
             if (_show)
             {
                 // The window is shown asynchronously (using Visibility, not Show()) to allow first restoring
-                // the Journal on history navigation. This prevents 
+                // the Journal on history navigation. This prevents bug 1367999.
                 _rbw.Value.Visibility = Visibility.Visible;
 
                 // initial focus should be on us, not the browser frame
@@ -596,7 +596,7 @@ namespace MS.Internal.AppModel
                 // The entry may be null here when the user has selected "New Window" or pressed Ctrl+N.
                 // In this case the browser calls us on IPersistHistory::Save and then throws that data
                 // away.  Hopefully at some point in the future that saved data will be loaded in the new
-                // window via IPersistHistory::Load.  This unusual behavior is tracked in 
+                // window via IPersistHistory::Load.  This unusual behavior is tracked in bug 1353584.
             }
 
             if (entry != null)

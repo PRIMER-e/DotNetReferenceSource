@@ -778,22 +778,20 @@ namespace System.ServiceModel.Channels
                     CompletedAsyncResult<bool>.End(completedResult);
                 }
 
-                using (LockHelper.TakeReaderLock(this.readerWriterLock))
+                bool isClosed = !closed;
+                try
                 {
-                    try
+                    return ValidateUriRouteAsyncResult.End(result);
+                }
+                catch (Exception exception)
+                {
+                    if (Fx.IsFatal(exception) || !isClosed)
                     {
-                        return ValidateUriRouteAsyncResult.End(result);
+                        throw;
                     }
-                    catch (Exception exception)
-                    {
-                        if (Fx.IsFatal(exception) || !closed)
-                        {
-                            throw;
-                        }
 
-                        DiagnosticUtility.TraceHandledException(exception, TraceEventType.Error);
-                        return false;
-                    }                    
+                    DiagnosticUtility.TraceHandledException(exception, TraceEventType.Error);
+                    return false;
                 }
             }
 
@@ -1391,7 +1389,12 @@ namespace System.ServiceModel.Channels
                 {
                     DiagnosticUtility.TraceHandledException(exception, TraceEventType.Error);
 
-                    throw;
+                    if (Fx.IsFatal(exception) || ServiceModelAppSettings.FailOnSocketDuplicationError)
+                    {
+                        throw;
+                    }
+                    
+                    return new DuplicateConnectionAsyncResult(callback, state);
                 }
             }
 

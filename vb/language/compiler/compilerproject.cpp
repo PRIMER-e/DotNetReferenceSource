@@ -980,11 +980,11 @@ void CompilerProject::Invalidate()
     // edits, before removing the project and its files, any pending decompilations are committed immediately, so that
     // this project and its files are decompiled correctly and removed from the pending nodes list. Note that this will
     // also commit the pending decompilations for other projects too which is fine because the background compiler is
-    // not restarted and they will stay decompiled. 
-
-
-
-
+    // not restarted and they will stay decompiled. Bug VSWhidbey 386301.
+    //
+    // Note the null check for compiler package. Apparently, when only the VB expression evaluator is loaded, then there
+    // is no CompilerPackage, but instead a Compiler is created.
+    //
     if (GetCompilerPackage() && GetCompilerPackage()->IsInBatch())
     {
         GetCompilerPackage()->CommitEditListDemotions(true, true, this);
@@ -3997,7 +3997,7 @@ STDMETHODIMP CompilerProject::RemoveMetaDataReferenceInternal
     BackgroundCompilerLock compilerLock(this);
 
     // Release the assembly importer so we don't hang on to the
-    // files. See VS 
+    // files. See VS bug 153063. They will be recreated on demand.
     for (ULONG i = 0; i < m_daReferences.Count(); ++i)
     {
         CompilerProject *pCompilerProjectToRemove = m_daReferences.Element(i).m_pCompilerProject;
@@ -4811,9 +4811,9 @@ void CompilerProject::DisconnectInternal()
             m_pVBRuntimeProject->_DemoteMetaDataProjectToNoState(false);    // Don't Release the IMetaDataImporter.
         }
 
-        // 
-
-
+        // Bug fix for Dev10 SP1 67634
+        // We need to demote the default vb runtime on host, otherwise the default vb runtime could be 
+        // in a bad state, such that it is in the compiled state but its references are not resolved.
 
         CompilerProject *pDefaultVBRuntimeProjectOnHost = m_pCompilerHost->GetDefaultVBRuntimeProject();
         if (pDefaultVBRuntimeProjectOnHost && 
@@ -8655,10 +8655,10 @@ bool CompilerProject::_PromoteToTypesEmitted()
     if (!m_fMetaData)
     {
 #if HOSTED
-        // Fix for Dev10 
-
-
-
+        // Fix for Dev10 bug 722855 - to reduce the size of hosted compiler to help
+        // reduce the size of the .Net FX download. This is accomplished in a low
+        // risk manner by compiling out the below code which helps with parts of
+        // PEBuilder (and maybe some portions of MetaEmit too) to not be linked in.
 
         VSFAIL("Compilation code path not valid for hosted compiler!");
         VbThrow(E_UNEXPECTED);
@@ -8756,10 +8756,10 @@ bool CompilerProject::_PromoteToCompiled()
     if (!m_fMetaData)
     {
 #if HOSTED
-        // Fix for Dev10 
-
-
-
+        // Fix for Dev10 bug 722855 - to reduce the size of hosted compiler to help
+        // reduce the size of the .Net FX download. This is accomplished in a low
+        // risk manner by compiling out the below code which helps with parts of
+        // PEBuilder (and maybe some portions of MetaEmit too) to not be linked in.
 
         VSFAIL("Compilation code path not valid for hosted compiler!");
         VbThrow(E_UNEXPECTED);
@@ -9271,7 +9271,7 @@ void CompilerProject::_DemoteToBound()
     // when demoting, we could have a Bound method cached in m_BoundMethodBodyMRUList
     // which could have been using CompilationCaches, which get cleared on every decompile.
     // thus we need to clear the cache via ClearCachedBoundMethodBodies
-    //(see 
+    //(see bug Devdiv 841426)
     ClearCachedBoundMethodBodies();
 
 
@@ -9297,7 +9297,7 @@ void CompilerProject::_DemoteToBound()
 
     // Forget about all the PIA type references that come from declarations.
     // These references occur when the project is in state CS_Bound on the way to CS_TypesEmitted, so we 
-    // need to clear them on the way back to CS_Bound. This fixes 
+    // need to clear them on the way back to CS_Bound. This fixes bug #510410.
     m_DeclarationPiaTypeRefCache.Clear();
     m_DeclarationPiaMemberCache.Clear();
 
@@ -9563,9 +9563,9 @@ void CompilerProject::_DemoteMetaDataProjectToNoState(bool ReleaseMetaDataImport
     {
         ReleaseMetaDataProject();
 
-        // 
-
-
+        // Bug VSWhidbey 439036.
+        // If a file change notification for a metadata file showed up before its transition to
+        // bound, then the error table was not being cleared resulting in stale errors.
         m_ErrorTable.DeleteAll();
 
         VSASSERT(!m_fCodeModule, "IDE compiler can never reference a .Net Module");
@@ -10316,7 +10316,7 @@ STDMETHODIMP CompilerProject::GetPEidentity
     VB_ENTRY();
     // This is a hack to get around the problem of having to OpenScope() the assembly even if the caller is not
     // interested in the assembly name or the MVID. In this case, all they want to know if we support ENC or not.
-    // See 
+    // See bug VSWhidbey 278265 for details.
     if (!pMVID && !pbstrPEName)
     {
         if (!m_pstrPEName)
@@ -11662,11 +11662,11 @@ bool CompilerProject::AddReference
     // Do we already have a reference to this?
     if (IsProjectReferenced(pProjectReferenced))
     {
-        // Dev11 
-
-
-
-
+        // Dev11 Bug 52100
+        // CheckSolutionExtensions() also depends on some other
+        // conditions. So at this brach, even the project has been added,
+        // but other conditions may change, so we need to call CheckSolutionExtensions()
+        // again.
         CheckSolutionExtensions();
         return false;
     }
@@ -12191,8 +12191,8 @@ void CompilerProject::SetReferenceUsageForSymbol
         // Hence, for such cases, we need to walk the invoke method.
         BCSYM_NamedRoot *InvokeMethod = GetInvokeFromDelegate(DependedOn, m_pCompiler);
 
-        // 
-
+        // Bug VSWhidbey 498465. InvokeMethod is NULL for System.MulticastDelegate.
+        //
         if (InvokeMethod)
         {
             SetReferenceUsageForSymbol(InvokeMethod);
@@ -12740,7 +12740,7 @@ void CompilerProject::ProjectLevelImportsList::ReBuildAllImportTargets()
     bool EmptyXmlPrefixDefined = false;
 
     // Ensure that default imports have been added before building
-    // 
+    // Bug 45901: Do not add default Xml imports to a metadata project
     if (!m_pOwningCompilerProject->IsMetaData())
     {
         WCHAR XmlNamespace[] = L"<xmlns:xml=\"http://www.w3.org/XML/1998/namespace\">";
@@ -12773,7 +12773,7 @@ void CompilerProject::ProjectLevelImportsList::ReBuildAllImportTargets()
     }
 
     if (!EmptyXmlPrefixDefined &&
-        !m_pOwningCompilerProject->IsMetaData()) // 
+        !m_pOwningCompilerProject->IsMetaData()) // Bug #93847 - DevDiv Bugs : see comment about Bug 45901 above
     {
         WCHAR XmlNsNamespace[] =  L"<xmlns=\"\">";
         BuildImportTarget(XmlNsNamespace, DIM(XmlNsNamespace) - 1, 0, ImportTarget);
@@ -12820,7 +12820,8 @@ void CompilerProject::ProjectLevelImportsList::DeleteImport
 
     // Delete the import info
     //
-    for (ProjectLevelImportInfo *pCurrentImportInfo = m_pProjectLevelImportInfos;
+	ProjectLevelImportInfo *pCurrentImportInfo;
+    for (pCurrentImportInfo = m_pProjectLevelImportInfos;
          pCurrentImportInfo;
          pCurrentImportInfo = pCurrentImportInfo->m_Next)
     {
@@ -13683,7 +13684,7 @@ void CompilerProject::CachePiaTypeMemberRef(BCSYM_NamedRoot *psymNamed, Location
     AssertIfNull(pErrorTable);
     
     // Make sure the item can be embedded at all: we don't allow types or anything that cannot be a class member.
-    // Filtering these out here saves us a lot of grief later on down the pipeline. Dev10 
+    // Filtering these out here saves us a lot of grief later on down the pipeline. Dev10 bug #676896.
     if (psymNamed->IsClass() || !psymNamed->IsMember())
     {
         if (errorCount == 0)
@@ -13716,8 +13717,8 @@ void CompilerProject::CachePiaTypeMemberRef(BCSYM_NamedRoot *psymNamed, Location
     {
         // Structures may contain only public instance fields. They may not have shared fields,
         // because the whole point of No-PIA is that we will not have a reference to the
-        // assembly containing the field. (This was related to Dev10 
-
+        // assembly containing the field. (This was related to Dev10 bug #540028.) Nor may they
+        // have methods, events, properties, or any type of member but a field.
         if (errorCount == 0)
         {
             pErrorTable->CreateError(

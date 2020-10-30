@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 
 using Internal.Cryptography;
 
@@ -22,12 +23,10 @@ namespace System.Security.Cryptography
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
     public sealed class TripleDESCng : TripleDES, ICngSymmetricAlgorithm
     {
-        private const string AlgorithmName = Interop.NCrypt.NCRYPT_3DES_ALGORITHM;
-
         public TripleDESCng()
         {
             SetLegalKeySizesValue();
-            _core = new CngSymmetricAlgorithmCore(AlgorithmName, this);
+            _core = new CngSymmetricAlgorithmCore(this);
         }
 
         public TripleDESCng(string keyName)
@@ -43,7 +42,7 @@ namespace System.Security.Cryptography
         public TripleDESCng(string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
             SetLegalKeySizesValue();
-            _core = new CngSymmetricAlgorithmCore(AlgorithmName, this, keyName, provider, openOptions);
+            _core = new CngSymmetricAlgorithmCore(this, keyName, provider, openOptions);
         }
 
         public override byte[] Key
@@ -115,6 +114,17 @@ namespace System.Security.Cryptography
         bool ICngSymmetricAlgorithm.IsWeakKey(byte[] key)
         {
             return TripleDES.IsWeakKey(key);
+        }
+
+        [SecurityCritical]
+        SafeBCryptAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
+        {
+            return BCryptNative.TripleDesBCryptModes.GetSharedHandle(Mode);
+        }
+
+        string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()
+        {
+            return Interop.NCrypt.NCRYPT_3DES_ALGORITHM;
         }
 
         private void SetLegalKeySizesValue()

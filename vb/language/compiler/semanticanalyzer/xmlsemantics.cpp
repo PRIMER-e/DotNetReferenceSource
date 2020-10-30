@@ -2203,7 +2203,7 @@ Semantics::InterpretXmlName(ParseTree::Expression * Expr, BCSYM_Alias **Resolved
             // Element names can use the default namespace
             if (StringPool::IsEqualCaseSensitive(Name->Prefix.Name, STRING_CONST(m_Compiler, XmlNs)))
             {
-                // DD 
+                // DD Bug #26898: Literal elements are not allowed to xmlns as a prefix
                 ReportSemanticError(ERRID_IllegalXmlnsPrefix, Name->Prefix.TextSpan);
             }
 

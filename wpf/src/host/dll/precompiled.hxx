@@ -41,7 +41,7 @@
 #include <mshtml.h>
 #include <shlobj.h>
 #include <shellapi.h>
-#include <msxml2.h>
+#include <msxml6.h>
 #include <comdef.h>
 #include <muiload.h>
 #include <windowsx.h>

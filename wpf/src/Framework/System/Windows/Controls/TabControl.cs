@@ -18,6 +18,7 @@ using System.Windows.Media;
 using System.Windows.Controls.Primitives;
 using System.Windows.Markup;
 using MS.Utility;
+using MS.Internal.Telemetry.PresentationFramework;
 
 using System;
 
@@ -48,6 +49,8 @@ namespace System.Windows.Controls
             KeyboardNavigation.DirectionalNavigationProperty.OverrideMetadata(typeof(TabControl), new FrameworkPropertyMetadata(KeyboardNavigationMode.Contained));
 
             IsEnabledProperty.OverrideMetadata(typeof(TabControl), new UIPropertyMetadata(new PropertyChangedCallback(OnVisualStatePropertyChanged)));
+
+            ControlsTraceLogger.AddControl(TelemetryControls.TabControl);
         }
 
         /// <summary>
@@ -341,17 +344,39 @@ namespace System.Windows.Controls
         ///   in some other way.</param>
         protected override void OnSelectionChanged(SelectionChangedEventArgs e)
         {
-            base.OnSelectionChanged(e);
-            if (IsKeyboardFocusWithin)
+            if (MS.Internal.FrameworkAppContextSwitches.SelectionPropertiesCanLagBehindSelectionChangedEvent)
             {
-                // If keyboard focus is within the control, make sure it is going to the correct place
-                TabItem item = GetSelectedTabItem();
-                if (item != null)
+                // old ("useless") behavior, retained for app-compat
+                base.OnSelectionChanged(e);
+                if (IsKeyboardFocusWithin)
                 {
-                    item.SetFocus();
+                    // If keyboard focus is within the control, make sure it is going to the correct place
+                    TabItem item = GetSelectedTabItem();
+                    if (item != null)
+                    {
+                        item.SetFocus();
+                    }
                 }
+                UpdateSelectedContent();
             }
-            UpdateSelectedContent();
+            else
+            {
+                // new behavior (DDVSO 208019) - change SelectedContent and focus
+                // before raising SelectionChanged.
+                bool isKeyboardFocusWithin = IsKeyboardFocusWithin;
+
+                UpdateSelectedContent();
+                if (isKeyboardFocusWithin)
+                {
+                    // If keyboard focus is within the control, make sure it is going to the correct place
+                    TabItem item = GetSelectedTabItem();
+                    if (item != null)
+                    {
+                        item.SetFocus();
+                    }
+                }
+                base.OnSelectionChanged(e);
+            }
 
             if (    AutomationPeer.ListenerExists(AutomationEvents.SelectionPatternOnInvalidated)
                 ||  AutomationPeer.ListenerExists(AutomationEvents.SelectionItemPatternOnElementSelected)
@@ -510,7 +535,7 @@ namespace System.Windows.Controls
                     // If so, re-fetch the right container using a more expensive method.
                     // (BTW, the previous line will cause a debug assert in this case)  [Dev10 452711]
                     if (tabItem == null ||
-                        !Object.Equals(selectedItem, ItemContainerGenerator.ItemFromContainer(tabItem)))
+                        !ItemsControl.EqualsEx(selectedItem, ItemContainerGenerator.ItemFromContainer(tabItem)))
                     {
                         tabItem = ItemContainerGenerator.ContainerFromItem(selectedItem) as TabItem;
                     }

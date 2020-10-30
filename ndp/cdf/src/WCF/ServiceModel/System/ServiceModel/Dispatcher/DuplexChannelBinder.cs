@@ -30,7 +30,7 @@ namespace System.ServiceModel.Dispatcher
         List<IDuplexRequest> requests;
         List<ICorrelatorKey> timedOutRequests;
         ChannelHandler channelHandler;
-        volatile bool requestAborted;
+        bool requestAborted;
 
         internal DuplexChannelBinder(IDuplexChannel channel, IRequestReplyCorrelator correlator)
         {
@@ -207,25 +207,32 @@ namespace System.ServiceModel.Dispatcher
         void AbortRequests()
         {
             IDuplexRequest[] array = null;
+
             lock (this.ThisLock)
             {
                 if (this.requests != null)
                 {
                     array = this.requests.ToArray();
-
-                    foreach (IDuplexRequest request in array)
-                    {
-                        request.Abort();
-                    }
+                    this.requests = null;
                 }
-                this.requests = null;
+
                 this.requestAborted = true;
+            }
+
+            bool hadRequests = array != null && array.Length > 0;
+
+            if (hadRequests)
+            {
+                foreach (IDuplexRequest request in array)
+                {
+                    request.Abort();
+                }
             }
 
             // Remove requests from the correlator since the channel might be either faulting or aborting,
             // We are not going to get a reply for these requests. If they are not removed from the correlator, this will cause a leak.
             // This operation does not have to be under the lock
-            if (array != null && array.Length > 0)
+            if (hadRequests)
             {
                 RequestReplyCorrelator requestReplyCorrelator = this.correlator as RequestReplyCorrelator;
                 if (requestReplyCorrelator != null)
@@ -773,6 +780,7 @@ namespace System.ServiceModel.Dispatcher
             ManualResetEvent wait = new ManualResetEvent(false);
             int waitCount = 0;
             RequestReplyCorrelator.Key requestCorrelatorKey;
+            readonly object thisLock = new object();
 
             internal SyncDuplexRequest(DuplexChannelBinder parent)
             {
@@ -794,7 +802,7 @@ namespace System.ServiceModel.Dispatcher
 
             public void Abort()
             {
-                this.wait.Set();
+                this.SetWaitHandle();
             }
 
             internal Message WaitForReply(TimeSpan timeout)
@@ -822,15 +830,31 @@ namespace System.ServiceModel.Dispatcher
                     this.parent.RequestCompleting(this);
                 }
                 this.reply = reply;
-                this.wait.Set();
+                this.SetWaitHandle();
                 this.CloseWaitHandle();
+            }
+
+            void SetWaitHandle()
+            {
+                lock (thisLock)
+                {
+                    if (this.waitCount < 2)
+                    {
+                        this.wait.Set();
+                    }
+                }
             }
 
             void CloseWaitHandle()
             {
-                if (Interlocked.Increment(ref this.waitCount) == 2)
+                lock (this.thisLock)
                 {
-                    this.wait.Close();
+                    this.waitCount++;
+
+                    if (this.waitCount == 2)
+                    {
+                        this.wait.Close();
+                    }
                 }
             }
         }

@@ -37,7 +37,7 @@
 // NOTE: IDM_DEBUG_CONTEXT_TOOLBAR comes before IDM_DEBUG_TOOLBAR
 // so that the Debug toolbar will appear to the left of the Debug Location toolbar.
 // This uses the fact that the toolbar defined earlier go to the right when on the same line
-// (see VS7 
+// (see VS7 bug 295621)
 #define IDM_DEBUG_CONTEXT_TOOLBAR       0x0420
 #define IDM_DEBUG_TOOLBAR               0x0421
 #define IDM_BREAKPOINTS_WINDOW_TOOLBAR  0x0422

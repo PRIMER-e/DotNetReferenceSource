@@ -573,7 +573,9 @@ namespace System.Web {
 
             int i, n;
             string[] fields;
-           
+
+            _utcTimestampRequest = utcTimestampRequest;
+
             _varyByContentEncodings.SetContentEncodings(settings.VaryByContentEncodings);
             _varyByHeaders.SetHeaders(settings.VaryByHeaders);                          
             _varyByParams.SetParams(settings.VaryByParams);
@@ -946,8 +948,8 @@ namespace System.Web {
                     }
                     
                     if (!omitVaryStar) {
-                        // Dev10 
-
+                        // Dev10 Bug 425047 - OutputCache Location="ServerAndClient" (HttpCacheability.ServerAndPrivate) should 
+                        // not use "Vary: *" so the response can be cached on the client
                         if (_varyByCustom != null || (_varyByParams.IsModified() && !_varyByParams.IgnoreParams)) {
                             varyByHeaders = "*";
                         }

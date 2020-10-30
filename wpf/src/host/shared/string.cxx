@@ -18,6 +18,8 @@
 #include <wchar.h>
 #include <StrSafe.h>
 #include <Objidl.h> //IStream
+#include <algorithm>
+#include <iterator>
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -55,6 +57,54 @@ HRESULT CString::SetValue(__in_opt LPCWSTR pwzSource)
 
 Cleanup:
    
+    return hr;
+}
+
+/// <summary>
+/// Set value from a substring
+/// </summary>
+/// <param name="pwzSource">Source string, may not be null-terminated</param>
+/// <param name="length">Number of characters to copy</param>
+/// <remarks>
+/// Reading from a non-null terminated string can lead to errors, for e.g., an access
+/// violation. It is the responsibility of the caller to pass a valid source buffer and 
+/// <paramref name="length" /> parameters. 
+/// </remarks>
+HRESULT CString::SetValue(__in_opt LPCWSTR pwzSource, size_t length)
+{
+    HRESULT hr = S_OK;
+
+    Free();
+    if (pwzSource != nullptr)
+    {
+        if (length + 1 > m_maxLength)
+        {
+            // The requested substring is too long
+            //  Mimic the behavior of StringCchLength and return
+            //  STRSAFE_E_INVALID_PARAMETER
+            CKHR(STRSAFE_E_INVALID_PARAMETER);
+        }
+
+        m_curLength = length;
+        m_pwzValue = new wchar_t[length + 1];
+        if (m_pwzValue == nullptr)
+        {
+            m_curLength = 0;
+            CKHR(E_OUTOFMEMORY);
+        }
+
+        // String copying functions like wcscpy_s and StringCchCopyW require 
+        // the source string buffer to be null-terminated. The best we can do when 
+        // working with a (potentially) non-null terminated buffer is to treat it as if
+        // it were an array
+        // 
+        // Copy from half-open range [pwzSource, pwzSource + length) onto the buffer m_pwzValue, 
+        // then null-terminate the buffer
+        std::copy(pwzSource, pwzSource + length, stdext::checked_array_iterator<wchar_t*>(m_pwzValue,length + 1));
+        m_pwzValue[length] = L'\0';
+    }
+
+Cleanup:
     return hr;
 }
 

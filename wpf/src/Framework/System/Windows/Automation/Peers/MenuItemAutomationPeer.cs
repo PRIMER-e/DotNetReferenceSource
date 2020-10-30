@@ -76,6 +76,55 @@ namespace System.Windows.Automation.Peers
             return result;
         }
 
+        /// <summary>
+        /// Gets the size of a set that contains this MenuItem.
+        /// </summary>
+        /// <remarks>
+        /// If <see cref="AutomationProperties.PositionInSetProperty"/> hasn't been set
+        /// this method will calculate the position of the MenuItem based on its parent ItemsControl,
+        /// if the ItemsControl is grouping the position will be relative to the group containing this item.
+        /// </remarks>
+        /// <returns>
+        /// The value of <see cref="AutomationProperties.PositionInSetProperty"/> if it has been set, or it's position relative to the parent ItemsControl or GroupItem.
+        /// </returns>
+        override protected int GetSizeOfSetCore()
+        {
+            int sizeOfSet = base.GetSizeOfSetCore();
+
+            if (sizeOfSet == AutomationProperties.AutomationSizeOfSetDefault)
+            {
+                MenuItem owner = (MenuItem)Owner;
+                ItemsControl parent = ItemsControl.ItemsControlFromItemContainer(owner);
+
+                sizeOfSet = ItemAutomationPeer.GetSizeOfSetFromItemsControl(parent, owner);
+            }
+
+            return sizeOfSet;
+        }
+
+        /// <summary>
+        /// Gets the position of a MenuItem contained in a set.
+        /// </summary>
+        /// <remarks>
+        /// If this value has already been set by the developer, that value will be used for this property. If it hasn't, we find the position ourselves.
+        /// </remarks>
+        /// <returns>
+        /// The position of a MenuItem that is contained in a set.
+        /// </returns>
+        override protected int GetPositionInSetCore()
+        {
+            int positionInSet = base.GetPositionInSetCore();
+
+            if (positionInSet == AutomationProperties.AutomationPositionInSetDefault)
+            {
+                MenuItem owner = (MenuItem)Owner;
+                ItemsControl parent = ItemsControl.ItemsControlFromItemContainer(owner);
+                positionInSet = ItemAutomationPeer.GetPositionInSetFromItemsControl(parent, owner);
+            }
+
+            return positionInSet;
+        }
+
         ///
         override protected string GetAccessKeyCore()
         {

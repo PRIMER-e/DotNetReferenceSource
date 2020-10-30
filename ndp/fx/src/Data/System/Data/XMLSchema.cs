@@ -1385,7 +1385,7 @@ namespace System.Data {
                         table.Locale = new CultureInfo(value);
                     }
                     else {
-                        // everett 
+                        // everett bug behavior before <... msdata:Locale=""/> inherit from DataSet
                         table.Locale = CultureInfo.InvariantCulture;
                     }
                 }
@@ -2224,7 +2224,7 @@ namespace System.Data {
                     _ds.Locale = new CultureInfo(value);
                 }
                 else {
-                    // everett 
+                    // everett bug behavior before <... msdata:Locale=""/> becoming CultureInfo(0x409)
                     _ds.Locale = CultureInfo.InvariantCulture;
                 }
             }

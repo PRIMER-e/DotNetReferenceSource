@@ -14,6 +14,7 @@
 
 using MS.Internal;
 using MS.Internal.PresentationFramework;
+using MS.Internal.Telemetry.PresentationFramework;
 using MS.Utility;
 using System.Diagnostics;
 using System.Windows.Threading;
@@ -74,6 +75,11 @@ namespace System.Windows.Controls
 
         #region Constructors
 
+        static DockPanel()
+        {
+            ControlsTraceLogger.AddControl(TelemetryControls.DockPanel);
+        }
+
         /// <summary>
         ///     Default DependencyObject constructor
         /// </summary>
@@ -124,7 +130,7 @@ namespace System.Windows.Controls
 
         private static void OnDockChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            UIElement uie = d as UIElement; //it may be anyting, like FlowDocument... 
+            UIElement uie = d as UIElement; //it may be anyting, like FlowDocument... bug 1237275
             if(uie != null)
             {
                 DockPanel p = VisualTreeHelper.GetParent(uie) as DockPanel;

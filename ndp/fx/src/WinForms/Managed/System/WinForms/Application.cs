@@ -6,10 +6,8 @@
 /*
  */
 namespace System.Windows.Forms {
-    using System.Runtime.Serialization.Formatters;
     using System.Text;
     using System.Threading;
-    using System.Configuration.Assemblies;
     using System.Runtime.InteropServices;
     using System.Runtime.Remoting;
     using System.Runtime.ConstrainedExecution;
@@ -19,7 +17,6 @@ namespace System.Windows.Forms {
     using System.IO;
     using Microsoft.Win32;
     using System.Security;
-    using System.Security.Policy;
     using System.Security.Permissions;
     using System.Collections;
     using System.Globalization;
@@ -27,14 +24,12 @@ namespace System.Windows.Forms {
 
     using System.Reflection;
     using System.ComponentModel;
-    using System.Drawing;
-    using System.Windows.Forms;
     using System.Windows.Forms.Layout;
     using System.Windows.Forms.VisualStyles;
-    using File=System.IO.File;
-    using Directory=System.IO.Directory;
+    using Directory = System.IO.Directory;
 
     using System.Deployment.Internal.Isolation;
+    using System.Collections.Generic;
 
     /// <include file='doc\Application.uex' path='docs/doc[@for="Application"]/*' />
     /// <devdoc>
@@ -59,6 +54,8 @@ namespace System.Windows.Forms {
         static string productVersion;
         static string safeTopLevelCaptionSuffix;
         static bool useVisualStyles = false;
+        static bool comCtlSupportsVisualStylesInitialized = false;
+        static bool comCtlSupportsVisualStyles = false;
         static FormCollection forms = null;
         private static object internalSyncObject = new object();
         static bool useWaitCursor = false;
@@ -86,6 +83,13 @@ namespace System.Windows.Forms {
 
         // Constant string used for accessing ClickOnce app's data directory
         private const string CLICKONCE_APPS_DATADIRECTORY = "DataDirectory";
+
+#pragma warning disable 414
+        // This property is used in VS ( via. private reflection) to identify that this release of framework version contains the
+        // changes required to create parking window according to the DpiAwarenessContext of the parent-less child windows being created.
+        // Any change to this property need be validated in VisualStudio.
+        private static bool parkingWindowSupportsPMAv2 = true;
+#pragma warning restore 414
 
         // Defines a new callback delegate type
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -127,46 +131,43 @@ namespace System.Windows.Forms {
         /// Typically, you shouldn't need to use this directly - use RenderWithVisualStyles instead.
         internal static bool ComCtlSupportsVisualStyles {
             get {
-                if (useVisualStyles && OSFeature.Feature.IsPresent(OSFeature.Themes)) {
-                    //NOTE: At this point, we may not have loaded ComCtl6 yet, but it will eventually
-                    //      be loaded, so we return true here. This works because UseVisualStyles, once
-                    //      set, cannot be turned off. If that changes (unlikely), this may not work.
-                    return true;
+                if (!comCtlSupportsVisualStylesInitialized) {
+                    comCtlSupportsVisualStyles = InitializeComCtlSupportsVisualStyles();
+                    comCtlSupportsVisualStylesInitialized = true;
                 }
-
-                //to see if we are comctl6, we look for a function that is exposed only from comctl6
-                // we do not call DllGetVersion or any direct p/invoke, because the binding will be
-                // cached.
-                // The GetModuleHandle function returns a handle to a mapped module without incrementing its reference count. 
-                       
-                IntPtr hModule = UnsafeNativeMethods.GetModuleHandle(ExternDll.Comctl32);                        
-                if (hModule != IntPtr.Zero) {
-                    try {
-                        IntPtr pFunc = UnsafeNativeMethods.GetProcAddress(new HandleRef(null, hModule), "ImageList_WriteEx");
-                        return (pFunc != IntPtr.Zero);
-                    }
-                    catch {
-                    }
-                }
-                else
-                {
-                    // Load comctl since GetModuleHandle failed to find it
-                    hModule = UnsafeNativeMethods.LoadLibrary(ExternDll.Comctl32);
-                    if (hModule != IntPtr.Zero)
-                    {
-                        try
-                        {
-                            IntPtr pFunc = UnsafeNativeMethods.GetProcAddress(new HandleRef(null, hModule), "ImageList_WriteEx");
-                            return (pFunc != IntPtr.Zero);
-                        }
-                        finally
-                        {
-                            UnsafeNativeMethods.FreeLibrary(new HandleRef(null, hModule));
-                        }
-                    }
-                }
-                return false;
+                return comCtlSupportsVisualStyles;
             }
+        }
+
+        private static bool InitializeComCtlSupportsVisualStyles() {
+            if (useVisualStyles && OSFeature.Feature.IsPresent(OSFeature.Themes)) {
+                //NOTE: At this point, we may not have loaded ComCtl6 yet, but it will eventually
+                //      be loaded, so we return true here. This works because UseVisualStyles, once
+                //      set, cannot be turned off. If that changes (unlikely), this may not work.
+                return true;
+            }
+
+            //to see if we are comctl6, we look for a function that is exposed only from comctl6
+            // we do not call DllGetVersion or any direct p/invoke, because the binding will be
+            // cached.
+            // The GetModuleHandle function returns a handle to a mapped module without incrementing its reference count. 
+
+            IntPtr hModule = UnsafeNativeMethods.GetModuleHandle(ExternDll.Comctl32);
+            if (hModule != IntPtr.Zero) {
+                try {
+                    IntPtr pFunc = UnsafeNativeMethods.GetProcAddress(new HandleRef(null, hModule), "ImageList_WriteEx");
+                    return (pFunc != IntPtr.Zero);
+                } catch {
+                }
+            } else {
+                // Load comctl since GetModuleHandle failed to find it
+                hModule = UnsafeNativeMethods.LoadLibraryFromSystemPathIfAvailable(ExternDll.Comctl32);
+                if (hModule != IntPtr.Zero) {
+                    IntPtr pFunc = UnsafeNativeMethods.GetProcAddress(new HandleRef(null, hModule), "ImageList_WriteEx");
+                    return (pFunc != IntPtr.Zero);
+                }
+            }
+            return false;
         }
 
         /// <include file='doc\Application.uex' path='docs/doc[@for="Application.CommonAppDataRegistry"]/*' />
@@ -767,9 +768,11 @@ namespace System.Windows.Forms {
             set {
                 if (VisualStyleInformation.IsSupportedByOS)
 				{
-					if (!ClientUtils.IsEnumValid(value, (int)value, (int)VisualStyleState.NoneEnabled, (int)VisualStyleState.ClientAndNonClientAreasEnabled)) {
+                    if (!ClientUtils.IsEnumValid(value, (int)value, (int)VisualStyleState.NoneEnabled, (int)VisualStyleState.ClientAndNonClientAreasEnabled)
+                        && LocalAppContextSwitches.EnableVisualStyleValidation) {
                         throw new InvalidEnumArgumentException("value", (int)value, typeof(VisualStyleState));
                     }
+
                     SafeNativeMethods.SetThemeAppProperties((int)value);
 
                     //248887 we need to send a WM_THEMECHANGED to the top level windows of this application.
@@ -1301,26 +1304,26 @@ namespace System.Windows.Forms {
         ///     "Parks" the given HWND to a temporary HWND.  This allows WS_CHILD windows to
         ///     be parked.
         /// </devdoc>
-        internal static void ParkHandle(HandleRef handle) {
+        internal static void ParkHandle(HandleRef handle, DpiAwarenessContext dpiAwarenessContext = DpiAwarenessContext.DPI_AWARENESS_CONTEXT_UNSPECIFIED) {
             Debug.Assert(UnsafeNativeMethods.IsWindow(handle), "Handle being parked is not a valid window handle");
             Debug.Assert(((int)UnsafeNativeMethods.GetWindowLong(handle, NativeMethods.GWL_STYLE) & NativeMethods.WS_CHILD) != 0, "Only WS_CHILD windows should be parked.");
 
             ThreadContext cxt = GetContextForHandle(handle);
             if (cxt != null) {
-                cxt.ParkingWindow.ParkHandle(handle);
+                cxt.GetParkingWindow(dpiAwarenessContext).ParkHandle(handle);
             }
         }
 
-        /// <include file='doc\Application.uex' path='docs/doc[@for="Application.ParkHandle"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
-        ///     "Parks" the given HWND to a temporary HWND.  This allows WS_CHILD windows to
-        ///     be parked.
-        /// </devdoc>
-        internal static void ParkHandle(CreateParams cp) {
+        /// <summary>
+        /// Park control handle on a parkingwindow that has matching DpiAwareness.
+        /// </summary>
+        /// <param name="cp"> create params for control handle</param>
+        /// <param name="dpiContext"> dpi awareness</param>
+        internal static void ParkHandle(CreateParams cp, DpiAwarenessContext dpiAwarenessContext = DpiAwarenessContext.DPI_AWARENESS_CONTEXT_UNSPECIFIED) {
+
             ThreadContext cxt = ThreadContext.FromCurrent();
             if (cxt != null) {
-                cp.Parent = cxt.ParkingWindow.Handle;
+                cp.Parent = cxt.GetParkingWindow(dpiAwarenessContext).Handle;
             }
         }
 
@@ -1348,10 +1351,10 @@ namespace System.Windows.Forms {
         ///     "Unparks" the given HWND to a temporary HWND.  This allows WS_CHILD windows to
         ///     be parked.
         /// </devdoc>
-        internal static void UnparkHandle(HandleRef handle) {
+        internal static void UnparkHandle(HandleRef handle, DpiAwarenessContext context) {
             ThreadContext cxt = GetContextForHandle(handle);
             if (cxt != null) {
-                cxt.ParkingWindow.UnparkHandle(handle);
+                cxt.GetParkingWindow(context).UnparkHandle(handle);
             }
         }
 
@@ -2337,7 +2340,9 @@ namespace System.Windows.Forms {
             internal EventHandler           enterModalHandler;
             internal EventHandler           leaveModalHandler;
             private ApplicationContext      applicationContext;
-            private ParkingWindow           parkingWindow;
+
+            // Parking window list
+            private List<ParkingWindow> parkingWindows = new List<ParkingWindow>();
             private Control                 marshalingControl;
             private CultureInfo             culture;
             private ArrayList               messageFilters;
@@ -2363,7 +2368,6 @@ namespace System.Windows.Forms {
             private Form currentForm;
             private ThreadWindows threadWindows;
             private NativeMethods.MSG tempMsg = new NativeMethods.MSG();
-
             private int disposeCount;   // To make sure that we don't allow
                                         // reentrancy in Dispose()
 
@@ -2379,7 +2383,7 @@ namespace System.Windows.Forms {
 
             // A private field on Application that stores the callback delegate
             private MessageLoopCallback messageLoopCallback = null;
-
+            
             /// <include file='doc\Application.uex' path='docs/doc[@for="Application.ThreadContext.ThreadContext"]/*' />
             /// <devdoc>
             ///     Creates a new thread context object.
@@ -2579,37 +2583,72 @@ namespace System.Windows.Forms {
             ///     if it needs to.
             /// </devdoc>
             /// <internalonly/>
-            internal ParkingWindow ParkingWindow {
-                get {
-                    // Locking 'this' here is ok since this is an internal class.  See VSW#464499.
-                    lock(this) {
-                        if (parkingWindow == null) {
+            internal ParkingWindow GetParkingWindow(DpiAwarenessContext context) {
+                
+                // Locking 'this' here is ok since this is an internal class.  See VSW#464499.
+                lock(this) {
+                    var parkingWindow = GetParkingWindowForContext(context);
+                    if (parkingWindow == null) {
 #if DEBUG
-                            // if we use Debug.WriteLine instead of "if", we need extra security permissions
-                            // to get the stack trace!
-                            if (CoreSwitches.PerfTrack.Enabled) {
-                                Debug.WriteLine("Creating parking form!");
-                                Debug.WriteLine(CoreSwitches.PerfTrack.Enabled, Environment.StackTrace);
-                            }
+                        // if we use Debug.WriteLine instead of "if", we need extra security permissions
+                        // to get the stack trace!
+                        if (CoreSwitches.PerfTrack.Enabled) {
+                            Debug.WriteLine("Creating parking form!");
+                            Debug.WriteLine(CoreSwitches.PerfTrack.Enabled, Environment.StackTrace);
+                        }
 #endif
 
-                            // SECREVIEW : We need to create the parking window. Since this is a top
-                            //           : level hidden form, we must assert this. However, the parking
-                            //           : window is complete internal to the assembly, so no one can
-                            //           : ever get at it.
-                            //
-                            IntSecurity.ManipulateWndProcAndHandles.Assert();
-                            try {
+                        // SECREVIEW : We need to create the parking window. Since this is a top
+                        //           : level hidden form, we must assert this. However, the parking
+                        //           : window is complete internal to the assembly, so no one can
+                        //           : ever get at it.
+                        //
+                        IntSecurity.ManipulateWndProcAndHandles.Assert();
+                        try {
+                            using (DpiHelper.EnterDpiAwarenessScope(context)) {
                                 parkingWindow = new ParkingWindow();
                             }
-                            finally {
-                                CodeAccessPermission.RevertAssert();
-                            }
+
+                            parkingWindows.Add(parkingWindow);
                         }
-                        return parkingWindow;
+                        finally {
+                            CodeAccessPermission.RevertAssert();
+                        }
                     }
+                    return parkingWindow;
                 }
             }
+
+            /// <summary>
+            /// Returns parking window that matches dpi awareness context. return null if not found.
+            /// </summary>
+            /// <returns>return matching parking window from list. returns null if not found</returns>
+            internal ParkingWindow GetParkingWindowForContext(DpiAwarenessContext context) {
+
+                if (parkingWindows.Count == 0) {
+                    return null;
+                }
+
+                // Legacy OS/target framework scenario where ControlDpiContext is set to DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_UNSPECIFIED 
+                // because of 'ThreadContextDpiAwareness' API unavailability or this feature is not enabled.
+
+                if (!DpiHelper.EnableDpiChangedHighDpiImprovements || CommonUnsafeNativeMethods.TryFindDpiAwarenessContextsEqual(context, DpiAwarenessContext.DPI_AWARENESS_CONTEXT_UNSPECIFIED)) {
+
+                    Debug.Assert(parkingWindows.Count == 1, "parkingWindows count can not be > 1 for legacy OS/target framework versions");
+                    return parkingWindows[0];
+                }
+
+                // Supported OS scenario.
+                foreach (var p in parkingWindows) {
+                    if (CommonUnsafeNativeMethods.TryFindDpiAwarenessContextsEqual(p.DpiAwarenessContext, context)) {
+                        return p;
+                    }
+                }                
+                 
+                // parking window is not yet created for the requested DpiAwarenessContext
+                return null;
+            }
+
             internal Control ActivatingControl {
                get { 
                     if ((activatingControlRef != null) && (activatingControlRef.IsAlive)) {
@@ -2811,7 +2850,7 @@ namespace System.Windows.Forms {
             /// </devdoc>
             /// <internalonly/>
             private void DisposeParkingWindow() {
-                if (parkingWindow != null && parkingWindow.IsHandleCreated) {
+                if (parkingWindows.Count != 0) {
 
                     // We take two paths here.  If we are on the same thread as
                     // the parking window, we can destroy its handle.  If not,
@@ -2823,15 +2862,18 @@ namespace System.Windows.Forms {
                     // controls that are living on the parking window.
                     //
                     int pid;
-                    int hwndThread = SafeNativeMethods.GetWindowThreadProcessId(new HandleRef(parkingWindow, parkingWindow.Handle), out pid);
+                    int hwndThread = SafeNativeMethods.GetWindowThreadProcessId(new HandleRef(parkingWindows[0], parkingWindows[0].Handle), out pid);
                     int currentThread = SafeNativeMethods.GetCurrentThreadId();
 
-                    if (hwndThread == currentThread) {
-                        parkingWindow.Destroy();
+                    for(int i=0; i< parkingWindows.Count; i++) {
+                        if (hwndThread == currentThread) {
+                            parkingWindows[i].Destroy();
+                        }
+                        else {
+                            parkingWindows[i] = null;
+                        }
                     }
-                    else {
-                        parkingWindow = null;
-                    }
+                    parkingWindows.Clear();
                 }
             }
 
@@ -3308,7 +3350,7 @@ namespace System.Windows.Forms {
                 finally {
                     UnsafeNativeMethods.ThemingScope.Deactivate(userCookie);
                 }
-            }
+            }    
 
             private void RunMessageLoopInner(int reason, ApplicationContext context) {
 
@@ -3347,6 +3389,10 @@ namespace System.Windows.Forms {
                     if (applicationContext.MainForm != null) {
                         applicationContext.MainForm.Visible = true;
                     }
+
+                    DpiHelper.InitializeDpiHelperForWinforms();
+
+                    AccessibilityImprovements.ValidateLevels();
                 }
 
                 Form oldForm = currentForm;

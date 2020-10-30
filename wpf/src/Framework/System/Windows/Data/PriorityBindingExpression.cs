@@ -323,6 +323,13 @@ public sealed class PriorityBindingExpression : BindingExpressionBase
         }
     }
 
+    internal override bool ShouldReactToDirtyOverride()
+    {
+        // react only if the active binding should react
+        BindingExpressionBase active = ActiveBindingExpression;
+        return (active != null) && active.ShouldReactToDirtyOverride();
+    }
+
     /// <summary>
     /// Get the raw proposed value
     /// <summary>

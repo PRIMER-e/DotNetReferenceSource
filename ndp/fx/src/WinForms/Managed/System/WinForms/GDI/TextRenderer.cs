@@ -336,6 +336,10 @@ namespace System.Windows.Forms
 
 
         internal static Color DisabledTextColor(Color backColor) {
+            if (SystemInformation.HighContrast && AccessibilityImprovements.Level1) {
+                return SystemColors.GrayText;
+            }
+
             //Theme specs -- if the backcolor is darker than Control, we use
             // ControlPaint.Dark(backcolor).  Otherwise we use ControlDark.
             // see VS#357226

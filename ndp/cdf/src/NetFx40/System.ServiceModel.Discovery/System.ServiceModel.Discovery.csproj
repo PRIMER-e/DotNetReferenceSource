@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{c9e85e15-a37f-4b29-b41c-f7f415ee9e5d}</ProjectGuid>
+    <ProjectGuid>{d3b29e03-4cb6-4517-a4e3-a565034c1212}</ProjectGuid>
     <OutputPath>.</OutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>System.ServiceModel.Discovery</AssemblyName>
@@ -20,67 +20,67 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\clr\src\bcl\mscorlib.csproj">
-      <Project>{20f34c38-8c60-44e7-b703-0e341d274957}</Project>
+      <Project>{43e44db7-dc97-46cb-b868-751d11c60bf1}</Project>
       <Name>mscorlib</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\fx\src\System.csproj">
-      <Project>{85716da4-9fb2-4f44-9c4d-b7431fdf1b20}</Project>
+      <Project>{d218394f-a89e-455a-8c59-5e3554100e4a}</Project>
       <Name>System</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\fx\src\Configuration\System.Configuration.csproj">
-      <Project>{a4d7a44f-817d-4fad-ba6a-076580aadfbe}</Project>
+      <Project>{24728477-162e-4c13-9c17-6be2dc1fd2bc}</Project>
       <Name>System.Configuration</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\fx\src\Core\System.Core.csproj">
-      <Project>{1d8f39aa-9297-49e4-8f18-cea8f165d7c4}</Project>
+      <Project>{e7e62ebb-b829-4b6e-9ec0-4ca0c96fe4ac}</Project>
       <Name>System.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\WCF\IdentityModel\System.IdentityModel.csproj">
-      <Project>{0284f85e-1f27-4712-aca4-f427910003de}</Project>
+      <Project>{c384bf9a-a288-4785-97fd-645fc26eddc1}</Project>
       <Name>System.IdentityModel</Name>
     </ProjectReference>
     <ProjectReference Include="..\System.Runtime.DurableInstancing\System.Runtime.DurableInstancing.csproj">
-      <Project>{d81d7289-7d3d-4ee9-8665-cf8e10ccbad5}</Project>
+      <Project>{6b333684-f5d0-4b66-af4b-35ec86884217}</Project>
       <Name>System.Runtime.DurableInstancing</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\WCF\Serialization\System.Runtime.Serialization.csproj">
-      <Project>{8406a9a0-29c6-469d-b31f-ad24fdd85828}</Project>
+      <Project>{2d14aaa5-e16c-4c36-92ee-4514f43396ee}</Project>
       <Name>System.Runtime.Serialization</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\clr\src\managedlibraries\security\System.Security.csproj">
-      <Project>{6cf2ea71-7eb3-48ae-8938-3edf77bb9412}</Project>
+      <Project>{05d4e9cd-3a3a-461b-a895-b39e85f1969a}</Project>
       <Name>System.Security</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\WCF\ServiceModel\System.ServiceModel.csproj">
-      <Project>{7f4a1386-22dd-4df2-b362-15e502a4a6b5}</Project>
+      <Project>{5e7bc3a1-c532-415c-8395-1b6233a98d90}</Project>
       <Name>System.ServiceModel</Name>
     </ProjectReference>
     <ProjectReference Include="..\System.ServiceModel.Channels\System.ServiceModel.Channels.csproj">
-      <Project>{98999593-7c87-4def-8a1a-d83581d7d0d8}</Project>
+      <Project>{9bb00bb6-3b2f-4500-8ff2-69b23d7fc2e9}</Project>
       <Name>System.ServiceModel.Channels</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\System.ServiceModel.Internals\System.ServiceModel.Internals.csproj">
-      <Project>{01dc86fb-e3cd-4b78-b584-7dba90eb3a6e}</Project>
+      <Project>{c1031d3a-479a-4360-8bf2-e294bfa8debb}</Project>
       <Name>System.ServiceModel.Internals</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\NetFx20\System.Transactions\System.Transactions.csproj">
-      <Project>{d2a61b41-ea67-483d-ac54-45f74dcb0dde}</Project>
+      <Project>{1e3c4f31-db32-4121-82a2-2bce1826ff3b}</Project>
       <Name>System.Transactions</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\fx\src\xsp\system\Web\System.Web.csproj">
-      <Project>{c19c6ca7-c88d-4933-9973-93c83ee6a697}</Project>
+      <Project>{0939de02-fde8-48c9-85e8-d1359be01e1f}</Project>
       <Name>System.Web</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\NetFx20\System.Web.Services\System.Web.Services.csproj">
-      <Project>{3feea9f2-cadc-4682-8545-d121e47e6ed6}</Project>
+      <Project>{616f2e65-d1f3-4392-b9b7-5a2b5fe626b9}</Project>
       <Name>System.Web.Services</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\fx\src\Xml\System.Xml.csproj">
-      <Project>{6f992f82-1c90-4388-ab60-15c653aeeca5}</Project>
+      <Project>{23c706b3-6f70-42a4-9476-ee1b30c0cca3}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\fx\src\XLinq\System.Xml.Linq.csproj">
-      <Project>{f7ad8bac-760f-40d9-8759-886b9ddb7e23}</Project>
+      <Project>{ba1d1490-39d6-4136-8f22-30531fbdb8c9}</Project>
       <Name>System.Xml.Linq</Name>
     </ProjectReference>
   </ItemGroup>

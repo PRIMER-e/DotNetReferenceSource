@@ -632,7 +632,8 @@ namespace System.Windows.Controls
                 DependencyObject o = sender as DependencyObject;
                 if (o != null)
                 {
-                    if (PopupControlService.Current.StopLookingForToolTip(o))
+                    // For keyboard shortcut we don't want to stop looking for the tooltip, even if it was the last one we showed, we still want to re-show it.
+                    if (e.TriggerAction != ToolTip.ToolTipTrigger.KeyboardShortcut && PopupControlService.Current.StopLookingForToolTip(o))
                     {
                         // Stop looking
                         e.Handled = true;
@@ -640,7 +641,7 @@ namespace System.Windows.Controls
                     }
                     else
                     {
-                        if (ToolTipIsEnabled(o))
+                        if (ToolTipIsEnabled(o, e.TriggerAction))
                         {
                             // Store for later
                             e.TargetElement = o;
@@ -651,11 +652,19 @@ namespace System.Windows.Controls
             }
         }
 
-        private static bool ToolTipIsEnabled(DependencyObject o)
+        private static bool ToolTipIsEnabled(DependencyObject o, ToolTip.ToolTipTrigger triggerAction)
         {
-            if ((GetToolTip(o) != null) && GetIsEnabled(o))
+            object tooltipObject = GetToolTip(o);
+
+            if ((tooltipObject != null) && GetIsEnabled(o))
             {
-                if (PopupControlService.IsElementEnabled(o) || GetShowOnDisabled(o))
+                // Some tooltips may choose not to show on Keyboard focus, get the ToolTip and query the property, 
+                // if we are unable to cast to a ToolTip that means a default ToolTip will be used, the default behavior is to show on focus.
+                ToolTip tooltip = tooltipObject as ToolTip;
+                bool enableOnKeyboardFocus = tooltip != null ? tooltip.ShouldShowOnKeyboardFocus : true;
+
+                if ((PopupControlService.IsElementEnabled(o) || GetShowOnDisabled(o))
+                    && (triggerAction != ToolTip.ToolTipTrigger.KeyboardFocus || enableOnKeyboardFocus))
                 {
                     return true;
                 }
@@ -709,9 +718,10 @@ namespace System.Windows.Controls
 
     internal sealed class FindToolTipEventArgs : RoutedEventArgs
     {
-        internal FindToolTipEventArgs()
+        internal FindToolTipEventArgs(ToolTip.ToolTipTrigger triggerAction)
         {
             RoutedEvent = ToolTipService.FindToolTipEvent;
+            _triggerAction = triggerAction;
         }
 
         internal DependencyObject TargetElement
@@ -724,6 +734,11 @@ namespace System.Windows.Controls
         {
             get { return _keepCurrentActive; }
             set { _keepCurrentActive = value; }
+        }
+
+        internal ToolTip.ToolTipTrigger TriggerAction
+        {
+            get { return _triggerAction; }
         }
 
         /// <summary>
@@ -739,5 +754,6 @@ namespace System.Windows.Controls
 
         private DependencyObject _targetElement;
         private bool _keepCurrentActive;
+        private ToolTip.ToolTipTrigger _triggerAction;
     }
 }

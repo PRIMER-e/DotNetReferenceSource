@@ -41,7 +41,7 @@ namespace System.Windows.Controls
             KeyboardNavigation.TabNavigationProperty.OverrideMetadata(typeof(TreeView), new FrameworkPropertyMetadata(KeyboardNavigationMode.None));
             VirtualizingStackPanel.ScrollUnitProperty.OverrideMetadata(typeof(TreeView), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
 
-            TreeViewTraceLogger.LogUsageDetails();
+            ControlsTraceLogger.AddControl(TelemetryControls.TreeView);
         }
 
         /// <summary>

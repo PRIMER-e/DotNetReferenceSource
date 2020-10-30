@@ -17,6 +17,8 @@ using System.Xml;
 using System.IO;
 using System.Text;
 using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
@@ -26,6 +28,7 @@ using System.Security.Permissions;
 using MS.Utility;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
+using MS.Internal.Xaml.Parser;
 
 #if PBTCOMPILER
 namespace MS.Internal.Markup
@@ -210,7 +213,7 @@ namespace System.Windows.Markup
         {
             if (KnownTypes.Types[(int)KnownElements.TypeExtension] == extensionType)
             {
-                return IsSimpleExtensionArgs(lineNumber, linePosition, "TypeName", ref args);
+                return IsSimpleExtensionArgs(lineNumber, linePosition, "TypeName", ref args, extensionType);
             }
 
             return false;
@@ -261,7 +264,7 @@ namespace System.Windows.Markup
 
             if (knownExtensionTypeId != KnownElements.UnknownElement)
             {
-                isSimple = IsSimpleExtensionArgs(lineNumber, linePosition, propName, ref args);
+                isSimple = IsSimpleExtensionArgs(lineNumber, linePosition, propName, ref args, extensionType);
             }
 
             if (isSimple)
@@ -313,12 +316,13 @@ namespace System.Windows.Markup
         private bool IsSimpleExtensionArgs(int lineNumber,
                                            int linePosition,
                                            string propName,
-                                       ref string args)
+                                       ref string args,
+                                       Type targetType)
         {
             // We have a MarkupExtension, so process the argument string to determine
             // if it is simple.  Do this by tokenizing now and extracting the simple
             // type string.
-            ArrayList tokens = TokenizeAttributes(args, lineNumber, linePosition);
+            ArrayList tokens = TokenizeAttributes(args, lineNumber, linePosition, targetType);
             if (tokens == null)
             {
                 return false;
@@ -524,14 +528,14 @@ namespace System.Windows.Markup
                     // we allow only Type\StaticExtension.
                     if (KnownTypes.Types[(int)KnownElements.TypeExtension] == targetType)
                     {
-                        isSimple = IsSimpleExtensionArgs(lineNumber, linePosition, "TypeName", ref args);
+                        isSimple = IsSimpleExtensionArgs(lineNumber, linePosition, "TypeName", ref args, targetType);
                         isValueNestedExtension = isSimple;
                         isValueTypeExtension = isSimple;
                         extensionId = (short)KnownElements.TypeExtension;
                     }
                     else if (KnownTypes.Types[(int)KnownElements.StaticExtension] == targetType)
                     {
-                        isSimple = IsSimpleExtensionArgs(lineNumber, linePosition, "Member", ref args);
+                        isSimple = IsSimpleExtensionArgs(lineNumber, linePosition, "Member", ref args, targetType);
                         isValueNestedExtension = isSimple;
                         extensionId = (short)KnownElements.StaticExtension;
                     }
@@ -750,7 +754,7 @@ namespace System.Windows.Markup
         {
             string typename = null;
             string namespaceURI = null;
-            ArrayList list = TokenizeAttributes(data.Args, data.LineNumber, data.LinePosition);
+            ArrayList list = TokenizeAttributes(data.Args, data.LineNumber, data.LinePosition, data.TargetType);
 
             // If the list is empty, or the second item on the list is an equal sign, then
             // we have a simple markup extension that uses the default constructor.  In all
@@ -853,7 +857,7 @@ namespace System.Windows.Markup
             ArrayList   xamlNodes,
             DefAttributeData data)
         {
-            ArrayList list = TokenizeAttributes(data.Args, data.LineNumber, data.LinePosition);
+            ArrayList list = TokenizeAttributes(data.Args, data.LineNumber, data.LinePosition, data.TargetType);
 
             // If the list is empty, or the second item on the list is an equal sign, then
             // we have a simple markup extension that uses the default constructor.  In all
@@ -915,15 +919,39 @@ namespace System.Windows.Markup
         /// quotes (either kind), no characters are special except \.
         ///
         /// If the string really is in "MarkupExtension syntax" form, return true.
-        ///
-        /// Exceptions are thrown for mismatching delimiters, and for errors while
+        /// 
+        ///  Exceptions are thrown for mismatching delimiters, and for errors while
         /// assigning to properties.
-        /// </summary>
+        /// Major changes in 4.6.2 :
+        /// MarkupExtensionBracketCharacterAttributes : Specified on a particular markup extension property,
+        /// these can be a pair of special characters (like (), [] etc). Anything enclosed inside these characters
+        /// has no special meaning, except \ and other such MarkupExtensionBracketCharacters themselves.
+        ///  </summary>
         private ArrayList TokenizeAttributes (
             string args,
             int    lineNumber,
-            int    linePosition)
+            int    linePosition,
+            Type extensionType)
         {
+            // As a result of having to rely on Reflection to find whether a property has a MarkupExtensionBracketCharacterAttribute
+            // set on it, we can't parse a locally defined Markup Extension in MarkupCompilePass1. Therefore, if we find an UnknownExtension
+            // here, we just return null. If this was MarkupCompilePass2 and the extension was still unknown, it would have errored out by now
+            // already.
+
+            if (extensionType == typeof (UnknownMarkupExtension))
+            {
+                return null;
+            }
+
+            int maxConstructorParams = 0;
+            ParameterInfo[] constructorParameters = FindLongestConstructor(extensionType, out maxConstructorParams);
+
+            Dictionary<string, SpecialBracketCharacters> bracketCharacterCache = _parserContext.InitBracketCharacterCacheForType(extensionType);
+            Stack<char> bracketCharacterStack = new Stack<char>();
+            int currentConstructorParam = 0;
+            bool inCtorParsingMode = constructorParameters != null && maxConstructorParams > 0;
+            bool inBracketCharacterMode = false;
+            
             ArrayList list = null;
             int length = args.Length;
             bool inQuotes = false;
@@ -934,6 +962,16 @@ namespace System.Windows.Markup
             int  leftCurlies = 0;
             StringBuilder stringBuilder = null;
             int i = 0;
+            string parameterName = null;
+            SpecialBracketCharacters bracketCharacters = null;
+            if (inCtorParsingMode && bracketCharacterCache != null)
+            {
+                parameterName = maxConstructorParams > 0 ? constructorParameters[currentConstructorParam].Name : null;
+                if (!string.IsNullOrEmpty(parameterName))
+                {
+                    bracketCharacters = GetBracketCharacterForProperty(parameterName, bracketCharacterCache);
+                }
+            }
 
             // Loop through the args, creating a list of arguments and known delimiters.
             // This loop does limited syntax checking, and serves to tokenize the argument
@@ -1009,8 +1047,34 @@ namespace System.Windows.Markup
                             stringBuilder.Append(args[i]);
                         }
                     }
-                    else  // not in quotes or inside nested curlies.  Parse the Tokens
+                    // If we are inside of MarkupExtensionBracketCharacters for a particular property or position parameter,
+                    // scoop up everything inside one by one, and keep track of nested Bracket Characters in the stack. 
+                    else if (inBracketCharacterMode)
                     {
+                        stringBuilder.Append(args[i]);
+                        if (bracketCharacters.StartsEscapeSequence(args[i]))
+                        {
+                            bracketCharacterStack.Push(args[i]);
+                        }
+                        else if (bracketCharacters.EndsEscapeSequence(args[i]))
+                        {
+                            if (bracketCharacters.Match(bracketCharacterStack.Peek(), args[i]))
+                            {
+                                bracketCharacterStack.Pop();
+                            }
+                            else
+                            {
+                                ThrowException(SRID.ParserMarkupExtensionInvalidClosingBracketCharacers, args[i].ToString(), lineNumber, linePosition);
+                            }
+                        }
+
+                        if (bracketCharacterStack.Count == 0)
+                        {
+                            inBracketCharacterMode = false;
+                        }
+                    }
+                    else  // not in quotes or inside nested curlies.  Parse the Tokens
+                    { // not in special escape mode either
                         switch(args[i])
                         {
                         case '"':
@@ -1028,10 +1092,24 @@ namespace System.Windows.Markup
 
                         case ',':
                         case '=':
+                            if (inCtorParsingMode && args[i] == ',')
+                            {
+                                inCtorParsingMode = ++currentConstructorParam < maxConstructorParams;
+                                if (inCtorParsingMode)
+                                {
+                                    parameterName = constructorParameters[currentConstructorParam].Name;
+                                    bracketCharacters = GetBracketCharacterForProperty(parameterName, bracketCharacterCache);
+                                }
+                            }
+
                             // If we have a token in the stringbuilder, then store it
                             if (stringBuilder != null && stringBuilder.Length > 0)
                             {
                                 AddToTokenList(list, stringBuilder, true);
+                                if (bracketCharacterStack.Count != 0)
+                                {
+                                    ThrowException(SRID.ParserMarkupExtensionMalformedBracketCharacers, bracketCharacterStack.Peek().ToString(), lineNumber, linePosition);
+                                }
                             }
                             else if (list.Count == 0)
                             {
@@ -1047,6 +1125,14 @@ namespace System.Windows.Markup
                                 ThrowException(SRID.ParserMarkupExtensionBadDelimiter, args,
                                                lineNumber, linePosition);
 
+                            }
+
+                            if (args[i] == '=')
+                            {
+                                inCtorParsingMode = false;
+                                // find BracketCharacterAttribute for the property name that preceeded this = delimiter
+                                parameterName = (string) list[list.Count - 1];
+                                bracketCharacters = GetBracketCharacterForProperty(parameterName, bracketCharacterCache);
                             }
 
                             // Append known delimiters.
@@ -1079,6 +1165,13 @@ namespace System.Windows.Markup
                             break;
 
                         default:
+                            if (bracketCharacters != null && bracketCharacters.StartsEscapeSequence(args[i]))
+                            {
+                                bracketCharacterStack.Clear();
+                                bracketCharacterStack.Push(args[i]);
+                                inBracketCharacterMode = true;
+                            }
+
                             // Must just be a plain old character, so add it to the stringbuilder
                             stringBuilder.Append(args[i]);
                             break;
@@ -1119,6 +1212,28 @@ namespace System.Windows.Markup
             }
             list.Add(sb.ToString());
             sb.Length = 0;
+        }
+
+        /// <summary>
+        /// Returns the list of parameters of the constructor with the most number
+        /// of arguments.
+        /// </summary>
+        private ParameterInfo[] FindLongestConstructor(Type extensionType, out int maxConstructorArguments)
+        {
+            ParameterInfo[] constructorParameters = null;
+            ConstructorInfo[] constructors = extensionType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+            maxConstructorArguments = 0;
+            foreach (ConstructorInfo ctor in constructors)
+            {
+                ParameterInfo[] parInfo = ctor.GetParameters();
+                if (parInfo.Length >= maxConstructorArguments)
+                {
+                    maxConstructorArguments = parInfo.Length;
+                    constructorParameters = parInfo;
+                }
+            }
+
+            return constructorParameters;
         }
 
         /// <summary>
@@ -1314,8 +1429,8 @@ namespace System.Windows.Markup
                     {
                         // For unknown extensions, no more work should be done.  
                         // In pass1, we don't yet have the context to make sense of the nested properties, 
-                        // so recursing into them would lead to spurious parse errors (
-
+                        // so recursing into them would lead to spurious parse errors (Bug 1160665).  
+                        // In pass2 an unknown extension would have errored out before getting here.
                         return;
                     }
 
@@ -1335,7 +1450,7 @@ namespace System.Windows.Markup
                         }
                         else
                         {
-                            // 
+                            // Bug: Need to check validity of property by calling GetAttributeContext here?
                             CompileAttribute(xamlNodes, nestedAttrData);
                         }
                     }
@@ -1376,7 +1491,21 @@ namespace System.Windows.Markup
             return attribNamespaceURI;
         }
 
+        /// <summary>
+        /// Looks up the already constructed BracketCharacter cache for the BracketCharacters on 
+        /// the given property.
+        /// </summary>
+        private SpecialBracketCharacters GetBracketCharacterForProperty(string propertyName, Dictionary<string, SpecialBracketCharacters> bracketCharacterCache)
+        {
+            SpecialBracketCharacters bracketCharacters = null;
+            if (bracketCharacterCache != null && bracketCharacterCache.ContainsKey(propertyName))
+            {
+                bracketCharacters = bracketCharacterCache[propertyName];
+            }
 
+            return bracketCharacters;
+        }
+        
         /// <summary>
         /// Represent a single property for a MarkupExtension as a complex property.
         /// </summary>

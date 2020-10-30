@@ -566,7 +566,7 @@ namespace System.Activities.Presentation.View
             DataGridHelper.OnEditingControlUnloaded(sender, args);
         }
 
-        // This is to workaround a 
+        // This is to workaround a bug that updating ModelItem from outside of VariableDesigner will not update VariableDesigner.
         internal void NotifyAnnotationTextChanged()
         {
             foreach (object item in this.variableDataGrid.Items)
@@ -604,6 +604,14 @@ namespace System.Activities.Presentation.View
             }
             this.ContextMenu.PlacementTarget = this;
             this.ContextMenu.IsOpen = true;
+        }
+
+        protected void OnDataGridCellGotFocus(object sender, RoutedEventArgs e)
+        {
+            if (!LocalAppContextSwitches.UseLegacyAccessibilityFeatures)
+            {
+                DataGridHelper.DataGridCellGotFocus((DataGrid)sender, e);
+            }
         }
 
         private void OnDeleteCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)

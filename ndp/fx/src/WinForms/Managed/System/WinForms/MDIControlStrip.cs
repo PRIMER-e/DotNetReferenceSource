@@ -61,6 +61,8 @@ namespace System.Windows.Forms {
                     item.Overflow       = ToolStripItemOverflow.Never;
                     item.Alignment      = ToolStripItemAlignment.Right;
                     item.Padding        = Padding.Empty;
+                    // image is not scaled well on high dpi devices. Setting property to fit to size.                    
+                    item.ImageScaling   = ToolStripItemImageScaling.SizeToFit;
                 }
 
                 // set up the sytem menu
@@ -227,6 +229,9 @@ namespace System.Windows.Forms {
             // when the system menu item shortcut is evaluated - pop the dropdown          
             internal class SystemMenuItem : ToolStripMenuItem {
                    public SystemMenuItem(){
+                       if (AccessibilityImprovements.Level1) {
+                           AccessibleName = SR.GetString(SR.MDIChildSystemMenuItemAccessibleName);
+                       }
                    }
                    protected internal override bool ProcessCmdKey(ref Message m, Keys keyData) {
                         if (Visible && ShortcutKeys == keyData) {

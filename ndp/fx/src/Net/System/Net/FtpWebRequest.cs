@@ -618,7 +618,7 @@ namespace System.Net {
                         statusCode = GetStatusCode(webException);
                         throw webException;
                     }
-                    // Catch added to address 
+                    // Catch added to address Bug # 545645
                     catch (InvalidOperationException invalidOpException)
                     {
                         SetException(invalidOpException);

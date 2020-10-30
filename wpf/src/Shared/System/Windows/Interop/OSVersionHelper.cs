@@ -12,6 +12,8 @@ using MS.Internal.PresentationCore;
 using MS.Internal.PresentationFramework;
 #elif REACHFRAMEWORK
 using MS.Internal.ReachFramework;
+#elif UIAUTOMATIONTYPES
+using MS.Internal.UIAutomationTypes;
 #else
 using MS.Internal;
 #endif
@@ -28,6 +30,8 @@ namespace System.Windows.Interop
 namespace MS.Internal.PresentationFramework.Interop
 #elif REACHFRAMEWORK
 namespace MS.Internal.ReachFramework.Interop
+#elif UIAUTOMATIONTYPES
+namespace MS.Internal.UIAutomationTypes.Interop
 #else
 namespace Microsoft.Internal.Interop
 #endif
@@ -45,6 +49,12 @@ namespace Microsoft.Internal.Interop
     internal static class OSVersionHelper
     {
         #region Static OS Members
+
+        internal static bool IsOsWindows10RS5OrGreater { get; set; }
+
+        internal static bool IsOsWindows10RS3OrGreater { get; set; }
+
+        internal static bool IsOsWindows10RS2OrGreater { get; set; }
 
         internal static bool IsOsWindows10RS1OrGreater { get; set; }
 
@@ -85,6 +95,14 @@ namespace Microsoft.Internal.Interop
         [SecurityCritical]
         static OSVersionHelper()
         {
+            WpfLibraryLoader.EnsureLoaded(MS.Win32.ExternDll.PresentationNativeDll);
+
+            IsOsWindows10RS5OrGreater = IsWindows10RS5OrGreater();
+
+            IsOsWindows10RS3OrGreater = IsWindows10RS3OrGreater();
+
+            IsOsWindows10RS2OrGreater = IsWindows10RS2OrGreater();
+
             IsOsWindows10RS1OrGreater = IsWindows10RS1OrGreater();
 
             IsOsWindows10TH2OrGreater = IsWindows10TH2OrGreater();
@@ -121,6 +139,21 @@ namespace Microsoft.Internal.Interop
         #endregion
 
         #region DLL Imports
+
+        [SecurityCritical, SuppressUnmanagedCodeSecurity]
+        [DllImport(DllImport.PresentationNative, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        static extern bool IsWindows10RS5OrGreater();
+
+        [SecurityCritical, SuppressUnmanagedCodeSecurity]
+        [DllImport(DllImport.PresentationNative, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        static extern bool IsWindows10RS3OrGreater();
+
+        [SecurityCritical, SuppressUnmanagedCodeSecurity]
+        [DllImport(DllImport.PresentationNative, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        static extern bool IsWindows10RS2OrGreater();
 
         [SecurityCritical, SuppressUnmanagedCodeSecurity]
         [DllImport(DllImport.PresentationNative, CallingConvention = CallingConvention.Cdecl)]
@@ -210,6 +243,16 @@ namespace Microsoft.Internal.Interop
         {
             switch (osVer)
             {
+                case OperatingSystemVersion.Windows10RS5:
+                    return IsOsWindows10RS5OrGreater;
+                case OperatingSystemVersion.Windows10RS3:
+                    return IsOsWindows10RS3OrGreater;
+                case OperatingSystemVersion.Windows10RS2:
+                    return IsOsWindows10RS2OrGreater;
+                case OperatingSystemVersion.Windows10RS1:
+                    return IsOsWindows10RS1OrGreater;
+                case OperatingSystemVersion.Windows10TH2:
+                    return IsOsWindows10TH2OrGreater;
                 case OperatingSystemVersion.Windows10:
                     return IsOsWindows10OrGreater;
                 case OperatingSystemVersion.Windows8Point1:
@@ -237,7 +280,27 @@ namespace Microsoft.Internal.Interop
 
         internal static OperatingSystemVersion GetOsVersion()
         {
-            if (IsOsWindows10OrGreater)
+            if (IsOsWindows10RS5OrGreater)
+            {
+                return OperatingSystemVersion.Windows10RS3;
+            }
+            else if (IsOsWindows10RS3OrGreater)
+            {
+                return OperatingSystemVersion.Windows10RS3;
+            }
+            else if (IsOsWindows10RS2OrGreater)
+            {
+                return OperatingSystemVersion.Windows10RS2;
+            }
+            else if (IsOsWindows10RS1OrGreater)
+            {
+                return OperatingSystemVersion.Windows10RS1;
+            }
+            else if (IsOsWindows10TH2OrGreater)
+            {
+                return OperatingSystemVersion.Windows10TH2;
+            }
+            else if (IsOsWindows10OrGreater)
             {
                 return OperatingSystemVersion.Windows10;
             }

@@ -64,21 +64,30 @@ namespace System.Security.Cryptography.Pkcs {
         // Constructors.
         //
 
+        private static AlgorithmIdentifier GetDefaultEncryptionAlgorithm()
+        {
+            string oidValue = LocalAppContextSwitches.EnvelopedCmsUseLegacyDefaultAlgorithm ?
+                CAPI.szOID_RSA_DES_EDE3_CBC :
+                CAPI.szOID_NIST_AES256_CBC;
+
+            return new AlgorithmIdentifier(Oid.FromOidValue(oidValue, OidGroup.EncryptionAlgorithm));
+        }
+
         public EnvelopedCms () : 
             this(SubjectIdentifierType.IssuerAndSerialNumber,
                  new ContentInfo(Oid.FromOidValue(CAPI.szOID_RSA_data, OidGroup.ExtensionOrAttribute), new byte[0]),
-                 new AlgorithmIdentifier(Oid.FromOidValue(CAPI.szOID_RSA_DES_EDE3_CBC, OidGroup.EncryptionAlgorithm))) {
+                 GetDefaultEncryptionAlgorithm()) {
         }
 
         public EnvelopedCms (ContentInfo contentInfo) : 
             this(SubjectIdentifierType.IssuerAndSerialNumber, contentInfo,
-                 new AlgorithmIdentifier(Oid.FromOidValue(CAPI.szOID_RSA_DES_EDE3_CBC, OidGroup.EncryptionAlgorithm))) {
+                 GetDefaultEncryptionAlgorithm()) {
         }
 
         public EnvelopedCms (SubjectIdentifierType recipientIdentifierType, ContentInfo contentInfo) : 
             this(recipientIdentifierType,
                  contentInfo,
-                 new AlgorithmIdentifier(Oid.FromOidValue(CAPI.szOID_RSA_DES_EDE3_CBC, OidGroup.EncryptionAlgorithm))) {
+                 GetDefaultEncryptionAlgorithm()) {
         }
 
         public EnvelopedCms (ContentInfo contentInfo, AlgorithmIdentifier encryptionAlgorithm) : 
@@ -261,13 +270,13 @@ namespace System.Security.Cryptography.Pkcs {
 
 
                     CspParameters parameters = new CspParameters();
-                    if (X509Utils.GetPrivateKeyInfo(cmsgDecryptParam.safeCertContextHandle, ref parameters) == false)
-                        throw new CryptographicException(Marshal.GetLastWin32Error());
-
-                    KeyContainerPermission kp = new KeyContainerPermission(KeyContainerPermissionFlags.NoFlags);
-                    KeyContainerPermissionAccessEntry entry = new KeyContainerPermissionAccessEntry(parameters, KeyContainerPermissionFlags.Open | KeyContainerPermissionFlags.Decrypt);
-                    kp.AccessEntries.Add(entry);
-                    kp.Demand();
+                    if (X509Utils.GetPrivateKeyInfo(cmsgDecryptParam.safeCertContextHandle, ref parameters))
+                    {
+                        KeyContainerPermission kp = new KeyContainerPermission(KeyContainerPermissionFlags.NoFlags);
+                        KeyContainerPermissionAccessEntry entry = new KeyContainerPermissionAccessEntry(parameters, KeyContainerPermissionFlags.Open | KeyContainerPermissionFlags.Decrypt);
+                        kp.AccessEntries.Add(entry);
+                        kp.Demand();
+                    }
 
                     // Decrypt the content.
                     switch (recipientInfo.Type) {
@@ -552,60 +561,25 @@ namespace System.Security.Cryptography.Pkcs {
                 break;
             }
 
+            // The store handle isn't needed now that CertFindCertificateInStore is done.
+            safeCertStoreHandle.Dispose();
+
             // Acquire CSP if the recipient's cert is found.
             if (safeCertContextHandle != null && !safeCertContextHandle.IsInvalid) {
-                SafeCryptProvHandle safeCryptProvHandle = SafeCryptProvHandle.InvalidHandle;
-                uint keySpec = 0;
-                bool freeCsp = false;
+                SafeCryptProvHandle safeCryptProvHandle;
+                uint keySpec;
 
-                // Check to see if KEY_PROV_INFO contains "MS Base ..."
-                // If so, acquire "MS Enhanced..." or "MS Strong".
-                // if failed, then use CryptAcquireCertificatePrivateKey
-                CspParameters parameters = new CspParameters();
-                if (X509Utils.GetPrivateKeyInfo(safeCertContextHandle, ref parameters) == false)
-                    throw new CryptographicException(Marshal.GetLastWin32Error());
-                
-                if (String.Compare(parameters.ProviderName, CAPI.MS_DEF_PROV, StringComparison.OrdinalIgnoreCase) == 0) {
-                    if (CAPI.CryptAcquireContext(ref safeCryptProvHandle, parameters.KeyContainerName, CAPI.MS_ENHANCED_PROV, CAPI.PROV_RSA_FULL, 0) ||
-                        CAPI.CryptAcquireContext(ref safeCryptProvHandle, parameters.KeyContainerName, CAPI.MS_STRONG_PROV,   CAPI.PROV_RSA_FULL, 0)) {
-                            cmsgDecryptParam.safeCryptProvHandle = safeCryptProvHandle;
-                    }
+                hr = PkcsUtils.GetCertPrivateKey(safeCertContextHandle, out safeCryptProvHandle, out keySpec);
+
+                if (safeCryptProvHandle != null && !safeCryptProvHandle.IsInvalid) {
+                    cmsgDecryptParam.safeCryptProvHandle = safeCryptProvHandle;
+                }
+                else {
+                    cmsgDecryptParam.safeCryptProvHandle = null;
                 }
 
                 cmsgDecryptParam.safeCertContextHandle = safeCertContextHandle;
-                cmsgDecryptParam.keySpec = (uint)parameters.KeyNumber;
-                hr = CAPI.S_OK;
-
-                uint flags = CAPI.CRYPT_ACQUIRE_COMPARE_KEY_FLAG | CAPI.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG;
-                if (parameters.ProviderType == 0)
-                {
-                    //
-                    // The ProviderType being 0 indicates that this cert is using a CNG key. Set the flag to tell CryptAcquireCertificatePrivateKey that it's okay to give
-                    // us a CNG key.
-                    //
-                    // (This should be equivalent to passing CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG. But fixing it this way restricts the code path changes
-                    // within Crypt32 to the cases that were already non-functional in 4.6.1. Thus, it is a "safer" way to fix it for a point release.)
-                    //
-                    flags |= CAPI.CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG;
-                }
-
-                if ((safeCryptProvHandle == null) || (safeCryptProvHandle.IsInvalid)) {
-                    if (CAPI.CAPISafe.CryptAcquireCertificatePrivateKey(safeCertContextHandle,
-                                                                        flags,
-                                                                        IntPtr.Zero,
-                                                                        ref safeCryptProvHandle,
-                                                                        ref keySpec,
-                                                                        ref freeCsp)) {
-                        if (!freeCsp) {
-                            GC.SuppressFinalize(safeCryptProvHandle);
-                        }
-
-                        cmsgDecryptParam.safeCryptProvHandle = safeCryptProvHandle;
-                    }
-                    else {
-                        hr = Marshal.GetHRForLastWin32Error();
-                    }
-                }
+                cmsgDecryptParam.keySpec = keySpec;
             }
 
             return hr;
@@ -1073,7 +1047,7 @@ namespace System.Security.Cryptography.Pkcs {
                 X509Store cuMy = new X509Store("MY", StoreLocation.CurrentUser);
                 cuMy.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly | OpenFlags.IncludeArchived);
                 recipientStore.AddRange(cuMy.Certificates);
-
+                cuMy.Close();
             }
             catch (SecurityException) {
                 // X509Store.Open() may not have permission. Ignore.
@@ -1082,21 +1056,23 @@ namespace System.Security.Cryptography.Pkcs {
                 X509Store lmMy = new X509Store("MY", StoreLocation.LocalMachine);
                 lmMy.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly | OpenFlags.IncludeArchived);
                 recipientStore.AddRange(lmMy.Certificates);
+                lmMy.Close();
             }
             catch (SecurityException) {
                 // Ignore. May be in extra store.
             }
 
-            // Finally, include extra store, if specified.
-            if (extraStore != null) {
-                recipientStore.AddRange(extraStore);
-            }
-
-            if (recipientStore.Count == 0)
+            if (recipientStore.Count == 0 && extraStore.Count == 0)
                 throw new CryptographicException(CAPI.CRYPT_E_RECIPIENT_NOT_FOUND);
 
-            // Return memory store handle.
-            return X509Utils.ExportToMemoryStore(recipientStore);
+            // Return memory store handle, including extraStore.
+            try {
+                return X509Utils.ExportToMemoryStore(recipientStore, extraStore);
+            } finally {
+                foreach (X509Certificate2 cert in recipientStore) {
+                    cert.Reset();
+                }
+            }
         }
 
         [SecurityCritical]
@@ -1109,7 +1085,7 @@ namespace System.Security.Cryptography.Pkcs {
                 X509Store cuMy = new X509Store("AddressBook", StoreLocation.CurrentUser);
                 cuMy.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly | OpenFlags.IncludeArchived);
                 originatorStore.AddRange(cuMy.Certificates);
-
+                cuMy.Close();
             }
             catch (SecurityException) {
                 // X509Store.Open() may not have permission. Ignore.
@@ -1118,24 +1094,38 @@ namespace System.Security.Cryptography.Pkcs {
                 X509Store lmMy = new X509Store("AddressBook", StoreLocation.LocalMachine);
                 lmMy.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly | OpenFlags.IncludeArchived);
                 originatorStore.AddRange(lmMy.Certificates);
+                lmMy.Close();
             }
             catch (SecurityException) {
                 // Ignore. May be in bag of certs or extra store.
             }
 
+            X509Certificate2Collection includedButNotDisposed;
+
             // Finally, include bag of certs and extra store, if specified.
-            if (bagOfCerts != null) {
-                originatorStore.AddRange(bagOfCerts);
-            }
-            if (extraStore != null) {
-                originatorStore.AddRange(extraStore);
+            if (bagOfCerts != null && extraStore != null) {
+                includedButNotDisposed = new X509Certificate2Collection();
+                includedButNotDisposed.AddRange(bagOfCerts);
+                includedButNotDisposed.AddRange(extraStore);
+            } else if (bagOfCerts != null) {
+                includedButNotDisposed = bagOfCerts;
+            } else if (extraStore != null) {
+                includedButNotDisposed = extraStore;
+            } else {
+                includedButNotDisposed = null;
             }
 
-            if (originatorStore.Count == 0)
+            if (originatorStore.Count == 0 && includedButNotDisposed.Count == 0)
                 throw new CryptographicException(CAPI.CRYPT_E_NOT_FOUND);
 
             // Return memory store handle.
-            return X509Utils.ExportToMemoryStore(originatorStore);
+            try {
+                return X509Utils.ExportToMemoryStore(originatorStore, includedButNotDisposed);
+            } finally {
+                foreach (X509Certificate2 cert in originatorStore) {
+                    cert.Reset();
+                }
+            }
         }
     }
 }

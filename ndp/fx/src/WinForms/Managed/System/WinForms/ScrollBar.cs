@@ -45,6 +45,7 @@ namespace System.Windows.Forms {
         private int value = 0;
         private ScrollOrientation scrollOrientation;
         private int wheelDelta = 0;
+        private bool scaleScrollBarForDpiChange = true;
 
         /// <include file='doc\ScrollBar.uex' path='docs/doc[@for="ScrollBar.ScrollBar"]/*' />
         /// <devdoc>
@@ -206,6 +207,18 @@ namespace System.Windows.Forms {
         protected override Padding DefaultMargin {
             get {
                 return Padding.Empty;
+            }
+        }
+
+        /// <summary>
+        /// rescale constants for the DPI change
+        /// </summary>
+        /// <param name="deviceDpiOld">ols dpi</param>
+        /// <param name="deviceDpiNew">new dpi</param>
+        protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew) { 
+            base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
+            if (DpiHelper.EnableDpiChangedHighDpiImprovements && ScaleScrollBarForDpiChange) {                
+                Scale((float)deviceDpiNew / deviceDpiOld);
             }
         }
 
@@ -487,6 +500,23 @@ namespace System.Windows.Forms {
                     UpdateScrollInfo();
                     OnValueChanged(EventArgs.Empty);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get/Set flag to let scrollbar scale according to the DPI of the window.
+        /// </summary>
+        [SRCategory(SR.CatBehavior),
+        DefaultValue(true),
+        Browsable(true), 
+        EditorBrowsable(EditorBrowsableState.Always),
+        SRDescription(SR.ControlDpiChangeScale)]
+        public bool ScaleScrollBarForDpiChange {
+            get {
+                return scaleScrollBarForDpiChange;
+            }
+            set {
+                scaleScrollBarForDpiChange = value;
             }
         }
 

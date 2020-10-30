@@ -163,6 +163,13 @@ namespace System.Windows.Forms {
                 }
             }
 
+            internal override object GetPropertyValue(int propertyID) {
+                if (AccessibilityImprovements.Level3 && propertyID == NativeMethods.UIA_ControlTypePropertyId) {
+                    return NativeMethods.UIA_MenuItemControlTypeId;
+                }
+
+                return base.GetPropertyValue(propertyID);
+            }
         }
 
     }
