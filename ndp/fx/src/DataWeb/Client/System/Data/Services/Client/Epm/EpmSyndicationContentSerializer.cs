@@ -7,7 +7,7 @@
 // syndication specific mappings
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

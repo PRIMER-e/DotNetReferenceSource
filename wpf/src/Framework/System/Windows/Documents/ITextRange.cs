@@ -74,7 +74,7 @@ namespace System.Windows.Documents
         /// A TextPointer containing a word to select.
         /// </param>
         void SelectWord(ITextPointer position);
-        // 
+        // TODO:EV: Remove this method
 
         /// <summary>
         /// Selects a paragraph around the given position.
@@ -83,7 +83,7 @@ namespace System.Windows.Documents
         /// A position identifying a paragraph to select.
         /// </param>
         void SelectParagraph(ITextPointer position);
-        // 
+        // TODO:EV: Remove this method
 
         /// <summary>
         /// Adjust the range position in preparation for handling a TextInput event
@@ -115,7 +115,7 @@ namespace System.Windows.Documents
         /// </summary>
         /// <returns></returns>
         UIElement GetUIElementSelected();
-        // 
+        // TODO:EV: Think of renaming to something like GetSingleUIElementSelected
 
         /// <summary>
         /// Detects whether the content of a range can be converted
@@ -175,7 +175,7 @@ namespace System.Windows.Documents
         /// </remarks>
         void Save(Stream stream, string dataFormat, bool preserveTextElements);
 
-        // 
+        // TODO:EV: Consider adding CanLoad & Load methods here
 
         //......................................................
         //
@@ -253,7 +253,7 @@ namespace System.Windows.Documents
         /// TextRange is in disjoint state.
         /// </summary>
         List<TextSegment> TextSegments { get; }
-        // 
+        // TODO:EV: Make table selection public
 
         //......................................................
         //
@@ -268,7 +268,7 @@ namespace System.Windows.Documents
         // when we're acting on a TextContainer.  For instance, we can insert
         // TextElements only to TextContainers, not PasswordTextContainers, etc.
         bool HasConcreteTextContainer { get; }
-        // 
+        // TODO:EV: Use this method in all the code consistently instead of (range.Start is TextPointer) test. Maybe rename the property.
 
         /// <summary>
         ///  Get and set the text spanned by this text range.
@@ -295,7 +295,7 @@ namespace System.Windows.Documents
         /// <summary>
         /// </summary>
         string Xml { get; }
-        // 
+        // TODO:EV: Remove this method
 
         //......................................................
         //
@@ -304,7 +304,7 @@ namespace System.Windows.Documents
         //......................................................
 
         bool IsTableCellRange { get; }
-        // 
+        // TODO:EV: Make table selection public
 
         //......................................................
         //

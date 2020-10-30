@@ -9,7 +9,7 @@
 // History:
 //  7/30/2001:  t-ypchen        Created
 //  5/20/2003:  kusumav         Ported from to WCP_Dev
-// 11/14/2005:  [....]         Refactoring as part of the "Island Frame" implementation; 
+// 11/14/2005:  Microsoft         Refactoring as part of the "Island Frame" implementation; 
 //                              introduced the internal IJournalState interface.
 //
 // Copyright (C) 2003 by Microsoft Corporation.  All rights reserved.
@@ -139,7 +139,7 @@ namespace MS.Internal.AppModel
                     // To be saved, a DP should have the correct metadata and NOT be an expression or data bound.
                     // Since Bind inherits from Expression, the test for Expression will suffice.
                     // NOTE: we do not journal expression. So we should let parser restore it in BamlRecordReader.SetDependencyValue.
-                    // Please see Windows OS bug # 1852349 for details.
+                    // Please see Windows OS 
                     if (metadata.Journal && (!(localValueEntry.Value is Expression)))
                     {
                         // These properties should not be journaled.
@@ -199,9 +199,9 @@ namespace MS.Internal.AppModel
                 return;
             }
 
-            // Due to bug 1282529, PersistId can be null. Only XAML/BAML-loaded elements have it.
-            // Besides for PageFunctions journaled by type, the PersistId check below is needed
-            // because elements might have been added to the tree after loading from XAML/BAML.
+            // Due to 
+
+
 #pragma warning disable 618
             int persistId = element.PersistId;
 #pragma warning restore 618
@@ -325,7 +325,7 @@ namespace MS.Internal.AppModel
             int persistId = element.PersistId;
 #pragma warning restore 618
 
-            // Due to bug 1282529, PersistId can be null. Only XAML/BAML-loaded elements have it.
+            // Due to 
             if (persistId != 0)
             {
                 if (this.HasSubStreams(persistId))

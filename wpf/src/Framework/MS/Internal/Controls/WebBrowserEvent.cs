@@ -8,12 +8,12 @@
 //      WebBrowserEvent is used to listen to the DWebBrowserEvent2
 //      of the webbrowser control
 //
-//      Copied from WebBrowse.cs in [....]
+//      Copied from WebBrowse.cs in Microsoft
 //
 // History
 //  04/17/05    KusumaV      Created
-//  02/22/08    [....]       Expose the WebBrowser control's navigation events
-//  04/24/08    [....]     Implemented hosting the WebOC in the browser process for IE 7+ Protected Mode
+//  02/22/08    Microsoft       Expose the WebBrowser control's navigation events
+//  04/24/08    Microsoft     Implemented hosting the WebOC in the browser process for IE 7+ Protected Mode
 // 
 //------------------------------------------------------------------------------
 
@@ -92,9 +92,9 @@ namespace MS.Internal.Controls
                 Debug.Assert(targetFrameName == null || targetFrameName is string, "invalid targetFrameName type");
                 Debug.Assert(headers == null || headers is string, "invalid headers type");
                 //
-                // Due to a bug in the interop code where the variant.bstr value gets set
-                // to -1 on return back to native code, if the original value was null, we
-                // have to set targetFrameName and headers to "".
+                // Due to a 
+
+
                 if (targetFrameName == null)
                 {
                     targetFrameName = "";
@@ -176,7 +176,7 @@ namespace MS.Internal.Controls
             catch
             {
                 // This is an interesting pattern of putting a try catch block around this that catches everything,
-                // The reason I do this is based on a conversation with [....]. What happens here is if there is 
+                // The reason I do this is based on a conversation with Microsoft. What happens here is if there is 
                 // an exception in any of the code above then navigation still continues since COM interop eats up 
                 // the exception. But what we want is for this navigation to fail.
                 // There fore I catch all exceptions and cancel navigation 

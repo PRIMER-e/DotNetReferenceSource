@@ -5,11 +5,11 @@
 //  File:       RenderDataDrawingContext.cs
 //
 //  History:
-//      [....]: 04/19/2003
+//      Microsoft: 04/19/2003
 //          Created it based on the RenderDataDrawingContext used in the AvPhat branch.
-//      [....]: 07/02/2003
+//      Microsoft: 07/02/2003
 //          Renamed to RenderDataDrawingContext, which derives from DrawingContext
-//      [....]: 07/02/2003
+//      Microsoft: 07/02/2003
 //          Renamed to RenderDataDrawingContext, which derives from DrawingContext
 //          This class no longer understand Visuals, and simply produces RenderData.
 //

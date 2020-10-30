@@ -1228,7 +1228,7 @@ Semantics::ShouldInsertLiftedOperator
 
     OperatorInfo * pCurrent = OperatorSet.GetFirst();
 
-    //I spoke with [....] and he mentioned that someone in the DDE
+    //I spoke with Microsoft and he mentioned that someone in the DDE
     //perf team is working on a global compiler wide replacement for
     //the NorlsAllocator that will be coming on line sometime in Orcas.
     //As a result I figured I was not adding too much baddness to our performance
@@ -1278,9 +1278,9 @@ Semantics::LiftOperator
     bool hasGenericParam = false;
     
 
-    // Bug 841109, shiqic. 
-    // When lifting a operator with generic parameter, LiftUserDefinedOperator does not always return the same lifted operator, so we can't cache them.
-    // We only cache non-generic operator without generic parameter.
+    // 
+
+
     ThrowIfNull(pSourceOperator->GetType());
     ThrowIfNull(pSourceOperator->GetFirstParam());
     ThrowIfNull(pSourceOperator->GetFirstParam()->GetType());    
@@ -1576,7 +1576,7 @@ Semantics::ResolveUserDefinedOperator
             );
 
         if (ResolutionFailed ||
-            ResolutionIsLateBound)  // Bug VSWhidbey 472275. Latebound resolution will be required when all narrowing is from Object.
+            ResolutionIsLateBound)  // 
         {
             // Method overload resolution failed--errors have already been reported.
             return NULL;
@@ -1589,8 +1589,8 @@ Semantics::ResolveUserDefinedOperator
             return TypeInGenericContext(OperatorMethod->GetType(), OperatorMethodGenericContext);
         }
     }
-    // MQ Bug 842804
-    // If OperatorSet.NumberOfEntries() == 0 and either of the oparand is object, it should be late bind.
+    // MQ 
+
     else if ((LeftType != NULL && LeftType->IsObject()) || (RightType != NULL && RightType->IsObject()))
     {
         ResolutionIsLateBound = true;

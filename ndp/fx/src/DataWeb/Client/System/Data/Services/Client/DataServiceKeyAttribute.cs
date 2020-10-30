@@ -6,7 +6,7 @@
 //      Clr Attribute to be annotated on key properties
 // </summary>
 //
-// @owner  [....], [....]
+// @owner  Microsoft, Microsoft
 //---------------------------------------------------------------------
 namespace System.Data.Services.Common
 {

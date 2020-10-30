@@ -446,7 +446,7 @@ namespace System.Windows.Forms
                 throw new InvalidOperationException(SR.GetString(SR.DataGridView_ForbiddenOperationInEventHandler));
             }
 
-            /* [....]: Add once databinding is implemented
+            /* Microsoft: Add once databinding is implemented
             foreach (DataGridViewColumn dataGridViewColumn in this.DataGridView.Columns)
             {
                 if (dataGridViewColumn.DataBound)

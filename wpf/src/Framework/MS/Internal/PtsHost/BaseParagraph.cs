@@ -6,8 +6,8 @@
 //              of a text based content.
 //
 // History:
-//  05/05/2003 : [....] - moving from Avalon branch.
-//  10/30/2004 : [....] - ElementReference cleanup.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
+//  10/30/2004 : Microsoft - ElementReference cleanup.
 //
 //---------------------------------------------------------------------------
 

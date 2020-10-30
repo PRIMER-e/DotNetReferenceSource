@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{698c5755-9bf7-40b9-a62e-6e61778703ef}</ProjectGuid>
+    <ProjectGuid>{bac851b1-5479-45aa-9299-bbcd289fd252}</ProjectGuid>
     <OutputPath>.</OutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>XamlBuildTask</AssemblyName>
@@ -19,44 +19,44 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " >
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\clr\src\BCL\mscorlib.csproj">
-      <Project>{a72657be-225c-4239-956e-ee2a30893b41}</Project>
+    <ProjectReference Include="..\..\..\..\clr\src\bcl\mscorlib.csproj">
+      <Project>{20f34c38-8c60-44e7-b703-0e341d274957}</Project>
       <Name>mscorlib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\fx\src\Core\System.Core.csproj">
-      <Project>{4514f831-ec02-41cd-a45f-0bfc17e6a086}</Project>
-      <Name>System.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\fx\src\System.Data.csproj">
-      <Project>{b7cf7b06-93cb-4212-8b4c-b3ae4bdf1408}</Project>
-      <Name>System.Data</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\..\fx\src\System.csproj">
-      <Project>{20c75c70-c8b6-4dfb-a4e5-16d09099776d}</Project>
+      <Project>{85716da4-9fb2-4f44-9c4d-b7431fdf1b20}</Project>
       <Name>System</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\..\fx\src\Core\System.Core.csproj">
+      <Project>{1d8f39aa-9297-49e4-8f18-cea8f165d7c4}</Project>
+      <Name>System.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\fx\src\data\System.Data.csproj">
+      <Project>{6c5dd4f8-ed35-4f22-b8dc-4489d2c3dfaa}</Project>
+      <Name>System.Data</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\..\fx\src\System.Drawing.csproj">
-      <Project>{2defc6a9-7eda-4106-b78e-1f3f5a439dd7}</Project>
+      <Project>{712ac13c-4586-461b-9626-7c107a6981eb}</Project>
       <Name>System.Drawing</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\clr\src\managedlibraries\security\system\security\System.Security.csproj">
-      <Project>{c18b4728-33a6-4e6f-84bd-0df1f3e89de8}</Project>
+    <ProjectReference Include="..\..\..\..\clr\src\managedlibraries\security\System.Security.csproj">
+      <Project>{6cf2ea71-7eb3-48ae-8938-3edf77bb9412}</Project>
       <Name>System.Security</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\System.ServiceModel.Internals\System.ServiceModel.Internals.csproj">
-      <Project>{13d63794-0ab7-472b-a040-b08a7b97ad15}</Project>
+      <Project>{01dc86fb-e3cd-4b78-b584-7dba90eb3a6e}</Project>
       <Name>System.ServiceModel.Internals</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Web.Services.csproj">
-      <Project>{6a85b512-53f5-4d4f-a7a2-10f5d452bd05}</Project>
+    <ProjectReference Include="..\..\NetFx20\System.Web.Services\System.Web.Services.csproj">
+      <Project>{3feea9f2-cadc-4682-8545-d121e47e6ed6}</Project>
       <Name>System.Web.Services</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\fx\src\System.Xml.csproj">
-      <Project>{328d1889-8b13-460e-908d-cbb168675ec2}</Project>
+    <ProjectReference Include="..\..\..\..\fx\src\Xml\System.Xml.csproj">
+      <Project>{6f992f82-1c90-4388-ab60-15c653aeeca5}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\fx\src\XLinq\System\Xml\Linq\System.Xml.Linq.csproj">
-      <Project>{42dfc134-9941-47ae-a039-49891b505d99}</Project>
+    <ProjectReference Include="..\..\..\..\fx\src\XLinq\System.Xml.Linq.csproj">
+      <Project>{f7ad8bac-760f-40d9-8759-886b9ddb7e23}</Project>
       <Name>System.Xml.Linq</Name>
     </ProjectReference>
   </ItemGroup>
@@ -67,7 +67,6 @@
     <Reference Include="System.Xaml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\AttributeData.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\AttributeParameterData.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\BuildExtensionContext.cs" />
@@ -78,6 +77,7 @@
     <Compile Include="Microsoft\Build\Tasks\Xaml\CodeDomExtensionMethods.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\CompilationPass2Task.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\CompilationPass2TaskInternal.cs" />
+    <Compile Include="Microsoft\Build\Tasks\Xaml\DelegatingTaskItem.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\GenerateTemporaryAssemblyTask.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\IXamlBuildTypeGenerationExtension.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\IXamlBuildTypeInspectionExtension.cs" />
@@ -85,22 +85,23 @@
     <Compile Include="Microsoft\Build\Tasks\Xaml\LoggableException.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\MemberVisibility.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\NamedObject.cs" />
+    <Compile Include="Microsoft\Build\Tasks\Xaml\NamespaceTable.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\PartialClassGenerationTask.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\PartialClassGenerationTaskInternal.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\PropertyData.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\ResolveAssemblyHelper.cs" />
-    <Compile Include="Microsoft\Build\Tasks\Xaml\XamlBuildTaskServices.cs" />
+    <Compile Include="Microsoft\Build\Tasks\Xaml\ValidationEventArgs.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\WrappingXamlSchemaContext.cs" />
+    <Compile Include="Microsoft\Build\Tasks\Xaml\XamlBuildTaskLeaseLifetimeHelper.cs" />
+    <Compile Include="Microsoft\Build\Tasks\Xaml\XamlBuildTaskServices.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\XamlBuildTypeGenerationExtensionContext.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\XamlBuildTypeInspectionExtensionContext.cs" />
-    <Compile Include="Microsoft\Build\Tasks\Xaml\XamlValidatingReader.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\XamlStackWriter.cs" />
+    <Compile Include="Microsoft\Build\Tasks\Xaml\XamlValidatingReader.cs" />
     <Compile Include="Microsoft\Build\Tasks\Xaml\XamlWrappingReader.cs" />
-    <Compile Include="Microsoft\Build\Tasks\Xaml\ValidationEventArgs.cs" />
-    <Compile Include="Microsoft\Build\Tasks\Xaml\NamespaceTable.cs" />
-    <Compile Include="Microsoft\Build\Tasks\Xaml\DelegatingTaskItem.cs" />
     <Compile Include="Microsoft\VisualStudio\Activities\VSDesignerPerfEventProvider.cs" />
     <Compile Include="Microsoft\VisualStudio\Activities\VSDesignerPerfEvents.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -120,7 +120,7 @@ private:
     STRING *GetNextTemporaryName(BCSYM *RequestedType, LifetimeClass Lifetime, const Location *TextSpan);
 };
 
-//NOTE:[....],6/16/2003,we use old temp name prefix because we may debug a PE from VB7.1/7.0
+//NOTE:Microsoft,6/16/2003,we use old temp name prefix because we may debug a PE from VB7.1/7.0
 inline bool
 HasTemporaryName(BCSYM_NamedRoot *Candidiate)
 {

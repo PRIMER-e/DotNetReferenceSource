@@ -51,10 +51,10 @@ namespace MS.Internal.Ink
         ///                  Also the size of the cursor will be limited to the half size of the current primary screen.
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
-        internal static Cursor GetPenCursor(DrawingAttributes drawingAttributes, bool isHollow, bool isRightToLeft)
+        internal static Cursor GetPenCursor(DrawingAttributes drawingAttributes, bool isHollow, bool isRightToLeft, double dpiScaleX, double dpiScaleY)
         {
             // Create pen Drawing.
-            Drawing penDrawing = CreatePenDrawing(drawingAttributes, isHollow, isRightToLeft);
+            Drawing penDrawing = CreatePenDrawing(drawingAttributes, isHollow, isRightToLeft, dpiScaleX, dpiScaleY);
 
             // Create Cursor from Drawing
             return CreateCursorFromDrawing(penDrawing, new Point(0, 0));
@@ -66,7 +66,7 @@ namespace MS.Internal.Ink
         /// <param name="stylusShape">Eraser Shape</param>
         /// <param name="tranform">Transform</param>
         /// <returns></returns>
-        internal static Cursor GetPointEraserCursor(StylusShape stylusShape, Matrix tranform)
+        internal static Cursor GetPointEraserCursor(StylusShape stylusShape, Matrix tranform, double dpiScaleX, double dpiScaleY)
         {
             Debug.Assert(DoubleUtil.IsZero(tranform.OffsetX) && DoubleUtil.IsZero(tranform.OffsetY), "The EraserShape cannot be translated.");
             Debug.Assert(tranform.HasInverse, "The transform has to be invertable.");
@@ -101,7 +101,7 @@ namespace MS.Internal.Ink
             }
 
             // Forward to GetPenCursor.
-            return GetPenCursor(da, true, false/*isRightToLeft*/);
+            return GetPenCursor(da, true, false/*isRightToLeft*/, dpiScaleX, dpiScaleY);
         }
 
         /// <summary>
@@ -349,7 +349,7 @@ namespace MS.Internal.Ink
         /// <summary>
         /// Custom Pen Drawing
         /// </summary>
-        private static Drawing CreatePenDrawing(DrawingAttributes drawingAttributes, bool isHollow, bool isRightToLeft)
+        private static Drawing CreatePenDrawing(DrawingAttributes drawingAttributes, bool isHollow, bool isRightToLeft, double dpiScaleX, double dpiScaleY)
         {
             // Create a single point stroke.
             StylusPointCollection stylusPoints = new StylusPointCollection();
@@ -366,8 +366,8 @@ namespace MS.Internal.Ink
             Stroke singleStroke = new Stroke(stylusPoints, da);
             // NTRAID#WINDOWS-1326403-2005/10/03-waynezen,
             // We should draw our cursor in the device unit since it's device dependent object.
-            singleStroke.DrawingAttributes.Width = ConvertToPixel(singleStroke.DrawingAttributes.Width);
-            singleStroke.DrawingAttributes.Height = ConvertToPixel(singleStroke.DrawingAttributes.Height);
+            singleStroke.DrawingAttributes.Width = ConvertToPixel(singleStroke.DrawingAttributes.Width, dpiScaleX);
+            singleStroke.DrawingAttributes.Height = ConvertToPixel(singleStroke.DrawingAttributes.Height, dpiScaleY);
 
             double maxLength = Math.Min(SystemParameters.PrimaryScreenWidth / 2, SystemParameters.PrimaryScreenHeight / 2);
 
@@ -579,13 +579,11 @@ namespace MS.Internal.Ink
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static double ConvertToPixel(double value)
+        private static double ConvertToPixel(double value, double dpiScale)
         {
-            int dpi = SystemParameters.Dpi;
-
-            if ( dpi != 0 )
+            if ( dpiScale != 0 )
             {
-                return ( value * dpi ) / 96d ;
+                return value * dpiScale;
             }
 
             return value;

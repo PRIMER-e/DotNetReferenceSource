@@ -8,9 +8,9 @@
 //  History:
 //      2002/06/19-murrayw
 //          Created
-//      2003/06/30-[....]
+//      2003/06/30-Microsoft
 //          Ported ByteRangeDownloader to WCP
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -329,7 +329,7 @@ wchar_t *TryDecodeDownloadError(HRESULT hr)
     {
         pErrMsg = TryFormatErrorMessage(hLib, hr);
         // There's a typo in inetcore\urlmon\dll\urlerr.mc: The MessageId for this error is incorrectly 
-        // entered as 0x11. Windows OOB Releases bug 1068105.
+        // entered as 0x11. Windows OOB Releases 
         if(!pErrMsg && hr == INET_E_INVALID_CERTIFICATE/*0x800C0019*/)
         {
             pErrMsg = TryFormatErrorMessage(hLib, 0x800C0011);

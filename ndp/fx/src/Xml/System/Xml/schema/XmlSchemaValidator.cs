@@ -2,7 +2,7 @@
 // <copyright file="XmlSchemaValidator.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
-// <owner current="true" primary="true">[....]</owner>
+// <owner current="true" primary="true">Microsoft</owner>
 //------------------------------------------------------------------------------
 
 using System;
@@ -1971,8 +1971,15 @@ namespace System.Xml.Schema {
                             }
                             else {
                                 // for element, Reader.Value = "";
-                                if(typedValue != null && stringValue.Length != 0) {
-                                    laxis.Ks[laxis.Column] = new TypedObject(typedValue, stringValue, datatype);
+                                if (LocalAppContextSwitches.IgnoreEmptyKeySequences) {
+                                    if (typedValue != null && stringValue.Length != 0) {
+                                        laxis.Ks[laxis.Column] = new TypedObject(typedValue, stringValue, datatype);
+                                    }
+                                }
+                                else {
+                                    if (typedValue != null) {
+                                        laxis.Ks[laxis.Column] = new TypedObject(typedValue, stringValue, datatype);
+                                    }
                                 }
                             }
                         }
@@ -2006,7 +2013,7 @@ namespace System.Xml.Schema {
                             break;
 
                         case CompiledIdentityConstraint.ConstraintRole.Unique:
-                            if (! ks.IsQualified()) {
+                            if (!ks.IsQualified()) {
                                 continue;
                             }
                             if (constraints[i].qualifiedTable.Contains (ks)) {

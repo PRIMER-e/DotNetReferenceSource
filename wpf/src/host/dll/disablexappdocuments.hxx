@@ -8,7 +8,7 @@
 //  History:
 //     2005/06/16-akaza
 //          Created
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

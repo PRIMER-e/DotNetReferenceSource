@@ -6,7 +6,7 @@
 //      Wrapper for IDataServicePagingProvider discovery by service instance.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

@@ -269,7 +269,7 @@ namespace System.Windows.Forms
                 UnsafeNativeMethods.BROWSEINFO bi = new UnsafeNativeMethods.BROWSEINFO();
     
                 pszDisplayName = Marshal.AllocHGlobal(NativeMethods.MAX_PATH * Marshal.SystemDefaultCharSize);
-                pszSelectedPath = Marshal.AllocHGlobal(NativeMethods.MAX_PATH * Marshal.SystemDefaultCharSize);
+                pszSelectedPath = Marshal.AllocHGlobal((NativeMethods.MAX_PATH + 1) * Marshal.SystemDefaultCharSize);
                 this.callback = new UnsafeNativeMethods.BrowseCallbackProc(this.FolderBrowserDialog_BrowseCallbackProc);
 
                 bi.pidlRoot = pidlRoot;
@@ -287,7 +287,7 @@ namespace System.Windows.Forms
                 if (pidlRet != IntPtr.Zero)
                 {
                     // Then retrieve the path from the IDList
-                    UnsafeNativeMethods.Shell32.SHGetPathFromIDList(pidlRet, pszSelectedPath);
+                    UnsafeNativeMethods.Shell32.SHGetPathFromIDListLongPath(pidlRet, ref pszSelectedPath);
     
                     // set the flag to True before selectedPath is set to
                     // assure security check and avoid bogus race condition
@@ -346,9 +346,9 @@ namespace System.Windows.Forms
                     IntPtr selectedPidl = lParam;
                     if (selectedPidl != IntPtr.Zero)
                     {
-                        IntPtr pszSelectedPath = Marshal.AllocHGlobal(NativeMethods.MAX_PATH * Marshal.SystemDefaultCharSize);
+                        IntPtr pszSelectedPath = Marshal.AllocHGlobal((NativeMethods.MAX_PATH + 1) * Marshal.SystemDefaultCharSize);
                         // Try to retrieve the path from the IDList
-                        bool isFileSystemFolder = UnsafeNativeMethods.Shell32.SHGetPathFromIDList(selectedPidl, pszSelectedPath);
+                        bool isFileSystemFolder = UnsafeNativeMethods.Shell32.SHGetPathFromIDListLongPath(selectedPidl, ref pszSelectedPath);
                         Marshal.FreeHGlobal(pszSelectedPath);
                         UnsafeNativeMethods.SendMessage(new HandleRef(null, hwnd), (int) NativeMethods.BFFM_ENABLEOK, 0, isFileSystemFolder ? 1 : 0);
                     }

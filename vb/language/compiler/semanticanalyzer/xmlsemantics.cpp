@@ -1296,7 +1296,7 @@ Semantics::AllocateRootNamspaceAttributes()
 //  Parameters:
 //      [Xml]   --  Expression evaluating to an XLinq object.
 //
-//  History:    06-27-2005  [....]    Added
+//  History:    06-27-2005  Microsoft    Added
 //---------------------------------------------------------------------------
 ILTree::Expression *
 Semantics::InterpretXmlExpression
@@ -1354,7 +1354,7 @@ Semantics::InterpretXmlExpression
 //  Parameters:
 //      [Xml]   --  Expression evaluating to an XLinq object.
 //
-//  History:    06-27-2005  [....]    Added
+//  History:    06-27-2005  Microsoft    Added
 //---------------------------------------------------------------------------
 ILTree::Expression *
 Semantics::InterpretXmlExpression
@@ -1475,7 +1475,7 @@ Semantics::InterpretXmlExpression
 //  Parameters:
 //      [Xml]   --  Expression evaluating to an XLinq object.
 //
-//  History:    09-08-2005  [....]    Added
+//  History:    09-08-2005  Microsoft    Added
 //---------------------------------------------------------------------------
 
 ILTree::Expression *
@@ -1522,7 +1522,7 @@ Semantics::InterpretXmlDocument(ParseTree::XmlDocumentExpression *XmlDocument)
 //  Parameters:
 //      [Xml]   --  Expression evaluating to an XLinq object.
 //
-//  History:    09-08-2005  [....]    Added
+//  History:    09-08-2005  Microsoft    Added
 //---------------------------------------------------------------------------
 
 ParseTree::Expression *
@@ -1652,7 +1652,7 @@ Semantics::InterpretXmlDeclaration(ParseTree::XmlDocumentExpression *XmlDocument
 //  Parameters:
 //      [Xml]   --  Expression evaluating to an XLinq object.
 //
-//  History:    06-27-2005  [....]    Added
+//  History:    06-27-2005  Microsoft    Added
 //---------------------------------------------------------------------------
 
 ILTree::Expression *
@@ -1977,7 +1977,7 @@ Semantics::InterpretXmlOther(ParseTree::XmlExpression *Expr, Type *XObjectType, 
     ParserHelper PH(&m_TreeStorage, loc);
 
     // ConcatenateAdjacentText updates Content so assign to local before calling.
-    // todo - [....] - Make a version of ConcatenateAdjacentText that is not destructive!
+    // todo - Microsoft - Make a version of ConcatenateAdjacentText that is not destructive!
 
     ParseTree::ExpressionList *Content = Expr->Content;
 
@@ -2024,7 +2024,7 @@ Semantics::InterpretXmlOther(ParseTree::XmlExpression *Expr, Type *XObjectType, 
 //  Parameters:
 //      [Xml]   --  Expression evaluating to an XLinq object.  This may be NULL if content is insignificant whitespace.
 //
-//  History:    06-27-2005  [....]    Added
+//  History:    06-27-2005  Microsoft    Added
 //---------------------------------------------------------------------------
 
 ILTree::Expression *
@@ -2176,7 +2176,7 @@ Semantics::InterpretXmlCharData(ParseTree::XmlCharDataExpression *XmlCharData, P
 //    Parameters:
 //        [Xml]     --    Expression evaluating to an XLinq object.
 //
-//    History:    06-27-2005     [....]     Added
+//    History:    06-27-2005     Microsoft     Added
 //---------------------------------------------------------------------------
 
 ILTree::Expression *
@@ -2203,7 +2203,7 @@ Semantics::InterpretXmlName(ParseTree::Expression * Expr, BCSYM_Alias **Resolved
             // Element names can use the default namespace
             if (StringPool::IsEqualCaseSensitive(Name->Prefix.Name, STRING_CONST(m_Compiler, XmlNs)))
             {
-                // DD Bug #26898: Literal elements are not allowed to xmlns as a prefix
+                // DD 
                 ReportSemanticError(ERRID_IllegalXmlnsPrefix, Name->Prefix.TextSpan);
             }
 
@@ -2686,7 +2686,7 @@ Semantics::ValidateXmlAttributeValue2(ParseTree::Expression *Value, _In_z_ STRIN
 //  Parameters:
 //      [Xml]   --  Expression evaluating to an XLinq object.
 //
-//  History:    06-27-2005  [....]    Added
+//  History:    06-27-2005  Microsoft    Added
 //---------------------------------------------------------------------------
 ILTree::Expression *
 Semantics::InterpretXmlElement
@@ -2809,7 +2809,7 @@ Semantics::InterpretXmlElement
     // Put Imported namespace declarations on the literal's root element
     if (m_XmlSemantics->m_ImportedNamespaceAttributes && XmlElement->Parent == NULL)
     {
-        // Todo: [....] - For now put imported namespaces after attributes.  Consider putting them first.
+        // Todo: Microsoft - For now put imported namespaces after attributes.  Consider putting them first.
         ILTree::Expression *Namespaces = InterpretXmlAttributes(m_XmlSemantics->m_ImportedNamespaceAttributes, ElementReference, &LastNamespace);
 
         if (LastAttribute)

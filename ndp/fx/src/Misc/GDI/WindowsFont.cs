@@ -4,7 +4,7 @@
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -29,7 +29,7 @@ namespace System.Experimental.Gdi
     ///         Encapsulates a GDI Font object.
     ///     </para>
     /// </devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -106,7 +106,7 @@ namespace System.Experimental.Gdi
         public WindowsFont( string faceName ) :
             this(faceName, defaultFontSize, FontStyle.Regular, IntNativeMethods.DEFAULT_CHARSET, WindowsFontQuality.Default)
         {
-         // Default size in [....] is 8.25f.  
+         // Default size in Microsoft is 8.25f.  
         }
 
         /// <devdoc>

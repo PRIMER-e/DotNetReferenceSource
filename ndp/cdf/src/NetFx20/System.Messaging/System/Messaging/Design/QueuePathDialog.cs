@@ -373,7 +373,7 @@ namespace System.Messaging.Design
             // Window handle has been created, so it's safe to call PopulateThread now.
             // However, OnHandleCreated can be called multiple times during Form's life-time.
             // So we need to ensure that PopulateThread runs only once.
-            // ( [....] May 27 2005. Whidbey 463310 )
+            // ( Microsoft May 27 2005. Whidbey 463310 )
             if (!populateThreadRan)
             {
                 populateThreadRan = true;

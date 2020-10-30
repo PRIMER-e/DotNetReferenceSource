@@ -34,7 +34,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1187569 & 1187570
-// Developer: [....]
+// Developer: SamBent
 // Reason: All local state is correct before raising these events.  Exceptions won't cause any harm.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="MS.Internal.Data.CollectionViewGroupRoot.OnGroupByChanged():System.Void")]
@@ -99,7 +99,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1195560
-// Developer: [....]
+// Developer: bencar
 // Reason: This method and all its callers do not change state following the event being called. The event is the last thing that happens in the dispatcher queue item.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1001:RaiseEventCallerMustBeHardened", Scope="member", Target="System.Windows.Controls.VirtualizingStackPanel.OnCleanUpVirtualizedItem(System.Windows.Controls.CleanUpVirtualizedItemEventArgs):System.Void")]
@@ -107,7 +107,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1195503, 1195535, 1187123, 1195596, 1195547, 1195588, 1195521, 1195594
-// Developer: [....]
+// Developer: benwest
 // Reason: All of the flagged code and callers to the component boundary have been reviewed and hardened to
 //         recoverable exceptions.
 //***************************************************************************************************************************
@@ -201,7 +201,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 121992,1219923
-// Developer: [....]
+// Developer: bencar
 // Reason: Confirmed that no state is changed after calling the event.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope = "member", Target = "System.Windows.Controls.CalendarDate.OnPropertyChanged(System.String):System.Void")]
@@ -260,77 +260,77 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1195511
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Internal event. All methods raising this event have been verified. Exceptions will not leave the control in an unknown state.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="MS.Internal.Documents.TextViewBase.OnUpdated(System.EventArgs):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195583
-// Developer: [....]
+// Developer: grzegorz
 // Reason: All methods raising this event have been verified. Exceptions will not leave the control in an unknown state.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Controls.Primitives.DocumentViewerBase.OnPageViewsChanged():System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195610
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.Document.GetPageAsync(System.Int32,System.Object):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195610
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.Document.GetPageForContentPositionAsync(System.Windows.Documents.ContentPosition,System.Object):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195592
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.DocumentPageView.OnPageConnected(System.Object):System.Object")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195592
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.DocumentPageView.OnPageDisconnected():System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195608
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.FlowDocument.OnPagePaddingChanged(System.Windows.Thickness):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195608
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.FlowDocument.OnPageSizeChanged(System.Windows.Size):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195608
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.FlowDocument.OnPagesChanged(System.Int32,System.Int32):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195608
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.FlowDocument.OnPaginationProgressAsync(System.Object):System.Object")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195608
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Remains in a consistent state after a recoverable Exception is thrown.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Documents.FlowDocument.OnPaginationCompletedAsync(System.Object):System.Object")]

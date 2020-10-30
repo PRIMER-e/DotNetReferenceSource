@@ -72,6 +72,7 @@ namespace System.Windows.Input
                 _stylusDeviceCollection = null;
             }
             _penThread = null;
+            _isDisposalPending = false;
         }
 
         /////////////////////////////////////////////////////////////////////
@@ -543,6 +544,79 @@ namespace System.Windows.Input
             return _tabletToView.Value.Transform(lastPoint);
         }
 
+        /// <summary>
+        /// DevDiv:1078091
+        /// It's possible that there is pending input on the stylus queue for this tablet.
+        /// In such cases, we cannot immediately call Dispose as future input needs this 
+        /// object's data.  Instead, set a flag that indicates we should dispose of this 
+        /// tablet once all input has been processed.
+        /// </summary>
+        /// <SecurityNote>Critical:  Calls Dispose</SecurityNote>
+        [SecurityCritical]
+        internal void DisposeOrDeferDisposal()
+        {
+            // Only dispose when no input events are left in the queue
+            if (CanDispose)
+            {
+                // Make sure this device is not the current one.
+                if (Tablet.CurrentTabletDevice == this)
+                {
+                    StylusLogic.CurrentStylusLogic.SelectStylusDevice(null, null, true);
+                }
+
+                Dispose();
+            }
+            else
+            {
+                _isDisposalPending = true;
+            }
+        }
+
+        /// <summary>
+        /// DevDiv:1078091
+        /// This flag will be set if we receive a removal notification while there is pending
+        /// input in the stylus queue.  This will then indicate that, at some point when input
+        /// is fully processed, we should dispose the device.
+        /// </summary>
+        internal bool IsDisposalPending
+        {
+            get
+            {
+                return _isDisposalPending;
+            }
+        }
+
+        /// <summary>
+        /// DevDiv:1078091
+        /// Indicates if immediate disposal is possible.  We can't dispose if there
+        /// are any messages waiting in the queue or if there is still an active stylus device.
+        /// </summary>
+        internal bool CanDispose
+        {
+            get
+            {
+               return _queuedEventCount == 0;
+            }
+        }
+
+        /// <summary>
+        /// DevDiv:1078091
+        /// Maintain a count of how many items are pushed on the stylus input queue to guard
+        /// against disposing a TabletDevice prematurely.
+        /// </summary>
+        internal int QueuedEventCount
+        {
+            get
+            {
+                return _queuedEventCount;
+            }
+
+            set
+            {
+                _queuedEventCount = value;
+            }
+        }
+
         /////////////////////////////////////////////////////////////////////////
 
         TabletDeviceInfo            _tabletInfo; // Hold the info about this tablet device.
@@ -565,5 +639,9 @@ namespace System.Windows.Input
         private MultiTouchSystemGestureLogic _multiTouchSystemGestureLogic;
 
         private Matrix? _tabletToView;
+
+        private bool _isDisposalPending;
+
+        private int _queuedEventCount = 0;
     }
 }

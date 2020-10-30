@@ -20,7 +20,7 @@
 //  structure so that the subsequent bytes don't have to be moved.
 //
 // History:
-//  03/23/2006: [....]: Added support for Padding Extra Field
+//  03/23/2006: Microsoft: Added support for Padding Extra Field
 //
 //-----------------------------------------------------------------------------
 

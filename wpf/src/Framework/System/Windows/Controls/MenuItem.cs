@@ -2181,10 +2181,10 @@ namespace System.Windows.Controls
             base.OnVisualParentChanged(oldParent);
             UpdateRole();
 
-            // Windows OS bug:1988393; DevDiv bug:107459
-            // MenuItem template contains ItemsPresenter where Grid.IsSharedSizeScope="true" and need to inherits PrivateSharedSizeScopeProperty value
-            // Property inheritance walk the locial tree if possible and skip the visual tree where ItemsPresenter is
-            // Workaround here will be to copy the property value from MenuItem visual parent
+            // Windows OS 
+
+
+
 
             DependencyObject newParent = VisualTreeHelper.GetParentInternal(this);
 

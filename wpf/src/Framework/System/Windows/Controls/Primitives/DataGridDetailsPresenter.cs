@@ -95,7 +95,7 @@ namespace System.Windows.Controls.Primitives
             {
                 owner.DetailsPresenter = this;
 
-                // At the time that a Row is prepared we can't [....] because the DetailsPresenter isn't created yet.
+                // At the time that a Row is prepared we can't Sync because the DetailsPresenter isn't created yet.
                 // Doing it here ensures that the DetailsPresenter is in the visual tree.
                 SyncProperties();
             }

@@ -6,7 +6,7 @@
 //      Provides a base deserializer for all deserializers.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers
@@ -197,7 +197,7 @@ namespace System.Data.Services.Serializers
         /// <param name="property">property information whose value is the first parameter</param>
         /// <param name="contentFormat">specifies the content format of the payload</param>
         /// <param name="provider">underlying data service provider.</param>
-        /// <returns>object which is in [....] with the properties type</returns>
+        /// <returns>object which is in sync with the properties type</returns>
         internal static object ConvertValues(object value, ResourceProperty property, ContentFormat contentFormat, DataServiceProviderWrapper provider)
         {
             Debug.Assert(property.TypeKind == ResourceTypeKind.Primitive, "This method must be called for primitive types only");

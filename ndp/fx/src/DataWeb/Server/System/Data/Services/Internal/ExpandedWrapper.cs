@@ -7,7 +7,7 @@
 //      projections.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Internal

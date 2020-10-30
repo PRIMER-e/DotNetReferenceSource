@@ -63,7 +63,7 @@ namespace System.Windows
         public static void Clear()
         {
             // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-            // See Dev10 bug 616223 and VSWhidbey bug 476911.
+            // See Dev10 
 
             int i = OleRetryCount;
 
@@ -157,7 +157,7 @@ namespace System.Windows
         public static void Flush()
         {
             // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-            // See Dev10 bug 616223 and VSWhidbey bug 476911.
+            // See Dev10 
 
             int i = OleRetryCount;
 
@@ -432,7 +432,7 @@ namespace System.Windows
                 int hr;
 
                 // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-                // See Dev10 bug 616223 and VSWhidbey bug 476911.
+                // See Dev10 
 
                 int i = OleRetryCount;
 
@@ -562,7 +562,7 @@ namespace System.Windows
             }
 
             // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-            // See Dev10 bug 616223 and VSWhidbey bug 476911.
+            // See Dev10 
 
             int i = OleRetryCount;
 
@@ -586,10 +586,10 @@ namespace System.Windows
 
             if (copy)
             {
-                // Dev10 bug 835751 - OleSetClipboard and OleFlushClipboard both modify the clipboard
-                // and cause notifications to be sent to clipboard listeners. We sleep a bit here to
-                // mitigate issues with clipboard listeners (like TS) corrupting the clipboard contents
-                // as a result of these two calls being back to back.
+                // Dev10 
+
+
+
                 Thread.Sleep(OleFlushDelay);
 
                 Flush();
@@ -691,7 +691,7 @@ namespace System.Windows
             IComDataObject oleDataObject;
 
             // Retry OLE operations several times as mitigation for clipboard locking issues in TS sessions.
-            // See Dev10 bug 616223 and VSWhidbey bug 476911.
+            // See Dev10 
 
             int i = OleRetryCount;
 
@@ -867,24 +867,24 @@ namespace System.Windows
         /// The number of times to retry OLE clipboard operations.
         /// </summary>
         /// <remarks>
-        /// This is mitigation for clipboard locking issues in TS sessions. See Dev10 bug 616223 and VSWhidbey bug 476911.
-        /// </remarks>
+        /// This is mitigation for clipboard locking issues in TS sessions. See Dev10 
+
         private const int OleRetryCount = 10;
 
         /// <summary>
         /// The amount of time in milliseconds to sleep between retrying OLE clipboard operations.
         /// </summary>
         /// <remarks>
-        /// This is mitigation for clipboard locking issues in TS sessions. See Dev10 bug 616223 and VSWhidbey bug 476911.
-        /// </remarks>
+        /// This is mitigation for clipboard locking issues in TS sessions. See Dev10 
+
         private const int OleRetryDelay = 100;
 
         /// <summary>
         /// The amount of time in milliseconds to sleep before flushing the clipboard after a set.
         /// </summary>
         /// <remarks>
-        /// This is mitigation for clipboard listener issues. See Dev10 bug 835751.
-        /// </remarks>
+        /// This is mitigation for clipboard listener issues. See Dev10 
+
         private const int OleFlushDelay = 10;
 
         #endregion Private Constants

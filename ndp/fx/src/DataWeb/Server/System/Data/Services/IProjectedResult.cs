@@ -7,7 +7,7 @@
 //      for associated $select segments.
 // </summary>
 //
-// @owner  [....]
+// @owner  vitkaras
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

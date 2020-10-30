@@ -73,7 +73,7 @@ namespace MS.Internal.PtsHost
             // Get paragraph's rectangle.
             _rect = floaterDetails.fsrcFloater;
 
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
             if(ParentFlowDirection != PageFlowDirection)
             {
                 mbp.MirrorMargin();
@@ -109,7 +109,7 @@ namespace MS.Internal.PtsHost
         internal override void ValidateVisual(PTS.FSKUPDATE fskupdInherited)
         {
             // Obtain all mbd info
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             // MIRROR entire element to interface with underlying layout tree. 
             // Border/Padding does not need to be mirrored, as it'll be mirrored with the content.

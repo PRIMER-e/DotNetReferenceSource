@@ -7,7 +7,7 @@
 //      so that we can bunch of validation in one place.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

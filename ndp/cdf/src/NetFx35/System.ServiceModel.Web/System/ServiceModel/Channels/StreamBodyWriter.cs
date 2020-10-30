@@ -12,10 +12,28 @@ namespace System.ServiceModel.Channels
 
     public abstract class StreamBodyWriter : BodyWriter
     {
- 
+        // if isQuirkedTo40Behavior = true, does not try to write out <Binary> tags 
+        //   this maintains compatibility for 4.0 implementers of a derived StreamBodyWriter if they 
+        //   depended on behaviour where StreamBodyWriter isn't ByteStreamEncoder aware. 
+        //   e.g., if they wrote their own <Binary> tags and relied on StreamBodyWriter to only write out the body. 
+        //
+        // if isQuirkedTo40Behavior = false, XmlWriterBackedStream will write out <Binary> tags (default in 4.5)
+        readonly bool isQuirkedTo40Behavior;
+
+        // externally accessible constructor quirked: 
+        // if version <  4.5, XmlWriterBackedStream does not try to write out <Binary> tags
+        // if version >= 4.5, XmlWriterBackedStream will write out <Binary> tags
         protected StreamBodyWriter(bool isBuffered)
-            : base(isBuffered)
+            : this(isBuffered, !OSEnvironmentHelper.IsApplicationTargeting45)
         { }
+
+        // internally accessible constructor allows derived types to determine whether StreamBodyWriter should be ByteStream aware
+        // internal implementations SHOULD use isQuirkedTo40Behavior = false. 
+        internal StreamBodyWriter(bool isBuffered, bool isQuirkedTo40Behavior)
+            : base(isBuffered)
+        {
+            this.isQuirkedTo40Behavior = isQuirkedTo40Behavior;  
+        }
 
         internal static StreamBodyWriter CreateStreamBodyWriter(Action<Stream> streamAction)
         {
@@ -41,7 +59,7 @@ namespace System.ServiceModel.Channels
 
         protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
         {
-            using (XmlWriterBackedStream stream = new XmlWriterBackedStream(writer))
+            using (XmlWriterBackedStream stream = new XmlWriterBackedStream(writer, this.isQuirkedTo40Behavior))
             {
                 OnWriteBodyContents(stream);
             }
@@ -50,16 +68,19 @@ namespace System.ServiceModel.Channels
         class XmlWriterBackedStream : Stream
         {
             private const string StreamElementName = "Binary";
+            private readonly bool isQuirkedTo40Behavior; 
 
             XmlWriter writer;
-            
-            public XmlWriterBackedStream(XmlWriter writer)
+
+            public XmlWriterBackedStream(XmlWriter writer, bool isQuirkedTo40Behavior)
             {
                 if (writer == null)
                 {
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
                 }
                 this.writer = writer;
+
+                this.isQuirkedTo40Behavior = isQuirkedTo40Behavior;
             }
 
             public override bool CanRead
@@ -134,13 +155,15 @@ namespace System.ServiceModel.Channels
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                if (writer.WriteState == WriteState.Start)
+                if (writer.WriteState == WriteState.Content || this.isQuirkedTo40Behavior)
                 {
-                    writer.WriteStartElement(StreamElementName, string.Empty);
+                    // if isQuirkedTo40Behavior == true, maintains compatibility for 4.0 implementers of a derived StreamBodyWriter 
+                    // if they depended on behaviour without state checks, e.g., if they wrote their own <Binary> tags 
                     this.writer.WriteBase64(buffer, offset, count);
                 }
-                else if (writer.WriteState == WriteState.Content)
+                else if (writer.WriteState == WriteState.Start)
                 {
+                    writer.WriteStartElement(StreamElementName, string.Empty);
                     this.writer.WriteBase64(buffer, offset, count);
                 }
             }
@@ -152,7 +175,7 @@ namespace System.ServiceModel.Channels
             int size;
 
             public BufferedBytesStreamBodyWriter(byte[] array, int size)
-                : base(true)
+                : base(true, false)
             {
                 this.array = array;
                 this.size = size;
@@ -169,7 +192,7 @@ namespace System.ServiceModel.Channels
             Action<Stream> actionOfStream;
 
             public ActionOfStreamBodyWriter(Action<Stream> actionOfStream)
-                : base(false)
+                : base(false, false)
             {
                 this.actionOfStream = actionOfStream;
             }

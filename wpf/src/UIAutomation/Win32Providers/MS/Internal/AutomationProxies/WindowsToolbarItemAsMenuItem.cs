@@ -13,7 +13,7 @@
 //              toolbar items already.
 //
 // History:
-//  01/31/2005 : [....] Created
+//  01/31/2005 : Microsoft Created
 //---------------------------------------------------------------------------
 
 using System;

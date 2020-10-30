@@ -43,7 +43,7 @@ PathType PathGuessType(
 // This is like WszCat, only it makes sure that a '\\' separator is added
 // if necessary.  The return value is wszPath passed in.  For the general
 // case, the wszPath buffer should be MAX_PATH * 2 characters.
-// [....]: 10/26/2004:  It's wrong to assume that a path is a given size.  Added a specific parameter to cover this.
+// Microsoft: 10/26/2004:  It's wrong to assume that a path is a given size.  Added a specific parameter to cover this.
 WCHAR * PathCatName(
     _Inout_opt_cap_(cchPathBuffer)_Prepost_count_(cchPathBuffer)WCHAR * wszPath,
     size_t cchPathBuffer,

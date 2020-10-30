@@ -75,7 +75,7 @@ namespace System.Windows.Controls
 
             this.AddVisualChild(_viewport3DVisual);
 
-            // NTRAID#Longhorn-1219113-7/11/2005-[....] XamlSerializer does not support RO DPs
+            // NTRAID#Longhorn-1219113-7/11/2005-Microsoft XamlSerializer does not support RO DPs
             //
             //  The XamlSerializer currently only serializes locally set properties.  To
             //  work around this we intentionally promote our ReadOnly Children

@@ -1343,7 +1343,7 @@ enum
 #define ECMD_GOTOPREVBOOKMARKINDOC  152
 #define ECMD_INVOKESNIPPETFROMSHORTCUT 154
 
-// For managed language services internal use only ([....])
+// For managed language services internal use only (Microsoft)
 #define ECMD_AUTOCOMPLETE           155
 #define ECMD_INVOKESNIPPETPICKER2    156
 
@@ -1364,7 +1364,7 @@ enum
 #define ECMD_SAVECOPYOFITEMAS       223
 //
 // Shareable commands originating in the HTML editor
-// Shared table commands are obsolete! If you still rely on them, please contact jbresler or [....] on
+// Shared table commands are obsolete! If you still rely on them, please contact jbresler or Microsoft on
 // the HTML editor team
 //
 #define ECMD_NEWELEMENT             224
@@ -1947,7 +1947,7 @@ enum
 #define ECMD_ADDCONFIGTRANSFORMS   1402
 
 //
-// Shareable commands from [....]
+// Shareable commands from Microsoft
 //
 #define ECMD_CANCELDRAG            1500
 #define ECMD_DEFAULTACTION         1501
@@ -2269,7 +2269,7 @@ enum
 #define ECMD_GENERATE_DATABASE          1958
 #define ECMD_CONFIGURE_CONNECTIONS      1959
 #define ECMD_IMPORT_XMLSCHEMA           1960
-#define ECMD_[....]_WITH_DATABASE         1961
+#define ECMD_SYNC_WITH_DATABASE         1961
 #define ECMD_CONFIGURE                  1962
 #define ECMD_CREATE_DATAFORM            1963
 #define ECMD_CREATE_ENUM                1964

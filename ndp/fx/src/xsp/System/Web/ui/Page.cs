@@ -17,6 +17,7 @@ namespace System.Web.UI {
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -194,7 +195,7 @@ public class Page: TemplateControl, IHttpHandler {
     private const string PageSubmitScriptKey = "PageSubmitScript";
     private const string PageReEnableControlsScriptKey = "PageReEnableControlsScript";
 
-    // NOTE: Make sure this stays in [....] with MobilePage.PageRegisteredControlsThatRequirePostBackKey
+    // NOTE: Make sure this stays in sync with MobilePage.PageRegisteredControlsThatRequirePostBackKey
     // 
     private const string PageRegisteredControlsThatRequirePostBackKey = "__ControlsRequirePostBackKey__";
 
@@ -317,6 +318,7 @@ public class Page: TemplateControl, IHttpHandler {
 
     internal const string ViewStateFieldPrefixID = systemPostFieldPrefix + "VIEWSTATE";
     internal const string ViewStateFieldCountID = ViewStateFieldPrefixID + "FIELDCOUNT";
+    internal const string ViewStateGeneratorFieldID = ViewStateFieldPrefixID + "GENERATOR";
     internal const string ViewStateEncryptionID = systemPostFieldPrefix + "VIEWSTATEENCRYPTED";
     internal const string EventValidationPrefixID = systemPostFieldPrefix + "EVENTVALIDATION";
     // Any change in this constant must be duplicated in DetermineIsExportingWebPart
@@ -401,6 +403,7 @@ public class Page: TemplateControl, IHttpHandler {
     private const int isPartialRenderingSupported    = 0x00000010;
     private const int isPartialRenderingSupportedSet = 0x00000020;
     private const int skipFormActionValidation       = 0x00000040;
+    private const int wasViewStateMacErrorSuppressed = 0x00000080;
 
     // Todo: Move boolean fields into _pageFlags.
     #pragma warning disable 0649
@@ -418,6 +421,8 @@ public class Page: TemplateControl, IHttpHandler {
 
     private UnobtrusiveValidationMode? _unobtrusiveValidationMode;
 
+    private bool _executingAsyncTasks = false;
+
     private static StringSet s_systemPostFields;
     static Page() {
         // Create a static hashtable with all the names that should be
@@ -426,6 +431,7 @@ public class Page: TemplateControl, IHttpHandler {
         s_systemPostFields.Add(postEventSourceID);
         s_systemPostFields.Add(postEventArgumentID);
         s_systemPostFields.Add(ViewStateFieldCountID);
+        s_systemPostFields.Add(ViewStateGeneratorFieldID);
         s_systemPostFields.Add(ViewStateFieldPrefixID);
         s_systemPostFields.Add(ViewStateEncryptionID);
         s_systemPostFields.Add(previousPageID);
@@ -470,6 +476,15 @@ public class Page: TemplateControl, IHttpHandler {
     private IValueProvider ActiveValueProvider {
         get;
         set;
+    }
+
+    internal bool IsExecutingAsyncTasks {
+        get {
+            return _executingAsyncTasks;
+        }
+        set {
+            _executingAsyncTasks = value;
+        }
     }
 
     public ModelBindingExecutionContext ModelBindingExecutionContext {
@@ -603,7 +618,6 @@ public class Page: TemplateControl, IHttpHandler {
     /// <para>Gets the HttpContext for the Page.</para>
     /// </devdoc>
     protected internal override HttpContext Context {
-        [System.Runtime.TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
         get {
             if (_context == null) {
                 _context = HttpContext.Current;
@@ -1108,7 +1122,6 @@ public class Page: TemplateControl, IHttpHandler {
     DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)
     ]
     public HttpRequest Request {
-        [System.Runtime.TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
         get {
             if (_request == null)
                 throw new HttpException(SR.GetString(SR.Request_not_available));
@@ -1513,6 +1526,21 @@ public class Page: TemplateControl, IHttpHandler {
         return base.GetUniqueIDPrefix();
     }
 
+    // This is a non-cryptographic hash code that can be used to identify which Page generated
+    // a __VIEWSTATE field. It shouldn't be considered sensitive information since its inputs
+    // are assumed to be known by all parties.
+    internal uint GetClientStateIdentifier() {
+        // Use non-randomized hash code algorithms instead of String.GetHashCode.
+
+        // Use the page's directory and class name as part of the key (ASURT 64044)
+        // We need to make sure that the hash is case insensitive, since the file system
+        // is, and strange view state errors could otherwise happen (ASURT 128657)
+        int pageHashCode = StringUtil.GetNonRandomizedHashCode(TemplateSourceDirectory, ignoreCase:true);
+        pageHashCode += StringUtil.GetNonRandomizedHashCode(GetType().Name, ignoreCase:true);
+
+        return (uint)pageHashCode;
+    }
+
     /*
      * Called when an exception occurs in ProcessRequest
      */
@@ -1635,6 +1663,11 @@ public class Page: TemplateControl, IHttpHandler {
 
             // Don't treat it as a postback if the page is posted from cross page
             if (_pageFlags[isCrossPagePostRequest])
+                return false;
+
+            // Don't treat it as a postback if a view state MAC check failed and we
+            // simply ate the exception.
+            if (ViewStateMacValidationErrorWasSuppressed)
                 return false;
 
             // If we're in a Transfer/Execute, never treat as postback (ASURT 121000)
@@ -1784,7 +1817,6 @@ public class Page: TemplateControl, IHttpHandler {
     Browsable(false)
     ]
     public override bool Visible {
-        [System.Runtime.TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
         get {
             return base.Visible;
         }
@@ -2065,10 +2097,67 @@ public class Page: TemplateControl, IHttpHandler {
                 return null;
             }
 
+            // DevDiv #461378: Ignore validation errors for cross-page postbacks.
+            if (ShouldSuppressMacValidationException(e)) {
+                if (Context != null && Context.TraceIsEnabled) {
+                    Trace.Write("aspx.page", "Ignoring page state", e);
+                }
+
+                ViewStateMacValidationErrorWasSuppressed = true;
+                return null;
+            }
+
             e.WebEventCode = WebEventCodes.RuntimeErrorViewStateFailure;
             throw;
         }
         return new Pair(persister.ControlState, persister.ViewState);
+    }
+
+    private bool ViewStateMacValidationErrorWasSuppressed {
+        get { return _pageFlags[wasViewStateMacErrorSuppressed]; }
+        set { _pageFlags[wasViewStateMacErrorSuppressed] = value; }
+    }
+
+    internal bool ShouldSuppressMacValidationException(Exception e) {
+        // If the patch isn't active, don't suppress anything, as it would be a change in behavior.
+        if (!EnableViewStateMacRegistryHelper.SuppressMacValidationErrorsFromCrossPagePostbacks) {
+            return false;
+        }
+
+        // We check the __VIEWSTATEGENERATOR field for an identifier that matches the current Page.
+        // If the generator field exists and says that the current Page generated the incoming
+        // __VIEWSTATE field, then a validation failure represents a real error and we need to
+        // surface this information to the developer for resolution. Otherwise we assume this
+        // view state was not meant for us, so if validation fails we'll just ignore __VIEWSTATE.
+        if (ViewStateException.IsMacValidationException(e)) {
+            if (EnableViewStateMacRegistryHelper.SuppressMacValidationErrorsAlways) {
+                return true;
+            }
+
+            // DevDiv #841854: VSUK is often used for CSRF checks, so we can't ---- MAC exceptions by default in this case.
+            if (!String.IsNullOrEmpty(ViewStateUserKey)) {
+                return false;
+            }
+
+            if (_requestValueCollection == null) {
+                return true;
+            }
+
+            if (!VerifyClientStateIdentifier(_requestValueCollection[ViewStateGeneratorFieldID])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool VerifyClientStateIdentifier(string identifier) {
+        // Returns true iff we can parse the incoming identifier and it matches our own.
+        // If we can't parse the identifier, then by definition we didn't generate it.
+        uint parsedIdentifier;
+        return identifier != null
+            && UInt32.TryParse(identifier, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out parsedIdentifier)
+            && parsedIdentifier == GetClientStateIdentifier();
     }
 
     internal void LoadScrollPosition() {
@@ -2078,17 +2167,15 @@ public class Page: TemplateControl, IHttpHandler {
         }
         // Load the scroll positions from the request if they exist
         if (_requestValueCollection != null) {
+            double doubleValue;
+            
             string xpos = _requestValueCollection[_scrollPositionXID];
             if (xpos != null) {
-                if (!Int32.TryParse(xpos, out _scrollPositionX)) {
-                    _scrollPositionX = 0;
-                }
+                _scrollPositionX = HttpUtility.TryParseCoordinates(xpos, out doubleValue) ? (int)doubleValue : 0 ;
             }
             string ypos = _requestValueCollection[_scrollPositionYID];
             if (ypos != null) {
-                if (!Int32.TryParse(ypos, out _scrollPositionY)) {
-                    _scrollPositionY = 0;
-                }
+                _scrollPositionY = HttpUtility.TryParseCoordinates(ypos, out doubleValue) ? (int)doubleValue : 0 ;
             }
         }
     }
@@ -2170,14 +2257,22 @@ public class Page: TemplateControl, IHttpHandler {
                 ++count;
                 _hiddenFieldsToRender[name] = stateChunk;
             }
+
+            // DevDiv #461378: Write out an identifier so we know who generated this __VIEWSTATE field.
+            // It doesn't need to be MACed since the only thing we use it for is error suppression,
+            // similar to how __PREVIOUSPAGE works.
+            if (EnableViewStateMacRegistryHelper.WriteViewStateGeneratorField) {
+                // hex is easier than base64 to work with and consumes only one extra byte on the wire
+                ClientScript.RegisterHiddenField(ViewStateGeneratorFieldID, GetClientStateIdentifier().ToString("X8", CultureInfo.InvariantCulture));
+            }
         }
         else {
             // ASURT 106992
             // Need to always render out the viewstate field so alternate viewstate persistence will get called
             writer.Write("\r\n<input type=\"hidden\" name=\"");
             writer.Write(ViewStateFieldPrefixID);
-            // Dev10 Bug 486494
-            // Remove previously rendered NewLine
+            // Dev10 
+
             writer.Write("\" id=\"");
             writer.Write(ViewStateFieldPrefixID);
             writer.WriteLine("\" value=\"\" />");
@@ -2596,7 +2691,6 @@ window.onload = WebForm_RestoreScrollPosition;
         }
     }
 
-    [System.Runtime.TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
     internal bool ApplyControlStyleSheet(Control ctrl) {
         if (_styleSheet != null) {
             _styleSheet.ApplyControlSkin(ctrl);
@@ -3030,6 +3124,130 @@ window.onload = WebForm_RestoreScrollPosition;
             _controlsRequiringPostBack = leftOverControlsRequiringPostBack;
         }
 
+    }
+
+    // Operations like FindControl and LoadPostData call EnsureDataBound, which may fire up 
+    // async model binding methods. Therefore we make ProcessPostData method to be async so that we can await 
+    // async data bindings.
+    // The differences between ProcessPostData and ProcessPostDataAsync are:
+    // 1. ProcessPostDataAsync awaits GetWaitForPreviousStepCompletionAwaitable after FindControl();
+    // 2. ProcessPostDataAsync calls LoadPostDataAsync() instead of LoadPostData().
+    private async Task ProcessPostDataAsync(NameValueCollection postData, bool fBeforeLoad) {
+        if (_changedPostDataConsumers == null)
+            _changedPostDataConsumers = new ArrayList();
+
+        // identify controls that have postback data
+        if (postData != null) {
+            foreach (string postKey in postData) {
+                if (postKey != null) {
+                    // Ignore system post fields
+                    if (IsSystemPostField(postKey))
+                        continue;
+
+                    Control ctrl = null;
+                    using (Context.SyncContext.AllowVoidAsyncOperationsBlock()) {
+                        ctrl = FindControl(postKey);
+                        await GetWaitForPreviousStepCompletionAwaitable();
+                    }
+
+                    if (ctrl == null) {
+                        if (fBeforeLoad) {
+                            // It was not found, so keep track of it for the post load attempt
+                            if (_leftoverPostData == null)
+                                _leftoverPostData = new NameValueCollection();
+                            _leftoverPostData.Add(postKey, null);
+                        }
+                        continue;
+                    }
+
+                    IPostBackDataHandler consumer = ctrl.PostBackDataHandler;
+
+                    // Ignore controls that are not IPostBackDataHandler (see ASURT 13581)
+                    if (consumer == null) {
+
+                        // If it's a IPostBackEventHandler (which doesn't implement IPostBackDataHandler),
+                        // register it (ASURT 39040)
+                        if (ctrl.PostBackEventHandler != null)
+                            RegisterRequiresRaiseEvent(ctrl.PostBackEventHandler);
+
+                        continue;
+                    }
+
+                    if (consumer != null) {
+                        NameValueCollection postCollection = ctrl.CalculateEffectiveValidateRequest() ? _requestValueCollection : _unvalidatedRequestValueCollection;
+                        bool changed = await LoadPostDataAsync(consumer, postKey, postCollection);
+
+                        if (changed)
+                            _changedPostDataConsumers.Add(ctrl);
+                    }
+
+                    // ensure controls are only notified of postback once
+                    if (_controlsRequiringPostBack != null)
+                        _controlsRequiringPostBack.Remove(postKey);
+                }
+            }
+        }
+
+        // Keep track of the leftover for the post-load attempt
+        ArrayList leftOverControlsRequiringPostBack = null;
+
+        // process controls that explicitly registered to be notified of postback
+        if (_controlsRequiringPostBack != null) {
+            foreach (string controlID in _controlsRequiringPostBack) {
+                Control c = null;
+                using (Context.SyncContext.AllowVoidAsyncOperationsBlock()) {
+                    c = FindControl(controlID);
+                    await GetWaitForPreviousStepCompletionAwaitable();
+                }
+
+                if (c != null) {
+                    IPostBackDataHandler consumer = c.AdapterInternal as IPostBackDataHandler;
+                    if (consumer == null) {
+                        consumer = c as IPostBackDataHandler;
+                    }
+
+                    // Give a helpful error if the control is not a IPostBackDataHandler (ASURT 128532)
+                    if (consumer == null) {
+                        throw new HttpException(SR.GetString(SR.Postback_ctrl_not_found, controlID));
+                    }
+
+                    NameValueCollection postCollection = c.CalculateEffectiveValidateRequest() ? _requestValueCollection : _unvalidatedRequestValueCollection;
+                    bool changed = await LoadPostDataAsync(consumer, controlID, postCollection);
+                    if (changed)
+                        _changedPostDataConsumers.Add(c);
+                }
+                else {
+                    if (fBeforeLoad) {
+                        if (leftOverControlsRequiringPostBack == null)
+                            leftOverControlsRequiringPostBack = new ArrayList();
+                        leftOverControlsRequiringPostBack.Add(controlID);
+                    }
+                }
+            }
+
+            _controlsRequiringPostBack = leftOverControlsRequiringPostBack;
+        }
+
+    }
+
+    private async Task<bool> LoadPostDataAsync(IPostBackDataHandler consumer, string postKey, NameValueCollection postCollection) {
+        bool changed;
+
+        // ListControl family controls call EnsureDataBound in consumer.LoadPostData, which could be an async call in 4.6. 
+        // LoadPostData, however, is a sync method, which means we cannot await EnsureDataBound in the method.
+        // To workaround this, for ListControl family controls, we call EnsureDataBound before we call into LoadPostData.
+        if (AppSettings.EnableAsyncModelBinding && consumer is ListControl) {
+            var listControl = consumer as ListControl;
+            listControl.SkipEnsureDataBoundInLoadPostData = true;
+            using (Context.SyncContext.AllowVoidAsyncOperationsBlock()) {                
+                listControl.InternalEnsureDataBound();                
+                await GetWaitForPreviousStepCompletionAwaitable();
+            }
+        }
+
+        changed = consumer.LoadPostData(postKey, postCollection);
+
+        return changed;
     }
 
     /*
@@ -3812,7 +4030,10 @@ window.onload = WebForm_RestoreScrollPosition;
     public bool EnableViewStateMac {
         get { return _enableViewStateMac; }
         set {
-            if(_enableViewStateMac != value) {
+            // DevDiv #461378: EnableViewStateMac=false can lead to remote code execution, so we
+            // have an mechanism that forces this to keep its default value of 'true'. We only
+            // allow actually setting the value if this enforcement mechanism is inactive.
+            if (!EnableViewStateMacRegistryHelper.EnforceViewStateMac) {
                 _enableViewStateMac = value;
             }
         }
@@ -4837,7 +5058,13 @@ window.onload = WebForm_RestoreScrollPosition;
                     }
 
                     if (EtwTrace.IsTraceEnabled(EtwTraceLevel.Verbose, EtwTraceFlags.Page)) EtwTrace.Trace(EtwTraceType.ETW_TYPE_PAGE_LOAD_POSTDATA_ENTER, _context.WorkerRequest);
-                    ProcessPostData(_requestValueCollection, true /* fBeforeLoad */);
+                    if (AppSettings.EnableAsyncModelBinding) {
+                        await ProcessPostDataAsync(_requestValueCollection, true /* fBeforeLoad */).WithinCancellableCallback(con);
+                    }
+                    else {
+                        ProcessPostData(_requestValueCollection, true /* fBeforeLoad */);
+                    }
+
                     if (EtwTrace.IsTraceEnabled(EtwTraceLevel.Verbose, EtwTraceFlags.Page)) EtwTrace.Trace(EtwTraceType.ETW_TYPE_PAGE_LOAD_POSTDATA_LEAVE, _context.WorkerRequest);
                     if (con.TraceIsEnabled) Trace.Write("aspx.page", "End ProcessPostData");
                 }
@@ -4858,7 +5085,13 @@ window.onload = WebForm_RestoreScrollPosition;
                 if (IsPostBack) {
                     // Try process the post data again (ASURT 29045)
                     if (con.TraceIsEnabled) Trace.Write("aspx.page", "Begin ProcessPostData Second Try");
-                    ProcessPostData(_leftoverPostData, false /* !fBeforeLoad */);
+                    if (AppSettings.EnableAsyncModelBinding) {
+                        await ProcessPostDataAsync(_leftoverPostData, false /* !fBeforeLoad */).WithinCancellableCallback(con);
+                    }
+                    else {
+                        ProcessPostData(_leftoverPostData, false /* !fBeforeLoad */);
+                    }
+
                     if (con.TraceIsEnabled) {
                         Trace.Write("aspx.page", "End ProcessPostData Second Try");
                         Trace.Write("aspx.page", "Begin Raise ChangedEvents");
@@ -5346,8 +5579,8 @@ window.onload = WebForm_RestoreScrollPosition;
         HttpCapabilitiesBase caps = _request.Browser;
 
         if(caps != null) {
-            // Dev10 440476: Page.SetIntrinsics method has a bug causing throwing NullReferenceException
-            // in certain circumstances. This edge case was regressed by the VSWhidbey fix below.
+            // Dev10 440476: Page.SetIntrinsics method has a 
+
 
             // VSWhidbey 109162: Set content type at the very beginning so it can be
             // overwritten within the user code of the page if needed.
@@ -5759,7 +5992,7 @@ window.onload = WebForm_RestoreScrollPosition;
         }
     }
 
-    private CancellationTokenSource CreateCancellationTokenFromAsyncTimeout() {
+    internal CancellationTokenSource CreateCancellationTokenFromAsyncTimeout() {
         TimeSpan timeout = AsyncTimeout;
 
         // CancellationTokenSource can only create timers within a specific range (<= _maxAsyncTimeout)

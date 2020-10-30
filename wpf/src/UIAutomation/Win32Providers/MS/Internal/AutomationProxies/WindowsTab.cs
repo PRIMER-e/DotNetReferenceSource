@@ -979,7 +979,7 @@ namespace MS.Internal.AutomationProxies
         {
             get
             {
-                // If this is a [....] tab page and the AccessibleName is set, use it.
+                // If this is a Microsoft tab page and the AccessibleName is set, use it.
                 if (WindowsFormsHelper.IsWindowsFormsControl(_hwnd, ref _windowsForms))
                 {
                     string name = GetAccessibleName(_item + 1);
@@ -1236,7 +1236,7 @@ namespace MS.Internal.AutomationProxies
         {
             string sName = GetItemText(hwnd, item);
 
-            // Win32 controls '&' is used as an accelerator. This is not the case for [....] !!!
+            // Win32 controls '&' is used as an accelerator. This is not the case for Microsoft !!!
             return !fIsWinform ? Misc.StripMnemonic(sName) : sName;
         }
 

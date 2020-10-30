@@ -7,7 +7,7 @@
 // Description: DefaultvalueFactory for Freezables
 //
 // History:
-//  2005/11/08 : [....] - Created from PresentationCore's old 
+//  2005/11/08 : Microsoft - Created from PresentationCore's old 
 //                          MutableDefaultPropertyMetadata
 //
 //---------------------------------------------------------------------------

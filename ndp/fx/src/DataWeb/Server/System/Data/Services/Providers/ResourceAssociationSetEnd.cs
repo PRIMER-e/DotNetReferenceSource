@@ -6,7 +6,7 @@
 //      Describes an end point of a resource association set.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

@@ -251,7 +251,7 @@ namespace System.Windows.Controls.Primitives
         // ------------------------------------------------------------------
 
         /// <summary>
-        /// Whether this Selector should keep SelectedItem in [....] with the ItemCollection's current item.
+        /// Whether this Selector should keep SelectedItem in sync with the ItemCollection's current item.
         /// </summary>
         public static readonly DependencyProperty IsSynchronizedWithCurrentItemProperty =
                 DependencyProperty.Register(
@@ -263,7 +263,7 @@ namespace System.Windows.Controls.Primitives
                                 new PropertyChangedCallback(OnIsSynchronizedWithCurrentItemChanged)));
 
         /// <summary>
-        /// Whether this Selector should keep SelectedItem in [....] with the ItemCollection's current item.
+        /// Whether this Selector should keep SelectedItem in sync with the ItemCollection's current item.
         /// </summary>
         [Bindable(true), Category("Behavior")]
         [TypeConverter("System.Windows.NullableBoolConverter, PresentationFramework, Version=" + BuildInfo.WCP_VERSION + ", Culture=neutral, PublicKeyToken=" + BuildInfo.WCP_PUBLIC_KEY_TOKEN + ", Custom=null")]
@@ -310,8 +310,8 @@ namespace System.Windows.Controls.Primitives
             if (!oldSync && newSync)
             {
                 // if the selection has already been set, honor it and bring currency
-                // into [....].  (Typical case:  <ListBox SelectedItem=x IsSync=true/>)
-                // Otherwise, bring selection into [....] with currency.
+                // into sync.  (Typical case:  <ListBox SelectedItem=x IsSync=true/>)
+                // Otherwise, bring selection into sync with currency.
                 if (SelectedItem != null)
                 {
                     SetCurrentToSelected();
@@ -1087,7 +1087,7 @@ namespace System.Windows.Controls.Primitives
                     try
                     {
                         ItemInfo info = NewItemInfo(e.NewItems[0], null, e.NewStartingIndex);
-                        // If we added something, see if it was set be selected and [....].
+                        // If we added something, see if it was set be selected and sync.
                         if (InfoGetIsSelected(info))
                         {
                             SelectionChange.Select(info, true /* assumeInItemsCollection */);
@@ -1120,6 +1120,14 @@ namespace System.Windows.Controls.Primitives
 
                 case NotifyCollectionChangedAction.Move:
                 {
+                    // some panels (e.g. VSP) implement Move by removing containers
+                    // from the visual tree directly, bypassing the generator and
+                    // thus bypassing the notification Selector uses to adjust the
+                    // Container field of ItemInfos in the selected item list.
+                    // So do that adjustment now.  Otherwise we can end up with
+                    // multiple ItemInfos representing the same item (Dev11 999613).
+                    AdjustNewContainers();
+
                     SelectionChange.Validate();
                     break;
                 }
@@ -1668,7 +1676,7 @@ namespace System.Windows.Controls.Primitives
             if (_selectedItems.Count > 0)
             {
                 // an item has been selected, so turn off the delayed
-                // selection by SelectedValue (bug 452619)
+                // selection by SelectedValue (
                 _cacheValid[(int)CacheBits.SelectedValueWaitsForItems] = false;
             }
 
@@ -1738,7 +1746,7 @@ namespace System.Windows.Controls.Primitives
 
             DependencyObject container = info.Container;
 
-            if (container != null)
+            if (container != null && container != ItemInfo.RemovedContainer)
             {
                 // First check that the value is different and then set it.
                 if (GetIsSelected(container) != value)
@@ -1973,6 +1981,12 @@ namespace System.Windows.Controls.Primitives
                 {
                     if (info.Index < 0)
                     {
+                        // we want to remove this ItemInfo from the selection,
+                        // even if it refers to the same item as another selected ItemInfo
+                        // (which can happen when SelectedItems contains duplicates).
+                        // Thus we want it to compare as unequal to any ItemInfo
+                        // except itself;  marking it Removed does exactly that. (DDVSO 154627)
+                        info.Container = ItemInfo.RemovedContainer;
                         SelectionChange.Unselect(info);
                     }
                 }
@@ -2227,7 +2241,7 @@ namespace System.Windows.Controls.Primitives
                 // only raise the event if there were actually any changes applied
                 if (unselected.Count > 0 || selected.Count > 0)
                 {
-                    // see bug 1459509: update Current AFTER selection change and before raising event
+                    // see 
                     if (_owner.IsSynchronizedWithCurrentItemPrivate)
                         _owner.SetCurrentToSelected();
                     _owner.InvokeSelectionChanged(unselected, selected);
@@ -2772,7 +2786,7 @@ namespace System.Windows.Controls.Primitives
             // If the underlying items don't implement GetHashCode according to
             // guidelines (i.e. if an item's hashcode can change during the item's
             // lifetime) we can't use any hash-based data structures like Dictionary,
-            // Hashtable, etc.  The principal offender is DataRowView.  (bug 1583080)
+            // Hashtable, etc.  The principal offender is DataRowView.  (
             public bool UsesItemHashCodes
             {
                 get { return _set != null; }

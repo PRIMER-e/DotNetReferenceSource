@@ -336,7 +336,7 @@ namespace System.Windows
                         throw new InvalidOperationException(SR.Get(SRID.InvalidPropertyValue, value, dp.Name));
                     }
 
-                    // Make sure the entryIndex is in [....] after
+                    // Make sure the entryIndex is in sync after
                     // the inflation of the deferred reference.
                     entryIndex = CheckEntryIndex(entryIndex, dp.GlobalIndex);
 
@@ -389,7 +389,7 @@ namespace System.Windows
                     throw new InvalidOperationException(SR.Get(SRID.InvalidPropertyValue, value, dp.Name));
                 }
 
-                // Make sure the entryIndex is in [....] after
+                // Make sure the entryIndex is in sync after
                 // the inflation of the deferred reference.
                 entryIndex = CheckEntryIndex(entryIndex, dp.GlobalIndex);
 
@@ -1145,9 +1145,9 @@ namespace System.Windows
         ///  means no more changes, which means no more invalidations.
         ///
         /// This is being done as an internal method to enable the performance
-        ///  bug #1114409.  This is candidate for a public API but we can't
-        ///  do that kind of work at the moment.
-        /// </remarks>
+        ///  
+
+
         [FriendAccessAllowed] // Built into Base, also used by Framework.
         internal void InvalidateSubProperty(DependencyProperty dp)
         {
@@ -1185,7 +1185,7 @@ namespace System.Windows
         ///     Invalidates a property
         /// </summary>
         /// <param name="dp">Dependency property</param>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         public void InvalidateProperty(DependencyProperty dp)
         {
             InvalidateProperty(dp, preserveCurrentValue:false);
@@ -1199,14 +1199,14 @@ namespace System.Windows
         // InvalidateProperty (VirtualizingStackPanel does this), relying on behavior
         // that should also have been different - an invalidation that doesn't change
         // the base value should preserve the current value.
-        //  This matters for triggers (see Dev11 bug 72825).  When any input to a
-        // trigger condition changes, the trigger simply invalidates all the properties
-        // mentioned in its setters.  These invalidations often discover no value change -
-        // (example:  Trigger condition is "IsVisible && HasErrors";  if IsVisible is false,
-        // changing input HasErrors won't change the condition value.   The dependent
-        // properties are invalidated, but they don't actually change value.)
-        //  To fix the bug, we are putting in the "preserve current value" behavior, but
-        // only for invalidations that come from triggers.
+        //  This matters for triggers (see Dev11 
+
+
+
+
+
+
+
         internal void InvalidateProperty(DependencyProperty dp, bool preserveCurrentValue)
         {
             // Do not allow foreign threads access.
@@ -1860,7 +1860,7 @@ namespace System.Windows
             return newEntry;
         }
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         private EffectiveValueEntry EvaluateEffectiveValue(
             EntryIndex entryIndex,
             DependencyProperty dp,
@@ -2405,7 +2405,7 @@ namespace System.Windows
             if (sources != null)
             {
                 // don't hold a reference on the dependent if the expression is doing
-                // the invalidations.  This helps avoid memory leaks (bug 871139)
+                // the invalidations.  This helps avoid memory leaks (
                 if (expr.ForwardsInvalidations)
                 {
                     d = null;

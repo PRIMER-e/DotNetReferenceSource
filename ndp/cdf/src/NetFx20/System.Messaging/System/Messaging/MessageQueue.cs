@@ -122,9 +122,9 @@ namespace System.Messaging
         private static CacheTable<QueueInfoKeyHolder, MQCacheableInfo> queueInfoCache =
             new CacheTable<QueueInfoKeyHolder, MQCacheableInfo>("queue info", 4, new TimeSpan(0, 0, 100));        // <formatname, accessMode> -> <readHandle. writeHandle, isTrans>
 
-        // Whidbey Beta 2 SECREVIEW (Dec 2004 [....]):
-        // Connection Cache can be a security vulnerability (see bug 422227)
-        // Therefore, disable it by default
+        // Whidbey Beta 2 SECREVIEW (Dec 2004 Microsoft):
+        // Connection Cache can be a security vulnerability (see 
+
         private static bool enableConnectionCache = false;
 
         // Double-checked locking pattern requires volatile for read/write synchronization
@@ -139,6 +139,20 @@ namespace System.Messaging
 
         private object syncRoot = new object();
         private static object staticSyncRoot = new object();
+        
+        static MessageQueue()
+        {
+            try
+            {
+                using (TelemetryEventSource eventSource = new TelemetryEventSource())
+                {
+                    eventSource.MessageQueue();
+                }
+            }
+            catch
+            {
+            }
+        }
 
         /// <include file='doc\MessageQueue.uex' path='docs/doc[@for="MessageQueue.MessageQueue"]/*' />
         /// <devdoc>
@@ -2532,7 +2546,7 @@ namespace System.Messaging
                         if (!SafeNativeMethods.GetHandleInformation(handle, out handleInformation))
                             // If not a File handle, need to use MSMQ
                             // APC based async IO.
-                            // We will need to store references to pending async requests (bug 88607)
+                            // We will need to store references to pending async requests (
                             this.useThreadPool = false;
                         else
                         {
@@ -2557,14 +2571,14 @@ namespace System.Messaging
             AsynchronousRequest request = new AsynchronousRequest(this, (uint)timeoutInMilliseconds, cursorHandle, action, this.useThreadPool, stateObject, callback);
 
             //
-            // Bug 88607 - keep a reference to outstanding asyncresult so its' not GCed
-            //  This applies when GetHandleInformation returns false -> useThreadPool set to false
-            //  It should only happen on dependent client, but we here we cover all GetHandleInformation
-            //  failure paths for robustness.
-            //
-            // Need to add reference before calling BeginRead because request can complete by the time 
-            // reference is added, and it will be leaked if added to table after completion
-            //
+            // 
+
+
+
+
+
+
+
             if (!this.useThreadPool)
             {
                 OutstandingAsyncRequests[request] = request;
@@ -2599,8 +2613,8 @@ namespace System.Messaging
 
                 //
                 // Use cursor (and not MessageEnumerator) to navigate the queue because enumerator implementation can be incorrect
-                // in multithreaded scenarios (see bug 329311)
-                //
+                // in multithreaded scenarios (see 
+
 
                 //
                 // Get cursor handle
@@ -3844,13 +3858,13 @@ namespace System.Messaging
                     // MSMQ does a hacky trick to return the operation 
                     // result through the completion port.
 
-                    // [....] Dec 2004. Bug 419155: 
-                    // NativeOverlapped.InternalLow returns IntPtr, which is 64 bits on a 64 bit platform.
-                    // It contains MSMQ error code, which, when set to an error value, is outside of the int range
-                    // Therefore, OverflowException is thrown in checked context. 
-                    // However, IntPtr (int) operator ALWAYS runs in checked context on 64 bit platforms.
-                    // Therefore, we first cast to long to avoid OverflowException, and then cast to int
-                    // in unchecked context 
+                    // Microsoft Dec 2004. 
+
+
+
+
+
+
                     long msmqError = (long)overlappedPointer->InternalLow;
                     unchecked
                     {
@@ -3896,7 +3910,7 @@ namespace System.Messaging
                             // ReadHandle called from StaleSafeReceiveMessage can throw if the handle has been invalidated
                             // (for example, by closing it), and subsequent MQOpenQueue fails for some reason. 
                             // Therefore catch exception (otherwise process will die) and propagate error
-                            // [....] Jan 2006 (Whidbey bug 570055)
+                            // Microsoft Jan 2006 (Whidbey 
                             result = this.owner.StaleSafeReceiveMessage(this.timeout, this.action, this.message.Lock(), overlappedPointer, this.onMessageReceived, this.cursorHandle, IntPtr.Zero);
                         }
                         catch (MessageQueueException e)
@@ -3941,13 +3955,13 @@ namespace System.Messaging
                 {
                     //
                     // 511878: The code below breaks the contract of ISynchronizeInvoke.
-                    // We fixed it in 367076, but that fix resulted in a regression that is bug 511878.
-                    // "Proper fix" for 511878 requires special-casing Form. That causes us to 
-                    // load System.Windows.Forms and System.Drawing, 
-                    // which were previously not loaded on this path. 
-                    // As only one customer complained about 367076, we decided to revert to 
-                    // Everett behavior
-                    //
+                    // We fixed it in 367076, but that fix resulted in a regression that is 
+
+
+
+
+
+
                     if (this.owner.SynchronizingObject != null &&
                         this.owner.SynchronizingObject.InvokeRequired)
                     {
@@ -3958,9 +3972,9 @@ namespace System.Messaging
                 }
                 catch (Exception)
                 {
-                    // [....], Dec 2004: ----ing exceptions here is a serious bug.
-                    // However, it would be a breaking change to remove this catch, 
-                    // therefore we decided to preserve the existing behavior 
+                    // Microsoft, Dec 2004: ----ing exceptions here is a serious 
+
+
 
                 }
                 finally
@@ -4176,7 +4190,7 @@ namespace System.Messaging
                 rwLock.AcquireWriterLock(-1);
                 try
                 {
-                    if (val == null /* not Value.default - bug in C# compiler? */)
+                    if (val == null /* not Value.default - */)
                     {
                         table[key] = null;
                     }

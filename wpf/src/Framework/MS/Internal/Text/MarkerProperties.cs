@@ -7,8 +7,8 @@
 // Description: Marker properties. 
 //
 // History:  
-//  06/06/2003 : [....] - created.
-//  07/18/2003 : [....] - converted to new Property Engine.
+//  06/06/2003 : Microsoft - created.
+//  07/18/2003 : Microsoft - converted to new Property Engine.
 //
 //---------------------------------------------------------------------------
 

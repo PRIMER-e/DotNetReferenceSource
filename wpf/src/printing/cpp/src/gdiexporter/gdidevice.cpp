@@ -120,8 +120,8 @@ HRESULT CGDIDevice::Polyline(array<PointI>^ pPoints, int offset, int nCount)
         return S_OK;
     }
 
-    // Bug fix for 1139723: line with 30K points does not print on PCL/PS printers, display very slowly in GDI
-    // Break lines could cause start/end/line cap differences. But avoiding unprintable cases may be more important.
+    // 
+
     if (nCount > 4096)
     {
         HRESULT hr = Polyline(pPoints, offset,              nCount / 2);

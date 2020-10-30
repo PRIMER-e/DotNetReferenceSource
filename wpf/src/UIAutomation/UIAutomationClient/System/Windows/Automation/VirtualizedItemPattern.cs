@@ -8,7 +8,7 @@
 // Description: Client-side wrapper for VirtualizedItem Pattern
 //
 // History:  
-//  10/21/2008 : [....] - created
+//  10/21/2008 : Microsoft - created
 //
 //---------------------------------------------------------------------------
 

@@ -7,7 +7,7 @@
 **
 ** Class: SecurityResources
 ** 
-** <OWNER>[....]</OWNER>
+** <OWNER>Microsoft</OWNER>
 **
 ** Author: Rudi Martin
 **

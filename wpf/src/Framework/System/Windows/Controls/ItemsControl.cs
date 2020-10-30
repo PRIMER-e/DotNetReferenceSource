@@ -123,7 +123,7 @@ namespace System.Windows.Controls
 
             // the generator must attach its collection change handler before
             // the control itself, so that the generator is up-to-date by the
-            // time the control tries to use it (bug 892806 et al.)
+            // time the control tries to use it (
             _itemContainerGenerator = new ItemContainerGenerator(this);
 
             _itemContainerGenerator.ChangeAlternationCount();
@@ -1324,19 +1324,19 @@ namespace System.Windows.Controls
         {
             DependencyObject container;
 
-            // use the item directly, if possible (bug 870672)
+            // use the item directly, if possible (
             if (IsItemItsOwnContainerOverride(item))
                 container = item as DependencyObject;
             else
                 container = GetContainerForItemOverride();
 
             // the container might have a parent from a previous
-            // generation (bug 873118).  If so, clean it up before using it again.
-            //
-            // Note: This assumes the container is about to be added to a new parent,
-            // according to the ItemsControl/Generator/Container pattern.
-            // If someone calls the generator and doesn't add the container to
-            // a visual parent, unexpected things might happen.
+            // generation (
+
+
+
+
+
             Visual visual = container as Visual;
             if (visual != null)
             {
@@ -1395,7 +1395,7 @@ namespace System.Windows.Controls
             if (container == item && TraceData.IsEnabled)
             {
                 // issue a message if there's an ItemTemplate(Selector) for "direct" items
-                // The ItemTemplate isn't used, which may confuse the user (bug 991101).
+                // The ItemTemplate isn't used, which may confuse the user (
                 if (ItemTemplate != null || ItemTemplateSelector != null)
                 {
                     TraceData.Trace(TraceEventType.Error, TraceData.ItemTemplateForDirectItem, AvTrace.TypeName(item));
@@ -1414,13 +1414,13 @@ namespace System.Windows.Controls
         /// </summary>
         void IGeneratorHost.ClearContainerForItem(DependencyObject container, object item)
         {
-            // This method no longer does most of the work it used to (bug 1445288).
-            // It is called when a container is removed from the tree;  such a
-            // container will be GC'd soon, so there's no point in changing
-            // its properties.
-            //
-            // We still call the override method, to give subclasses a chance
-            // to clean up anything they may have done during Prepare (bug 1561206).
+            // This method no longer does most of the work it used to (
+
+
+
+
+
+
 
             GroupItem groupItem = container as GroupItem;
             if (groupItem == null)
@@ -1836,6 +1836,15 @@ namespace System.Windows.Controls
             {
                 // We might be virtualized, try to de-virtualize the item.
                 // Note: There is opportunity here to make a public OM.
+                //
+                // Call UpdateLayout first, in case there is a pending Measure
+                // that replaces the ItemsHost with a different panel.   We should
+                // forward the request to the correct panel, of course.  (Dev11 739520)
+                if (!FrameworkCompatibilityPreferences.GetVSP45Compat())
+                {
+                    UpdateLayout();
+                }
+
                 VirtualizingPanel itemsHost = ItemsHost as VirtualizingPanel;
                 if (itemsHost != null)
                 {
@@ -1972,9 +1981,9 @@ namespace System.Windows.Controls
                 if (startingElement == null || !ItemsHost.IsAncestorOf(startingElement))
                 {
                     //
-                    // Bug 991220 makes it so that we have to start from the ScrollHost.
-                    // If we try to start from the ItemsHost it will always skip the first item.
-                    //
+                    // 
+
+
                     startingElement = ScrollHost;
                 }
                 else
@@ -2944,6 +2953,21 @@ namespace System.Windows.Controls
             return GetElementViewportPosition(viewPort, element, axis, fullyVisible, out elementRect);
         }
 
+        internal static ElementViewportPosition GetElementViewportPosition(FrameworkElement viewPort,
+            UIElement element,
+            FocusNavigationDirection axis,
+            bool fullyVisible,
+            out Rect elementRect)
+        {
+            return GetElementViewportPosition(
+                viewPort,
+                element,
+                axis,
+                fullyVisible,
+                false,
+                out elementRect);
+        }
+
         /// <summary>
         /// Determines if the given element is
         ///     1) Completely in the current visible page along the given axis.
@@ -2951,13 +2975,16 @@ namespace System.Windows.Controls
         ///     3) Before the current page along the given axis.
         ///     4) After the current page along the given axis.
         /// fullyVisible parameter specifies if the element needs to be completely
-        /// in the current visible page along the perpendicular axis (if it is
-        /// completely in the page along the major axis)
+        ///     in the current visible page along the perpendicular axis (if it is
+        ///     completely in the page along the major axis).
+        /// ignorePerpendicularAxis parameter specifies whether the position of
+        ///     given element along the secondary axis doesn't matter
         /// </summary>
         internal static ElementViewportPosition GetElementViewportPosition(FrameworkElement viewPort,
             UIElement element,
             FocusNavigationDirection axis,
             bool fullyVisible,
+            bool ignorePerpendicularAxis,
             out Rect elementRect)
         {
             elementRect = Rect.Empty;
@@ -2980,6 +3007,21 @@ namespace System.Windows.Controls
             bool eastWest = (axis == FocusNavigationDirection.Left || axis == FocusNavigationDirection.Right);
 
             elementRect = elementBounds;
+
+            if (ignorePerpendicularAxis)
+            {
+                // expand the viewport bounds to infinity along the secondary axis
+                if (northSouth)
+                {
+                    viewPortBounds = new Rect(Double.NegativeInfinity, viewPortBounds.Top,
+                                                Double.PositiveInfinity, viewPortBounds.Height);
+                }
+                else if (eastWest)
+                {
+                    viewPortBounds = new Rect(viewPortBounds.Left, Double.NegativeInfinity,
+                                                viewPortBounds.Width, Double.PositiveInfinity);
+                }
+            }
 
             // Return true if the element is completely contained within the page along the given axis.
 
@@ -3368,7 +3410,7 @@ namespace System.Windows.Controls
         {
             FrameworkObject foContainer = new FrameworkObject(container);
 
-            // don't overwrite a locally-defined style (bug 1018408)
+            // don't overwrite a locally-defined style (
             if (!foContainer.IsStyleSetFromGenerator &&
                 container.ReadLocalValue(FrameworkElement.StyleProperty) != DependencyProperty.UnsetValue)
             {
@@ -3428,6 +3470,15 @@ namespace System.Windows.Controls
             }
 
             return item;
+        }
+
+        // A version of Object.Equals with paranoia for UnsetValue, to avoid problems
+        // with classes that implement Object.Equals poorly, as in Dev11 439664, 746174
+        internal static bool EqualsEx(object o1, object o2)
+        {
+            if (DependencyProperty.UnsetValue == o1)    return (o1 == o2);
+            if (DependencyProperty.UnsetValue == o2)    return false;
+            return Object.Equals(o1, o2);
         }
 
         #endregion
@@ -3503,7 +3554,7 @@ namespace System.Windows.Controls
                 {
                     resolvePendingContainers = true;
                 }
-                else if (!Object.Equals(info.Item,
+                else if (info.IsRemoved || !ItemsControl.EqualsEx(info.Item,
                             container.ReadLocalValue(ItemContainerGenerator.ItemForItemContainerProperty)))
                 {
                     info.Container = null;
@@ -3646,10 +3697,11 @@ namespace System.Windows.Controls
                 break;
 
                 case NotifyCollectionChangedAction.Reset:
-                    // the indices are no longer valid
+                    // the indices and containers are no longer valid
                     foreach (ItemInfo info in list)
                     {
                         info.Index = -1;
+                        info.Container = null;
                     }
                 break;
             }
@@ -3692,6 +3744,17 @@ namespace System.Windows.Controls
             internal static readonly DependencyObject UnresolvedContainer = new DependencyObject();
             internal static readonly DependencyObject KeyContainer = new DependencyObject();
             internal static readonly DependencyObject RemovedContainer = new DependencyObject();
+
+            static ItemInfo()
+            {
+                // mark the special DOs as sentinels.  This helps catch bugs involving
+                // using them accidentally for anything besides equality comparison.
+                // [Removed from 4.6.2 at request of .Net Shiproom]
+                //SentinelContainer.MakeSentinel();
+                //UnresolvedContainer.MakeSentinel();
+                //KeyContainer.MakeSentinel();
+                //RemovedContainer.MakeSentinel();
+            }
 
             public ItemInfo(object item, DependencyObject container=null, int index=-1)
             {
@@ -3739,13 +3802,8 @@ namespace System.Windows.Controls
                 if (this.IsRemoved || that.IsRemoved)
                     return false;
 
-                // items must match (the paranoia for UnsetValue is to avoid problems with
-                // classes that implement Object.Equals poorly, as in Dev11 439664)
-                if (this.Item == DependencyProperty.UnsetValue && that.Item != DependencyProperty.UnsetValue)
-                    return false;
-                if (that.Item == DependencyProperty.UnsetValue && this.Item != DependencyProperty.UnsetValue)
-                    return false;
-                if (!Object.Equals(this.Item, that.Item))
+                // items must match
+                if (!ItemsControl.EqualsEx(this.Item, that.Item))
                     return false;
 
                 // Key matches anything, except Unresolved when matchUnresovled is false

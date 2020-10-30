@@ -8,7 +8,7 @@
 *
 * Created:
 *
-*   2/27/2003 [....]
+*   2/27/2003 Microsoft
 *      Created it.
 *
 **************************************************************************/
@@ -98,12 +98,12 @@ bool RenderUnicode(GlyphRun ^pGlyphRun)
       );
 
     //
-    // Fix bug 1505836: PasswordBox with PasswordChar="" results in box without box characters.
-    //
-    // A PasswordChar of "" results in GlyphRun where characters and glyph indices are all 0.
-    // ExtTextOut displays nothing when rendering characters, but displays boxes when rendering
-    // glyph indices. Force glyph index rendering if any indices are zero.
-    //
+    // Fix 
+
+
+
+
+
     if (pGlyphRun->GlyphIndices != nullptr)
     {
         for (int index = 0; index < pGlyphRun->GlyphIndices->Count; index++)
@@ -270,11 +270,11 @@ HRESULT CGDIRenderTarget::RenderGlyphRun(
             pDxArg = NULL;
         }
 
-        // Workaround for GDI bug where ExtTextOut no-ops when
-        //    A private (memory) font is selected into the DC
-        //    The DC is obtained from a text only printer (CAP_CharacterStream)(e.g. the "Generic\Text only" printer)
-        //    and the fuOptions flags does not include ETO_GLYPH_INDEX
-        // We workaround this by selecting a stock font.
+        // Workaround for GDI 
+
+
+
+
         bool workAroundMemFontPrintingBug =
             isPrivateFont
             && (CAP_CharacterStream == (GetCaps() & CAP_CharacterStream))
@@ -293,15 +293,15 @@ HRESULT CGDIRenderTarget::RenderGlyphRun(
             pDxArg = NULL;
         }
 
-        // GetLastError after ExtTextOut is not so reliable (GDI bug 1764877)
+        // GetLastError after ExtTextOut is not so reliable (GDI 
         if (CNativeMethods::ExtTextOutW(m_hDC, originX, originY, etoOptions, NULL, textPin, j - i, pDxArg))
         {
             hr = S_OK;
         }
         else
         {
-            // N.B. bug 1504904: ExtTextOut may fail but GetLastError==ERROR_SUCCESS if nothing rendered,
-            // such as text too small due to transformation).
+            // N.B. 
+
 
             hr = E_NOTIMPL; // allow converting to vector drawing using outline
 
@@ -801,7 +801,7 @@ GdiSafeHandle^ CGDIRenderTarget::CreateFont(
     }
     else
     {
-        // path to handle fix for bug 985195, see CreateSimulatedStyleFont for more info
+        // path to handle fix for 
         fontResult = CreateSimulatedStyleFont(&logfontdv, typeface->StyleSimulations);
     }
 
@@ -901,23 +901,23 @@ GdiSafeHandle^ CGDIRenderTarget::CreateFontCached(interior_ptr<ENUMLOGFONTEXDV> 
 }
 
 //
-// Fix for bug 985195: Text with style simulation differs from Avalon rendering.
-//
-// Cause: Avalon will always simulate the style stimulation, while GDI font creation may create
-// a styled font and not simulate. Most obvious case is simulating italicized bold Arial:
-// Avalon uses arial.ttf, while GDI uses arialbi.ttf.
-//
-// Fix: Force different charset to force GDI to select unstyled font and perform style simulation,
-// otherwise GDI will select the non-simulated styled font.
-//
-// Reason this works: Styled fonts typically missing some characters in non-ANSI charsets that
-// are present in unstyled font. Therefore, selecting different charset may force GDI
-// to use unstyled font and perform style simulations.
-//
-// Risk: Possible excessive font creation if style simulation requested due to looping through
-// charsets and being unable to force GDI creation of style-simulated font. However, based on
-// discussion this seems to be the best method of creating style-simulated font.
-//
+// Fix for 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 GdiSafeHandle^ CGDIRenderTarget::CreateSimulatedStyleFont(interior_ptr<ENUMLOGFONTEXDV> logfontdv, StyleSimulations styleSimulations)
 {
     GdiSafeHandle^ fontResult = nullptr;
@@ -1077,10 +1077,10 @@ String^ CGDIRenderTarget::GetFontStyle(GdiSafeHandle^ font)
     //
     // Get text metrics buffer size.
     //
-    // Bug 1323116: GetOutlineTextMetrics can fail with ERROR_INVALID_DATA on Simplified
-    // Chinese OS with font Georgia. Currently we return nullptr on failure, which will
-    // be handled gracefully, but should investigate why GDI is failing.
-    //
+    // 
+
+
+
     SelectObject(font, OBJ_FONT);
     UINT metricSize = CNativeMethods::GetOutlineTextMetrics(m_hDC, 0, nullptr);
 

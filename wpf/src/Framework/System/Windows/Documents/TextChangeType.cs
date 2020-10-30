@@ -7,7 +7,7 @@
 // Description: 
 //
 // History:  
-//  8/3/2004 : [....] - Created - preparing for TextContainer eventing
+//  8/3/2004 : benwest - Created - preparing for TextContainer eventing
 //             breaking change.
 //
 //---------------------------------------------------------------------------

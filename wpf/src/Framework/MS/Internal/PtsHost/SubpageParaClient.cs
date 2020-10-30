@@ -8,7 +8,7 @@
 //              related data of subpages.
 //
 // History:  
-//  25/08/2004 : [....] - created.
+//  25/08/2004 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 
@@ -92,7 +92,7 @@ namespace MS.Internal.PtsHost
             PTS.FSSUBPAGEDETAILS subpageDetails;
             PTS.Validate(PTS.FsQuerySubpageDetails(PtsContext.Context, _paraHandle.Value, out subpageDetails));
 
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if(ThisFlowDirection != PageFlowDirection)
             {
@@ -331,7 +331,7 @@ namespace MS.Internal.PtsHost
             PTS.Validate(PTS.FsQuerySubpageDetails(PtsContext.Context, _paraHandle.Value, out subpageDetails));
 
             // Draw border and background info.
-            MbpInfo mbpInfo = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbpInfo = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if(ThisFlowDirection != PageFlowDirection)
             {

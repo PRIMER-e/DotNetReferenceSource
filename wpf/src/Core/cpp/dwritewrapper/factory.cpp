@@ -32,7 +32,7 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
     {
         System::Guid guid = System::Guid("b859ee5a-d838-4b5b-a2e8-1adc7d93db48");
         _GUID* pGuidForIDWriteFactory = new _GUID();
-        *pGuidForIDWriteFactory = Util::ToGUID(guid);
+        *pGuidForIDWriteFactory = Native::Util::ToGUID(guid);
         _guidForIDWriteFactory = gcnew NativePointerWrapper<_GUID>(pGuidForIDWriteFactory);  
     }
 

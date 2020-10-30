@@ -450,8 +450,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
-                //
+                // SECREVIEW : Late-binding does not represent a security thread, see 
+
                 dataGridViewCell = (DataGridViewLinkCell)System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -701,7 +701,7 @@ namespace System.Windows.Forms
                 if (this.DataGridView.ShowCellErrors)
                 {
                     // Making sure that there is enough room for the potential error icon
-                    preferredSize.Width = Math.Max(preferredSize.Width, borderAndPaddingWidths + DATAGRIDVIEWCELL_iconMarginWidth * 2 + DATAGRIDVIEWCELL_iconsWidth);
+                    preferredSize.Width = Math.Max(preferredSize.Width, borderAndPaddingWidths + DATAGRIDVIEWCELL_iconMarginWidth * 2 + iconsWidth);
                 }
             }
             if (freeDimension != DataGridViewFreeDimension.Width)
@@ -714,7 +714,7 @@ namespace System.Windows.Forms
                 if (this.DataGridView.ShowCellErrors)
                 {
                     // Making sure that there is enough room for the potential error icon
-                    preferredSize.Height = Math.Max(preferredSize.Height, borderAndPaddingHeights + DATAGRIDVIEWCELL_iconMarginHeight * 2 + DATAGRIDVIEWCELL_iconsHeight);
+                    preferredSize.Height = Math.Max(preferredSize.Height, borderAndPaddingHeights + DATAGRIDVIEWCELL_iconMarginHeight * 2 + iconsHeight);
                 }
             }
             return preferredSize;

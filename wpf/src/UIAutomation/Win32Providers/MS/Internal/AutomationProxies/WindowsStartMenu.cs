@@ -8,7 +8,7 @@
 // Description: Implementation of a provider for the Classic Start Menu
 //
 // History:
-//  09/07/2004 : [....]         Created
+//  09/07/2004 : Microsoft         Created
 //
 //---------------------------------------------------------------------------
 

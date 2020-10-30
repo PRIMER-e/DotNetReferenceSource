@@ -118,8 +118,7 @@ namespace System.Net.WebSockets
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("This is just a temporary workaround until the CLR provides a public (but hidden) API to check " +
-            " whether an application is targeting 4.5. So don't take a dependency on it.")]
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.")]
         public static bool IsApplicationTargeting45()
         {
             return BinaryCompatibility.TargetsAtLeast_Desktop_V4_5;

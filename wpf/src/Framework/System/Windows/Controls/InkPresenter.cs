@@ -561,6 +561,15 @@ namespace System.Windows.Controls
         {
             if ( !_hasAddedRoot )
             {
+                // Ideally we should set _hasAddedRoot to true before calling AddVisualChild.
+                // So that VisualDiagnostics.OnVisualChildChanged can get correct child index.
+                // However it is not clear what can regress. For now we'll temporary set
+                // _parentIndex property. We'll use _parentIndex.
+                // Note that there is a comment in Visual.cs stating that _parentIndex should
+                // be set to -1 in DEBUG builds when child is removed. We are not going to 
+                // honor it. There is no _parentIndex == -1 validation is performed anywhere.
+                _renderer.RootVisual._parentIndex = 0;
+
                 AddVisualChild(_renderer.RootVisual);
                 _hasAddedRoot = true;
             }

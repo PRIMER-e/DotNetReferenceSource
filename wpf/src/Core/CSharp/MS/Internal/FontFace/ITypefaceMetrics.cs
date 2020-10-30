@@ -33,7 +33,7 @@ namespace MS.Internal.FontFace
 
 
         /// <summary>
-        /// Distance from baseline to top of English ----, relative to em size.
+        /// Distance from baseline to top of English capital, relative to em size.
         /// </summary>
         double CapsHeight { get; }
 

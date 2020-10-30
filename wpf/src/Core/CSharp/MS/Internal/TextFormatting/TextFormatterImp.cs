@@ -256,7 +256,8 @@ namespace MS.Internal.TextFormatting
                 textLine = SimpleTextLine.Create(
                     settings,
                     firstCharIndex,
-                    RealToIdealFloor(paragraphWidth)
+                    RealToIdealFloor(paragraphWidth),
+                    textSource.PixelsPerDip
                     ) as TextLine;
             }
 
@@ -655,15 +656,15 @@ namespace MS.Internal.TextFormatting
         /// <param name="y">Second value to compare.</param>
         /// <param name="mode">Text formatting mode.</param>
         /// <returns>1 if x greater than y, -1 if x less than y, 0 if x == y</returns>
-        internal static int CompareReal(double x, double y, TextFormattingMode mode)
+        internal static int CompareReal(double x, double y, double pixelsPerDip, TextFormattingMode mode)
         {
             double xDisplay = x;
             double yDisplay = y;
 
             if (mode == TextFormattingMode.Display)
             {
-                xDisplay = RoundDipForDisplayMode(x);
-                yDisplay = RoundDipForDisplayMode(y);
+                xDisplay = RoundDipForDisplayMode(x, pixelsPerDip);
+                yDisplay = RoundDipForDisplayMode(y, pixelsPerDip);
             }
 
             if (xDisplay > yDisplay)
@@ -679,11 +680,11 @@ namespace MS.Internal.TextFormatting
             return 0;
         }
 
-        internal static double RoundDip(double value, TextFormattingMode textFormattingMode)
+        internal static double RoundDip(double value, double pixelsPerDip, TextFormattingMode textFormattingMode)
         {
             if (TextFormattingMode.Display == textFormattingMode)
             {
-                return RoundDipForDisplayMode(value);
+                return RoundDipForDisplayMode(value, pixelsPerDip);
             }
             else
             {
@@ -691,14 +692,14 @@ namespace MS.Internal.TextFormatting
             }
         }
 
-        internal static double RoundDipForDisplayMode(double value)
+        internal static double RoundDipForDisplayMode(double value, double pixelsPerDip)
         {
-            return RoundDipForDisplayMode(value, MidpointRounding.ToEven);
+            return RoundDipForDisplayMode(value, pixelsPerDip, MidpointRounding.ToEven);
         }
 
-        private static double RoundDipForDisplayMode(double value, MidpointRounding midpointRounding)
+        private static double RoundDipForDisplayMode(double value, double pixelsPerDip, MidpointRounding midpointRounding)
         {
-            return Math.Round(value * Util.PixelsPerDip, midpointRounding) / Util.PixelsPerDip;
+            return Math.Round(value * pixelsPerDip, midpointRounding) / pixelsPerDip;
         }
 
         /// <summary>
@@ -714,9 +715,9 @@ namespace MS.Internal.TextFormatting
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static double RoundDipForDisplayModeJustifiedText(double value)
+        internal static double RoundDipForDisplayModeJustifiedText(double value, double pixelsPerDip)
         {
-            return RoundDipForDisplayMode(value, MidpointRounding.AwayFromZero);
+            return RoundDipForDisplayMode(value, pixelsPerDip, MidpointRounding.AwayFromZero);
         }
 
         /// <summary>
@@ -730,12 +731,12 @@ namespace MS.Internal.TextFormatting
         /// <summary>
         /// Scale LS ideal resolution value to real value
         /// </summary>
-        internal double IdealToReal(double i)
+        internal double IdealToReal(double i, double pixelsPerDip)
         {
             double value = IdealToRealWithNoRounding(i);
             if (_textFormattingMode == TextFormattingMode.Display)
             {
-                value = RoundDipForDisplayMode(value);
+                value = RoundDipForDisplayMode(value, pixelsPerDip);
             }
 
             if (i > 0)

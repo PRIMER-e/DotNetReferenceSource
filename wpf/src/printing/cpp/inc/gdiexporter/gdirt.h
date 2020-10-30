@@ -154,11 +154,11 @@ protected:
     int                         m_nWidth;
     int                         m_nHeight;
 
-    // Fix for bug 985195: We try each charset when creating style-simulated font
-    // in effort to force GDI to create unstyled font with style simulations. Here
-    // we cache the charsets that work in creating unstyled, style-simulated font.
-    //
-    // Hash from FontSimulatedStyleKey^ -> BYTE charset
+    // Fix for 
+
+
+
+
     ref class FontSimulatedStyleKey sealed
     {
     public:

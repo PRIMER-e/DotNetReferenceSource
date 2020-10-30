@@ -135,7 +135,7 @@ namespace MS.Internal.AutomationProxies
             if (idProp == AutomationElement.IsControlElementProperty)
             {
                 // Hide spin portion in the logical tree
-                // in the case when it is embedded inside of a [....] spinner
+                // in the case when it is embedded inside of a Microsoft spinner
                 if (WindowsFormsHelper.IsWindowsFormsControl(_hwnd) && IsWinformUpdown(_hwnd))
                 {
                     return false;

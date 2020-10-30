@@ -242,7 +242,7 @@ namespace System.ServiceModel.Channels
             internal Encoding encoding;
         }
 
-        class TextMessageEncoder : MessageEncoder
+        class TextMessageEncoder : MessageEncoder, ITraceSourceStringProvider
         {
             int maxReadPoolSize;
             int maxWritePoolSize;
@@ -781,6 +781,11 @@ namespace System.ServiceModel.Channels
                     }
                     return recycledStatePool;
                 }
+            }
+
+            string ITraceSourceStringProvider.GetSourceString()
+            {
+                return base.GetTraceSourceString();
             }
 
             static readonly byte[] xmlDeclarationStartText = { (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l' };

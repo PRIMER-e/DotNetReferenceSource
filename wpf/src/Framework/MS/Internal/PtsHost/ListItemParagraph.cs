@@ -7,7 +7,7 @@
 // Description: ListItemParagraph represents a single list item.
 //
 // History:  
-//  06/01/2004 : [....] - moving from Avalon branch.
+//  06/01/2004 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 

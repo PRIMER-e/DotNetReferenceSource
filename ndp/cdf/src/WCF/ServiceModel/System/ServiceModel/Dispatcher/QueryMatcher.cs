@@ -7,6 +7,7 @@ namespace System.ServiceModel.Dispatcher
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime;
     using System.ServiceModel.Channels;
     using System.ServiceModel.Diagnostics;
@@ -262,6 +263,7 @@ namespace System.ServiceModel.Dispatcher
             }
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3057:DoNotUseLoadXml")]
         static QueryMatcher()
         {
             QueryMatcher.defaultFunctionLibs = new IFunctionLibrary[] { new XPathFunctionLibrary() };
@@ -337,8 +339,8 @@ namespace System.ServiceModel.Dispatcher
             // Fx will bind prefixes and functions here.
             if (namespaces != null)
             {
-                // There's a bug in System.Xml.XPath.  If we pass an XsltContext to SetContext it won't throw if there's
-                // an undefined prefix.
+                // There's a 
+
                 if (namespaces is XsltContext)
                 {
                     // Lex the xpath to find all prefixes used

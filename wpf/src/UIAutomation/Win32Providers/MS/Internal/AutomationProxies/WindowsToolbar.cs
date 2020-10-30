@@ -500,9 +500,9 @@ namespace MS.Internal.AutomationProxies
         {
             get
             {
-                // It does not look like [....] support the AccessibleName for standard toolbar items.
+                // It does not look like Microsoft support the AccessibleName for standard toolbar items.
                 // If ToolStrips are going to be supported by this proxy, will need to added code to check
-                // if this is [....] toolbar button and use the AccessibleName if it is set.
+                // if this is Microsoft toolbar button and use the AccessibleName if it is set.
 
                 return Misc.StripMnemonic(Text);
             }

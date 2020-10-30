@@ -6,7 +6,7 @@
 //      Exception class for query requests.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

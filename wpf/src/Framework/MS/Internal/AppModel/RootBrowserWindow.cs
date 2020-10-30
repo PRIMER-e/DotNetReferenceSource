@@ -483,10 +483,10 @@ namespace MS.Internal.AppModel
             {
                 //
                 // Note: right now IE is clipping browser height to desktop size.
-                // However it should be clipped to available desktop size. See Windows OS Bug #1045038
-                // The code below is to fix this for now.
-                // Even if IE's code is changed - likely we keep this as defense in-depth.
-                //
+                // However it should be clipped to available desktop size. See Windows OS 
+
+
+
 
                 uint maxHeightDeviceUnits = GetMaxWindowHeight();
                 heightDeviceUnits = heightDeviceUnits > maxHeightDeviceUnits ? maxHeightDeviceUnits : heightDeviceUnits;
@@ -509,10 +509,10 @@ namespace MS.Internal.AppModel
             {
                 //
                 // Note: right now IE is clipping browser width to desktop size.
-                // However it should be clipped to available desktop size. See Windows OS Bug #1045038
-                // The code below is to fix this for now.
-                // Even if IE's code is changed - likely we keep this as defense in-depth.
-                //
+                // However it should be clipped to available desktop size. See Windows OS 
+
+
+
                 uint maxWidthDeviceUnits = GetMaxWindowWidth();
                 widthDeviceUnits = widthDeviceUnits > maxWidthDeviceUnits ? maxWidthDeviceUnits : widthDeviceUnits;
 

@@ -7,7 +7,7 @@
 //      the data service providers.
 // </summary>
 //
-// @owner  [....]
+// @owner  wbasheer
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

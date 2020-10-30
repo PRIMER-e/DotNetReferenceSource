@@ -197,34 +197,32 @@ namespace System.Windows.Controls.Primitives
         /// </param>
         internal override void ChangeVisualState(bool useTransitions)
         {
-            // Update the SelectionStates group
-            if (IsSelected || IsHighlighted)
-            {
-                VisualStates.GoToState(this, useTransitions, VisualStates.StateSelected, VisualStates.StateUnselected);
-            }
-            else
-            {
-                VisualStateManager.GoToState(this, VisualStates.StateUnselected, useTransitions);
-            }
+            // During the visual state change, refresh group state so that proper foreground and background colors are set.
 
             // Update the ActiveStates group
-            if (!IsInactive)
-            {
-                VisualStates.GoToState(this, useTransitions, VisualStates.StateActive, VisualStates.StateInactive);
-            }
-            else
+            // DDVSO: 168663 - Visual state "Inactive" doesn't take effect on previous selected CalendarDayButton in other month
+            // Force refresh to have matching InActive foreground and background colors.
+            VisualStates.GoToState(this, useTransitions, VisualStates.StateActive, VisualStates.StateInactive);
+            if (IsInactive)
             {
                 VisualStateManager.GoToState(this, VisualStates.StateInactive, useTransitions);
             }
 
             // Update the DayStates group
+            // DDVSO: 168662 - Visual state "Today" doesn't take effect when select and unselect today
+            // Force refresh to have matching Today foreground and background colors.
+            VisualStateManager.GoToState(this, VisualStates.StateRegularDay, useTransitions);
             if (IsToday && this.Owner != null && this.Owner.IsTodayHighlighted)
             {
                 VisualStates.GoToState(this, useTransitions, VisualStates.StateToday, VisualStates.StateRegularDay);
             }
-            else
+
+            // Update the SelectionStates group last, to take priority over previous group state changes.
+            // Force refresh to have matching Selected foreground and background colors.
+            VisualStateManager.GoToState(this, VisualStates.StateUnselected, useTransitions);
+            if (IsSelected || IsHighlighted)
             {
-                VisualStateManager.GoToState(this, VisualStates.StateRegularDay, useTransitions);
+                VisualStates.GoToState(this, useTransitions, VisualStates.StateSelected, VisualStates.StateUnselected);
             }
 
             // Update the BlackoutDayStates group

@@ -33,7 +33,7 @@ namespace System.Windows.Markup
     /// </summary>
     internal static class TypeConverterHelper
     {
-        private static CultureInfo invariantEnglishUS = CultureInfo.ReadOnly(new CultureInfo("en-us", false));
+        private static CultureInfo invariantEnglishUS = CultureInfo.InvariantCulture;
 
         internal static CultureInfo InvariantEnglishUS
         {

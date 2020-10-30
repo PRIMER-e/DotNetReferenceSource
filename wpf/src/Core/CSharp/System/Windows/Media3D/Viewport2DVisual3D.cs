@@ -723,8 +723,8 @@ namespace System.Windows.Media.Media3D
         /// <param name="value">The value to set</param>
         public static void SetIsVisualHostMaterial(Material element, Boolean value)
         {
-            // [BreakingChange] Dev10 TFS Bug #453513
-            // We should throw ArgumentNullException if element is null.
+            // [BreakingChange] Dev10 TFS 
+
             element.SetValue(IsVisualHostMaterialProperty, BooleanBoxes.Box(value));
         }
 
@@ -735,8 +735,8 @@ namespace System.Windows.Media.Media3D
         /// <returns>The property's value.</returns>
         public static Boolean GetIsVisualHostMaterial(Material element)
         {
-            // [BreakingChange] Dev10 TFS Bug #453513
-            // We should throw ArgumentNullException if element is null.
+            // [BreakingChange] Dev10 TFS 
+
             return (bool)element.GetValue(IsVisualHostMaterialProperty);
         }
 
@@ -850,7 +850,7 @@ namespace System.Windows.Media.Media3D
         ///       During this virtual call it is not valid to modify the Visual tree.
         ///
         ///       It is okay to type this protected API to the 2D Visual.  The only 2D Visual with
-        ///       3D childern is the Viewport3DVisual which is sealed.  -- [....] 01/17/06
+        ///       3D childern is the Viewport3DVisual which is sealed.  -- Microsoft 01/17/06
         /// </summary>
         protected override Visual3D GetVisual3DChild(int index)
         {

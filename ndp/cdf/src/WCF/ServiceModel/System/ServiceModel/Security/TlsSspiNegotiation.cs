@@ -210,7 +210,7 @@ namespace System.ServiceModel.Security
                 ThrowIfDisposed();
                 if (!IsValidContext)
                 {
-                    // PreSharp Bug: Property get methods should not throw exceptions.
+                    // PreSharp 
 #pragma warning suppress 56503
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new Win32Exception((int)SecurityStatus.InvalidHandle));
                 }
@@ -229,7 +229,7 @@ namespace System.ServiceModel.Security
                 ThrowIfDisposed();
                 if (!IsValidContext)
                 {
-                    // PreSharp Bug: Property get methods should not throw exceptions.
+                    // PreSharp 
 #pragma warning suppress 56503
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new Win32Exception((int)SecurityStatus.InvalidHandle));
                 }
@@ -269,7 +269,7 @@ namespace System.ServiceModel.Security
                 ThrowIfDisposed();
                 if (!IsValidContext)
                 {
-                    // PreSharp Bug: Property get methods should not throw exceptions.
+                    // PreSharp 
 #pragma warning suppress 56503
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new Win32Exception((int)SecurityStatus.InvalidHandle));
                 }
@@ -543,7 +543,14 @@ namespace System.ServiceModel.Security
             bool hasPrivateKey = false;
             try
             {
-                hasPrivateKey = certificate != null && certificate.PrivateKey != null;
+                if (System.ServiceModel.LocalAppContextSwitches.DisableCngCertificates)
+                {
+                    hasPrivateKey = certificate != null && certificate.PrivateKey != null;
+                }
+                else
+                {
+                    hasPrivateKey = certificate.HasPrivateKey && SecurityUtils.CanReadPrivateKey(certificate);
+                }
             }
             catch (SecurityException e)
             {

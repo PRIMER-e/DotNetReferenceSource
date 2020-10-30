@@ -386,7 +386,7 @@ namespace MS.Internal.Data
             int level;
 
             // ignore changes that don't affect this binding.
-            // This test must come before any marshalling to the right context (bug 892484)
+            // This test must come before any marshalling to the right context (
             if (!IgnoreSourcePropertyChange && (level = PW.LevelForPropertyChange(o, propName)) >= 0)
             {
                 // if notification was on the right thread, just do the work (normal case)

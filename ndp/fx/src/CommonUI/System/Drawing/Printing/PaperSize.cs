@@ -148,7 +148,7 @@ namespace System.Drawing.Printing {
                 Point result;
 
                 // Most of these numbers came straight from the header files.
-                // The Japanese envelope ones came from [....].
+                // The Japanese envelope ones came from Microsoft.
                 switch (Kind) {
                     case PaperKind.Custom: result = new Point(width, height); break;
 

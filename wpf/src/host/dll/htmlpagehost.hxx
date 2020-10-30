@@ -7,7 +7,7 @@
 //      and in the unhandled exception page.
 //
 //  History:
-//      2007/12/xx   [....]     Created, stuff mostly factored out of ErrorPage.*
+//      2007/12/xx   Microsoft     Created, stuff mostly factored out of ErrorPage.*
 //
 //------------------------------------------------------------------------
 

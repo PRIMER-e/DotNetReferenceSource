@@ -116,7 +116,7 @@ namespace MS.Internal.PtsHost
             bool suppressTopSpace,              // IN:  suppress empty space at the top of page
             out int dvr)                        // OUT: dvr, calculated based on margin collapsing state
         {
-            MbpInfo mbp = MbpInfo.FromElement(Element);
+            MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
             MarginCollapsingState mcsNew;
             int margin;
             MarginCollapsingState.CollapseTopMargin(PtsContext, mbp, mcs, out mcsNew, out margin);
@@ -217,7 +217,7 @@ namespace MS.Internal.PtsHost
                     // Child elementis null. Create fsbbox only with border and padding info
                     ClearUIElementIsland();
 
-                    MbpInfo mbp = MbpInfo.FromElement(Element);
+                    MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
                     fsbbox.fsrc = new PTS.FSRECT();
                     fsbbox.fsrc.du = durAvailable;
                     fsbbox.fsrc.dv = mbp.BPTop + mbp.BPBottom;
@@ -310,7 +310,7 @@ namespace MS.Internal.PtsHost
                 {
                     ClearUIElementIsland();
 
-                    MbpInfo mbp = MbpInfo.FromElement(Element);
+                    MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
                     fsbbox.fsrc = new PTS.FSRECT();
                     fsbbox.fsrc.du = durAvailable;
                     fsbbox.fsrc.dv = mbp.BPTop + mbp.BPBottom;
@@ -357,7 +357,7 @@ namespace MS.Internal.PtsHost
         {
             MarginCollapsingState mcsNew;
             int margin;
-            MbpInfo mbp = MbpInfo.FromElement(Element);
+            MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
             MarginCollapsingState.CollapseBottomMargin(PtsContext, mbp, null, out mcsNew, out margin);
             if (mcsNew != null)
             {
@@ -384,7 +384,7 @@ namespace MS.Internal.PtsHost
         /// </summary>
         private void FormatUIElement(int durAvailable, out PTS.FSBBOX fsbbox)
         {
-            MbpInfo mbp = MbpInfo.FromElement(Element);
+            MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
             double elementHeight;
             double elementWidth = TextDpi.FromTextDpi(Math.Max(1, durAvailable - (mbp.MBPLeft + mbp.MBPRight)));
 

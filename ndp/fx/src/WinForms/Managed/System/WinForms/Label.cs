@@ -1216,7 +1216,7 @@ namespace System.Windows.Forms {
            // COMPAT VSW 248415: Everett added random numbers to the height of the label               
            if (UseCompatibleTextRendering) {               
               //Always return the Fontheight + some buffer else the Text gets clipped for Autosize = true..
-              //(bug 118909)
+              //(
               if (BorderStyle != BorderStyle.None) {
                   bordersAndPadding.Height += 6; // taken from Everett.PreferredHeight
                   bordersAndPadding.Width += 2; // taken from Everett.PreferredWidth

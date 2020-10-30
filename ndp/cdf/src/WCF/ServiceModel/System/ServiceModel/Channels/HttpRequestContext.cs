@@ -794,7 +794,11 @@ namespace System.ServiceModel.Channels
 
             protected override Task<WebSocketContext> AcceptWebSocketCore(HttpResponseMessage response, string protocol)
             {
-                HttpChannelUtilities.CopyHeadersToNameValueCollection(response, this.listenerContext.Response.Headers);
+                // CopyHeaders would still throw when the response contains a "WWW-Authenticate"-header
+                // But this is ok in this case because the "WWW-Authenticate"-header doesn't make sense
+                // for a response returning 101 (Switching Protocol)
+                HttpChannelUtilities.CopyHeaders(response, this.listenerContext.Response.Headers.Add);
+                
                 this.webSocketInternalBuffer = this.Listener.TakeWebSocketInternalBuffer();
                 return this.listenerContext.AcceptWebSocketAsync(
                                                 protocol,
@@ -825,7 +829,7 @@ namespace System.ServiceModel.Channels
 
             public override HttpOutput GetHttpOutput(Message message)
             {
-                // work around http.sys keep alive bug with chunked requests, see MB 49676, this is fixed in Vista
+                // work around http.sys keep alive 
                 if (listenerContext.Request.ContentLength64 == -1 && !OSEnvironmentHelper.IsVistaOrGreater)
                 {
                     listenerContext.Response.KeepAlive = false;

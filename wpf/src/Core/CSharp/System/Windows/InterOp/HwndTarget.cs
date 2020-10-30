@@ -8,9 +8,11 @@
 using System;
 using System.Diagnostics;
 using System.Windows.Threading;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Automation.Provider;
@@ -24,7 +26,7 @@ using MS.Internal.Automation;
 using MS.Internal.Interop;
 using MS.Win32;
 using MS.Utility;
-using MS.Internal.PresentationCore;                        // SecurityHelper
+using MS.Internal.PresentationCore;             // SecurityHelper
 
 using SR=MS.Internal.PresentationCore.SR;
 using SRID=MS.Internal.PresentationCore.SRID;
@@ -43,6 +45,8 @@ namespace System.Windows.Interop
         Software = MILRTInitializationFlags.MIL_RT_SOFTWARE_ONLY,
         Hardware = MILRTInitializationFlags.MIL_RT_HARDWARE_ONLY,
         HardwareReference = MILRTInitializationFlags.MIL_RT_HARDWARE_ONLY | MILRTInitializationFlags.MIL_RT_USE_REF_RAST,
+        DisableMultimonDisplayClipping = MILRTInitializationFlags.MIL_RT_DISABLE_MULTIMON_DISPLAY_CLIPPING,
+        IsDisableMultimonDisplayClippingValid = MILRTInitializationFlags.MIL_RT_IS_DISABLE_MULTIMON_DISPLAY_CLIPPING_VALID, 
     }
 
     // This is the public, more limited, enum exposed for use with the RenderMode property.
@@ -122,7 +126,7 @@ namespace System.Windows.Interop
         private bool _isSuspended = false;
 
         // True when user input is causing a resize. We use this to determine whether or
-        // not we want to [....] during resize to provide a better looking resize.
+        // not we want to sync during resize to provide a better looking resize.
         private bool _userInputResize = false;
 
         // This bool is set by a private window message sent to us from the render thread,
@@ -202,57 +206,21 @@ namespace System.Windows.Interop
                 // Get the client rectangle...
                 GetWindowRectsInScreenCoordinates();
 
-                // Set device independent resolution to 96 DPI.
-                // NativeMethods.HDC hdc = NativeMethods.GetDC(_hWnd);
-
-                _devicePixelsPerInchX = 96.0f;
-                _devicePixelsPerInchY = 96.0f;
-
+                _devicePixelsPerInchX = DpiUtil.DefaultPixelsPerInch;
+                _devicePixelsPerInchY = DpiUtil.DefaultPixelsPerInch;
+                
                 _lastWakeOrUnlockEvent = DateTime.MinValue;
 
-                //
-                // Determine whether hWnd corresponds to MIL or GDI window.
-                //
-                IntPtr hdcW = UnsafeNativeMethods.GetDC(
-                    new HandleRef(this, _hWnd));
+                // Get the process dpi awareness, and get the system/primary monitor's DPI.
+                InitializePrimaryDpiScale();
 
-                if (hdcW == IntPtr.Zero)
-                {
-                    //
-                    // If we were unable to obtain HDC for the given
-                    // window, assume the default of 96 DPI.
-                    //
-
-                    _devicePixelsPerInchX = 96.0f;
-                    _devicePixelsPerInchY = 96.0f;
-                }
-                else
-                {
-                    //
-                    // Obtain and cache DPI values for window's HDC.
-                    //
-
-                    _devicePixelsPerInchX = (double)UnsafeNativeMethods.GetDeviceCaps(
-                        new HandleRef(this, hdcW),
-                        NativeMethods.LOGPIXELSX);
-
-                    _devicePixelsPerInchY = (double)UnsafeNativeMethods.GetDeviceCaps(
-                        new HandleRef(this, hdcW),
-                        NativeMethods.LOGPIXELSY);
-
-                    //
-                    // Release DC object.
-                    //
-
-                    UnsafeNativeMethods.ReleaseDC(
-                        new HandleRef(this, _hWnd),
-                        new HandleRef(this, hdcW));
-                }
-
+                // Get the current monitor's DPI for per-monitor dpi aware process
+                GetDpiForCurrentMonitor();
+                
                 _worldTransform = new MatrixTransform(new Matrix(
-                  _devicePixelsPerInchX * (1.0f / 96.0f), 0,
-                  0, _devicePixelsPerInchY * (1.0f / 96.0f),
-                  0, 0));
+                    _devicePixelsPerInchX * (1.0f /DpiUtil.DefaultPixelsPerInch), 0,
+                    0, _devicePixelsPerInchY * (1.0f /DpiUtil.DefaultPixelsPerInch),
+                    0, 0));
 
                 //
                 // Register CompositionTarget with MediaContext.
@@ -279,6 +247,198 @@ namespace System.Windows.Interop
                     #pragma warning suppress 6031 // Return value ignored on purpose.
                     VisualTarget_DetachFromHwnd(hwnd);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Ensures the system/primary monitor's DPI scale. Get the process DPI awareness. 
+        /// </summary>
+        /// <SecurityNote>
+        /// Critical as it calls unsafe native methods.
+        /// Treat as safe because it does not return anything.
+        /// </SecurityNote>
+        [SecuritySafeCritical]
+        private void InitializePrimaryDpiScale()
+        {
+            // Only do that once to get:
+            // 1. Process DPI Awareness
+            // 2. System/Primary monitor's DPI, store it in the first entry of the static array UIElement::MonitorDPIScaleX/Y.
+            // Primary Monitor's DPI is needed in two cases : 
+            // 1) When process is System DPI Aware, then we draw it as per system DPI.
+            // 2) As a fallback value in case of failure.
+
+            if (_setDpi)
+            {
+                _setDpi = false;
+                InitProcessDpiAwareness();
+
+                // PInvoke into WPFGFX (graphics/core/common/engine.cpp) to communicate the DPI Awareness and opt-in behavior
+                // of the app. This is needed to find the correct DPI to render Display Mode Text in WPFGFX.
+
+                MilCore_SetDpiAwarenessForDisplayModeText(ProcessDpiAwareness ==
+                                                          UnsafeNativeMethods.ProcessDpiAwareness
+                                                              .Process_Per_Monitor_DPI_Aware
+                                                          && !CoreAppContextSwitches.DoNotScaleForDpiChanges
+                                                          && OSVersionHelper.IsOsWindows10RS1OrGreater);
+                //
+                // Determine whether hWnd corresponds to MIL or GDI window.
+                //
+
+                GetDeviceCaps();
+
+                // Store the system DPI in the first entry.
+                UIElement.DpiScaleXValues.Insert(0, _devicePixelsPerInchX /DpiUtil.DefaultPixelsPerInch);
+                UIElement.DpiScaleYValues.Insert(0, _devicePixelsPerInchY /DpiUtil.DefaultPixelsPerInch);
+            }
+        }
+
+        /// <summary>
+        /// Calls window's APIs to find the DPI of the HWND 
+        /// </summary>
+        /// <SecurityNote>
+        /// Critical as it calls unsafe native methods.
+        /// Treat as safe because it does not return anything.
+        /// </SecurityNote>
+        [SecuritySafeCritical]
+        private void GetDeviceCaps()
+        {
+            IntPtr hdcW = UnsafeNativeMethods.GetDC(
+                new HandleRef(this, _hWnd));
+
+            if (hdcW != IntPtr.Zero)
+            {
+                // If we were unable to obtain HDC for the given
+                // window, assume the default of 96 DPI, else
+                // obtain and cache DPI values for window's HDC.
+
+                _devicePixelsPerInchX = (double) UnsafeNativeMethods.GetDeviceCaps(
+                    new HandleRef(this, hdcW),
+                    NativeMethods.LOGPIXELSX);
+
+                _devicePixelsPerInchY = (double) UnsafeNativeMethods.GetDeviceCaps(
+                    new HandleRef(this, hdcW),
+                    NativeMethods.LOGPIXELSY);
+
+                //
+                // Release DC object.
+                //
+
+                UnsafeNativeMethods.ReleaseDC(
+                    new HandleRef(this, _hWnd),
+                    new HandleRef(this, hdcW));
+            }
+        }
+
+        /// <summary>
+        /// Obtains the DPI awareness of the current running process.
+        /// </summary>
+        /// <SecurityNote>
+        /// Critical as it calls unsafe native methods.
+        /// Safe because doesn't return anything.
+        /// </SecurityNote>
+        [SecuritySafeCritical, SuppressUnmanagedCodeSecurity]
+        private void InitProcessDpiAwareness()
+        {
+            int processId;
+
+            if (OSVersionHelper.IsOsWindows10RS1OrGreater)
+            {
+                IntPtr processDpiAwareness = IntPtr.Zero;
+                UnsafeNativeMethods.GetWindowThreadProcessId(new HandleRef(this, _hWnd), out processId);
+
+                IntPtr hProcess = UnsafeNativeMethods.OpenProcess(NativeMethods.PROCESS_ALL_ACCESS,
+                                                  false,
+                                                  processId);
+                
+                uint result = UnsafeNativeMethods.GetProcessDpiAwareness(new HandleRef(null, hProcess), out processDpiAwareness);
+                ProcessDpiAwareness = (UnsafeNativeMethods.ProcessDpiAwareness)NativeMethods.IntPtrToInt32(processDpiAwareness);
+            }
+            else
+            {
+                bool isProcessDpiAware = UnsafeNativeMethods.IsProcessDPIAware();
+                ProcessDpiAwareness = isProcessDpiAware
+                    ? UnsafeNativeMethods.ProcessDpiAwareness.Process_System_DPI_Aware
+                    : UnsafeNativeMethods.ProcessDpiAwareness.Process_DPI_Unaware;
+            }
+        }
+
+        /// <summary>
+        /// If process is Per Monitor DPI aware, sets _devicePixelsPerInchX/Y to be
+        /// equal to DPI of the monitor on which the Hwnd is displayed, otherwise uses the
+        /// system DPI.
+        /// </summary>
+        /// <SecurityNote>
+        /// Critical as it calls unsafe native methods.
+        /// </SecurityNote>
+        [SecurityCritical]
+        private void GetDpiForCurrentMonitor()
+        {
+            if (ProcessDpiAwareness == UnsafeNativeMethods.ProcessDpiAwareness.Process_Per_Monitor_DPI_Aware
+                && !CoreAppContextSwitches.DoNotScaleForDpiChanges 
+                && OSVersionHelper.IsOsWindows10RS1OrGreater)
+            {
+                uint dpiX = 0;
+                uint dpiY = 0;
+
+                UnsafeNativeMethods.MonitorOpts options = UnsafeNativeMethods.MonitorOpts.MONITOR_DEFAULTTONEAREST;
+                UnsafeNativeMethods.MonitorDpiType types = UnsafeNativeMethods.MonitorDpiType.MDT_Effective_DPI;
+
+                // For popups or WS_CHILD hwnds, use the parent hwnd to determine the DPIs. There can be a popup within
+                // a popup, so obtain the top level Hwnd parent.
+                IntPtr hwndToUse = _hWnd.h;
+                Debug.Assert(hwndToUse != IntPtr.Zero);
+                int style = NativeMethods.IntPtrToInt32((IntPtr)SafeNativeMethods.GetWindowStyle(new HandleRef(this, _hWnd), false));
+                if (((style & NativeMethods.WS_POPUP) != 0) || ((style & NativeMethods.WS_CHILD ) != 0))
+                {
+                    IntPtr hwndParent = IntPtr.Zero;
+
+                    do
+                    {
+                        try
+                        {
+                            hwndParent = UnsafeNativeMethods.GetParent(new HandleRef(null, hwndToUse));
+                        }
+                        // Call to GetParent can throw an exception in the following scenarios:
+                        // 1) The window is a top - level window that is unowned or does not have the WS_POPUP style.
+                        // 2) The owner window has WS_POPUP style.
+                        // In either of the situations, the right thing to do is obtain the owner and let the loop continue.
+                        catch (Win32Exception)
+                        {
+                            hwndParent = UnsafeNativeMethods.GetWindow(new HandleRef(null, hwndToUse),
+                                NativeMethods.GW_OWNER);
+                        }
+
+                        if (hwndParent != IntPtr.Zero)
+                        {
+                            hwndToUse = hwndParent;
+                        }
+
+                    } while (hwndParent != IntPtr.Zero);
+
+                }
+
+                Debug.Assert(hwndToUse != IntPtr.Zero);
+                IntPtr monitor = SafeNativeMethods.MonitorFromWindow(new HandleRef(this,
+                    hwndToUse), (int) options);
+
+                UnsafeNativeMethods.GetDpiForMonitor(new HandleRef(this,
+                    monitor), types, out dpiX, out dpiY);
+                
+                _devicePixelsPerInchX = dpiX != 0 ? dpiX : _devicePixelsPerInchX;
+                _devicePixelsPerInchY = dpiY != 0 ? dpiY : _devicePixelsPerInchY;
+                UnsafeNativeMethods.EnableNonClientDpiScaling(_hWnd.MakeHandleRef(this));
+            }
+            else if (ProcessDpiAwareness == UnsafeNativeMethods.ProcessDpiAwareness.Process_System_DPI_Aware)
+            {
+                lock (UIElement.DpiLock)
+                {
+                    _devicePixelsPerInchX = UIElement.DpiScaleXValues[0] * DpiUtil.DefaultPixelsPerInch;
+                    _devicePixelsPerInchY = UIElement.DpiScaleYValues[0] * DpiUtil.DefaultPixelsPerInch;
+                }
+            }
+            else
+            {
+                GetDeviceCaps();
             }
         }
 
@@ -340,6 +500,19 @@ namespace System.Windows.Interop
             UnsafeNativeMethods.WTSRegisterSessionNotification(hwnd, NativeMethods.NOTIFY_FOR_THIS_SESSION);
         }
 
+        /// <summary>
+        /// PInvoke into WPFGFX (graphics/core/common/engine.cpp) to communicate the DPI Awareness and opt-in behavior
+        /// of the app. This is needed to find the correct DPI to render Display Mode Text in WPFGFX.
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical: This code causes unmanaged code elevation
+        /// </SecurityNote>
+        [SecurityCritical, SuppressUnmanagedCodeSecurity]
+        [DllImport(DllImport.MilCore, EntryPoint = "SetDpiAwarenessForDisplayModeText")]
+        internal static extern int MilCore_SetDpiAwarenessForDisplayModeText(
+            bool isPerMonitorDpiAware
+            );
+
         /// <SecurityNote>
         ///     Critical: This code causes unmanaged code elevation
         /// </SecurityNote>
@@ -382,6 +555,21 @@ namespace System.Windows.Interop
                     // If the mode is default we can chose what works. When we have a mismatched transport protocol version
                     // we need to fallback to software rendering.
                     mode = RenderingMode.Software;
+                }
+            }
+
+            //Obtain compatibility flags set in the application
+            bool? enableMultiMonitorDisplayClipping =
+                System.Windows.CoreCompatibilityPreferences.EnableMultiMonitorDisplayClipping;
+
+            if (enableMultiMonitorDisplayClipping != null)
+            {
+                // The flag is explicitly set by the user in application manifest
+                mode |= RenderingMode.IsDisableMultimonDisplayClippingValid;
+
+                if (!enableMultiMonitorDisplayClipping.Value)
+                {
+                    mode |= RenderingMode.DisableMultimonDisplayClipping;
                 }
             }
 
@@ -602,7 +790,7 @@ namespace System.Windows.Interop
             if (_compositionTarget.IsOnChannel(channel))
             {
                 //
-                // [....]: If we need to flush the batch we need to render first all visual targets that
+                // Microsoft: If we need to flush the batch we need to render first all visual targets that
                 // are still registered with the MediaContext to avoid strutural tearing.
 
 
@@ -647,7 +835,27 @@ namespace System.Windows.Interop
             IntPtr unhandled = IntPtr.Zero; // return 0 if other win procs should be called.
             IntPtr result = unhandled;
 
-            if (msg == s_updateWindowSettings)
+            if (msg == WindowMessage.WM_DPICHANGED)
+            {
+                if (!CoreAppContextSwitches.DoNotScaleForDpiChanges && OSVersionHelper.IsOsWindows10RS1OrGreater)
+                {
+                    HwndSource hwndSource = HwndSource.FromHwnd(_hWnd);
+                    if (hwndSource != null)
+                    {
+                        double newDpiX = NativeMethods.SignedLOWORD(wparam);
+                        double newDpiY = NativeMethods.SignedHIWORD(wparam);
+                        if (_devicePixelsPerInchX != newDpiX || _devicePixelsPerInchY != newDpiY)
+                        {
+                            hwndSource.ChangeDpi(new HwndDpiChangedEventArgs(_devicePixelsPerInchX,
+                                _devicePixelsPerInchY, newDpiX, newDpiY, lparam));
+                        }
+
+                        result = handled;
+                    }
+                }
+                return result;
+            }
+            else if (msg == s_updateWindowSettings)
             {
                 // Make sure we enable the render target if the window is visible.
                 if (SafeNativeMethods.IsWindowVisible(_hWnd.MakeHandleRef(this)))
@@ -711,7 +919,7 @@ namespace System.Windows.Interop
                 case WindowMessage.WM_SIZE:
 
                     //
-                    // NTRAID#Longhorn-1946030-2007/03/23-[....]:
+                    // NTRAID#Longhorn-1946030-2007/03/23-Microsoft:
                     //      When locked on downlevel, MIL stops rendering and invalidates the
                     //      window causing WM_PAINT. When the window is layered and minimized
                     //      before the lock, it'll never get the WM_PAINT on unlock and the MIL will
@@ -725,11 +933,11 @@ namespace System.Windows.Interop
                     // pollute the measure data based on the Minized window size.
                     if (NativeMethods.IntPtrToInt32(wparam) != NativeMethods.SIZE_MINIMIZED)
                     {
-                        // Dev10 bug #796388 is caused by a race condition in Windows 7 (and possibly
-                        // Windows Vista, though we haven't observed the effect there).
-                        // Sometimes when we restore from minimized, when we present into the newly
-                        // resized window, the present silently fails, and we end up with garbage in
-                        // our window buffer. This work around queues another invalidate to occur after 100ms.
+                        // Dev10 
+
+
+
+
                         if (_isMinimized)
                         {
                             _restoreDT.Start();
@@ -853,7 +1061,7 @@ namespace System.Windows.Interop
                     break;
 
                 //
-                // NTRAID#Longhorn-1967619-2007/03/23-[....]:
+                // NTRAID#Longhorn-1967619-2007/03/23-Microsoft:
                 //      When a Fast User Switch happens, MIL gets an invalid display error when trying to
                 //      render and they invalidate the window resulting in us getting a WM_PAINT. For
                 //      layered windows, we get the WM_PAINT immediately which causes us to
@@ -903,7 +1111,7 @@ namespace System.Windows.Interop
                     break;
 
                 //
-                // NTRAID#Longhorn-1975236-2007/05/22-[....]:
+                // NTRAID#Longhorn-1975236-2007/05/22-Microsoft:
                 //      Downlevel, if we try to present a layered window while suspended the app will crash.
                 //      This has been fixed in Vista but we still need to work around it for older versions
                 //      by not invalidating while suspended.
@@ -1038,9 +1246,9 @@ namespace System.Windows.Interop
                 && !UnsafeNativeMethods.GetLayeredWindowAttributes(_hWnd.MakeHandleRef(this), IntPtr.Zero, IntPtr.Zero, IntPtr.Zero)
                 && !_isSessionDisconnected
                 && !_isMinimized
-                && (!_isSuspended || (UnsafeNativeMethods.GetSystemMetrics(SM.REMOTESESSION) != 0))) // 
+                && (!_isSuspended || (UnsafeNativeMethods.GetSystemMetrics(SM.REMOTESESSION) != 0))) // BUG 868586: Checking if we are in a remote session works around the fact that power
                                                                                                      // notifications for the server monitor are being broad-casted when the
-                                                                                                     // machine is in a non-local TS session. See Dev10 bug for more details.
+                                                                                                     // machine is in a non-local TS session. See Dev10 
             {
                 rcPaint = new NativeMethods.RECT(
                           0,
@@ -1293,7 +1501,7 @@ namespace System.Windows.Interop
                     //
                     // We think syncing is always necessary for layered windows.
                     //
-                    // For child windows we also need to [....] to work-around some DWM issues (see Dev10 #739622, #782372).
+                    // For child windows we also need to sync to work-around some DWM issues (see Dev10 #739622, #782372).
                     //
 
                     mctx.CompleteRender();
@@ -1354,6 +1562,88 @@ namespace System.Windows.Interop
             }
 
             // 
+        }
+
+        /// <summary>
+        /// Resizes and repositions the HWND based on suggestedRect and the new DPI.
+        /// </summary>
+        /// <SecurityNote>
+        /// Critical - calls critical methods (PtrToStructure)
+        ///</SecurityNote>
+        [SecurityCritical]
+        internal void OnMonitorDPIChanged(Rect suggestedRect, double newDpiX, double newDpiY)
+        {
+            DpiScale oldDpiInfo = new DpiScale(_devicePixelsPerInchX /DpiUtil.DefaultPixelsPerInch, _devicePixelsPerInchY /DpiUtil.DefaultPixelsPerInch);
+            DpiScale newDpiInfo = new DpiScale(newDpiY /DpiUtil.DefaultPixelsPerInch, newDpiY /DpiUtil.DefaultPixelsPerInch);
+
+            
+            _devicePixelsPerInchX = newDpiX;
+            _devicePixelsPerInchY = newDpiY;
+
+            // Update the worldTransform.
+            _worldTransform = new MatrixTransform(new Matrix(
+                _devicePixelsPerInchX * (1.0f /DpiUtil.DefaultPixelsPerInch), 0,
+                0, _devicePixelsPerInchY * (1.0f /DpiUtil.DefaultPixelsPerInch),
+                0, 0));
+
+            // Push the transform to render thread.
+            DUCE.ChannelSet channelSet = MediaContext.From(Dispatcher).GetChannels();
+            DUCE.Channel channel = channelSet.Channel;
+
+            DUCE.ResourceHandle hWorldTransform = ((DUCE.IResource)_worldTransform).AddRefOnChannel(channel);
+
+            DUCE.CompositionNode.SetTransform(
+                _contentRoot.GetHandle(channel),
+                hWorldTransform,
+                channel);
+
+            Rect clientRect = new Rect(0, 0, (double)(_hwndClientRectInScreenCoords.right - _hwndClientRectInScreenCoords.left),
+                (double)(_hwndClientRectInScreenCoords.bottom - _hwndClientRectInScreenCoords.top));
+
+            // Update the static array that stores the actual DpiScales.
+            // output is the index that will be set to the visual flags.
+            DpiFlags dpiFlags = DpiUtil.UpdateDpiScalesAndGetIndex(_devicePixelsPerInchX, _devicePixelsPerInchY);
+
+            if (RootVisual != null)
+            {
+                // Propagate the visual flags from the RootVisual.
+                RecursiveUpdateDpiFlagAndInvalidateMeasure(RootVisual, new DpiRecursiveChangeArgs(dpiFlags, oldDpiInfo, newDpiInfo));
+            }
+
+            StateChangedCallback(
+                new object[]
+                {
+                        HostStateFlags.WorldTransform |
+                        HostStateFlags.ClipBounds,
+                        _worldTransform.Matrix,
+                        clientRect
+                });
+
+            // Set the new window size. 
+
+            UnsafeNativeMethods.SetWindowPos(_hWnd.MakeHandleRef(this), new HandleRef(null, IntPtr.Zero), 
+                (int)suggestedRect.Left, (int)suggestedRect.Top, (int)suggestedRect.Width, (int)suggestedRect.Height,
+                NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
+        }
+
+        private void RecursiveUpdateDpiFlagAndInvalidateMeasure(DependencyObject d, DpiRecursiveChangeArgs args)
+        {
+            int childrenCount = VisualTreeHelper.GetChildrenCount(d);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(d, i);
+                if (child != null)
+                {
+                    RecursiveUpdateDpiFlagAndInvalidateMeasure(child, args);
+                }
+            }
+            Visual visual = d as Visual;
+            if (visual != null)
+            {
+                visual.SetDpiScaleVisualFlags(args);
+                UIElement element = d as UIElement;
+                element?.InvalidateMeasure();
+            }
         }
 
         ///<SecurityNote>
@@ -1518,6 +1808,10 @@ namespace System.Windows.Interop
                 UpdateWindowSettings(enableRenderTarget);
             }
         }
+
+        private static bool _setDpi = true;
+
+        internal static UnsafeNativeMethods.ProcessDpiAwareness ProcessDpiAwareness { get; set; }
 
         private void OnEnterSizeMove()
         {
@@ -1704,7 +1998,7 @@ namespace System.Windows.Interop
                     outOfBandChannel.Commit();
 
                     //
-                    // Wait for the command to be processed -- [....] flush will take care
+                    // Wait for the command to be processed -- sync flush will take care
                     // of that while being safe w.r.t. zombie partitions.
                     //
 
@@ -1743,6 +2037,17 @@ namespace System.Windows.Interop
 
                 if (value != null)
                 {
+                    // Update the static array that stores the actual DpiScales.
+                    // output is the index that will be set to the visual flags.
+                    if (ProcessDpiAwareness == UnsafeNativeMethods.ProcessDpiAwareness.Process_Per_Monitor_DPI_Aware
+                        && !CoreAppContextSwitches.DoNotScaleForDpiChanges
+                        && OSVersionHelper.IsOsWindows10RS1OrGreater)
+                    {
+                        DpiFlags dpiFlags = DpiUtil.UpdateDpiScalesAndGetIndex(_devicePixelsPerInchX, _devicePixelsPerInchY);
+                        DpiScale newDpiScale = new DpiScale(UIElement.DpiScaleXValues[dpiFlags.Index], UIElement.DpiScaleYValues[dpiFlags.Index]);
+                        RootVisual.RecursiveSetDpiScaleVisualFlags(new DpiRecursiveChangeArgs( dpiFlags, RootVisual.GetDpi(), newDpiScale));
+                    }
+
                     // UIAutomation listens for the EventObjectUIFragmentCreate WinEvent to
                     // understand when UI that natively implements UIAutomation comes up
                     // 
@@ -1764,7 +2069,7 @@ namespace System.Windows.Interop
             {
                 VerifyAPIReadOnly();
                 Matrix m = Matrix.Identity;
-                m.Scale(_devicePixelsPerInchX / 96.0, _devicePixelsPerInchY / 96.0);
+                m.Scale(_devicePixelsPerInchX /DpiUtil.DefaultPixelsPerInch, _devicePixelsPerInchY /DpiUtil.DefaultPixelsPerInch);
                 return m;
             }
         }
@@ -1779,7 +2084,7 @@ namespace System.Windows.Interop
             {
                 VerifyAPIReadOnly();
                 Matrix m = Matrix.Identity;
-                m.Scale(96.0 / _devicePixelsPerInchX, 96.0 / _devicePixelsPerInchY);
+                m.Scale(DpiUtil.DefaultPixelsPerInch / _devicePixelsPerInchX, DpiUtil.DefaultPixelsPerInch / _devicePixelsPerInchY);
                 return m;
             }
         }

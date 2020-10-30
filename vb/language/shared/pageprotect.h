@@ -21,7 +21,7 @@ DECLARE_ENUM(ProtectedEntityFlags)
 END_ENUM(ProtectedEntityFlags)
 DECLARE_ENUM_OPERATORS(ProtectedEntityFlags)
 
-// [....] this must be defined for each binary as desired.
+// Microsoft this must be defined for each binary as desired.
 extern ProtectedEntityFlagsEnum const whatIsProtected;
 
 class PageProtect

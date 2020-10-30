@@ -168,7 +168,7 @@ namespace MS.Internal.AutomationProxies
             // UIAutomation do the job
             if (idProp == AutomationElement.AutomationIdProperty)
             {
-                // [....] have a special way to obtain the id
+                // Microsoft have a special way to obtain the id
                 if (WindowsFormsHelper.IsWindowsFormsControl(_hwnd, ref _windowsForms))
                 {
                     string sPersistentID = WindowsFormsHelper.WindowsFormsID (_hwnd);
@@ -178,7 +178,7 @@ namespace MS.Internal.AutomationProxies
             else if (idProp == AutomationElement.NameProperty)
             {
                 string name;
-                // If this is a [....] control and the AccessibleName is set, use it.
+                // If this is a Microsoft control and the AccessibleName is set, use it.
                 if (WindowsFormsHelper.IsWindowsFormsControl(_hwnd, ref _windowsForms))
                 {
                     name = GetAccessibleName(NativeMethods.CHILD_SELF);

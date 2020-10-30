@@ -10,7 +10,7 @@
 //      to read item[N], the following indices will be a sequence for index N+1, N+2 etc.
 //
 // History:
-//  08/19/2003 : [....] - created
+//  08/19/2003 : Microsoft - created
 //  10/22/2004 : kenlai - cached Count/IsEmpty/IndexOf added
 //
 //---------------------------------------------------------------------------
@@ -413,7 +413,7 @@ namespace MS.Internal.Data
                 {
                     Debug.Assert(false, "EnsureCacheCurrent: _enumerator.Current failed with InvalidOperationException");
                 }
-                Debug.Assert(Object.Equals(_cachedItem, current), "EnsureCacheCurrent: _cachedItem out of [....] with _enumerator.Current");
+                Debug.Assert(Object.Equals(_cachedItem, current), "EnsureCacheCurrent: _cachedItem out of sync with _enumerator.Current");
             }
 #endif // DEBUG
             return isCacheCurrent;
@@ -564,7 +564,7 @@ namespace MS.Internal.Data
                 {
                     // revert to walking the IEnumerable
                     // under partial trust, some properties are not accessible even though they are public
-                    // see bug 1415832
+                    // see 
                     _reflectedCount = null;
                     isNativeValue = false;
                 }
@@ -597,7 +597,7 @@ namespace MS.Internal.Data
                 {
                     // revert to walking the IEnumerable
                     // under partial trust, some properties are not accessible even though they are public
-                    // see bug 1415832
+                    // see 
                     _reflectedCount = null;
                     isNativeValue = false;
                 }
@@ -630,7 +630,7 @@ namespace MS.Internal.Data
                 {
                     // revert to walking the IEnumerable
                     // under partial trust, some properties are not accessible even though they are public
-                    // see bug 1415832
+                    // see 
                     _reflectedIndexOf = null;
                     isNativeValue = false;
                 }
@@ -663,7 +663,7 @@ namespace MS.Internal.Data
                 {
                     // revert to walking the IEnumerable
                     // under partial trust, some properties are not accessible even though they are public
-                    // see bug 1415832
+                    // see 
                     _reflectedItemAt = null;
                     isNativeValue = false;
                 }

@@ -286,21 +286,21 @@ namespace System.Windows.Controls
             get
             {
                 double result = 0.0;
-                
+
                 if(_scrollData != null)
                 {
                     result = _scrollData.ExtentWidth;
                     if(UseLayoutRounding)
                     {
-                        // Dev 10 bug: 827316
-                        // With layout rounding enabled DesiredSize.Width is rounded 
-                        // so the computed value of _scrollData.ExtentWidth may not agree with DesiredSize.
-                        // This discrepancy causes the retry logic for auto scrollbars in ScrollViewer not to terminate.
-                        // This fix applies layout rounding to the Extent so that it matches DesiredSize
-                        result = RoundLayoutValue(result, DpiScaleX);
+                        // Dev 10 
+
+
+
+
+                        result = RoundLayoutValue(result, GetDpi().DpiScaleX);
                     }
                 }
-                
+
                 return result;
             }
         }
@@ -313,21 +313,21 @@ namespace System.Windows.Controls
             get
             {
                 double result = 0.0;
-                
+
                 if(_scrollData != null)
                 {
                     result = _scrollData.ExtentHeight;
                     if(UseLayoutRounding)
                     {
-                        // Dev 10 bug: 827316
-                        // With layout rounding enabled DesiredSize.Width is rounded 
-                        // so the computed value of _scrollData.ExtentWidth may not agree with DesiredSize.
-                        // This discrepancy causes the retry logic for auto scrollbars in ScrollViewer not to terminate
-                        // This fix applies layout rounding to the Extent so that it matches DesiredSize
-                        result = RoundLayoutValue(result, DpiScaleY);
+                        // Dev 10 
+
+
+
+
+                        result = RoundLayoutValue(result, GetDpi().DpiScaleY);
                     }
                 }
-                
+
                 return result;
             }
         }
@@ -487,7 +487,7 @@ namespace System.Windows.Controls
 
             double oldWidth = _contentSize.Width;
             _contentSize = desiredSize;
-            
+
             // If the width has changed we need to reformat if we're centered or right aligned so the
             // spacing gets properly updated.
             if (oldWidth != desiredSize.Width && lineProperties.TextAlignment != TextAlignment.Left)
@@ -546,8 +546,8 @@ Exit:
         ///
         ///    By default a Visual does not have any children.
         ///
-        ///  Remark: 
-        ///       During this virtual call it is not valid to modify the Visual tree. 
+        ///  Remark:
+        ///       During this virtual call it is not valid to modify the Visual tree.
         /// </summary>
         protected override Visual GetVisualChild(int index)
         {
@@ -570,15 +570,15 @@ Exit:
         #region Protected Properties
 
         /// <summary>
-        ///  Derived classes override this property to enable the Visual code to enumerate 
+        ///  Derived classes override this property to enable the Visual code to enumerate
         ///  the Visual children. Derived classes need to return the number of children
         ///  from this method.
         ///
         ///    By default a Visual does not have any children.
         ///
-        ///  Remark: 
+        ///  Remark:
         ///      During this virtual method the Visual tree must not be modified.
-        /// </summary>        
+        /// </summary>
         protected override int VisualChildrenCount
         {
             get
@@ -845,7 +845,7 @@ Exit:
 
             using (TextBoxLine line = GetFormattedLine(lineIndex))
             {
-                boundary = line.IsAtCaretCharacterHit(sourceCharacterHit);             
+                boundary = line.IsAtCaretCharacterHit(sourceCharacterHit);
             }
 
             return boundary;
@@ -1275,7 +1275,7 @@ Exit:
                 return false;
             }
         }
-        
+
 
         /// <summary>
         /// <see cref="ITextView.TextSegments"/>
@@ -1600,7 +1600,7 @@ Exit:
             double formatWidth = GetWrappingWidth(_previousConstraint.Width);
 
             line.Format(metrics.Offset, formatWidth, width, lineProperties, new TextRunCache(), formatter);
-            Invariant.Assert(metrics.Length == line.Length, "Line is out of [....] with metrics!");
+            Invariant.Assert(metrics.Length == line.Length, "Line is out of sync with metrics!");
 
             return line;
         }
@@ -1725,11 +1725,11 @@ Exit:
                     using (line)
                     {
                         line.Format(metrics.Offset, formatWidth, width, lineProperties, _cache.TextRunCache, _cache.TextFormatter);
-                        
-                        // We should be in [....] with current metrics, unless background layout is pending.
+
+                        // We should be in sync with current metrics, unless background layout is pending.
                         if (!this.IsBackgroundLayoutPending)
                         {
-                            Invariant.Assert(metrics.Length == line.Length, "Line is out of [....] with metrics!");
+                            Invariant.Assert(metrics.Length == line.Length, "Line is out of sync with metrics!");
                         }
 
                         lineVisual = line.CreateVisual();
@@ -1744,13 +1744,13 @@ Exit:
         }
 
         // Removes lines that were discarded during Measure from the visual tree. We don't want to
-        // clear all of the visual children and then add lines that were already in the visual tree 
+        // clear all of the visual children and then add lines that were already in the visual tree
         // back because native resources will get freed and reallocated unnecessarily (ref count goes
-        // to 0 -- see Dev10 bug 607756).
-        //
-        // It is safe to modify the visual tree in Arrange, but there are no guarantees during Measure.
-        // It might be possible to get rid of TextBoxLineDrawingVisual and remove items from the 
-        // visual tree during Measure as well.
+        // to 0 -- see Dev10 
+
+
+
+
         private void DetachDiscardedVisualChildren()
         {
             int j = _visualChildren.Count - 1; // last non-discarded element index
@@ -1779,6 +1779,13 @@ Exit:
         // Adds a line visual to the visual tree.
         private void AttachVisualChild(TextBoxLineDrawingVisual lineVisual)
         {
+            // Ideally we should add visual to a collection before calling AddVisualChild.
+            // So that VisualDiagnostics.OnVisualChildChanged can get correct child index.
+            // However it is not clear what can regress. We'll use _parentIndex.
+            // Note that there is a comment in Visual.cs stating that _parentIndex should
+            // be set to -1 in DEBUG builds when child is removed. We are not going to 
+            // honor it. There is no _parentIndex == -1 validation is performed anywhere.
+            lineVisual._parentIndex = _visualChildren.Count;
             AddVisualChild(lineVisual);
             _visualChildren.Add(lineVisual);
         }
@@ -1854,7 +1861,23 @@ Exit:
                 }
                 else
                 {
-                    Invariant.Assert(endOffset == _lineMetrics[lineIndex].Offset);
+                    // WinBlue 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    Invariant.Assert(endOffset == _lineMetrics[lineIndex].Offset ||
+                            endOffset == _lineMetrics[lineIndex].Offset + _lineMetrics[lineIndex].ContentLength);
                 }
             }
             else
@@ -1944,11 +1967,11 @@ Exit:
 
             if ((ScrollBarVisibility)((Control)_host).GetValue(ScrollViewer.VerticalScrollBarVisibilityProperty) == ScrollBarVisibility.Auto)
             {
-                // Workaround for bug 1766924.
-                // When VerticalScrollBarVisiblity == Auto, there's a problem with
-                // our interaction with ScrollViewer.  Disable background layout to
-                // mitigate the problem until we can take a real fix in v.next.
-                // 
+                // Workaround for 
+
+
+
+
                 stopTime = DateTime.MaxValue;
             }
             else
@@ -1970,7 +1993,7 @@ Exit:
 
                     _lineMetrics.Add(new LineRecord(lineOffset, line));
 
-                    // Desired width is always max of calculated line widths. 
+                    // Desired width is always max of calculated line widths.
                     // Desired height is sum of all line heights.
                     desiredSize.Width = Math.Max(desiredSize.Width, line.Width);
                     desiredSize.Height += _lineHeight;
@@ -2076,7 +2099,7 @@ Exit:
         {
             int delta = range.PositionsAdded - range.PositionsRemoved;
             Invariant.Assert(delta >= 0);
-            
+
             int lineIndex = GetLineIndexFromOffset(range.StartIndex, LogicalDirection.Forward);
 
             if (delta > 0)
@@ -2261,7 +2284,7 @@ Exit:
                     // remove the metric.  This happens when the previous line
                     // frees up enough space to completely consume the following line.
                     // We can't simply replace the record without potentially missing our
-                    // [....] position.
+                    // sync position.
                     _lineMetrics.RemoveAt(lineIndex); // 
                     RemoveLineVisualRange(lineIndex, 1);
                 }
@@ -2287,7 +2310,7 @@ Exit:
                             // We expect to be colliding with the old line directly.
                             // If we extend past it, we're in danger of needlessly
                             // re-formatting the entire doc (ie, we miss the real
-                            // [....] position and don't stop until EndOfParagraph).
+                            // sync position and don't stop until EndOfParagraph).
                             Invariant.Assert(lineOffset < _lineMetrics[lineIndex].EndOffset);
 
                             _lineMetrics[lineIndex] = record;
@@ -2464,7 +2487,7 @@ Exit:
                 if (lineIndex >= _viewportLineVisualsIndex &&
                     lineIndex < _viewportLineVisualsIndex + _viewportLineVisuals.Count &&
                     _viewportLineVisuals[lineIndex - _viewportLineVisualsIndex] != null)
-                {                 
+                {
                     // Mark discarded line visual so it can be removed from the visual tree in ArrangeVisuals.
                     _viewportLineVisuals[lineIndex - _viewportLineVisualsIndex].DiscardOnArrange = true;
                     _viewportLineVisuals[lineIndex - _viewportLineVisualsIndex] = null;
@@ -2815,7 +2838,7 @@ Exit:
 
             private readonly LineProperties _lineProperties;
             private readonly TextRunCache _textRunCache;
-            private TextFormatter      _textFormatter;            
+            private TextFormatter      _textFormatter;
         }
 
         // Line metrics array entry.

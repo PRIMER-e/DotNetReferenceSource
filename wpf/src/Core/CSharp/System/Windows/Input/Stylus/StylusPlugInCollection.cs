@@ -349,7 +349,7 @@ namespace System.Windows.Input.StylusPlugIns
 
         /// <SecurityNote>
         /// Critical - Accesses SecurityCritical data _penContexts.
-        /// TreatAsSafe - The [....] object on the _penContexts object is not considered security 
+        /// TreatAsSafe - The Sync object on the _penContexts object is not considered security 
         ///                 critical data.  It is already internally exposed directly on the
         ///                 PenContexts object.
         /// </SecurityNote>

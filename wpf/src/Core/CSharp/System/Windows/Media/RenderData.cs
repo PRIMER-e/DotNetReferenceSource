@@ -10,7 +10,7 @@
 //              containing renderdata instructions and an array of dependent resource.
 //
 // History:
-//  03/30/2004 : [....] - Created it.
+//  03/30/2004 : Microsoft - Created it.
 //
 //---------------------------------------------------------------------------
 

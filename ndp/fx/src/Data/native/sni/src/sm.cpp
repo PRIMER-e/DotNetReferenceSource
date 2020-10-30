@@ -222,7 +222,7 @@ DWORD Sm::LoadInstapiIfNeeded()
 	const char szSharedPathLocation[]="Software\\Microsoft\\Microsoft SQL Server\\90";
 	HKEY  hKey;
 
-	dwError = static_cast<DWORD> (RegOpenKeyEx( HKEY_LOCAL_MACHINE,// handle to open key
+	dwError = static_cast<DWORD> (RegOpenKeyExA( HKEY_LOCAL_MACHINE,// handle to open key
 								 szSharedPathLocation,	// subkey name
 								 0,					// reserved
 								 KEY_QUERY_VALUE,	// security access mask
@@ -238,7 +238,7 @@ DWORD Sm::LoadInstapiIfNeeded()
 	char szSharedPath[MAX_PATH+1];
 	DWORD cszSharedPath = MAX_PATH;
 	DWORD dwSharedPathRegType; 
-	dwError =  static_cast<DWORD> ( RegQueryValueEx(	hKey,					// handle to key
+	dwError =  static_cast<DWORD> ( RegQueryValueExA(	hKey,					// handle to key
 							   "SharedCode",			// value name
 							   0,						// reserved
 							   &dwSharedPathRegType,	// value type
@@ -278,7 +278,7 @@ DWORD Sm::LoadInstapiIfNeeded()
 	
 	szInstapipath[sizeof(szInstapipath)-1] = '\0';
 	
-	if( NULL == (pInstapiStruct->hInstapidll = LoadLibrary( szInstapipath)) )
+	if( NULL == (pInstapiStruct->hInstapidll = LoadLibraryA( szInstapipath)) )
 	{
 		dwError = GetLastError();
 		BidTrace1(ERROR_TAG _T("Failed to load instapi.dll. %d{WINERR}\n"), dwError );
@@ -351,7 +351,7 @@ ErrorExit:
 //		This function infer whether the instancestring points to a Yukon Server by using instapi and heuritistcs.
 //
 // PARAMETERS:
-//		IN LPSTR szInstance: instance string
+//		IN LPWSTR wszInstance: instance string
 //		OUT BOOL pfIsYukon:
 //		OUT BOOL pfNew:
 //
@@ -362,22 +362,22 @@ ErrorExit:
 // NOTES:
 //----------------------------------------------------------------------------
 
-DWORD Sm::IsYukonByInstanceString(__in_opt LPSTR szInstance, 
+DWORD Sm::IsYukonByInstanceString(__in_opt LPWSTR wszInstance, 
 								  __out BOOL * pfIsYukon, 
 								  __out_opt BOOL * pfNew, 
 								  __out BOOL * pfVersionRetrieved)
 {
-	BidxScopeAutoSNI4( SNIAPI_TAG _T("szInstance: \"%hs\", pfIsYukon: %p{BOOL*}, pfNew: %p{BOOL*}, pfVersionRetrieved: %p{BOOL*}\n"), 
-					szInstance, pfIsYukon, pfNew, pfVersionRetrieved );
+	BidxScopeAutoSNI4( SNIAPI_TAG _T("wszInstance: \"%s\", pfIsYukon: %p{BOOL*}, pfNew: %p{BOOL*}, pfVersionRetrieved: %p{BOOL*}\n"), 
+					wszInstance, pfIsYukon, pfNew, pfVersionRetrieved );
 
 	DWORD dwError = ERROR_SUCCESS;	
 
-	Assert ( szInstance && szInstance[0] );
+	Assert ( wszInstance && wszInstance[0] );
 	Assert ( pfIsYukon != NULL );
 	Assert ( pfNew != NULL );
 
-	if ( szInstance == NULL 
-		|| szInstance[0] == '\0'
+	if ( wszInstance == NULL 
+		|| wszInstance[0] == L'\0'
 		|| pfIsYukon == NULL 
 		|| pfNew == NULL 
 		|| pfVersionRetrieved == NULL )
@@ -397,22 +397,6 @@ DWORD Sm::IsYukonByInstanceString(__in_opt LPSTR szInstance,
 	
 	WCHAR wszVersion[MAX_VERSION_LENGTH+1];	
 	DWORD cwszVersion = MAX_VERSION_LENGTH;
-	WCHAR wszInstance[MAX_INSTANCENAME_LENGTH+1];
-	
-	int cRet = MultiByteToWideChar(CP_ACP, 
-					    0, 
-					    szInstance,
-					    static_cast<int>(strlen(szInstance))+1, 
-					    wszInstance,   
-					    MAX_INSTANCENAME_LENGTH
-					    );
-	if( cRet == 0 )
-	{
-		dwError = GetLastError();
-		goto Exit;
-	}
-	
-	wszInstance[MAX_INSTANCENAME_LENGTH] = L'\0';
 
 	// For obtain instance ID specifying SQL Server service to make sure we 
 	// don't get version for AS or RS.  
@@ -442,7 +426,7 @@ DWORD Sm::IsYukonByInstanceString(__in_opt LPSTR szInstance,
 	
 	wszVersion[MAX_VERSION_LENGTH]=L'\0';	
 	char szVersion[MAX_VERSION_LENGTH+1];
-	cRet = WideCharToMultiByte( CP_ACP,
+	int cRet = WideCharToMultiByte( CP_ACP,
 					     0,
 					     wszVersion,
 					     -1,
@@ -498,19 +482,19 @@ Exit:
 }
 
 
-BOOL Sm::IsShilohClustered(LPSTR szInstance)
+BOOL Sm::IsShilohClustered(LPWSTR wszInstance)
 {
-	BidxScopeAutoSNI1( SNIAPI_TAG _T("szInstance: \"%hs\"\n"), szInstance );
+	BidxScopeAutoSNI1( SNIAPI_TAG _T("wszInstance: \"%s\"\n"), wszInstance );
 
-	char szRegLocation[MAX_PATH+128] = "";
-	szRegLocation[ sizeof(szRegLocation) -1] = 0;
+	WCHAR wszRegLocation[MAX_PATH+128] = L"";
+	wszRegLocation[ ARRAYSIZE(wszRegLocation) -1] = 0;
 
 	// If its MSSQLSERVER (default instance), append another MSSQLServer to the path
-	if(!_stricmp_l("MSSQLSERVER", szInstance, GetDefaultLocale()) )
+	if(!_wcsicmp_l(L"MSSQLSERVER", wszInstance, GetDefaultLocale()) )
 	{
-		if(FAILED(StringCchPrintf_lA( szRegLocation,
-					 CCH_ANSI_STRING(szRegLocation),
-					 "SOFTWARE\\Microsoft\\MSSQLServer\\Cluster", GetDefaultLocale())))
+		if(FAILED(StringCchPrintf_lW( wszRegLocation,
+					 ARRAYSIZE(wszRegLocation),
+					 L"SOFTWARE\\Microsoft\\MSSQLServer\\Cluster", GetDefaultLocale())))
 		{
 			goto ErrorExit;
 		}
@@ -519,18 +503,18 @@ BOOL Sm::IsShilohClustered(LPSTR szInstance)
 	// Else, its a named instance
 	else
 	{
-		if(FAILED(StringCchPrintf_lA( szRegLocation,
-					 CCH_ANSI_STRING(szRegLocation),
-					 "SOFTWARE\\Microsoft\\Microsoft SQL Server\\%s\\Cluster", GetDefaultLocale(),
-					 szInstance)))
+		if(FAILED(StringCchPrintf_lW( wszRegLocation,
+					 ARRAYSIZE(wszRegLocation),
+					 L"SOFTWARE\\Microsoft\\Microsoft SQL Server\\%s\\Cluster", GetDefaultLocale(),
+					 wszInstance)))
 		{
 			goto ErrorExit;
 		}
 	}
 
 	HKEY  hKey;
-	LONG lReturn = RegOpenKeyEx( HKEY_LOCAL_MACHINE,    // handle to open key
-								 szRegLocation,         // subkey name
+	LONG lReturn = RegOpenKeyExW( HKEY_LOCAL_MACHINE,    // handle to open key
+								 wszRegLocation,         // subkey name
 								 0,                     // reserved
 								 KEY_QUERY_VALUE,       // security access mask
 								 &hKey );	            // handle to open key
@@ -554,9 +538,9 @@ ErrorExit:
 
 }
 
-BOOL Sm::IsClustered(__in LPSTR szInstance)
+BOOL Sm::IsClustered(__in LPWSTR wszInstance)
 {
-	BidxScopeAutoSNI1( SNIAPI_TAG _T("szInstance: \"%hs\"\n"), szInstance );
+	BidxScopeAutoSNI1( SNIAPI_TAG _T("wszInstance: \"%s\"\n"), wszInstance );
 	BOOL fisClustered = FALSE;
 
 	DWORD dwError = ERROR_SUCCESS;
@@ -564,7 +548,7 @@ BOOL Sm::IsClustered(__in LPSTR szInstance)
 	if( !gpInstapiStruct )
 	{
 		// failed in load instapi.dll, try shiloh
-		 fisClustered = Sm::IsShilohClustered(szInstance);
+		 fisClustered = Sm::IsShilohClustered(wszInstance);
 		goto Exit;		
 	}
 	
@@ -572,21 +556,6 @@ BOOL Sm::IsClustered(__in LPSTR szInstance)
 
 	WCHAR wszClusterName[MAX_NAME_SIZE+1];	
 	DWORD cwszClusterName = MAX_NAME_SIZE;
-	WCHAR wszInstance[MAX_INSTANCENAME_LENGTH+1];
-	
-	int cRet = MultiByteToWideChar(CP_ACP, 
-					    0, 
-					    szInstance,
-					    static_cast<int>(strlen(szInstance))+1, 
-					    wszInstance,   
-					    MAX_INSTANCENAME_LENGTH
-					    );
-	if( cRet == 0 )
-	{
-		goto Exit;
-	}
-	
-	wszInstance[MAX_INSTANCENAME_LENGTH] = L'\0';
 
 	// For obtain instance ID specifying SQL Server service to make sure we 
 	// don't get version for AS or RS.  
@@ -658,15 +627,15 @@ DWORD Sm::OpenWithFallback( __in SNI_CONSUMER_INFO *  pConsumerInfo,
 	BOOL   fSrvVersionRetrieved = FALSE; 
 
 	// Set the instance
-	LPSTR szInstance = NULL;
+	LPWSTR wszInstance = NULL;
 
 	*ppConn = NULL; 
 
-	szInstance = StrChrA_SYS(pProtElem->Sm.Alias,(int) strlen(pProtElem->Sm.Alias), '\\');
-	if( szInstance )
-		(szInstance) += 1;
+	wszInstance = StrChrW_SYS(pProtElem->Sm.Alias,(int) wcslen(pProtElem->Sm.Alias), L'\\');
+	if( wszInstance )
+		(wszInstance) += 1;
 	else
-		szInstance = "MSSQLSERVER";
+		wszInstance = L"MSSQLSERVER";
 
 #ifdef SNI_BASED_CLIENT
 
@@ -675,7 +644,7 @@ DWORD Sm::OpenWithFallback( __in SNI_CONSUMER_INFO *  pConsumerInfo,
 	(void) LoadInstapiIfNeeded();	
 
 	// Do not connect over shared memory to a clustered server
-	if( Sm::IsClustered(szInstance) )
+	if( Sm::IsClustered(wszInstance) )
 	{
 		SNI_SET_LAST_ERROR( SM_PROV, SNIE_29, ERROR_NOT_SUPPORTED );
 		BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("Cluster is not supported over shared memory. %d{WINERR}\n"), ERROR_NOT_SUPPORTED);
@@ -684,7 +653,7 @@ DWORD Sm::OpenWithFallback( __in SNI_CONSUMER_INFO *  pConsumerInfo,
 	}
 
 	// Check if this server instance is SNI-based or not	
-	if( ERROR_SUCCESS != (dwError = Sm::IsYukonByInstanceString(szInstance, 
+	if( ERROR_SUCCESS != (dwError = Sm::IsYukonByInstanceString(wszInstance, 
 																&fSNIenabled, 
 																&fNewer, 
 																&fSrvVersionRetrieved)) )	
@@ -734,7 +703,7 @@ DWORD Sm::OpenWithFallback( __in SNI_CONSUMER_INFO *  pConsumerInfo,
 			goto ErrorExit;
 		}
 		// Otherwise, we failed to retrieve the server version, failed 
-		// to make a Yukon LPC connection, and the connection is [....], 
+		// to make a Yukon LPC connection, and the connection is sync, 
 		// so fall back and try Shiloh LPC connection.  
 	}
 
@@ -832,7 +801,7 @@ DWORD Sm::OpenNpBasedYukon( __in SNI_CONSUMER_INFO *  pConsumerInfo,
 	ProtElem protElemSmOverNp;
 	DWORD dwLength = sizeof(protElemSmOverNp.Np.Pipe) / 
 		sizeof(protElemSmOverNp.Np.Pipe[0]); 
-	LPSTR szInstance = NULL;
+	LPWSTR wszInstance = NULL;
 
 	Assert( NULL == *ppConn ); 
 
@@ -848,31 +817,31 @@ DWORD Sm::OpenNpBasedYukon( __in SNI_CONSUMER_INFO *  pConsumerInfo,
 	
 	// Parse out the instance
 	//
-	szInstance = StrChrA_SYS(pProtElem->Sm.Alias,(int) strlen(pProtElem->Sm.Alias), '\\');
-	if( szInstance )
-		(szInstance) += 1;
+	wszInstance = StrChrW_SYS(pProtElem->Sm.Alias,(int) wcslen(pProtElem->Sm.Alias), L'\\');
+	if( wszInstance )
+		(wszInstance) += 1;
 	else
-		szInstance = "MSSQLSERVER";
+		wszInstance = L"MSSQLSERVER";
 
 	protElemSmOverNp.SetProviderNum(NP_PROV);	
 	protElemSmOverNp.m_ProviderToReport = SM_PROV; 
 	
-	dwError = protElemSmOverNp.Init( pProtElem->m_szServerName, pProtElem->m_szOriginalServerName ); 
+	dwError = protElemSmOverNp.Init( pProtElem->m_wszServerName, pProtElem->m_wszOriginalServerName ); 
 
 	if( ERROR_SUCCESS != dwError )
 	{
 		goto ErrorExit; 
 	}
 
-	protElemSmOverNp.Np.Pipe[dwLength - 1] = '\0'; 
+	protElemSmOverNp.Np.Pipe[dwLength - 1] = L'\0'; 
 
-	if( FAILED ( StringCchPrintf_lA(
+	if( FAILED ( StringCchPrintf_lW(
 				protElemSmOverNp.Np.Pipe, 
 				dwLength,
-				"%s%s", 
+				L"%s%s", 
 				GetDefaultLocale(),
-				"\\\\.\\pipe\\SQLLocal\\", 
-				szInstance ) ) )
+				L"\\\\.\\pipe\\SQLLocal\\", 
+				wszInstance ) ) )
 	{
 		dwError = ERROR_BUFFER_OVERFLOW; 
 		goto ErrorExit; 
@@ -924,7 +893,7 @@ DWORD Sm::CreateSNIConn( __in SNI_CONSUMER_INFO *  pConsumerInfo,
 	pConn->m_fClient = true;
 	pConn->m_fSync = fSync ? true : false;
 
-	dwError = pConn->SetServerName(pProtElem->m_szServerName, pProtElem->m_szOriginalServerName);
+	dwError = pConn->SetServerName(pProtElem->m_wszServerName, pProtElem->m_wszOriginalServerName);
 
 	if( ERROR_SUCCESS != dwError )
 	{

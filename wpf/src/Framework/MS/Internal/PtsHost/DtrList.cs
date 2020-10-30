@@ -8,7 +8,7 @@
 //              contains information about tree changes.
 //
 // History:  
-//  06/06/2003 : [....] - moving from Avalon branch.
+//  06/06/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 

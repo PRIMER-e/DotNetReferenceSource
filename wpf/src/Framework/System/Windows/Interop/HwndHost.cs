@@ -37,6 +37,7 @@ namespace System.Windows.Interop
         static HwndHost()
         {
             FocusableProperty.OverrideMetadata(typeof(HwndHost), new FrameworkPropertyMetadata(true));
+            HwndHost.DpiChangedEvent = Window.DpiChangedEvent.AddOwner(typeof(HwndHost));
         }
 
         /// <summary>
@@ -141,6 +142,20 @@ namespace System.Windows.Interop
         }
 
         /// <summary>
+        ///     This event is raised after the DPI of the screen on which the HwndHost is displayed, changes.
+        /// </summary>
+        public event DpiChangedEventHandler DpiChanged
+        {
+            add { AddHandler(HwndHost.DpiChangedEvent, value); }
+            remove { RemoveHandler(HwndHost.DpiChangedEvent, value); }
+        }
+
+        /// <summary>
+        /// RoutedEvent for when DPI of the screen the HwndHost is on, changes.
+        /// </summary>
+        public static readonly RoutedEvent DpiChangedEvent;
+
+        /// <summary>
         /// </summary>
         /// <param name="e"></param>
         ///<SecurityNote>
@@ -168,6 +183,14 @@ namespace System.Windows.Interop
                 e.Handled = handled;
 
             base.OnKeyUp(e);
+        }
+
+        /// <summary>
+        /// OnDpiChanged is called when the DPI at which this HwndHost is rendered, changes.
+        /// </summary>
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            RaiseEvent(new DpiChangedEventArgs(oldDpi, newDpi, HwndHost.DpiChangedEvent, this));
         }
 
         /// <summary>
@@ -460,7 +483,7 @@ namespace System.Windows.Interop
                 // Based on Dwayne, the reason we also show/hide window in UpdateWindowPos is for the 
                 // following kind of scenario: When applying RenderTransform to HwndHost, the hwnd
                 // will be left behind. Developer can workaround by hide the hwnd first using pinvoke. 
-                // After the RenderTransform is applied to the HwndHost, call UpdateWindowPos to [....] up
+                // After the RenderTransform is applied to the HwndHost, call UpdateWindowPos to sync up
                 // the hwnd's location, size and visibility with WPF.
                 UnsafeNativeMethods.ShowWindowAsync(_hwnd, NativeMethods.SW_SHOW);
             }

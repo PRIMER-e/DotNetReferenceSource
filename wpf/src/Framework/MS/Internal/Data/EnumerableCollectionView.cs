@@ -565,7 +565,7 @@ namespace MS.Internal.Data
 
         // if the IEnumerable has changed, bring the snapshot up to date.
         // (This isn't necessary if the IEnumerable is also INotifyCollectionChanged
-        // because we keep the snapshot in [....] incrementally.)
+        // because we keep the snapshot in sync incrementally.)
         void EnsureSnapshot()
         {
             if (_pollForChanges)

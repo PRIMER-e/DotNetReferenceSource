@@ -8,7 +8,7 @@
 //              This is the base class for holding the bitmap effect state.
 //
 // History:
-//  07/25/2005 : [....] - Created it.
+//  07/25/2005 : Microsoft - Created it.
 //
 //---------------------------------------------------------------------------
 using System;

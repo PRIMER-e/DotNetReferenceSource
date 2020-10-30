@@ -710,6 +710,28 @@ namespace System.Windows.Input
         {
             EventTrace.EasyTraceEvent(EventTrace.Keyword.KeywordInput | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, EventTrace.Event.TouchUpReported, _deviceId);
 
+            // DevDiv: 971187
+            // If there is a hit test pending on the dispatcher queue for this touch device
+            // we need to be sure that it is evaluated before we send a touch up.  Otherwise,
+            // there may be visual tree changes that have invalidated the over property for
+            // this device (such as removing the control we are over from the tree) that will
+            // invalidate any touch ups and lead to missing events and other erroneous behavior.
+            // This is safe to do as the next touch events for any correct touch device should
+            // be constrained to a down or hover/move (if the device is not deactivated).  In 
+            // those cases another hit test will occur removing the over selected by this test.
+            // Any "old" hit tests still on the queue will run either on deactivated device
+            // (which is no issue), or mid-stream with other touch messages.  Since the messages
+            // available would be downs or moves/hovers, this should be no issue (as they update
+            // the hit test as well).  Hit testing is stateless (without capture) so the results 
+            // will also be the same as another hit test run on the same visual tree.  In cases
+            // with capture the hit test is triggered already, so this will not change anything.
+            if (_reevaluateOver != null)
+            {
+                _reevaluateOver = null;
+
+                OnHitTestInvalidatedAsync(this, EventArgs.Empty);
+            }
+
             bool handled = RaiseTouchUp();
             _isDown = false;
             UpdateDirectlyOver(/* isSynchronize = */ false);

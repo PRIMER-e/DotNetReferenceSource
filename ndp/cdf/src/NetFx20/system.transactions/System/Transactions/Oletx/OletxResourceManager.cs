@@ -252,11 +252,11 @@ namespace System.Transactions.Oletx
 
         // This is called by the internal RM when it gets a TM Down notification.  This routine will
         // tell the enlistments about the TMDown from the internal RM.  The enlistments will then
-        // decide what to do, based on their state.  This is mainly to work around COMPlus bug 36760/36758,
-        // where Phase0 enlistments get Phase0Request( abortHint = false ) when the TM goes down.  We want
-        // to try to avoid telling the application to prepare when we know the transaction will abort.
-        // We can't do this out of the normal TMDown notification to the RM because it is too late.  The
-        // Phase0Request gets sent before the TMDown notification.
+        // decide what to do, based on their state.  This is mainly to work around COMPlus 
+
+
+
+
         internal void TMDownFromInternalRM( OletxTransactionManager oletxTM )
         {
             Hashtable localEnlistmentHashtable = null;
@@ -275,7 +275,7 @@ namespace System.Transactions.Oletx
             // Tell all of our enlistments that the TM went down.  The proxy only
             // tells enlistments that are in the Prepared state, but we want our Phase0
             // enlistments to know so they can avoid sending Prepare when they get a
-            // Phase0Request - COMPlus bug 36760/36758.
+            // Phase0Request - COMPlus 
             enlistEnum = localEnlistmentHashtable.GetEnumerator();
             while ( enlistEnum.MoveNext() )
             {
@@ -392,7 +392,7 @@ namespace System.Transactions.Oletx
                             throw TransactionException.Create(
                                 SR.GetString( SR.TraceSourceOletx ),
                                 SR.GetString( SR.OletxTooManyEnlistments ),
-                                comException );
+                                comException, enlistment == null ? Guid.Empty : enlistment.DistributedTxId );
                         }
 
                         OletxTransactionManager.ProxyException( comException );
@@ -982,6 +982,28 @@ namespace System.Transactions.Oletx
         protected Guid enlistmentGuid;
         protected OletxResourceManager oletxResourceManager;
         protected OletxTransaction oletxTransaction;
+        internal OletxTransaction OletxTransaction
+        {
+            get
+            {
+                return this.oletxTransaction;
+            }
+        }
+
+        internal Guid DistributedTxId
+        {
+            get
+            {
+                Guid returnValue = Guid.Empty;
+
+                if (this.OletxTransaction != null)
+                {
+                    returnValue = this.OletxTransaction.DistributedTxId;
+                }
+                return returnValue;
+            }
+        }
+
         protected string transactionGuidString;
         protected int enlistmentId;
         // this needs to be internal so it can be set from the recovery information during Reenlist.

@@ -15,8 +15,8 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.Ink.StrokeFIndices.get_IsValid():System.Boolean")]
 #endif
@@ -69,7 +69,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses", Scope="class", Target="MS.Utility.FrugalStructList`1")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: bkaneva
 // Reason: Unfortunately, the above suppressions don't seem to work even if you fix the generic type issue. So, we need to
 // exclude the individual members
 //***************************************************************************************************************************
@@ -93,7 +93,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1038893
-// Developer: [....]
+// Developer: bkaneva
 // Reason: There is a call to this method ColorTransform .ColorTransform (SafeMILHandle bitmapSource, ColorContext srcContext, ColorContext dstContext, System.Windows.Media.PixelFormat pixelFormat)
 // It is an internal constructor
 //***************************************************************************************************************************
@@ -172,7 +172,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // All of the following bugs are related (i.e. dead code bugs) but have different PS bug ids (but same reason for suppression)
 // Developer: patricsw
-// Reason: According to [....] (as cited in the bug) this is dead code but the owner of the dead code is planning
+// Reason: According to JordanPa (as cited in the bug) this is dead code but the owner of the dead code is planning
 //         on using this code in M11. Thus, for now supressing the error seems to correct thing to do.
 //***************************************************************************************************************************
 //
@@ -207,7 +207,7 @@ using System.Diagnostics.CodeAnalysis;
 
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: bkaneva
 // Reason: There is a call to this method from the constructor of CompNodeVisual
 //***************************************************************************************************************************
 
@@ -215,7 +215,7 @@ using System.Diagnostics.CodeAnalysis;
 
 
 //***************************************************************************************************************************
-// Developer: [....]
+// Developer: bkaneva
 // Reason: Shared string resource
 //***************************************************************************************************************************
 
@@ -232,7 +232,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.PresentationCore.SRID.get_TokenizerHelperMissingEndQuote():MS.Internal.PresentationCore.SRID")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: bkaneva
 // Reason: These methods are used by Test
 //***************************************************************************************************************************
 
@@ -241,7 +241,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="System.Windows.Media.MediaSystem.set_ForceRecord(System.Boolean):System.Void")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: bkaneva
 // Reason: These methods are part of collection class
 //**************************************************************************************************************************
 
@@ -376,7 +376,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 202861
-// Developer: [....]
+// Developer: grzegorz
 // Reason: False positive. Used internally by Managed C++ code (Cpp\PresentationCoreCpp.nativeproj).
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance","CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.TrueTypeRasterizer.#get_SourceUri()")]

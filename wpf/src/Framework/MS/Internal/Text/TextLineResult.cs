@@ -8,8 +8,8 @@
 //              by TextBlock. 
 //
 // History:  
-//  04/25/2003 : [....] - Moving from Avalon branch.
-//  06/25/2004 : [....] - Performance work.
+//  04/25/2003 : Microsoft - Moving from Avalon branch.
+//  06/25/2004 : Microsoft - Performance work.
 //
 //---------------------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 // ==--==
 //===========================================================================
 //  File:       IpcChannel.cs
-//  Author:   [....]@Microsoft.Com
+//  Author:   Microsoft@Microsoft.Com
 //  Summary:    Implements a combined ipc channel 
 //
 //==========================================================================

@@ -5,7 +5,7 @@
 // Description: Undo unit for TextContainer.InsertText and InsertEmbeddedObject calls.
 //
 // History:  
-//  03/03/2004 : [....] - Created
+//  03/03/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

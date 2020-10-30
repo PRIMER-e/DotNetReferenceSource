@@ -10,7 +10,7 @@
 [assembly: System.Security.SecurityCritical]
 
 #if ASTORIA_LIGHT 
-// 
+// TODO: SQLBUDT 558791 use real silver light assembly version information, not using 3.5 so we can tell the difference more easily
 
 [assembly: System.Reflection.AssemblyVersion(ThisAssembly.Version)]
 [assembly: System.Reflection.AssemblyFileVersion(ThisAssembly.InformationalVersion)]

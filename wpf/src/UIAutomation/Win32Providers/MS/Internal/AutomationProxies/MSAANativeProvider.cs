@@ -153,14 +153,14 @@ namespace MS.Internal.AutomationProxies
                 return null;
 
             // This proxy is aimed at picking up custom IAccessibles to fill the gaps left by other UIA proxies.
-            // [....], however, implements IAccessible on *all* of its HWNDs, even those that do not add
+            // Microsoft, however, implements IAccessible on *all* of its HWNDs, even those that do not add
             // any interesting IAccessible information - for the most part, it is just reexposing the underlying
             // OLEACC proxies.
             //
-            // However, there are some [....] controls - eg datagrid - that do have new IAccessible impls, and
-            // we *do* want to proxy those, so we can't just flat-out ignore [....]. Solution here is to ignore
-            // [....] that are responding to WM_GETOBJECT/OBJID_QUERYCLASSNAMEIDX, since those are just wrapped
-            // comctls. This should leave any custom [....] controls - including those that are simply derived from
+            // However, there are some Microsoft controls - eg datagrid - that do have new IAccessible impls, and
+            // we *do* want to proxy those, so we can't just flat-out ignore Microsoft. Solution here is to ignore
+            // Microsoft that are responding to WM_GETOBJECT/OBJID_QUERYCLASSNAMEIDX, since those are just wrapped
+            // comctls. This should leave any custom Microsoft controls - including those that are simply derived from
             // Control
             bool isWinForms = false;
             if (WindowsFormsHelper.IsWindowsFormsControl(hwnd))
@@ -187,11 +187,11 @@ namespace MS.Internal.AutomationProxies
 
             if (isWinForms)
             {
-                // If this is a [....] app, screen out Client and Window roles - this is because all [....]
+                // If this is a Microsoft app, screen out Client and Window roles - this is because all Microsoft
                 // controls get IAccessible impls - but most just call through to OLEACC's proxies. If we get here
                 // at all, then chances are we are not a user/common control (because we'll have picked up a UIA
                 // proxy first), so we're likely some Control-derived class - which could be interesting, or could
-                // be just a boring [....] HWND. Filtering out client/window roles means we'll only talk to [....]
+                // be just a boring Microsoft HWND. Filtering out client/window roles means we'll only talk to Microsoft
                 // controls that have at least set a meaningul (non-default) role.
                 AccessibleRole role = acc.Role;
                 if (role == AccessibleRole.Client || role == AccessibleRole.Window)
@@ -403,7 +403,7 @@ namespace MS.Internal.AutomationProxies
                 }
                 catch (System.Security.SecurityException)
                 {
-                    // Partial Trust [....] apps sometimes return a security error for get_accParent - 
+                    // Partial Trust Microsoft apps sometimes return a security error for get_accParent - 
                     // this prevents us from figuring out where the IAccessible lives in the tree
                     // or getting a proper runtime ID for it. For now, return a 'fake' runtime ID,
                     // so clients will at least be able to get name, role, location, etc.

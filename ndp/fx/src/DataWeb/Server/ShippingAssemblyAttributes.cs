@@ -6,8 +6,8 @@
 //      Declares assembly-level attributes.
 // </summary>
 //
-// @owner       [....]
-// @backupowner [....]
+// @owner       markash
+// @backupowner mruiz
 //---------------------------------------------------------------------
 
 [assembly: System.Security.SecurityCritical]

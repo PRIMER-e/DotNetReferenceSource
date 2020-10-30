@@ -7,7 +7,7 @@
 // Description: A static class which contains well-known SolidColorBrushes.
 //
 // History:
-//  04/29/2003 : [....] - Created it
+//  04/29/2003 : Microsoft - Created it
 //
 //---------------------------------------------------------------------------
 

@@ -7,7 +7,7 @@
 // Description: PaginationProgress event.
 //
 // History:  
-//  08/29/2005 : [....] - created.
+//  08/29/2005 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 

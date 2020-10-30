@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: Private run
-// Developer: [....]
+// Developer: andren
 // Reason: partial trust security team has reviewed all of these
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts", Scope="member", Target="System.Windows.Markup.Compiler.XamlReaderHelper.GetTemporaryAvalonXmlnsDefinitions():System.String[]")]
@@ -55,7 +55,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: Private run
-// Developer: [....]
+// Developer: ifeanyie
 // Reason: We do not need the hash for cryptographic reasons and we need to match the hash algorithm used by CodeChecksumPragma.ChecksumAlgorithmId
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Cryptographic.Standard","CA5350:MD5CannotBeUsed", Scope="member", Target="MS.Internal.MarkupCompiler.#GenerateSource()")]

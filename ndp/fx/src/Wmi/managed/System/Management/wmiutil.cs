@@ -10,10 +10,8 @@ namespace System.Management
      InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IWmiEventSource
     {
-        [PreserveSig]
         void Indicate(IntPtr pIWbemClassObject);
 
-        [PreserveSig]
         void SetStatus(
             int lFlags,
             int hResult,

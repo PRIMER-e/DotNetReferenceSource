@@ -1090,8 +1090,8 @@ namespace System.Windows.Forms
         /// <include file='doc\DataGridViewColumn.uex' path='docs/doc[@for="DataGridViewColumn.Clone"]/*' />
         public override object Clone()
         {
-            // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
-            //
+            // SECREVIEW : Late-binding does not represent a security thread, see 
+
             DataGridViewColumn dataGridViewColumn = (DataGridViewColumn) System.Activator.CreateInstance(this.GetType());
             if (dataGridViewColumn != null)
             {

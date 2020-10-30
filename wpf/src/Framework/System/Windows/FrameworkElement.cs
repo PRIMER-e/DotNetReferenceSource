@@ -802,10 +802,10 @@ namespace System.Windows
         protected internal DependencyObject GetTemplateChild(string childName)
         {
             FrameworkTemplate template = TemplateInternal;
-            /* Calling this before getting a style/template is not a bug.
-            Debug.Assert(template != null,
-                "The VisualTree should have been created from a Template");
-            */
+            /* Calling this before getting a style/template is not a 
+
+
+*/
 
             if (template == null)
             {
@@ -1423,7 +1423,7 @@ namespace System.Windows
         //  types.
         internal static object FindTemplateResourceInternal(DependencyObject target, object item, Type templateType)
         {
-            // Data styling doesn't apply to UIElement (bug 1007133).
+            // Data styling doesn't apply to UIElement (
             if (item == null || (item is UIElement))
             {
                 return null;
@@ -1851,7 +1851,7 @@ namespace System.Windows
                 // If the parent element's style is changing, this instance is
                 // in a visual tree that is being removed, and the value request
                 // is simply a result of tearing down some information in that
-                // tree (e.g. a BindingExpression).  If so, just pretend there is no style (bug 991395).
+                // tree (e.g. a BindingExpression).  If so, just pretend there is no style (
 
                 if (GetValueFromTemplatedParent(dp, ref entry))
                 {
@@ -1960,7 +1960,7 @@ namespace System.Windows
 
         // Climb the framework tree hierarchy and see if we can pick up an
         //  inheritable property value somewhere in that parent chain.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         private object GetInheritableValue(DependencyProperty dp, FrameworkPropertyMetadata fmetadata)
         {
             //
@@ -3069,6 +3069,41 @@ namespace System.Windows
             return InvalidateAutomationAncestorsCoreHelper(branchNodeStack, out continuePastCoreTree, shouldInvalidateIntermediateElements);
         }
 
+        #region ForceInherit property support
+
+        // FrameworkElement can have both logical and visual children, and force-inheritance
+        // for some properties must propagate through both.  The propagation to logical
+        // children happens here using the same logic as in FrameworkContentElement,
+        // while the base class (UIElement) handles visual children.
+        //   Perf note: Propagation for normal inherited properties goes to some trouble to
+        // avoid walking through an element's childrent more than once, as that leads
+        // to exponential explosion.  That's not necessary here because (a) we only walk
+        // an element's children if the element's own property value changes, and (b)
+        // an element's property value can only change once during any given propagation.
+        internal override void InvalidateForceInheritPropertyOnChildren(DependencyProperty property)
+        {
+            if (property == IsEnabledProperty)
+            {
+                IEnumerator enumerator = LogicalChildren;
+
+                if (enumerator != null)
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        DependencyObject child = enumerator.Current as DependencyObject;
+                        if (child != null)
+                        {
+                            child.CoerceValue(property);
+                        }
+                    }
+                }
+            }
+
+            base.InvalidateForceInheritPropertyOnChildren(property);
+        }
+
+        #endregion ForceInherit property support
+
         internal bool InvalidateAutomationAncestorsCoreHelper(Stack<DependencyObject> branchNodeStack, out bool continuePastCoreTree, bool shouldInvalidateIntermediateElements)
         {
             bool continueInvalidation = true;
@@ -3256,10 +3291,10 @@ namespace System.Windows
         /// </summary>
         public void BringIntoView()
         {
-            //dmitryt, bug 1126518. On new/updated elements RenderSize isn't yet computed
-            //so we need to postpone the rect computation until layout is done.
-            //this is accomplished by passing Empty rect here and then asking for RenderSize
-            //in IScrollInfo when it actually executes an async MakeVisible command.
+            //dmitryt, 
+
+
+
             BringIntoView( /*RenderSize*/ Rect.Empty);
         }
 
@@ -3779,9 +3814,9 @@ namespace System.Windows
             set { SetValue(VerticalAlignmentProperty, value); }
         }
 
-        // Need a special value here until bug 1016350 is fixed.  KeyboardNavigation
-        // treats this as the value to indicate that it should do a resource lookup
-        // to find the "real" default value.
+        // Need a special value here until 
+
+
         private static Style _defaultFocusVisualStyle = null;
 
         internal static Style DefaultFocusVisualStyle
@@ -4094,7 +4129,7 @@ namespace System.Windows
             Double xConstr = transformSpaceBounds.Width;
             Double yConstr = transformSpaceBounds.Height;
 
-            //if either of the sizes is 0, return 0,0 to avoid doing math on an empty rect (bug 963569)
+            //if either of the sizes is 0, return 0,0 to avoid doing math on an empty rect (
             if(DoubleUtil.IsZero(xConstr) || DoubleUtil.IsZero(yConstr))
                 return new Size(0,0);
 
@@ -4267,7 +4302,7 @@ namespace System.Windows
 
             // If using layout rounding, check whether rounding needs to compensate for high DPI
             bool useLayoutRounding = this.UseLayoutRounding;
-
+            DpiScale dpi = GetDpi();
             if (useLayoutRounding)
             {
                 if (!CheckFlagsAnd(VisualFlags.UseLayoutRounding))
@@ -4289,14 +4324,14 @@ namespace System.Windows
                 double marginWidth = margin.Left + margin.Right;
                 double marginHeight = margin.Top + margin.Bottom;
 
-                if (useLayoutRounding && this is ScrollContentPresenter)
+                if (useLayoutRounding && (this is ScrollContentPresenter || !FrameworkAppContextSwitches.DoNotApplyLayoutRoundingToMarginsAndBorderThickness))
                 {
                     // ScrollViewer and ScrollContentPresenter depend on rounding their
                     // measurements in a consistent way.  Round the margins first - if we
                     // round the result of (size-margin), the answer might round up or
                     // down depending on size.   See Dev11 212063 for details.
-                    marginWidth = RoundLayoutValue(marginWidth, FrameworkElement.DpiScaleX);
-                    marginHeight = RoundLayoutValue(marginHeight, FrameworkElement.DpiScaleY);
+                    marginWidth = RoundLayoutValue(marginWidth, dpi.DpiScaleX);
+                    marginHeight = RoundLayoutValue(marginHeight, dpi.DpiScaleY);
                 }
 
                 //  parent size is what parent want us to be
@@ -4305,6 +4340,14 @@ namespace System.Windows
                 Math.Max(availableSize.Height - marginHeight, 0));
 
                 MinMax mm = new MinMax(this);
+
+                if (useLayoutRounding && !FrameworkAppContextSwitches.DoNotApplyLayoutRoundingToMarginsAndBorderThickness)
+                {
+                    mm.maxHeight = UIElement.RoundLayoutValue(mm.maxHeight, dpi.DpiScaleY);
+                    mm.maxWidth = UIElement.RoundLayoutValue(mm.maxWidth, dpi.DpiScaleX);
+                    mm.minHeight = UIElement.RoundLayoutValue(mm.minHeight, dpi.DpiScaleY);
+                    mm.minWidth = UIElement.RoundLayoutValue(mm.minWidth, dpi.DpiScaleX);
+                }
 
                 LayoutTransformData ltd = LayoutTransformDataField.GetValue(this);
                 {
@@ -4348,7 +4391,7 @@ namespace System.Windows
                 // If layout rounding is enabled, round available size passed to MeasureOverride.
                 if (useLayoutRounding)
                 {
-                    frameworkAvailableSize = UIElement.RoundLayoutSize(frameworkAvailableSize, FrameworkElement.DpiScaleX, FrameworkElement.DpiScaleY);
+                    frameworkAvailableSize = UIElement.RoundLayoutSize(frameworkAvailableSize, dpi.DpiScaleX, dpi.DpiScaleY);
                 }
 
                 //  call to specific layout to measure
@@ -4429,8 +4472,8 @@ namespace System.Windows
                 // If using layout rounding, round desired size.
                 if (useLayoutRounding)
                 {
-                    clippedDesiredWidth = UIElement.RoundLayoutValue(clippedDesiredWidth, DpiScaleX);
-                    clippedDesiredHeight = UIElement.RoundLayoutValue(clippedDesiredHeight, DpiScaleY);
+                    clippedDesiredWidth = UIElement.RoundLayoutValue(clippedDesiredWidth, dpi.DpiScaleX);
+                    clippedDesiredHeight = UIElement.RoundLayoutValue(clippedDesiredHeight, dpi.DpiScaleY);
                 }
 
                 //  Note: unclippedDesiredSize is needed in ArrangeCore,
@@ -4481,6 +4524,7 @@ namespace System.Windows
         {
             // If using layout rounding, check whether rounding needs to compensate for high DPI
             bool useLayoutRounding = this.UseLayoutRounding;
+            DpiScale dpi = GetDpi();
             LayoutTransformData ltd = LayoutTransformDataField.GetValue(this);
             Size transformedUnroundedDS = Size.Empty;
 
@@ -4526,7 +4570,11 @@ namespace System.Windows
                 Thickness margin = Margin;
                 double marginWidth = margin.Left + margin.Right;
                 double marginHeight = margin.Top + margin.Bottom;
-
+                if(useLayoutRounding && !FrameworkAppContextSwitches.DoNotApplyLayoutRoundingToMarginsAndBorderThickness)
+                {
+                    marginWidth = UIElement.RoundLayoutValue(marginWidth, dpi.DpiScaleX);
+                    marginHeight = UIElement.RoundLayoutValue(marginHeight, dpi.DpiScaleY);
+                }
                 arrangeSize.Width = Math.Max(0, arrangeSize.Width - marginWidth);
                 arrangeSize.Height = Math.Max(0, arrangeSize.Height - marginHeight);
 
@@ -4629,6 +4677,13 @@ namespace System.Windows
                 }
 
                 MinMax mm = new MinMax(this);
+                if(useLayoutRounding && !FrameworkAppContextSwitches.DoNotApplyLayoutRoundingToMarginsAndBorderThickness)
+                {
+                    mm.maxHeight = UIElement.RoundLayoutValue(mm.maxHeight, dpi.DpiScaleY);
+                    mm.maxWidth = UIElement.RoundLayoutValue(mm.maxWidth, dpi.DpiScaleX);
+                    mm.minHeight = UIElement.RoundLayoutValue(mm.minHeight, dpi.DpiScaleY);
+                    mm.minWidth = UIElement.RoundLayoutValue(mm.minWidth, dpi.DpiScaleX);
+                }
 
                 //we have to choose max between UnclippedDesiredSize and Max here, because
                 //otherwise setting of max property could cause arrange at less then unclippedDS.
@@ -4650,7 +4705,7 @@ namespace System.Windows
                 // If using layout rounding, round size passed to children.
                 if (useLayoutRounding)
                 {
-                    arrangeSize = UIElement.RoundLayoutSize(arrangeSize, DpiScaleX, DpiScaleY);
+                    arrangeSize = UIElement.RoundLayoutSize(arrangeSize, dpi.DpiScaleX, dpi.DpiScaleY);
                 }
 
 
@@ -4663,7 +4718,7 @@ namespace System.Windows
                 RenderSize = innerInkSize;
                 if (useLayoutRounding)
                 {
-                    RenderSize = UIElement.RoundLayoutSize(RenderSize, DpiScaleX, DpiScaleY);
+                    RenderSize = UIElement.RoundLayoutSize(RenderSize, dpi.DpiScaleX, dpi.DpiScaleY);
                 }
 
                 //clippedInkSize differs from InkSize only what MaxWidth/Height explicitly clip the
@@ -4676,7 +4731,7 @@ namespace System.Windows
 
                 if (useLayoutRounding)
                 {
-                    clippedInkSize = UIElement.RoundLayoutSize(clippedInkSize, DpiScaleX, DpiScaleY);
+                    clippedInkSize = UIElement.RoundLayoutSize(clippedInkSize, dpi.DpiScaleX, dpi.DpiScaleY);
                 }
 
                 //remember we have to clip if Max properties limit the inkSize
@@ -4693,7 +4748,7 @@ namespace System.Windows
 
                     if (useLayoutRounding)
                     {
-                        clippedInkSize = UIElement.RoundLayoutSize(clippedInkSize, DpiScaleX, DpiScaleY);
+                        clippedInkSize = UIElement.RoundLayoutSize(clippedInkSize, dpi.DpiScaleX, dpi.DpiScaleY);
                     }
                 }
 
@@ -4709,7 +4764,7 @@ namespace System.Windows
 
                 if (useLayoutRounding)
                 {
-                    clientSize = UIElement.RoundLayoutSize(clientSize, DpiScaleX, DpiScaleY);
+                    clientSize = UIElement.RoundLayoutSize(clientSize, dpi.DpiScaleX, dpi.DpiScaleY);
                 }
 
                 //remember we have to clip if clientSize limits the inkSize
@@ -4725,8 +4780,8 @@ namespace System.Windows
                 // If using layout rounding, round offset.
                 if (useLayoutRounding)
                 {
-                    offset.X = UIElement.RoundLayoutValue(offset.X, DpiScaleX);
-                    offset.Y = UIElement.RoundLayoutValue(offset.Y, DpiScaleY);
+                    offset.X = UIElement.RoundLayoutValue(offset.X, dpi.DpiScaleX);
+                    offset.Y = UIElement.RoundLayoutValue(offset.Y, dpi.DpiScaleY);
                 }
 
                 SetLayoutOffset(offset, oldRenderSize);
@@ -4820,7 +4875,7 @@ namespace System.Windows
         protected override Geometry GetLayoutClip(Size layoutSlotSize)
         {
             bool useLayoutRounding = this.UseLayoutRounding;
-
+            DpiScale dpi = GetDpi();
             if (useLayoutRounding)
             {
                 if (!CheckFlagsAnd(VisualFlags.UseLayoutRounding))
@@ -4833,6 +4888,13 @@ namespace System.Windows
             {
                 // see if  MaxWidth/MaxHeight limit the element
                 MinMax mm = new MinMax(this);
+                if(useLayoutRounding && !FrameworkAppContextSwitches.DoNotApplyLayoutRoundingToMarginsAndBorderThickness)
+                {
+                    mm.maxHeight = UIElement.RoundLayoutValue(mm.maxHeight, dpi.DpiScaleY);
+                    mm.maxWidth = UIElement.RoundLayoutValue(mm.maxWidth, dpi.DpiScaleX);
+                    mm.minHeight = UIElement.RoundLayoutValue(mm.minHeight, dpi.DpiScaleY);
+                    mm.minWidth = UIElement.RoundLayoutValue(mm.minWidth, dpi.DpiScaleX);
+                }
 
                 //this is in element's local rendering coord system
                 Size inkSize = this.RenderSize;
@@ -4881,7 +4943,7 @@ namespace System.Windows
 
                     if (useLayoutRounding)
                     {
-                        clipRect = UIElement.RoundLayoutRect(clipRect, DpiScaleX, DpiScaleY);
+                        clipRect = UIElement.RoundLayoutRect(clipRect, dpi.DpiScaleX, dpi.DpiScaleY);
                     }
 
                     RectangleGeometry localClip = new RectangleGeometry(clipRect);
@@ -4902,7 +4964,7 @@ namespace System.Windows
 
                         if (useLayoutRounding)
                         {
-                            slotClipRect = UIElement.RoundLayoutRect(slotClipRect, DpiScaleX, DpiScaleY);
+                            slotClipRect = UIElement.RoundLayoutRect(slotClipRect, dpi.DpiScaleX, dpi.DpiScaleY);
                         }
 
                         RectangleGeometry slotClip = new RectangleGeometry(slotClipRect);
@@ -4919,7 +4981,7 @@ namespace System.Windows
 
                             if (useLayoutRounding)
                             {
-                                localClipRect = UIElement.RoundLayoutRect(localClipRect, DpiScaleX, DpiScaleY);
+                                localClipRect = UIElement.RoundLayoutRect(localClipRect, dpi.DpiScaleX, dpi.DpiScaleY);
                             }
 
                             RectangleGeometry localClip = new RectangleGeometry(localClipRect);
@@ -4948,7 +5010,7 @@ namespace System.Windows
 
                         if (useLayoutRounding)
                         {
-                            slotRect = UIElement.RoundLayoutRect(slotRect, DpiScaleX, DpiScaleY);
+                            slotRect = UIElement.RoundLayoutRect(slotRect, dpi.DpiScaleX, dpi.DpiScaleY);
                         }
 
                         if (needToClipLocally) //intersect 2 rects
@@ -4957,7 +5019,7 @@ namespace System.Windows
 
                             if (useLayoutRounding)
                             {
-                                localRect = UIElement.RoundLayoutRect(localRect, DpiScaleX, DpiScaleY);
+                                localRect = UIElement.RoundLayoutRect(localRect, dpi.DpiScaleX, dpi.DpiScaleY);
                             }
 
                             slotRect.Intersect(localRect);
@@ -5537,17 +5599,17 @@ namespace System.Windows
                 // LOADED EVENT
 
                 // Broadcast Loaded
-                // Note (see bug 1422684): Do not make this conditional on
-                // SubtreeHasLoadedChangeHandler. A layout pass may add loaded
-                // handlers before the callback into BroadcastLoadedEvent occurs.
-                // If we don't post the callback request, these handlers won't get
-                // called. The optimization should be done in the callback.
+                // Note (see 
+
+
+
+
                 FireLoadedOnDescendentsInternal();
 
                 if (SystemResources.SystemResourcesHaveChanged)
                 {
                     // If root visual is created after resources have changed, update
-                    // Font properties because defaults are not in [....] with system
+                    // Font properties because defaults are not in sync with system
                     WriteInternalFlag(InternalFlags.CreatingRoot, true);
                     CoerceValue(TextElement.FontFamilyProperty);
                     CoerceValue(TextElement.FontSizeProperty);
@@ -6308,32 +6370,6 @@ namespace System.Windows
         internal override int EffectiveValuesInitialSize
         {
             get { return 7; }
-        }
-
-        // Ratio of screen to layout DPI in x dimension
-        internal static double DpiScaleX
-        {
-            get
-            {
-                if (SystemParameters.DpiX != 96)
-                {
-                    return (double)SystemParameters.DpiX / 96.0;
-                }
-                return 1.0;
-            }
-        }
-
-        // Ratio of screen to layout DPI in y dimension
-        internal static double DpiScaleY
-        {
-            get
-            {
-                if (SystemParameters.Dpi != 96)
-                {
-                    return (double)SystemParameters.Dpi / 96.0;
-                }
-                return 1.0;
-            }
         }
 
         #endregion Operations

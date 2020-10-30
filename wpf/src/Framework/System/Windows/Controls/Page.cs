@@ -10,7 +10,7 @@
 // 
 // History:
 //  06/11/03    hamidm  Moved over to wcp tree
-//  08/21/03    [....]  Start caching the properties
+//  08/21/03    Microsoft  Start caching the properties
 //  11/20/04    hamidm  Adding top level Page concept and implementation.
 //---------------------------------------------------------------------------
 using System;
@@ -672,7 +672,7 @@ namespace System.Windows.Controls
                 return;
             }
 
-            // NOTE ([....] 03/09/2007): The code below walks up the TemplatedParent chain until it finds the first Frame or Window. It does not 
+            // NOTE (Microsoft 03/09/2007): The code below walks up the TemplatedParent chain until it finds the first Frame or Window. It does not 
             // check whether Window.Content or Frame.Content is Page. So it allows the scenario where Page can be in any element’s template and 
             // be parented by any element as long as the template is nested inside a Window or Frame, as demoed below
             //
@@ -688,7 +688,7 @@ namespace System.Windows.Controls
             //         ...
             //
             // This is not what we intend to establish and support. But we discovered this after shipping V1. We need to maintain this behavior until
-            // V4.0 when we will have an opportunity to do BC. Will file a bug for V4.0.
+            // V4.0 when we will have an opportunity to do BC. Will file a 
 
             bool isParentValid = false;
             // Don't worry about FCE since FCE is not a visual

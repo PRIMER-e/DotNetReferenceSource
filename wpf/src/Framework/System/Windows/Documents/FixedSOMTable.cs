@@ -55,7 +55,8 @@ namespace System.Windows.Documents
                                         FlowDirection.LeftToRight,
                                         new Typeface("Courier New"), 
                                         20,
-                                        Brushes.Blue);
+                                        Brushes.Blue,
+                                        MS.Internal.FontCache.Util.PixelsPerDip);
             Point labelLocation = new Point(rect.Left-25, (rect.Bottom + rect.Top)/2 - 10);
           //  dc.DrawText(ft, labelLocation);            
             

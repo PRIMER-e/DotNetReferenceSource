@@ -1026,7 +1026,7 @@ namespace System.Windows.Media.Imaging
 
         /// <summary>
         /// Synchronization Object.  Any unmanaged PInvoke/call that requires synchronization
-        /// must lock on the [....] object.  This object must be internal or private so as not
+        /// must lock on the sync object.  This object must be internal or private so as not
         /// to be publicly lockable.
         /// </summary>
         internal object SyncObject

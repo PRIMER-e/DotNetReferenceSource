@@ -90,7 +90,7 @@ namespace System.Transactions
             {
                 if (this.complete)
                 {
-                    throw TransactionException.CreateTransactionCompletedException(SR.GetString(SR.TraceSourceLtm));
+                    throw TransactionException.CreateTransactionCompletedException(SR.GetString(SR.TraceSourceLtm), this.DistributedTxId);
                 }
                 
                 // this.complete will get set to true when the transaction enters a state that is
@@ -134,7 +134,7 @@ namespace System.Transactions
             {
                 if (this.complete)
                 {
-                    throw TransactionException.CreateTransactionCompletedException(SR.GetString(SR.TraceSourceLtm));
+                    throw TransactionException.CreateTransactionCompletedException(SR.GetString(SR.TraceSourceLtm), this.DistributedTxId);
                 }
 
                 this.internalTransaction.State.BeginCommit(this.internalTransaction, false, null, null);

@@ -9,10 +9,10 @@
 // History:
 //  7/30/2001:  t-ypchen        Created
 //  5/19/2003:  kusumav         Ported to WCP tree
-//  2/12/2004:  [....]            Major refactoring-split JournalEntry into subclasses
-//  7/25/2005:  [....]         Added CustomContentState journaling
-//  9/02/2005:  [....]         Introduced JournalEntryGroupState; overall refactoring and PageFunction fixes
-//  1/20/2006:  [....]         Moved all internal classes to MS.Internal.AppModel
+//  2/12/2004:  Microsoft            Major refactoring-split JournalEntry into subclasses
+//  7/25/2005:  Microsoft         Added CustomContentState journaling
+//  9/02/2005:  Microsoft         Introduced JournalEntryGroupState; overall refactoring and PageFunction fixes
+//  1/20/2006:  Microsoft         Moved all internal classes to MS.Internal.AppModel
 //
 // Copyright (C) 2003 by Microsoft Corporation.  All rights reserved.
 //

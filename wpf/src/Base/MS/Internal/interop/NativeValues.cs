@@ -812,6 +812,7 @@ namespace MS.Internal.Interop
         WM_WTSSESSION_CHANGE = 0x02b1,
 
         WM_TABLET_DEFBASE = 0x02C0,
+        WM_DPICHANGED = 0x02E0,
         WM_TABLET_MAXOFFSET = 0x20,
 
         WM_TABLET_ADDED = WM_TABLET_DEFBASE + 8,

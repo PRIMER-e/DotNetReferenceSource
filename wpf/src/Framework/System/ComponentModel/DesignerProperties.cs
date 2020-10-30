@@ -10,7 +10,7 @@
 //              See spec at: http://team/sites/Cider/Cross%20Team/Design%20Mode%20Property.doc
 // 
 // History:  
-//  7/07/2006: [....], Created
+//  7/07/2006: Microsoft, Created
 //
 //---------------------------------------------------------------------------
 

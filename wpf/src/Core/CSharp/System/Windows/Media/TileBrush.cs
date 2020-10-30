@@ -10,7 +10,7 @@
 //              are described by classes derived from TileBrush.
 //
 // History:
-//  04/29/2003 : [....] - Created it.
+//  04/29/2003 : Microsoft - Created it.
 //
 //---------------------------------------------------------------------------
     

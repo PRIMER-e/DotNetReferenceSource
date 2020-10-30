@@ -563,7 +563,7 @@ namespace System.Windows.Forms
                     {
                         if (args != null)
                         {
-                            // Reverse the arg order so that parms read naturally after IDispatch. (bug 187662)
+                            // Reverse the arg order so that parms read naturally after IDispatch. (
                             Array.Reverse(args);
                         }
                         dp.rgvarg = (args == null) ? IntPtr.Zero : HtmlDocument.ArrayToVARIANTVector(args);

@@ -101,19 +101,19 @@ namespace MS.Internal.AutomationProxies
 
         internal ProxySimple CreateStatusBarPane (int index)
         {
-            // Use the Accessible object if this is a [....] control.  Only [....] StatusBars
+            // Use the Accessible object if this is a Microsoft control.  Only Microsoft StatusBars
             // can have children.
             Accessible accChild = null;
             if (_acc != null)
             {
-                // OLEACC's Win32 proxy does use a 1, 2, 3... scheme, but the [....]
+                // OLEACC's Win32 proxy does use a 1, 2, 3... scheme, but the Microsoft
                 // controls in some cases supply their own children, using a different scheme.
                 // Using the "ByIndex" approach avoids having to know what the underlying
                 // object's idChild scheme is.
                 accChild = Accessible.GetFullAccessibleChildByIndex(_acc, index);
                 if (accChild != null && accChild.Role != AccessibleRole.PushButton)
                 {
-                    // [....] toolbars have full IAccessibles for their children, but 
+                    // Microsoft toolbars have full IAccessibles for their children, but 
                     // return the overall hwnd; treat those same as regular items.
                     // We only want to special-case actual child hwnds for overriding.
                     IntPtr hwndChild = accChild.Window;
@@ -308,7 +308,7 @@ namespace MS.Internal.AutomationProxies
             // return the appropriate placeholder for the given hwnd...
             // loop over all the band to find it.
 
-            // Only [....] StatusBars can have children.
+            // Only Microsoft StatusBars can have children.
             if (_acc != null)
             {
                 Accessible accChild = _acc.FirstChild;
@@ -403,7 +403,7 @@ namespace MS.Internal.AutomationProxies
 
         // Status bar with a Grip Style
         private bool _fHasGrip;
-        private Accessible _acc;   // Accessible is used for [....] controls.
+        private Accessible _acc;   // Accessible is used for Microsoft controls.
 
         // Item ID for the grip. Must be negative as it is a peripheral element
         private const int GripItemID = -1;
@@ -582,7 +582,7 @@ namespace MS.Internal.AutomationProxies
                     }
                     else
                     {
-                        // OLEACC's Win32 proxy does use a 1, 2, 3... scheme, but the [....]
+                        // OLEACC's Win32 proxy does use a 1, 2, 3... scheme, but the Microsoft
                         // controls in some cases supply their own children, using a different scheme.
                         // Using the "ByIndex" approach avoids having to know what the underlying
                         // object's idChild scheme is.
@@ -631,7 +631,7 @@ namespace MS.Internal.AutomationProxies
 
             #region Private Fields
 
-            private Accessible _acc; // Accessible is used for [....] controls.
+            private Accessible _acc; // Accessible is used for Microsoft controls.
 
             #endregion
 

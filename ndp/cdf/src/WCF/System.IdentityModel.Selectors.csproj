@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{037dd638-49ff-4fe6-9a6d-1c4633702013}</ProjectGuid>
+    <ProjectGuid>{54955d38-2f10-409a-a775-8302ade2713e}</ProjectGuid>
     <OutputPath>.</OutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IdentityModel.Selectors</AssemblyName>
@@ -19,44 +19,44 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " >
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\clr\src\BCL\mscorlib.csproj">
-      <Project>{a72657be-225c-4239-956e-ee2a30893b41}</Project>
+    <ProjectReference Include="..\..\..\clr\src\bcl\mscorlib.csproj">
+      <Project>{20f34c38-8c60-44e7-b703-0e341d274957}</Project>
       <Name>mscorlib</Name>
     </ProjectReference>
-    <ProjectReference Include="SMDiagnostics\System\ServiceModel\Diagnostics\SMDiagnostics.csproj">
-      <Project>{627ffd4a-226e-4ed6-bea5-a26b7aabd9f3}</Project>
+    <ProjectReference Include="SMDiagnostics\SMDiagnostics.csproj">
+      <Project>{1070e2f7-add6-4359-92dc-19ade9c40d83}</Project>
       <Name>SMDiagnostics</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\fx\src\System.Configuration.csproj">
-      <Project>{62fc083e-241c-4b38-affd-03374c75097c}</Project>
-      <Name>System.Configuration</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\fx\src\System.csproj">
-      <Project>{20c75c70-c8b6-4dfb-a4e5-16d09099776d}</Project>
+      <Project>{85716da4-9fb2-4f44-9c4d-b7431fdf1b20}</Project>
       <Name>System</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\fx\src\Configuration\System.Configuration.csproj">
+      <Project>{a4d7a44f-817d-4fad-ba6a-076580aadfbe}</Project>
+      <Name>System.Configuration</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\fx\src\System.Drawing.csproj">
-      <Project>{2defc6a9-7eda-4106-b78e-1f3f5a439dd7}</Project>
+      <Project>{712ac13c-4586-461b-9626-7c107a6981eb}</Project>
       <Name>System.Drawing</Name>
     </ProjectReference>
     <ProjectReference Include="IdentityModel\System.IdentityModel.csproj">
-      <Project>{e702efbd-2021-4507-addc-9bf3644b9a30}</Project>
+      <Project>{0284f85e-1f27-4712-aca4-f427910003de}</Project>
       <Name>System.IdentityModel</Name>
     </ProjectReference>
     <ProjectReference Include="Serialization\System.Runtime.Serialization.csproj">
-      <Project>{764e8d76-0734-41ee-9aa6-6d506b3faaf6}</Project>
+      <Project>{8406a9a0-29c6-469d-b31f-ad24fdd85828}</Project>
       <Name>System.Runtime.Serialization</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\clr\src\managedlibraries\security\system\security\System.Security.csproj">
-      <Project>{c18b4728-33a6-4e6f-84bd-0df1f3e89de8}</Project>
+    <ProjectReference Include="..\..\..\clr\src\managedlibraries\security\System.Security.csproj">
+      <Project>{6cf2ea71-7eb3-48ae-8938-3edf77bb9412}</Project>
       <Name>System.Security</Name>
     </ProjectReference>
     <ProjectReference Include="..\System.ServiceModel.Internals\System.ServiceModel.Internals.csproj">
-      <Project>{13d63794-0ab7-472b-a040-b08a7b97ad15}</Project>
+      <Project>{01dc86fb-e3cd-4b78-b584-7dba90eb3a6e}</Project>
       <Name>System.ServiceModel.Internals</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\fx\src\System.Xml.csproj">
-      <Project>{328d1889-8b13-460e-908d-cbb168675ec2}</Project>
+    <ProjectReference Include="..\..\..\fx\src\Xml\System.Xml.csproj">
+      <Project>{6f992f82-1c90-4388-ab60-15c653aeeca5}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>
   </ItemGroup>
@@ -64,13 +64,17 @@
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="InfoCardClient\friends.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\AsymmetricCryptoHandle.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\CardSpaceException.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\CardSpacePolicyElement.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\CardSpaceSelector.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\CardSpaceShim.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\CryptoHandle.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\HashCryptoHandle.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\IdentityValidationException.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardArgumentException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardAsymmetricCrypto.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\CardSpaceSelector.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\CardSpaceException.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardBaseException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardKeyedHashAlgorithm.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardProofToken.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardRSACryptoProvider.cs" />
@@ -83,9 +87,11 @@
     <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardSymmetricAlgorithm.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardSymmetricCrypto.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\InternalPolicyElement.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\InternalUserCancelledException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\NativeMethods.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\NativePolicyElement.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\PolicyChain.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\PolicyValidationException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\ProofTokenCryptoHandle.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\RpcAsymmetricCryptoParameters.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\RpcHashCryptoParameters.cs" />
@@ -94,31 +100,25 @@
     <Compile Include="infocard\client\System\IdentityModel\Selectors\RpcSymmetricCryptoParameters.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\RpcTokenRequestDetail.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\RpcTransformCryptoParameters.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\SafeLibraryHandle.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\SafeTokenHandle.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\ServiceBusyException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\ServiceNotStartedException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\StsCommunicationException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\SymmetricCryptoHandle.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\ThrowOnMultipleAssignment.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\TransformCryptoHandle.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\UIInitializationException.cs" />
+    <Compile Include="infocard\client\System\IdentityModel\Selectors\UnsupportedPolicyOptionsException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\UntrustedRecipientException.cs" />
     <Compile Include="infocard\client\System\IdentityModel\Selectors\UserCancellationException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\ServiceBusyException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardBaseException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\InternalUserCancelledException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\InfoCardArgumentException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\IdentityValidationException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\PolicyValidationException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\UnsupportedPolicyOptionsException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\UIInitializationException.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\SafeTokenHandle.cs" />
-    <Compile Include="infocard\common\managed\HGlobalSafeHandle.cs" />
     <Compile Include="infocard\common\managed\GlobalAllocSafeHandle.cs" />
+    <Compile Include="infocard\common\managed\HGlobalSafeHandle.cs" />
     <Compile Include="infocard\common\managed\InfoCardCryptoHelper.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\CardSpacePolicyElement.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\CardSpaceShim.cs" />
-    <Compile Include="infocard\client\System\IdentityModel\Selectors\SafeLibraryHandle.cs" />
-    <Compile Include="infocard\Diagnostics\Managed\Microsoft\InfoCards\Diagnostics\infocardtracecode.cs" />
     <Compile Include="infocard\Diagnostics\Managed\Microsoft\InfoCards\Diagnostics\InfocardTrace.cs" />
+    <Compile Include="infocard\Diagnostics\Managed\Microsoft\InfoCards\Diagnostics\infocardtracecode.cs" />
     <Compile Include="infocard\Diagnostics\Managed\Microsoft\InfoCards\Diagnostics\infocardTraceRecord.cs" />
+    <Compile Include="InfoCardClient\friends.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

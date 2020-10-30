@@ -6,7 +6,7 @@
 //      Utility functions for processing Expression trees
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 namespace System.Data.Services.Client
 {

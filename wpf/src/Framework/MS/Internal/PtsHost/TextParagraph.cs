@@ -8,8 +8,8 @@
 //              of lines.
 //
 // History:
-//  05/05/2003 : [....] - moving from Avalon branch.
-//  10/30/2004 : [....] - ElementReference cleanup.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
+//  10/30/2004 : Microsoft - ElementReference cleanup.
 //
 //---------------------------------------------------------------------------
 #pragma warning disable 1634, 1691  // avoid generating warnings about unknown
@@ -1517,12 +1517,18 @@ namespace MS.Internal.PtsHost
         /// </summary>
         private void EnsureLineProperties()
         {
-            if (_lineProperties == null)
+            // We also need to recreate line properties if DPI has changed.
+            if (_lineProperties == null || (_lineProperties != null && _lineProperties.DefaultTextRunProperties.PixelsPerDip != StructuralCache.TextFormatterHost.PixelsPerDip))
             {
                 // For default text properties always set background to null.
                 // REASON: If element associated with the text run is block element, ignore background
                 //         brush, because it is handled by paragraph itself.
-                TextProperties defaultTextProperties = new TextProperties(Element, StaticTextPointer.Null, false /* inline objects */, false /* get background */);
+
+                // This textProperties object is eventually used in creation of LineProperties, which leads to creation of a TextMarkerSource. TextMarkerSource relies on PixelsPerDip
+                // from TextProperties, therefore it must be set here properly.
+
+                TextProperties defaultTextProperties = new TextProperties(Element, StaticTextPointer.Null, false /* inline objects */, false /* get background */,
+                    StructuralCache.TextFormatterHost.PixelsPerDip);
                 
                 _lineProperties = new LineProperties(Element, StructuralCache.FormattingOwner, defaultTextProperties, null); // No marker properties
 

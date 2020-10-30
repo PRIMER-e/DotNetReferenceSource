@@ -6,7 +6,7 @@
 //      XmlConstants for metadata
 // </summary>
 //
-// @owner  [....]
+// @owner  pratikp
 //---------------------------------------------------------------------
 
 #if ASTORIA_CLIENT

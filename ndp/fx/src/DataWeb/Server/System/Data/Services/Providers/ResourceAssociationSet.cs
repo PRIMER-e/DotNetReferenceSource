@@ -6,7 +6,7 @@
 //      Describes an association between two resource sets.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

@@ -6,7 +6,7 @@
 //      Visitor to detect and replace access to properties
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Internal

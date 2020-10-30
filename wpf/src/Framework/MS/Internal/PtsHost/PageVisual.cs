@@ -7,7 +7,7 @@
 // Description: Visual representing a PTS page.
 //
 // History:
-//  11/11/2003 : [....] - created.
+//  11/11/2003 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 using System;

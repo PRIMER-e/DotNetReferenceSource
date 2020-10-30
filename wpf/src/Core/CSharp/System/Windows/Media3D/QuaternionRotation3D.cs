@@ -7,7 +7,7 @@
 // Description:  A rotation in 3-space defined by a Quaternion.
 //              
 // History:  
-//  8/15/2005 : [....] - Created
+//  8/15/2005 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

@@ -225,7 +225,7 @@ namespace System.Windows.Media
                             toPlay = Timeline.Source;
                         }
 
-                        // we need to [....] to the current state of the clock
+                        // we need to sync to the current state of the clock
                         newPlayer.SetSource(toPlay);
 
                         SpeedChanged();

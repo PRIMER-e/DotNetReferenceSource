@@ -69,7 +69,7 @@ extern "C"
 // Supported VIA vendors, and their DLLs
 //
 #define CS_VALUE_VIA_VENDOR_NAME_QLOGIC	TEXT("QLogic")
-#define CS_VALUE_VIA_VENDOR_DLL_QLOGIC	TEXT("QLVipl.dll")
+#define CS_VALUE_VIA_VENDOR_DLL_QLOGIC	"QLVipl.dll"
 
 
 typedef struct cs_protocol_info

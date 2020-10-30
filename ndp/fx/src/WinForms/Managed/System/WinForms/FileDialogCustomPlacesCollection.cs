@@ -21,7 +21,7 @@ namespace System.Windows.Forms
             {
                 FileDialogCustomPlace customPlace = this.Items[i];
 
-                // Fix for Dev10 bug 536188: we need permission to check whether the specified path exists
+                // Fix for Dev10 
                 FileIOPermission permission = new FileIOPermission(FileIOPermissionAccess.PathDiscovery, customPlace.Path);
                 permission.Demand();
 

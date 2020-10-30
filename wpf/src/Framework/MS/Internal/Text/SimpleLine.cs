@@ -7,7 +7,7 @@
 // Description: Text line formatter. 
 //
 // History:  
-//  09/10/2003 : [....] - created.
+//  09/10/2003 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 
@@ -64,6 +64,11 @@ namespace MS.Internal.Text
             else
             {
                 run = new TextEndOfParagraph(_syntheticCharacterLength);
+            }
+
+            if (run.Properties != null)
+            {
+                run.Properties.PixelsPerDip = this.PixelsPerDip;
             }
 
             return run;

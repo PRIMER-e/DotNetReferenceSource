@@ -7,7 +7,7 @@
 //              Gradient as a radial interpolation within an Ellipse.
 //
 // History:
-//  05/08/2003 : [....] - Created it.
+//  05/08/2003 : Microsoft - Created it.
 //  09/21/2004 : timothyc - Added GradientStopCollection constructor. 
 //
 //---------------------------------------------------------------------------

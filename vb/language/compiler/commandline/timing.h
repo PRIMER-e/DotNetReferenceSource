@@ -10,9 +10,9 @@
 // information for the compiler. This is sort of a built-in mini-profiler
 // that is always available. This allows anyone to do a quick investigation of
 // performance problems and try to pinpoint where things have changed.
-// <STRIP>
-// Particularly useful in pointing the finger at the CLR EE group. </STRIP>
-// ===========================================================================
+// <
+
+
 
 #ifndef __timing_h__
 #define __timing_h__

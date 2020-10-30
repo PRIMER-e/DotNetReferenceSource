@@ -18,7 +18,7 @@
 //
 //              Last Modified: 15-May-2005
 //
-//              <owner current="true" primary="true">[....]</owner>
+//              <owner current="true" primary="true">Microsoft</owner>
 //
 #ifndef __BIDAPI_IMPL_H__ ///////////////////////////////////////////////////////////////////////
 #define __BIDAPI_IMPL_H__
@@ -90,7 +90,7 @@
 //  Define (uncomment) the symbol below if your multi-threaded module is experiencing
 //  problems at loading phase.
 //
-//#define _BID_[....]_LOAD
+//#define _BID_SYNC_LOAD
 
 //
 //  Define (uncomment) the symbol(s) below in order to disable automatic loading/unloading
@@ -127,7 +127,7 @@
 
   //
   //  Dynamic Binding:  LoadLibrary, FreeLibrary, GetProcAddress, VirtualQuery
-  //  [....]. Load:       InterlockedExchange, InterlockedIncrement, Sleep
+  //  Sync. Load:       InterlockedExchange, InterlockedIncrement, Sleep
   //  Debug Only:       OutputDebugString, GetModuleFileName
   //  Self Diag:        GetModuleHandle
   //
@@ -328,7 +328,7 @@ static void WINAPI _bidUnloadCallback   (BOOL);
 
 volatile static LONG _bidInitialized  = 0;
 
-#if !defined( _BID_[....]_LOAD )
+#if !defined( _BID_SYNC_LOAD )
 
     _bid_INLINE BOOL _bidIsLoaded( void )
     {
@@ -341,7 +341,7 @@ volatile static LONG _bidInitialized  = 0;
     #define _bidLoadingDone()           ((void)0)
     #define _bidUnloadingDone()         _bidInitialized = 0
 
-#else  // _BID_[....]_LOAD
+#else  // _BID_SYNC_LOAD
 
     volatile static LONG _bidLoading   = 0;
     volatile static LONG _bidUnloading = 0;
@@ -426,7 +426,7 @@ volatile static LONG _bidInitialized  = 0;
     #define _bidLoadingDone()       BID_InterlockedExchange( &_bidLoading, 0 )
     #define _bidUnloadingDone()     BID_InterlockedExchange( &_bidUnloading, 0 )
 
-#endif // _BID_[....]_LOAD
+#endif // _BID_SYNC_LOAD
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

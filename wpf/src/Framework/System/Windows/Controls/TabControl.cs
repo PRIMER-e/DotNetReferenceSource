@@ -325,7 +325,7 @@ namespace System.Windows.Controls
             ItemContainerGenerator.StatusChanged += new EventHandler(OnGeneratorStatusChanged);
         }
         /// <summary>
-        /// Called when the Template's tree has been generated. When Template gets expanded we ensure that SelectedContent is in [....]
+        /// Called when the Template's tree has been generated. When Template gets expanded we ensure that SelectedContent is in sync
         /// </summary>
         public override void OnApplyTemplate()
         {

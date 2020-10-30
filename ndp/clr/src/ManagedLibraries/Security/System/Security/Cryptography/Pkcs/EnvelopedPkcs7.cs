@@ -576,9 +576,22 @@ namespace System.Security.Cryptography.Pkcs {
                 cmsgDecryptParam.keySpec = (uint)parameters.KeyNumber;
                 hr = CAPI.S_OK;
 
+                uint flags = CAPI.CRYPT_ACQUIRE_COMPARE_KEY_FLAG | CAPI.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG;
+                if (parameters.ProviderType == 0)
+                {
+                    //
+                    // The ProviderType being 0 indicates that this cert is using a CNG key. Set the flag to tell CryptAcquireCertificatePrivateKey that it's okay to give
+                    // us a CNG key.
+                    //
+                    // (This should be equivalent to passing CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG. But fixing it this way restricts the code path changes
+                    // within Crypt32 to the cases that were already non-functional in 4.6.1. Thus, it is a "safer" way to fix it for a point release.)
+                    //
+                    flags |= CAPI.CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG;
+                }
+
                 if ((safeCryptProvHandle == null) || (safeCryptProvHandle.IsInvalid)) {
                     if (CAPI.CAPISafe.CryptAcquireCertificatePrivateKey(safeCertContextHandle,
-                                                                        CAPI.CRYPT_ACQUIRE_COMPARE_KEY_FLAG | CAPI.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG,
+                                                                        flags,
                                                                         IntPtr.Zero,
                                                                         ref safeCryptProvHandle,
                                                                         ref keySpec,

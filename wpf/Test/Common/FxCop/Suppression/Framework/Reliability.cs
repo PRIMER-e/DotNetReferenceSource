@@ -43,7 +43,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1195649
-// Developer: [....]
+// Developer: huwang
 // Reason: All those events are internal. There is no internal state depending on the success of the event.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Navigation.NavigationWindow.BackForwardStateChangeHandler(System.Object,System.EventArgs):System.Void")]
@@ -51,14 +51,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1195650
-// Developer: [....]
+// Developer: huwang
 // Reason: All those events are internal.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Navigation.LimitedJournalEntryStackEnumerable.PropogateCollectionChanged(System.Object,System.Collections.Specialized.NotifyCollectionChangedEventArgs):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1195651
-// Developer: [....]
+// Developer: huwang
 // Reason: All those events are internal.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Navigation.Journal.UpdateView():System.Void")]
@@ -81,7 +81,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1195655
-// Developer: [....]
+// Developer: huwang
 // Reason: All those events are internal.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Windows.Navigation.JournalEntryStack.OnCollectionChanged():System.Void")]
@@ -144,7 +144,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: DevDivBugs 181013
-// Developer: [....] for [....]
+// Developer: AndreN for HuWang
 // Reason: _dialogPreviousActiveHandle is simply a reference to an hwnd, not memory or a file.  As such, there is no
 //         need to change it to SafeHandle
 //***************************************************************************************************************************
@@ -152,7 +152,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632977
-// Developer: [....]
+// Developer: SamBent
 // Reason: False positive
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability","CA2004:RemoveCallsToGCKeepAlive", Scope="member", Target="System.Windows.Data.BindingExpression.#AttachOverride(System.Windows.DependencyObject,System.Windows.DependencyProperty)")]
@@ -162,13 +162,13 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Reliability","CA2001:AvoidCallingProblematicMethods", MessageId="System.Reflection.Assembly.LoadWithPartialName", Scope="member", Target="System.Windows.Baml2006.Baml6Assembly.#get_Assembly()", Justification="Need to support loading assemblies by short names.")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: ifeanyie
 // Reason: False positive
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability","CA2004:RemoveCallsToGCKeepAlive", Scope="member", Target="MS.Internal.Interop.MouseHookManager.#HookThreadProc(System.Object)")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: andren
 // Reason: False positive.  The call to GC.KeepAlive is required.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability","CA2004:RemoveCallsToGCKeepAlive", Scope="member", Target="System.Windows.Controls.ListBox.#MakeAnchorSelection(System.Windows.Controls.ListBoxItem,System.Boolean)")]

@@ -65,99 +65,99 @@ namespace System.Transactions
 
         internal virtual void EnlistmentDone( InternalEnlistment enlistment )
         {
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void Prepared( InternalEnlistment enlistment )
         {
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void ForceRollback( InternalEnlistment enlistment, Exception e )
         {
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void Committed( InternalEnlistment enlistment )
         {
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void Aborted( InternalEnlistment enlistment, Exception e )
         {
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void InDoubt( InternalEnlistment enlistment, Exception e )
         {
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual byte[] RecoveryInformation( InternalEnlistment enlistment )
         {
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void InternalAborted( InternalEnlistment enlistment )
         {
             Debug.Assert( false, string.Format( null, "Invalid Event for InternalEnlistment State; Current State: {0}", this.GetType() ));
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
                 
         internal virtual void InternalCommitted( InternalEnlistment enlistment )
         {
             Debug.Assert( false, string.Format( null, "Invalid Event for InternalEnlistment State; Current State: {0}", this.GetType() ));
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void InternalIndoubt( InternalEnlistment enlistment )
         {
             Debug.Assert( false, string.Format( null, "Invalid Event for InternalEnlistment State; Current State: {0}", this.GetType() ));
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void ChangeStateCommitting( InternalEnlistment enlistment )
         {
             Debug.Assert( false, string.Format( null, "Invalid Event for InternalEnlistment State; Current State: {0}", this.GetType() ));
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void ChangeStatePromoted( InternalEnlistment enlistment, IPromotedEnlistment promotedEnlistment )
         {
             Debug.Assert( false, string.Format( null, "Invalid Event for InternalEnlistment State; Current State: {0}", this.GetType() ));
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void ChangeStateDelegated( InternalEnlistment enlistment )
         {
             Debug.Assert( false, string.Format( null, "Invalid Event for InternalEnlistment State; Current State: {0}", this.GetType() ));
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void ChangeStatePreparing( InternalEnlistment enlistment )
         {
             Debug.Assert( false, string.Format( null, "Invalid Event for InternalEnlistment State; Current State: {0}", this.GetType() ));
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
 
 
         internal virtual void ChangeStateSinglePhaseCommit( InternalEnlistment enlistment )
         {
             Debug.Assert( false, string.Format( null, "Invalid Event for InternalEnlistment State; Current State: {0}", this.GetType() ));
-            throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceLtm ), null );
+            throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceLtm), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
     }
 

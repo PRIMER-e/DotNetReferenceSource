@@ -475,7 +475,7 @@ namespace System.Windows.Automation.Peers
             }
 
             //last effort - find across all roots
-            //only start fault in the tree from the root if we are not in the recursive [....] update
+            //only start fault in the tree from the root if we are not in the recursive sync update
             //Otherwise it will go through the peers that are currently on the stack
             ContextLayoutManager lm = ContextLayoutManager.From(this.Dispatcher);
             if(lm != null && lm.AutomationSyncUpdateCounter == 0)
@@ -1198,11 +1198,6 @@ namespace System.Windows.Automation.Peers
             if (_children != null && _children.Count > 0)
             {
                 peer = _children[0];
-
-                if (peer._parent != this)
-                {
-                    ReclaimChildren();
-                }
             }
 
             return peer;
@@ -1236,58 +1231,6 @@ namespace System.Windows.Automation.Peers
             }
         }
 
-        // For ItemsControls, there are typically two different peers for each
-        // (visible) item:  an "item" peer and a "wrapper" peer.  The former
-        // corresponds to the item itself, the latter to the container.  (These
-        // are different, even when the item is its own container.)  The item
-        // peer appears as a child of the ItemsControl's peer, while the wrapper
-        // peer is what you get by asking the container for its peer directly.
-        // For example, a ListBoxAutomationPeer holds children of type
-        // ListBoxItemAutomationPeer, while the peer for a ListBoxItem has type
-        // ListBoxItemWrapperAutomationPeer.
-        //
-        // The item and wrapper peers for a particular item can (and do) share
-        // children, i.e. the _children lists can contain the same elements.  The
-        // _parent pointer in a (shared) child peer could point to either the
-        // item peer or the wrapper peer, depending on which parent peer rebuilt
-        // its _children collection (EnsureChildren) most recently.  This is
-        // confusing, but usually it doesn't matter much as the two lists are
-        // identical;  the navigation methods (GetFirstChild, GetNextSibling, etc.)
-        // produce the correct result regardless of which parent is used.
-        //
-        // It matters for TabControl, however.  The item peer (TabItemAutomationPeer)
-        // and wrapper peer (TabItemWrapperAutomationPeer) contain the same
-        // children, except when the TabItem is selected (so that its content
-        // is shown in the TabControls large display area).  In that case the item
-        // peer has extra children, corresponding to the displayed content.
-        //
-        // Dev11 bug 496434 illustrates the problem this can cause.  The app does
-        // something that causes the wrapper peer to EnsureChildren (e.g. changes
-        // TabControl.IsEnabled).  Now the shared children all point back to
-        // the wrapper peer, while the extra children still point back to the item
-        // peer.  An automation client that tries to iterate over the children will
-        // not see the extra children.  It (effectively) calls itemPeer.GetFirstChild,
-        // followed by repeated calls to childPeer.GetNextSibling;  those calls
-        // are evaluated using the _parent's child collection, but _parent points
-        // to the wrapper peer (which doesn't have the extra children).
-        //
-        // To patch this problem, the navigation methods call ReclaimChildren
-        // whenever they notice a child pointing back to the wrong parent.  In the
-        // usage described above, the intial call to GetFirstChild will reset
-        // the _parent pointers back to the item peer, and thus the GetNextSibling
-        // calls will be evaluated in the right context.
-        private void ReclaimChildren()
-        {
-            int count = _children.Count;
-            for (int i = 0; i < count; ++i)
-            {
-                _children[i]._parent = this;
-                _children[i]._index = i;
-                //(omitted to avoid security check; shouldn't be needed) _children[i]._hwnd = _hwnd;
-            }
-        }
-        // the item peer (since that's where the navigation began), and
-
         // Use to update the Children irrespective of the _childrenValid flag.
         internal void ForceEnsureChildren()
         {
@@ -1305,11 +1248,6 @@ namespace System.Windows.Automation.Peers
             if (_children != null && _children.Count > 0)
             {
                 peer = _children[_children.Count - 1];
-
-                if (peer._parent != this)
-                {
-                    ReclaimChildren();
-                }
             }
 
             return peer;
@@ -1337,11 +1275,6 @@ namespace System.Windows.Automation.Peers
                     &&  parent._children[_index] == this    )
                 {
                     sibling = parent._children[_index + 1];
-
-                    if (sibling._parent != parent)
-                    {
-                        parent.ReclaimChildren();
-                    }
                 }
             }
 
@@ -1364,11 +1297,6 @@ namespace System.Windows.Automation.Peers
                     &&  parent._children[_index] == this    )
                 {
                     sibling = parent._children[_index - 1];
-
-                    if (sibling._parent != parent)
-                    {
-                        parent.ReclaimChildren();
-                    }
                 }
             }
 

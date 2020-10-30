@@ -6,12 +6,12 @@
 //
 // Description:  
 //      WebBrowser is a wrapper for the webbrowser activex control     
-//      Copied from webbrowser.cs in [....]
+//      Copied from webbrowser.cs in Microsoft
 //
 // History
 //  04/17/05    KusumaV      Created
-//  02/22/08    [....]       Expose the WebBrowser control
-//  04/24/08    [....]     Implemented hosting the WebOC in the browser process for IE 7+ Protected Mode
+//  02/22/08    Microsoft       Expose the WebBrowser control
+//  04/24/08    Microsoft     Implemented hosting the WebOC in the browser process for IE 7+ Protected Mode
 //------------------------------------------------------------------------------
 
 using System;
@@ -74,8 +74,8 @@ namespace System.Windows.Controls
     ///</summary>
     /// <remarks>
     /// The WebBrowser class is currently not thread safe. Multi-threading could corrupt the class internal state, 
-    /// which could lead to security exploits (see example in devdiv bug #196538). So we enforce thread affinity. 
-    /// </remarks>
+    /// which could lead to security exploits (see example in devdiv 
+
     public sealed class WebBrowser : ActiveXHost
     {
         //----------------------------------------------
@@ -451,7 +451,7 @@ namespace System.Windows.Controls
 
                     if (args != null)
                     {
-                        // Reverse the arg order so that parms read naturally after IDispatch. ([....] bug 187662)
+                        // Reverse the arg order so that parms read naturally after IDispatch. (Microsoft 
                         Array.Reverse(args);
                     }
                     dp.rgvarg = (args == null) ? IntPtr.Zero : UnsafeNativeMethods.ArrayToVARIANTHelper.ArrayToVARIANTVector(args);
@@ -462,14 +462,25 @@ namespace System.Windows.Controls
                     // It's important to use IDispatchEx::InvokeEx here rather than the non-Ex versions for security reasons.
                     // This version allows us to pass the IServiceProvider for security context.
                     // See Dev10 bugs 710329 and 710325 for context.
+                    //
+                    // DevDiv 
+
+
+
+
+
+
+
+
+
                     hr = scriptObjectEx.InvokeEx(
                         dispids[0],
                         Thread.CurrentThread.CurrentCulture.LCID,
                         NativeMethods.DISPATCH_METHOD,
                         dp,
                         out retVal, 
-                        new NativeMethods.EXCEPINFO(), 
-                        (UnsafeNativeMethods.IServiceProvider)htmlDocument);
+                        new NativeMethods.EXCEPINFO(),
+                        null);
                     hr.ThrowIfFailed();
                 }
                 finally
@@ -950,23 +961,23 @@ namespace System.Windows.Controls
         /// <SecurityNote>
         /// Starting from v3 SP2, we host the WebOC in the IE 7+ browser process when it's running at low 
         /// integrity level ('protected mode'). This is to prevent elevation of privilege via our process in
-        /// case a bug in the WebOC is exploited. PresentationHost is on IE's silent elevation list; thus, 
-        /// potentially bigger damange could be effected by running malicious code in our process.
-        /// 
-        /// Starting from v4, we always host the WebOC in IE. This addresses other security concerns:
-        ///   - Mixing CLR code and JavaScript in the same process enables more attack vectors;
-        ///   - We have to play constant catch-up with IE as new Feature Control Keys and other security 
-        ///     mitigations are added. By hosting the WebOC in the IE process, new FCKs automatically apply 
-        ///     (at the risk of being breaking changes, but this risk is justified for partial trust XBAPs).
-        ///     
-        /// Note that we must keep any WebOC in the IE process even in deeply nested situations like this,
-        /// if we allow them:
-        ///     IE / XBAP / WebOC / XBAP / WebOC [this is in terms of container/visual nesting]
-        /// If the WebOC hosted via the inner XBAP is allowed to run outside the protected-mode IE, the whole
-        /// feature is defeated! To ensure we are aware of this situation, the native hosting code sets both
-        /// hfHostedInWebOC and hfHostedInIE. For v4, WebOC hosting is entirely blocked in this situation. 
-        /// See further explanation in COleDocument::InitDocHost().
-        /// </SecurityNote>
+        /// case a 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         internal static bool IsWebOCHostedInBrowserProcess
         {
             get
@@ -1020,8 +1031,8 @@ namespace System.Windows.Controls
             // Note that we cannot assert this condition here. The reason is that this element might have 
             // been disconnected from the tree through one of its parents even while it waited for the 
             // pending Loaded event to fire. More details for this scenario can be found in the 
-            // Windows OS Bug#1981485.
-            // Invariant.Assert(pSource != null, "Loaded has fired. PresentationSource shouldn't be null");
+            // Windows OS 
+
             
             if (pSource != null && pSource.RootVisual is PopupRoot)
             {
@@ -1231,7 +1242,7 @@ namespace System.Windows.Controls
             // causing invalid UTF-8 sequences to get dropped, resulting in a strictly speaking valid URI but for
             // some websites this causes breakage. Therefore we allow ignoring this treatment by means of string-
             // based overloads for the public Navigate methods, creating a Uri internally and using AbsoluteUri
-            // to get back the URI string to feed in to the WebOC in its original form. [....] has a similar
+            // to get back the URI string to feed in to the WebOC in its original form. Microsoft has a similar
             // set of overloads to enable this scenario.
             object sourceString = ignoreEscaping ? source.AbsoluteUri : BindUriHelper.UriToString(source);            
 
@@ -1261,10 +1272,10 @@ namespace System.Windows.Controls
         ///     like it normally does when it gets focus. This leaves the ActiveXState at InPlaceActive, but 
         ///     it should be UIActive. Because of this, the invariant assert in TranslateAccelerator() was 
         ///     failing on a key down - WOSB 1961596.
-        ///   * Similar case from DevDiv bug 121501: Clicking on a combobox to get its drop down list. If the 
-        ///     WebOC doesn't have focus before that, it acquires it, but doesn't call OnUIActivate(). This 
-        ///     fails the Assert in OnPreprocessMessageThunk().
-        /// </summary>
+        ///   * Similar case from DevDiv 
+
+
+
         private void SyncUIActiveState()
         {
             if (ActiveXState != ActiveXHelper.ActiveXState.UIActive && this.HasFocusWithinCore())

@@ -42,6 +42,9 @@ namespace System.Windows.Forms.PropertyGridInternal {
         private string        helpKeyword;
         private string         toolTipText = null;
         private bool          activeXHide = false;
+        private static int           scaledImageSizeX = IMAGE_SIZE;
+        private static int           scaledImageSizeY = IMAGE_SIZE;
+        private static bool          isScalingInitialized = false; 
 
 
         private const int  IMAGE_SIZE = 8;
@@ -477,9 +480,9 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 // find the next parent property with a differnet value owner
                 object owner = ge.GetValueOwner();
 
-                // Fix for Dev10 bug 584323:
-                // when owner is an instance of a value type, 
-                // we can't just use == in the following while condition testing
+                // Fix for Dev10 
+
+
                 bool isValueType = owner.GetType().IsValueType;
 
                 // find the next property descriptor with a different parent
@@ -607,11 +610,20 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 if (uiItemRects == null || uiItemRects.Length != pvUIItems.Length) {
                     uiItemRects = new Rectangle[pvUIItems.Length];
                 }
-                for (int i = 0; i < pvUIItems.Length; i++) {
-                    uiItemRects[i] = new Rectangle(rect.Right - ((IMAGE_SIZE+1)*(i+1)), (rect.Height - IMAGE_SIZE) / 2, IMAGE_SIZE, IMAGE_SIZE);
+
+                if (!isScalingInitialized) {
+                    if (DpiHelper.IsScalingRequired) {
+                        scaledImageSizeX = DpiHelper.LogicalToDeviceUnitsX(IMAGE_SIZE);
+                        scaledImageSizeY = DpiHelper.LogicalToDeviceUnitsY(IMAGE_SIZE);                        
+                    }
+                    isScalingInitialized = true;
+                }
+
+                for (int i = 0; i < pvUIItems.Length; i++) {                    
+                    uiItemRects[i] = new Rectangle(rect.Right - ((scaledImageSizeX + 1) * (i + 1)), (rect.Height - scaledImageSizeY) / 2, scaledImageSizeX, scaledImageSizeY);
                     g.DrawImage(pvUIItems[i].Image, uiItemRects[i]);
-                }    
-                GridEntryHost.LabelPaintMargin = (IMAGE_SIZE + 1) * pvUIItems.Length;
+                }
+                GridEntryHost.LabelPaintMargin = (scaledImageSizeX + 1) * pvUIItems.Length;
             }
         }
 
@@ -830,7 +842,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
                     propertyInfo.SetValue(target, value);
 
-                    // [....], okay, since the value that we modified may not
+                    // Microsoft, okay, since the value that we modified may not
                     // be stored by the parent property, we need to push this
                     // value back into the parent.  An example here is Size or
                     // Location, which return Point objects that are unconnected
@@ -946,7 +958,22 @@ namespace System.Windows.Forms.PropertyGridInternal {
                             alwaysNavigate = true;
                         }
                     }
-                    propertyInfo.SetValue(obj, newHandler);
+
+                    try {
+                        propertyInfo.SetValue(obj, newHandler);
+                    } catch (InvalidOperationException ex) {
+                        if (trans != null) {
+                            trans.Cancel();
+                            trans = null;
+                        }
+
+                        if (this.GridEntryHost != null && this.GridEntryHost is PropertyGridView) {
+                            PropertyGridView pgv = this.GridEntryHost as PropertyGridView;
+                            pgv.ShowInvalidMessage(newHandler, obj, ex);
+                        }
+
+                        return false;
+                    }
                 }
                 
                 if (alwaysNavigate && eventBindings != null) {

@@ -6,7 +6,7 @@
 //      An abstract base serializer for various serializers
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

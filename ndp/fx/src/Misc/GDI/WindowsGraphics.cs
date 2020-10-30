@@ -10,7 +10,7 @@
 // THIS PARTIAL CLASS CONTAINS THE BASE METHODS FOR CREATING AND DISPOSING A WINDOWSGRAPHICS AS WELL
 // GETTING, DISPOSING AND WORKING WITH A DC.
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -42,7 +42,7 @@ namespace System.Experimental.Gdi
     ///     the dc in method calls.
     ///     See VSWhidbey 300692 & 445469 for some background.
     ///</devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -224,7 +224,6 @@ namespace System.Experimental.Gdi
 
         public DeviceContext DeviceContext 
         {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get 
             {
                 return this.dc;
@@ -233,8 +232,8 @@ namespace System.Experimental.Gdi
 
 
         /// <include file='doc\WindowsGraphics.uex' path='docs/doc[@for="WindowsGraphics.Dispose"]/*' />
-        // Okay to suppress. From [....]:
-        //"WindowsGraphics object does not own the Graphics object.  For instance in a controlï¿½s Paint event we pass the 
+        // Okay to suppress. From Microsoft:
+        //"WindowsGraphics object does not own the Graphics object.  For instance in a control’s Paint event we pass the 
         //GraphicsContainer object to TextRenderer, which uses WindowsGraphics; 
         //if the Graphics object is disposed then further painting will be broken."
         [SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed")]

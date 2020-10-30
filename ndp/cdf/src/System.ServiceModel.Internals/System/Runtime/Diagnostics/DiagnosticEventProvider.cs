@@ -193,6 +193,24 @@ namespace System.Runtime.Diagnostics
             return false;
         }
 
+        /// <summary>
+        /// IsEventEnabled, method used to test if event is enabled
+        /// </summary>
+        /// <param name="eventDescriptor">
+        /// EventDescriptor for the method to test
+        /// </param>
+        [Fx.Tag.SecurityNote(Critical = "Calling Unsafe code; usage of EventDescriptor, which is protected by a LinkDemand")]
+        [SecurityCritical]
+        public bool IsEventEnabled(ref EventDescriptor eventDescriptor)
+        {
+            if (IsEnabled(eventDescriptor.Level, eventDescriptor.Keywords))
+            {
+                return UnsafeNativeMethods.EventEnabled(this.traceRegistrationHandle, ref eventDescriptor);
+            }
+
+            return false;
+        }
+
         [SuppressMessage(FxCop.Category.Design, FxCop.Rule.UsePropertiesWhereAppropriate)]
         public static WriteEventErrorCode GetLastWriteEventError()
         {

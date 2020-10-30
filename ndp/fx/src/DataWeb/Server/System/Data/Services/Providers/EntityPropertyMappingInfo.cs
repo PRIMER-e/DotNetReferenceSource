@@ -7,7 +7,7 @@
 //      on a ResourceType.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Common

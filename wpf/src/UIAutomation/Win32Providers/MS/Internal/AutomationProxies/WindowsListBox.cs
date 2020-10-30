@@ -465,7 +465,7 @@ namespace MS.Internal.AutomationProxies
             // second time.
             if ((eventId == NativeMethods.EventObjectSelection || eventId == NativeMethods.EventObjectSelectionAdd) && (idProp as AutomationProperty) == SelectionPattern.IsSelectionRequiredProperty)
             {
-                // This array must be kept in [....] with the array in PropertyToWinEvent
+                // This array must be kept in sync with the array in PropertyToWinEvent
                 WinEventTracker.EvtIdProperty[] aEvtIdProperties = new WinEventTracker.EvtIdProperty[] { new WinEventTracker.EvtIdProperty(NativeMethods.EventObjectSelection, SelectionPattern.IsSelectionRequiredProperty) };
 
                 WinEventTracker.RemoveToNotificationList(hwnd, aEvtIdProperties, null, aEvtIdProperties.Length);
@@ -476,7 +476,7 @@ namespace MS.Internal.AutomationProxies
                 bool isMultipleSelection = wlb.IsMultipleSelection();
 
                 // User should send SelectionAdd for a Multiselect listbox but it sends instead
-                // Selection. The code below fixes the bug in User
+                // Selection. The code below fixes the 
                 if (eventId == NativeMethods.EventObjectSelection && isMultipleSelection && wlb.HasOtherSelections(idChild - 1))
                 {
                     eventId = NativeMethods.EventObjectSelectionAdd;

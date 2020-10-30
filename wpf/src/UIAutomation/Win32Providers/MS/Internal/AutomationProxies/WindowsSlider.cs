@@ -175,12 +175,12 @@ namespace MS.Internal.AutomationProxies
                 throw new ElementNotEnabledException();
             }
 
-            // bug# 15533, Set value does not accept float
+            // 
             int newVal = Convert.ToInt32 (val);
 
             SetSliderValue (newVal);
 
-            // bug# 15531, Set value of slider control needs to notify parent of change
+            // 
             IntPtr parent = Misc.GetParent(_hwnd);
 
             if (IntPtr.Zero != parent)

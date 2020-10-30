@@ -6,7 +6,7 @@
 //      Respresents a reference to a resource set in a resource bound expression tree.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 namespace System.Data.Services.Client
 {

@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 // <copyright file="DpiHelper.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
@@ -10,10 +10,17 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 using System.Windows.Forms.Internal;
+using CAPS = System.Windows.Forms.NativeMethods;
+#elif DRAWING_NAMESPACE
+using CAPS = System.Drawing.SafeNativeMethods;
+#elif DRAWINGDESIGN_NAMESPACE
+using System.Drawing.Design;
+using CAPS = System.Drawing.Design.NativeMethods;
 #else
 using System.Design;
+using CAPS = System.Design.NativeMethods;
 #endif
 
 namespace System.Windows.Forms
@@ -63,8 +70,8 @@ namespace System.Windows.Forms
                 IntPtr hDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
                 if (hDC != IntPtr.Zero)
                 {
-                    deviceDpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), NativeMethods.LOGPIXELSX);
-                    deviceDpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), NativeMethods.LOGPIXELSY);
+                    deviceDpiX = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), CAPS.LOGPIXELSX);
+                    deviceDpiY = UnsafeNativeMethods.GetDeviceCaps(new HandleRef(null, hDC), CAPS.LOGPIXELSY);
 
                     UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, hDC));
                 }
@@ -244,6 +251,10 @@ namespace System.Windows.Forms
             }
         }
 
+        // This method is used only in System.Design, thus excluding the rest.
+        // This is particularly important for System.Drawing, which should not depend 
+        // on System.Windows.Forms assembly, where "Button" type is defined. 
+#if (!DRAWING_NAMESPACE && !DRAWINGDESIGN_NAMESPACE && !Microsoft_NAMESPACE)
         /// <summary>
         /// Create a new button bitmap scaled for the device units. 
         /// Note: original image might be disposed.
@@ -265,5 +276,6 @@ namespace System.Windows.Forms
             button.Image.Dispose();
             button.Image = deviceBitmap;
         }
+#endif
     }
 }

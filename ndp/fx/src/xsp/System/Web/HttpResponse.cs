@@ -11,6 +11,7 @@ namespace System.Web {
 
     using System.Text;
     using System.Threading;
+    using System.Threading.Tasks;
     using System.Runtime.Serialization;
     using System.IO;
     using System.Collections;
@@ -117,6 +118,9 @@ namespace System.Web {
         bool        _transferEncodingSet;
         bool        _chunked;
 
+        // OnSendingHeaders pseudo-event
+        private SubscriptionQueue<Action<HttpContext>> _onSendingHeadersSubscriptionQueue = new SubscriptionQueue<Action<HttpContext>>();
+
         // mobile redirect properties
         internal static readonly String RedirectQueryStringVariable = "__redir";
         internal static readonly String RedirectQueryStringValue = "1";
@@ -166,6 +170,12 @@ namespace System.Web {
             }
         }
 
+        internal void SetAllocatorProvider(IAllocatorProvider allocator) {
+            if (_httpWriter != null) {
+                _httpWriter.AllocatorProvider = allocator;
+            }
+        }
+
         /*
          *  Cleanup code
          */
@@ -207,9 +217,9 @@ namespace System.Web {
             }
         }
 
-        internal bool HeadersWritten {
+        public bool HeadersWritten {
             get { return _headersWritten; }
-            set { _headersWritten = value; }
+            internal set { _headersWritten = value; }
         }
 
         internal ArrayList GenerateResponseHeadersIntegrated(bool forCache) {
@@ -331,6 +341,11 @@ namespace System.Web {
                     OutputCacheSection outputCacheConfig = config.OutputCache;
                     if (outputCacheConfig != null) {
                         _sendCacheControlHeader &= outputCacheConfig.SendCacheControlHeader;
+                    }
+
+                    // DevDiv #406078: Need programmatic way of disabling "Cache-Control: private" response header.
+                    if (SuppressDefaultCacheControlHeader) {
+                        _sendCacheControlHeader = false;
                     }
 
                     // Ensure that cacheability is set to cache-control: private
@@ -571,6 +586,8 @@ namespace System.Web {
 
                 if (!_headersWritten) {
                     if (!_suppressHeaders && !_clientDisconnected) {
+                        EnsureSessionStateIfNecessary();
+
                         if (finalFlush) {
                             bufferedLength = _httpWriter.GetBufferedLength();
 
@@ -709,7 +726,7 @@ namespace System.Web {
                 return _wr.BeginFlush(callback, state);
             }
 
-            // perform a [....] flush since async is not supported
+            // perform a sync flush since async is not supported
             FlushAsyncResult ar = new FlushAsyncResult(callback, state);
             try {
                 Flush(false);
@@ -735,7 +752,7 @@ namespace System.Web {
                 return;
             }
             
-            // finish [....] flush since async is not supported
+            // finish sync flush since async is not supported
             if (asyncResult == null)
                 throw new ArgumentNullException("asyncResult");
             FlushAsyncResult ar = asyncResult as FlushAsyncResult;
@@ -745,6 +762,10 @@ namespace System.Web {
             if (ar.Error != null) {
                 ar.Error.Throw();
             }
+        }
+
+        public Task FlushAsync() {
+            return Task.Factory.FromAsync(BeginFlush, EndFlush, state: null);
         }
 
         // WOS 1555777: kernel cache support
@@ -1105,9 +1126,18 @@ namespace System.Web {
             }
 
             // restore content
-            _httpWriter.UseSnapshot(rawResponse.Buffers);
+            SetResponseBuffers(rawResponse.Buffers);
+  
+            _suppressContent = !sendBody;         
+        }
 
-            _suppressContent = !sendBody;
+        // set the response content bufffers
+        internal void SetResponseBuffers(ArrayList buffers) {
+            if (_httpWriter == null) {
+                throw new HttpException(SR.GetString(SR.Cannot_use_snapshot_for_TextWriter));
+            }
+
+            _httpWriter.UseSnapshot(buffers);
         }
 
         internal void CloseConnectionAfterError() {
@@ -1230,6 +1260,13 @@ namespace System.Web {
                 }
             }
 
+            // Show config source only on local request for security reasons
+            // Config file snippet may unintentionally reveal sensitive information (not related to the error)
+            ConfigErrorFormatter configErrorFormatter = errorFormatter as ConfigErrorFormatter;
+            if (configErrorFormatter != null) {
+                configErrorFormatter.AllowSourceCode = Request.IsLocal;
+            }
+
             return errorFormatter;
         }
 
@@ -1340,7 +1377,7 @@ namespace System.Web {
                             // the <customErrors> element to control this behavior.
 
                             if (customErrorsSetting.AllowNestedErrors) {
-                                // The user has set the compat switch to use the original (pre-bug fix) behavior.
+                                // The user has set the compat switch to use the original (pre-
                                 goto case RedirectToErrorPageStatus.NotAttempted;
                             }
 
@@ -1535,6 +1572,25 @@ namespace System.Web {
         /// and send the original status code to the client.
         /// </summary>
         public bool SuppressFormsAuthenticationRedirect {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// By default, ASP.NET sends a "Cache-Control: private" response header unless an explicit cache
+        /// policy has been specified for this response. This property allows suppressing this default
+        /// response header on a per-request basis. It can still be suppressed for the entire application
+        /// by setting the appropriate value in &lt;httpRuntime&gt; or &lt;outputCache&gt;. See
+        /// http://msdn.microsoft.com/en-us/library/system.web.configuration.httpruntimesection.sendcachecontrolheader.aspx
+        /// for more information on those config elements.
+        /// </summary>
+        /// <remarks>
+        /// Developers should use caution when suppressing the default Cache-Control header, as proxies
+        /// and other intermediaries may treat responses without this header as cacheable by default.
+        /// This could lead to the inadvertent caching of sensitive information.
+        /// See RFC 2616, Sec. 13.4, for more information.
+        /// </remarks>
+        public bool SuppressDefaultCacheControlHeader {
             get;
             set;
         }
@@ -2154,6 +2210,43 @@ namespace System.Web {
                 throw new HttpException(SR.GetString(SR.Cannot_flush_completed_response));
 
             Flush(false);
+        }
+
+        // Registers a callback that the ASP.NET runtime will invoke immediately before
+        // response headers are sent for this request. This differs from the IHttpModule-
+        // level pipeline event in that this is a per-request subscription rather than
+        // a per-application subscription. The intent is that the callback may modify
+        // the response status code or may set a response cookie or header. Other usage
+        // notes and caveats:
+        //
+        // - This API is available only in the IIS integrated mode pipeline and only
+        //   if response headers haven't yet been sent for this request.
+        // - The ASP.NET runtime does not guarantee anything about the thread that the
+        //   callback is invoked on. For example, the callback may be invoked synchronously
+        //   on a background thread if a background flush is being performed.
+        //   HttpContext.Current is not guaranteed to be available on such a thread.
+        // - The callback must not call any API that manipulates the response entity body
+        //   or that results in a flush. For example, the callback must not call
+        //   Response.Redirect, as that method may manipulate the response entity body.
+        // - The callback must contain only short-running synchronous code. Trying to kick
+        //   off an asynchronous operation or wait on such an operation could result in
+        //   a deadlock.
+        // - The callback must not throw, otherwise behavior is undefined.
+        [SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = @"The normal event pattern doesn't work between HttpResponse and HttpResponseBase since the signatures differ.")]
+        public ISubscriptionToken AddOnSendingHeaders(Action<HttpContext> callback) {
+            if (callback == null) {
+                throw new ArgumentNullException("callback");
+            }
+
+            if (!(_wr is IIS7WorkerRequest)) {
+                throw new PlatformNotSupportedException(SR.GetString(SR.Requires_Iis_Integrated_Mode));
+            }
+
+            if (HeadersWritten) {
+                throw new HttpException(SR.GetString(SR.Cannot_call_method_after_headers_sent_generic));
+            }
+
+            return _onSendingHeadersSubscriptionQueue.Enqueue(callback);
         }
 
         /*
@@ -2838,6 +2931,76 @@ namespace System.Web {
             }
         }
 
+        /// <devdoc>
+        ///    <para>Allows HTTP/2 Server Push</para>
+        /// </devdoc>
+        public void PushPromise(string path) {
+            // 
+
+
+            PushPromise(path, method: "GET", headers: null);
+        }
+
+        /// <devdoc>
+        ///    <para>Allows HTTP/2 Server Push</para>
+        /// </devdoc>
+        public void PushPromise(string path, string method, NameValueCollection headers) {
+            // PushPromise is non-deterministic and application shouldn't have logic that depends on it. 
+            // It's only purpose is performance advantage in some cases.
+            // There are many conditions (protocol and implementation) that may cause to 
+            // ignore the push requests completely.
+            // The expectation is based on fire-and-forget 
+
+            if (path == null) {
+                throw new ArgumentNullException("path");
+            }
+
+            if (method == null) {
+                throw new ArgumentNullException("method");
+            }
+
+            // Extract an optional query string
+            string queryString = string.Empty;
+            int i = path.IndexOf('?');
+
+            if (i >= 0) {
+                if (i < path.Length - 1) {
+                    queryString = path.Substring(i + 1);
+                }
+
+                // Remove the query string portion from the path
+                path = path.Substring(0, i);
+            }
+
+
+            // Only virtual path is allowed:
+            // "/path"   - origin relative
+            // "~/path"  - app relative
+            // "path"    - request relative
+            // "../path" - reduced 
+            if (string.IsNullOrEmpty(path) || !UrlPath.IsValidVirtualPathWithoutProtocol(path)) {
+                throw new ArgumentException(SR.GetString(SR.Invalid_path_for_push_promise, path));
+            }
+
+            VirtualPath virtualPath = Request.FilePathObject.Combine(VirtualPath.Create(path));
+
+            try {
+                if (!HttpRuntime.UseIntegratedPipeline) {
+                    throw new PlatformNotSupportedException(SR.GetString(SR.Requires_Iis_Integrated_Mode));
+                }
+
+                // Do push promise
+                IIS7WorkerRequest wr = (IIS7WorkerRequest) _wr;
+                wr.PushPromise(virtualPath.VirtualPathString, queryString, method, headers);
+            }
+            catch (PlatformNotSupportedException e) {
+                // Ignore errors if push promise is not supported
+                if (Context.TraceIsEnabled) {
+                    Context.Trace.Write("aspx", "Push promise is not supported", e);
+                }
+            }
+        }
+
         //
         // Deprecated ASP compatibility methods and properties
         //
@@ -3130,10 +3293,10 @@ namespace System.Web {
         }
 
         private String UrlEncodeIDNSafe(String url) {
-            // Bug 86594: Should not encode the domain part of the url. For example,
-            // http://Übersite/Überpage.aspx should only encode the 2nd Ü.
-            // To accomplish this we must separate the scheme+host+port portion of the url from the path portion,
-            // encode the path portion, then reconstruct the url.
+            // 
+
+
+
             Debug.Assert(!url.Contains("?"), "Querystring should have been stripped off.");
 
             string schemeAndAuthority;
@@ -3207,6 +3370,12 @@ namespace System.Web {
                     }
                 }
 
+                // DevDiv #782830: Provide a hook where the application can change the response status code
+                // or response headers.
+                if (sendHeaders && !_onSendingHeadersSubscriptionQueue.IsEmpty) {
+                    _onSendingHeadersSubscriptionQueue.FireAndComplete(cb => cb(Context));
+                }
+
                 if (_statusSet) {
                     _wr.SendStatus(this.StatusCode, this.SubStatusCode, this.StatusDescription);
                     _statusSet = false;
@@ -3217,6 +3386,10 @@ namespace System.Web {
                 //
                 if (!_suppressHeaders && !_clientDisconnected)
                 {
+                    if (sendHeaders) {
+                        EnsureSessionStateIfNecessary();
+                    }
+
                     // If redirect location set, write it through to IIS as a header
                     if (_redirectLocation != null && _redirectLocationSet) {
                         HttpHeaderCollection headers = Headers as HttpHeaderCollection;
@@ -3330,6 +3503,14 @@ namespace System.Web {
             }
         }
 
+        private void EnsureSessionStateIfNecessary() {
+            // Ensure the session state is in complete state before sending the response headers
+            // Due to optimization and delay initialization sometimes we create and store the session state id in ReleaseSessionState.
+            // But it's too late in case of Flush. Session state id must be written (if used) before sending the headers.
+            if (AppSettings.EnsureSessionStateLockedOnFlush) {
+                _context.EnsureSessionStateIfNecessary();
+            }
+        }
     }
 
     internal enum CacheDependencyType {

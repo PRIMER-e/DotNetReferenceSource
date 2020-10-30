@@ -40,7 +40,7 @@ namespace MS.Internal.IO.Packaging
         }
 
         /// <summary>
-        /// One-to-One mapping from enum to string - this must be kept in [....] with _table
+        /// One-to-One mapping from enum to string - this must be kept in sync with _table
         /// </summary>
         internal enum ID : int
         {

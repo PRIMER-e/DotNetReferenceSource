@@ -483,7 +483,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1679737
-// Developer: [....]
+// Developer: adsmith
 // Reason: The virtual method being called is internal only.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors", Scope="member", Target="System.Windows.FreezableCollection`1..ctor(System.Collections.Generic.IEnumerable`1<T>)")]
@@ -503,7 +503,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 140708
-// Developer: [....]
+// Developer: sambent
 // Reason: A new ShutDownListener is "used" because it listens to events like AppDomain.DomainUnload.
 //      The reference implicit in the event's delegate list keeps the object alive.  FxCop doesn't understand this.
 //***************************************************************************************************************************
@@ -512,7 +512,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 199045, 199068
-// Developer: [....]
+// Developer: brandf
 // Reason: AddRef increments the reference count and returns the current count, but we dont care about the current count.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA1806:DoNotIgnoreMethodResults", MessageId="MS.Win32.PresentationCore.UnsafeNativeMethods+MILUnknown.AddRef(System.Windows.Media.SafeMILHandle)", Scope="member", Target="System.Windows.Media.Imaging.WriteableBitmap.#UpdateBitmapSourceResource(System.Windows.Media.Composition.DUCE+Channel,System.Boolean)")]
@@ -520,7 +520,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 692903
-// Developer: [....]
+// Developer: BrenClar
 // Reason: BitmapDecoder does not implement IDisposable.  It only uses its finalizer to close the URI stream, and uses 
 //         GC.SuppressFinalize to avoid this call when unnecessary.
 //**************************************************************************************************************************
@@ -531,7 +531,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 692903
-// Developer: [....]
+// Developer: BrenClar
 // Reason: D3DImage does not implement IDisposable.  It only uses its finalizer to release its reference to the user's
 //         surface, and uses GC.SuppressFinalize to avoid this call when unnecessary.
 //**************************************************************************************************************************
@@ -540,7 +540,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 692903
-// Developer: [....]
+// Developer: BrenClar
 // Reason: AddRef and Release just return the ref count, not an HRESULT, and we don't care about the ref count in many places.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA1806:DoNotIgnoreMethodResults", MessageId="MS.Win32.PresentationCore.UnsafeNativeMethods+MILUnknown.Release(System.IntPtr)", Scope="member", Target="MS.Win32.PresentationCore.UnsafeNativeMethods+MILUnknown.#ReleaseInterface(System.IntPtr&)")]
@@ -558,7 +558,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 784238
-// Developer: [....]
+// Developer: BChapman
 // Reason: The GCNotificationToken object is created only for the executing code to be notified of a GC and is intended to be released immediately.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "MS.Internal.PresentationCore.GCNotificationToken", Scope = "member", Target = "MS.Internal.PresentationCore.GCNotificationToken.#RegisterCallback(System.Threading.WaitCallback,System.Object)", Justification = "The GCNotificationToken object is created only for the executing code to be notified of a GC and is intended to be released immediately")]

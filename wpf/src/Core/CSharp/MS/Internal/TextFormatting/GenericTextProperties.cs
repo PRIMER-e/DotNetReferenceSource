@@ -43,6 +43,7 @@ namespace MS.Internal.TextFormatting
             Typeface                 typeface,
             double                   size,
             double                   hintingSize,
+            double                   pixelsPerDip,
             TextDecorationCollection textDecorations,
             Brush                    foregroundBrush,
             Brush                    backgroundBrush,
@@ -60,6 +61,7 @@ namespace MS.Internal.TextFormatting
             _baselineAlignment = baselineAlignment;
             _culture = culture;
             _numberSubstitution = substitution;
+            PixelsPerDip = pixelsPerDip;
         }
 
         /// <summary>

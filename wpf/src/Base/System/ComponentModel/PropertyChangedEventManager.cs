@@ -390,7 +390,7 @@ namespace System.ComponentModel
                 {
                     // this can happen when the last listener stops listening, but the
                     // source raises the event on another thread after the dictionary
-                    // has been removed (bug 1235351)
+                    // has been removed (
                     list = ListenerList.Empty;
                 }
                 else if (!String.IsNullOrEmpty(propertyName))

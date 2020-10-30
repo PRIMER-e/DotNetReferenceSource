@@ -16,6 +16,7 @@
 
 using System;
 using System.Threading;
+using System.Windows.Threading;
 using MS.Internal.WindowsBase;
 
 namespace MS.Internal
@@ -53,6 +54,15 @@ namespace MS.Internal
         {
             get
             {
+                // if there's a dispatcher on this thread, disable its
+                // processing.  This avoids unwanted re-entrancy while waiting
+                // for the lock (DevDiv2 1177236).
+                Dispatcher dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+                if (dispatcher != null)
+                {
+                    dispatcher._disableProcessingCount++;
+                }
+
                 _rwLock.AcquireWriterLock(Timeout.Infinite);
                 return _awr;
             }
@@ -62,6 +72,15 @@ namespace MS.Internal
         {
             get
             {
+                // if there's a dispatcher on this thread, disable its
+                // processing.  This avoids unwanted re-entrancy while waiting
+                // for the lock (DevDiv2 1177236).
+                Dispatcher dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+                if (dispatcher != null)
+                {
+                    dispatcher._disableProcessingCount++;
+                }
+
                 _rwLock.AcquireReaderLock(Timeout.Infinite);
                 return _arr;
             }
@@ -100,6 +119,14 @@ namespace MS.Internal
 
             public void Dispose()
             {
+                // if there's a dispatcher on this thread, re-enable its
+                // processing.  (DevDiv2 1177236).
+                Dispatcher dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+                if (dispatcher != null)
+                {
+                    dispatcher._disableProcessingCount--;
+                }
+
                 _lock.ReleaseWriterLock();
             }
 
@@ -115,6 +142,14 @@ namespace MS.Internal
 
             public void Dispose()
             {
+                // if there's a dispatcher on this thread, re-enable its
+                // processing.  (DevDiv2 1177236).
+                Dispatcher dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+                if (dispatcher != null)
+                {
+                    dispatcher._disableProcessingCount--;
+                }
+
                 _lock.ReleaseReaderLock();
             }
 

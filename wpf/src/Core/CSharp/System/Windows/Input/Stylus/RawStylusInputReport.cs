@@ -200,6 +200,16 @@ namespace System.Windows.Input
             set { _stylusDevice = value; }
         }
 
+        /// <summary>
+        /// DevDiv:652804
+        /// Determine if this item is currently queued in the StylusInputQueue
+        /// </summary>
+        internal bool IsQueued
+        {
+            get { return _isQueued; }
+            set { _isQueued = value; }
+        }
+
         /////////////////////////////////////////////////////////////////////
         /// <summary>
         ///     Read-only access to the raw data that was reported.
@@ -270,6 +280,8 @@ namespace System.Windows.Input
         /// </SecurityNote>
         private SecurityCriticalDataClass<PenContext>   _penContext;
         int                                             _stylusDeviceId;
+
+        bool                                            _isQueued; // DevDiv: 652804 - Used show status in StylusInputQueue
 
         /// <SecurityNote>
         ///     Critical to prevent accidental spread to transparent code

@@ -28,8 +28,8 @@ public:
     // used.
     //
     // Note that for generics, this function always (even for generic definitions) returns the instantiated generic i.e.
-    // a generic binding. This is required due to bug Dev10 698789.
-    //
+    // a generic binding. This is required due to 
+
     BCSYM* GetSymbolForType(gcroot<System::Type^> pType, BCSYM_Container* pContainer, BCSYM_MethodDecl* pMethodContainer);
 
 private:

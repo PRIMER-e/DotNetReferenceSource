@@ -6,7 +6,7 @@
 //      Provides names for attributes in csdl file
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Common

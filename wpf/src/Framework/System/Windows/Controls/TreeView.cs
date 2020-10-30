@@ -19,6 +19,7 @@ using System.Windows.Media;
 using MS.Internal;
 using MS.Internal.Data;
 using MS.Internal.KnownBoxes;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -39,6 +40,8 @@ namespace System.Windows.Controls
             KeyboardNavigation.DirectionalNavigationProperty.OverrideMetadata(typeof(TreeView), new FrameworkPropertyMetadata(KeyboardNavigationMode.Contained));
             KeyboardNavigation.TabNavigationProperty.OverrideMetadata(typeof(TreeView), new FrameworkPropertyMetadata(KeyboardNavigationMode.None));
             VirtualizingStackPanel.ScrollUnitProperty.OverrideMetadata(typeof(TreeView), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
+
+            TreeViewTraceLogger.LogUsageDetails();
         }
 
         /// <summary>
@@ -227,6 +230,7 @@ namespace System.Windows.Controls
                         _selectedContainer.UpdateContainsSelection(false);
                         _selectedContainer = null;
                         SetSelectedItem(null);
+                        UpdateSelectedValue(null);
 
                         oldValue = data;
                         changed = true;
@@ -317,7 +321,7 @@ namespace System.Windows.Controls
             {
                 // create the binding
                 binding = new Binding();
-                binding.Source = item;
+                binding.Source = null;
 
                 if (useXml)
                 {

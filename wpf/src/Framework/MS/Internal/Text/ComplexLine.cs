@@ -7,7 +7,7 @@
 // Description: Text line formatter. 
 //
 // History:  
-//  09/10/2003 : [....] - created.
+//  09/10/2003 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 
@@ -71,6 +71,11 @@ namespace MS.Internal.Text
             }
             Debug.Assert(run != null, "TextRun has not been created.");
             Debug.Assert(run.Length > 0, "TextRun has to have positive length.");
+            if (run.Properties != null)
+            {
+                run.Properties.PixelsPerDip = this.PixelsPerDip;
+            }
+
             return run;
         }
 
@@ -199,8 +204,9 @@ namespace MS.Internal.Text
                     if (_owner.UseLayoutRounding)
                     {
                         // If using layout rounding, check whether rounding needs to compensate for high DPI
-                        proxyVisual.Offset = new Vector(UIElement.RoundLayoutValue(lineOffset.X + rect.Left, FrameworkElement.DpiScaleX),
-                                                        UIElement.RoundLayoutValue(lineOffset.Y + rect.Top, FrameworkElement.DpiScaleY));
+                        DpiScale dpi = _owner.GetDpi();
+                        proxyVisual.Offset = new Vector(UIElement.RoundLayoutValue(lineOffset.X + rect.Left, dpi.DpiScaleX),
+                                                        UIElement.RoundLayoutValue(lineOffset.Y + rect.Top, dpi.DpiScaleY));
                     }
                     else
                     {
@@ -349,7 +355,7 @@ namespace MS.Internal.Text
 
 
 
-            TextRunProperties textProps = new TextProperties(element, position, false /* inline objects */, true /* get background */);
+            TextRunProperties textProps = new TextProperties(element, position, false /* inline objects */, true /* get background */, PixelsPerDip);
 
             // Calculate the end of the run by finding either:
             //      a) the next intersection of highlight ranges, or
@@ -399,7 +405,7 @@ namespace MS.Internal.Text
                 // Empty TextElement should affect line metrics.
                 // TextFormatter does not support this feature right now, so as workaround
                 // TextRun with ZERO WIDTH SPACE is used.
-                TextRunProperties textProps = new TextProperties(element, position, false /* inline objects */, true /* get background */);
+                TextRunProperties textProps = new TextProperties(element, position, false /* inline objects */, true /* get background */, PixelsPerDip);
                 char[] textBuffer = new char[_elementEdgeCharacterLength * 2];
                 textBuffer[0] = (char)0x200B;
                 textBuffer[1] = (char)0x200B;
@@ -533,7 +539,7 @@ namespace MS.Internal.Text
                 // 
 
 
-                TextRunProperties textProps = new TextProperties(element, position, true /* inline objects */, true /* get background */);
+                TextRunProperties textProps = new TextProperties(element, position, true /* inline objects */, true /* get background */, PixelsPerDip);
 
                 // Create object run.
                 run = new InlineObject(dcp, TextContainerHelper.EmbeddedObjectLength, (UIElement)element, textProps, _owner);

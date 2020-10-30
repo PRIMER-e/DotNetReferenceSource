@@ -468,7 +468,7 @@ namespace System.Windows.Forms {
                     // if user hits TAB-SHIFT and the focus was on the first relationship then
                     // reset FocusedRelation and let the dataGrid use the key
                     //
-                    // consider: [....]: if the relationships box is expanded, should we collapse it on leave?
+                    // consider: Microsoft: if the relationships box is expanded, should we collapse it on leave?
                     FocusedRelation = -1;
                     return false;
                 }
@@ -493,7 +493,7 @@ namespace System.Windows.Forms {
                     // if the user hits TAB and the focus was on the last relationship then
                     // reset FocusedRelation and let the dataGrid use the key
                     //
-                    // consider: [....]: if the relationships box is expanded, should we collapse it on leave?
+                    // consider: Microsoft: if the relationships box is expanded, should we collapse it on leave?
                     FocusedRelation = -1;
                     return false;
                 }

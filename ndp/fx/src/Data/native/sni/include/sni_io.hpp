@@ -361,7 +361,7 @@ public:
 			
 			// It would cost a lot of performance to put a stronger guarantee on the maximal size, since
 			// we would need to synchronize access to two variables (stack head, stack size), which we 
-			// don't know how to do without using a true [....] primitive, rather than the two separate
+			// don't know how to do without using a true sync primitive, rather than the two separate
 			// Interlocked operations which are all that's required to maintain consistency of the list header and 
 			// an *approximate* depth guarantee.
 			SNIPacketDelete(pPacket);
@@ -819,7 +819,7 @@ public:
 		}	
 
 #ifdef SNI_BASED_CLIENT
-		// Set Event handle to Overlapped structure for [....] connections
+		// Set Event handle to Overlapped structure for Sync connections
 		if (pConn->m_fSync)
 		{
 			pPacket->AddOvlEvent();
@@ -1099,7 +1099,7 @@ public:
 		}
 
 #ifdef SNI_BASED_CLIENT
-		// No need to check for [....] or async conn, we just set the Overlapped hEvent to NULL
+		// No need to check for sync or async conn, we just set the Overlapped hEvent to NULL
 		pPacket->RemoveOvlEvent();
 #endif
 		

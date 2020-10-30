@@ -596,12 +596,12 @@ namespace System.Windows.Forms {
             // code in the OnCurrentChanged that deals w/ firing the OnCurrentChanged event
             Debug.Assert(lastGoodKnownRow == -1 || lastGoodKnownRow == listposition, "if we have a valid lastGoodKnownRow, then it should equal the position in the list");
 
-            // bug 139627: when the data view fires an ItemMoved event where the old position is negative, that really means
-            // that a row was added
-            // bug 156236: when the data view fires an ItemMoved event where the new position is negative, that really means
-            // that a row was deleted
-            // dbe is our DataBindingEvent
-            //
+            // 
+
+
+
+
+
             ListChangedEventArgs dbe;
 
             if (e.ListChangedType == ListChangedType.ItemMoved && e.OldIndex < 0) {
@@ -764,7 +764,7 @@ namespace System.Windows.Forms {
             } finally {
                 suspendPushDataInCurrentChanged = false;
             }
-            Debug.Assert(lastGoodKnownRow == -1 || listposition == lastGoodKnownRow, "how did they get out of [....]?");
+            Debug.Assert(lastGoodKnownRow == -1 || listposition == lastGoodKnownRow, "how did they get out of sync?");
         }
 
         /// <include file='doc\ListManager.uex' path='docs/doc[@for="CurrencyManager.MetaDataChanged"]/*' />

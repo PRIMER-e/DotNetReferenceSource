@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1131025
-// Developer: peterost/[....]
+// Developer: peterost/varsham
 // Reason: This is by-design because this flag is written out to Baml and is meant to be
 //         written out as a value smaller than an int.
 //***************************************************************************************************************************

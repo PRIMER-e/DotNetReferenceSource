@@ -360,7 +360,7 @@ HRESULT BreakUpQualifiedName(
 
     wcsTemp = wcsRollBack = wscStringToBreakUp;
 
-    // [....] 9/8/04:  I didn't add any overflow checks in this method, since we calculate string lengths ourselves and know that they'll fit into
+    // Microsoft 9/8/04:  I didn't add any overflow checks in this method, since we calculate string lengths ourselves and know that they'll fit into
     // reasonable numbers.
 
     // It is OK, to be called with a NULL string, just do nothing
@@ -1063,7 +1063,7 @@ HRESULT R8ToBSTR(
     return hr;
 }
 
-// [....]:  Turning of optimizations is important, because otherwise the compiler will end up
+// Microsoft:  Turning of optimizations is important, because otherwise the compiler will end up
 // doing double-double comparisons in the cases where we want float-float. (VS272481)
 
 // Update to the compiler:  Instead of disabling optimizations, just require that we use
@@ -1208,7 +1208,7 @@ HRESULT R4ToBSTR(
     }
     return hr;
 }
-// [....]: End of optimization issues.
+// Microsoft: End of optimization issues.
 #pragma float_control(pop)
 
 static
@@ -1288,7 +1288,7 @@ STRING * MakeStrongAssemblyName(
     IfFalseGo(pfnCreateAssemblyNameObject,E_FAIL);
     IfFailGo(pfnCreateAssemblyNameObject(&srpAssemblyName, NULL, 0, NULL));
     // Set name information
-    // [....] 9/8/2004: For this to overflow, the assembly name would have to exceed MAXPATH by a rather
+    // Microsoft 9/8/2004: For this to overflow, the assembly name would have to exceed MAXPATH by a rather
     // substantial amount -- that's not going to happen.  Nevertheless, I'll be paranoid here...
     size_t nNameLen = StringPool::StringLength(pstrAssemblyName);
     IfFalseGo(nNameLen + 1 > nNameLen && 
@@ -1329,7 +1329,7 @@ STRING * MakeStrongAssemblyName(
     hr = srpAssemblyName->GetDisplayName(wszDisplayName,&dwReqCchCount,0);
     if (hr == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
     {
-        // [....] 9/8/2004: This one we'll check, since the input is external.
+        // Microsoft 9/8/2004: This one we'll check, since the input is external.
         RawStringBuffer nameBuffer;
     
         nameBuffer.AllocateNonNullCharacterCount(dwReqCchCount);
@@ -1500,9 +1500,9 @@ HRESULT ParseCodeBlock(
                     if ( !pStatementList || !pStatementList->Element || !pStatementList->Element->IsMethodDefinition())
                     {
                         // wrong definition, discard it and do not report a method definition back.
-                        // This can be the result of an out of [....] buffer due to a file change. See bug 550393 and the linked bug.
-                        // Consider to add a much more elaborate check here, i.e names should match. Or, make sure the
-                        // file change is detected and decompilation triggered before we reach this code.
+                        // This can be the result of an out of sync buffer due to a file change. See 
+
+
 
                         pStatementList = 0;
                     }
@@ -1652,8 +1652,8 @@ HRESULT GetDeclTrees(
                                   LineMarkerTableForConditionals));
 
 #if IDE
-		// Bug 843894: we need to notify our package that it needs to start XML Schemas service. Otherwise, Xml literals
-		// support will not be available until Xml intellisense is invoked twice
+		// 
+
         if(parse.GetSeenXmlLiterals())
         {
             if(pSourceFile && !pSourceFile->GetProject()->IsIntellisenseSchemasOpened())

@@ -11,7 +11,7 @@
 //
 // History:
 //  05/19/03: kusumav       Moved over to WCP dir. Matched spec, added comments. 
-//  11/14/05: [....]       Split INavigatorBase off INavigator, part of the "Island Frame" implementation
+//  11/14/05: ChangoV       Split INavigatorBase off INavigator, part of the "Island Frame" implementation
 //
 //---------------------------------------------------------------------------
 

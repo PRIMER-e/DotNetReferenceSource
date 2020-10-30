@@ -6,7 +6,7 @@
 //      Provides a class used to represent a key value for a resource.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

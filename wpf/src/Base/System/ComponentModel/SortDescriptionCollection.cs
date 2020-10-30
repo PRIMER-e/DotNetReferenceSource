@@ -10,7 +10,7 @@
 // See spec at http://avalon/connecteddata/Specs/CollectionView.mht
 //
 // History:
-//  03/24/2005 : [....]   - created
+//  03/24/2005 : Microsoft   - created
 //
 //---------------------------------------------------------------------------
 using System;

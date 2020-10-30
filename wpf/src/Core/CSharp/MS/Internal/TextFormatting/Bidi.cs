@@ -8,7 +8,7 @@
 //  Contents:  Bidi services
 //
 //  Created:   9-9-2001 Worachai Chaoweeraprasit (wchao)
-//  Added BiDi Algorithm :   10-10-2001 Tarek Mahmoud Sayed ([....])
+//  Added BiDi Algorithm :   10-10-2001 Tarek Mahmoud Sayed (Microsoft)
 //
 //------------------------------------------------------------------------
 

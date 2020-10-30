@@ -3531,7 +3531,7 @@ private:
     union
     {
         // !!!Note the number of bits used for m_Status... fields and the size of
-        // CurrentBindingState need to be kept in [....].
+        // CurrentBindingState need to be kept in sync.
         //
         struct
         {

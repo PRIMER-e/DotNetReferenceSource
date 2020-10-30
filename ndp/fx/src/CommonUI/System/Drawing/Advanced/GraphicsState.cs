@@ -17,7 +17,6 @@ namespace System.Drawing.Drawing2D {
     public sealed class GraphicsState : MarshalByRefObject {
         internal int nativeState;
 
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         internal GraphicsState(int nativeState) {
             this.nativeState = nativeState;
         }

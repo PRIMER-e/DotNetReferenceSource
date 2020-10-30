@@ -8,7 +8,7 @@
 //      result enumerators.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

@@ -17,6 +17,7 @@
 using System;
 using System.Globalization;
 using System.Windows;
+using MS.Internal;
 
 namespace System.Windows.Media.TextFormatting
 {
@@ -109,6 +110,17 @@ namespace System.Windows.Media.TextFormatting
         {
             get { return null; }
         }
+
+        /// <summary>
+        /// PixelsPerDip at which the text should be rendered.
+        /// </summary>
+        public double PixelsPerDip
+        {
+            get { return _pixelsPerDip; }
+            set { _pixelsPerDip = value; }
+        }
+
+        private double _pixelsPerDip = MS.Internal.FontCache.Util.PixelsPerDip;
     }
 }
 

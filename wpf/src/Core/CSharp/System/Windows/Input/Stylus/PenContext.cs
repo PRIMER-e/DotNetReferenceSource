@@ -248,7 +248,8 @@ namespace System.Windows.Input
             {
                 if (_penThreadPenContext.RemovePenContext(this))
                 {
-                    _pimcContext = null;  // Make sure we release wisptis ref if we removed it (ie - not in use).
+                    Marshal.ReleaseComObject(_pimcContext.Value); // Make sure we release the COM Object so wisptis doesn't send messages to it anymore
+                    _pimcContext = null;
                     
                     // Check if we need to shut down our pen thread.
                     if (shutdownWorkerThread)

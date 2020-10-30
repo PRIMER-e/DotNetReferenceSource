@@ -499,7 +499,7 @@ namespace System.Windows.Ink
 
         #region Object overrides
 
-        // NTRAID#T2-23041-2003/10/01-[....]: SPECISSUE: What should ExtendedPropertyCollection.GetHashCode return?
+        // NTRAID#T2-23041-2003/10/01-Microsoft: SPECISSUE: What should ExtendedPropertyCollection.GetHashCode return?
         /// <summary>Retrieve an integer-based value for using ExtendedPropertyCollection
         /// objects in a hash table as keys</summary>
         public override int GetHashCode()

@@ -8,7 +8,7 @@
 // Description: A TextContainer node representing a UIElement.
 //
 // History:  
-//  02/18/2004 : [....] - Created
+//  02/18/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

@@ -6,7 +6,7 @@
 //      Resource expression type enum
 // </summary>
 //
-// @owner  [....]
+// @owner  aconrad
 //---------------------------------------------------------------------
 namespace System.Data.Services.Client
 {

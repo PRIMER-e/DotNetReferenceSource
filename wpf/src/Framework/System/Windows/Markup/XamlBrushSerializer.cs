@@ -111,6 +111,24 @@ namespace System.Windows.Markup
             }
 
             KnownColor knownColor = KnownColors.ColorStringToKnownColor(stringValue);
+#if !PBTCOMPILER
+            // ***************** NOTE *****************
+            // This section under #if !PBTCOMPILER is not needed in XamlBrushSerializer.cs
+            // because XamlBrushSerializer.SerializeOn() is only compiled when PBTCOMPILER is set. 
+            // If this code were tried to be compiled in XamlBrushSerializer.cs, it wouldn't compile
+            // becuase of missing definition of s_knownSolidColorBrushStringCache. 
+            // This code is added in XamlBrushSerializer.cs nevertheless for maintaining consistency in the codebase
+            // between XamlBrushSerializer.SerializeOn() and SolidColorBrush.SerializeOn().
+            // ***************** NOTE *****************
+            lock (s_knownSolidColorBrushStringCache)
+            {
+                SolidColorBrush scb; 
+                if (s_knownSolidColorBrushStringCache.ContainsValue(stringValue))
+                {
+                    knownColor = KnownColors.ArgbStringToKnownColor(stringValue);
+                }
+            }
+#endif 
             if (knownColor != KnownColor.UnknownColor)
             {
                 // Serialize values of the type "Red", "Blue" and other names

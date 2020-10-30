@@ -56,8 +56,8 @@
 #define IDS_ERR_VBCORENETMODULECONFLICT 2042
 
 #define IDS_BANNER1                     10001
-// Don't use see bug 60618
-// #define IDS_BANNER1PART2                10002
+// Don't use see 
+
 #define IDS_BANNER2                     10003
 #define IDS_HELP_BANNER                 10004
 

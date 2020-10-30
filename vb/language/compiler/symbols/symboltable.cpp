@@ -509,7 +509,7 @@ ACCESS BCSYM_NamedRoot::GetAccessConsideringAssemblyContext
     // show up as Private and Protected respectively to anybody
     // outside the project.
     //
-    // [....]: Do not do this because t gives misleading error messages.
+    // Microsoft: Do not do this because t gives misleading error messages.
     //if (ContextualAccess == ACCESS_Friend)
     //{
     //    ContextualAccess = ACCESS_Private;
@@ -1253,7 +1253,7 @@ Bindable *BCSYM_Container::GetBindableInstance()
                                     SourceFileOfContainer->GetCurrentErrorTable() :
                                     NULL;
 
-        //8-29-2005: [....]
+        //8-29-2005: Microsoft
         //modified the assert to support binding synthetic types
         //during late phases of compilation
 #if HOSTED
@@ -1267,7 +1267,7 @@ Bindable *BCSYM_Container::GetBindableInstance()
                         "Why is a bindable instance being constructed in any other compilation state (sourcefile) ?");
 #endif
 
-        //8-29-2005: [....]
+        //8-29-2005: Microsoft
         //modified the assert to support binding synthetic types
         //during late phases of compilation
 #if HOSTED
@@ -2375,7 +2375,7 @@ BCSYM * BCSYM::DigThroughNamedType()
 
             Symbol = Symbol->PNamedType()->GetSymbol();
 
-            // [[....]] Can we really have a NamedType resolving to yet another NamedType?
+            // [Microsoft] Can we really have a NamedType resolving to yet another NamedType?
             // I couldn't come up with any scenario like that. Adding this Assert because this could make a 
             // difference for NoPia feature.
             AssertIfTrue(Symbol != NULL && Symbol->GetKind() == SYM_NamedType); 
@@ -3166,7 +3166,7 @@ inline bool BCSYM::IsBad() const
     {
         // There are times in declared when this is asked and NamedTypes have not yet been bound.
         // So the extra complexity here when dealing with NamedType element types.
-        // [....]:2008.09.21: consider moving IsArrayType() && PArrayType()->ChaseToNamedType()->IsBad()
+        // Microsoft:2008.09.21: consider moving IsArrayType() && PArrayType()->ChaseToNamedType()->IsBad()
         // into the main list below (for robustness, even though it's never used). If so, also 
         // add an assert VSASSERT(!IsArrayType() || !PArrayType()->ChaseToNamedType()->IsBad(), "unexpected: we shouldn't have created an array of bad element type.");
 
@@ -3818,7 +3818,7 @@ void BCSYM::GetBasicRep
                 }
             }
 
-            // NOTE:[....],3/2001,VS#229099, no initial value except for a constant variable.
+            // NOTE:Microsoft,3/2001,VS#229099, no initial value except for a constant variable.
             if (Variable->IsVariableWithValue() && Variable->IsConstant() && !Variable->IsNew())
             {
                 BCSYM_Expression* InitialValue = Variable->PVariableWithValue()->GetExpression();
@@ -4938,7 +4938,7 @@ unsigned BCSYM::CompareProcs
     // If the flags only differ by override, and exactly one of the methods (but not both)
     // are partial method declarations, then we let this through.
 
-    // [....]: port SP1 CL 2917151 to VS10.
+    // Microsoft: port SP1 CL 2917151 to VS10.
 
     if( ignoreOverloadDifferences &&
         !NonOverloadFlagsExist &&
@@ -6779,10 +6779,10 @@ void BCSYM_NamedRoot::GetQualifiedNameHelper
             {
                 BCSYM_Container *CurrentContainer = pContextContainer;
 
-                // Bug: VSWhidbey 111014
-                // For entities nested in generics, qualify all the way upto the top most enclosing
-                // generic irrespective of the ContextContainer. See bug 111014 for more details on
-                // why this is needed.
+                // 
+
+
+
 
                 if (pGenericBindingContext && pNamedCurrent->HasGenericParent())
                 {
@@ -6810,7 +6810,7 @@ void BCSYM_NamedRoot::GetQualifiedNameHelper
             else
             {
             
-                // MQ Bug 885280 "Wrong AutoComplete while using key word as a project name"
+                // MQ 
            
                 // When a keyword is a project name, AutoComplete does not wrap it with "[" "]". 
                 // If a keyword after a dot, then "[" "]" are not need. But there is always a root namespace(UnnamedNamespace) 
@@ -7399,10 +7399,10 @@ void BCSYM_NamedRoot::ReportError
             if (IsGenericBadNamedRoot())
             {
 
-                // MQ Bug 891543
-                // If the current symbol is BCSYM_GenericBadNamedRoot and it is marked by ERRID_TypeRefFromMetadataToVBUndef, GetName() must defined.
-                // Since in GetTypeByName, after BCSYM_GenericBadNamedRoot is created, SetBadName is called. So if GetName() returns NULL, then we can use
-                // GetBadName()
+                // MQ 
+
+
+
                 
                 ThrowIfFalse(GetName() != NULL || GetBadName() != NULL);
                 
@@ -7506,7 +7506,7 @@ Compiler *BCSYM_NamedRoot::GetCompiler()
     SymbolEntryFunction;
 #if IDE
     // Under the IDE there's only one compiler which is the compiler package
-    // NOTE:[....],5/2002, this assumption is not true. VSEVE#538167 tells
+    // NOTE:Microsoft,5/2002, this assumption is not true. VSEVE#538167 tells
     // us we should check NULL pointer.
     //
     // In the Debugger case, sometimes we might have multiple compilers. In order
@@ -7624,18 +7624,18 @@ BCSYM_GenericParam::IsReferenceType
 {
     SymbolEntryFunction;
     // The logic of this function matches TypeVarTypeDesc::ConstrainedAsObjRef() in the CLR's
-    // redbits\ndp\clr\src\vm\typedesc.cpp (see devdiv bug # 73604). The logic is as follows:
-    //
-    // The following must be true for a generic variable to be regarded as "constrained to be a reference type"
-    // (1) must have the reference type special constraint "As {..., Class, ...}"
-    // (2) or must have a base type constraint which is a reference type other than System.Object, System.ValueType, System.Enum,
-    //        "As {..., BaseRefType, ...}"
-    // (3) or must be constrained by another generic variable which is constrained to be a reference type
-    //        "(of T as U)(of U as BaseRefType)"
-    //     nb. for esoteric reasons, mentioned in redbits\...\typedesc.cpp, the case "(of T as U)(of U as Class)"
-    //     doesn't guarantee that T is a reference type. That's why checks 2 and 3 are delegated to a recursive
-    //     helper function.
-    //
+    // redbits\ndp\clr\src\vm\typedesc.cpp (see devdiv 
+
+
+
+
+
+
+
+
+
+
+
 
     // check (1):
     GenericConstraint * Constraint = GetConstraints();
@@ -9076,7 +9076,7 @@ BCSYM_NamedRoot *BCITER_CHILD::GetNextFromList(void)
 
 void BCITER_CHILD_ALL::Reset()
 {
-    /* [....]: I suppose this Assert was considered nice because it means we can validate that a type has members we will be able to import.
+    /* Microsoft: I suppose this Assert was considered nice because it means we can validate that a type has members we will be able to import.
        But the problem is that Asserting GetHash() begs the question because it has the side-effect of calling EnsureChildrenLoaded() which creates
        the very hash we are Asserting for.  It is bad to create a difference between debug/retail with regards to what metadata we have imported for a type.
        And we often call this function when the type has no hash table yet, i.e. GetHashRaw() will often be null because we call this routine
@@ -9917,7 +9917,7 @@ ConstantValue::Equals
     {
         case t_bool:
 
-            // VS #236672 ([....]):  because VB7 thinks true is 1 and VB6 thinks it is -1, we
+            // VS #236672 (Microsoft):  because VB7 thinks true is 1 and VB6 thinks it is -1, we
             // have to accomodate both.
             return ( Left.Integral != 0 ) == ( Right.Integral != 0 );
 
@@ -9978,7 +9978,7 @@ void ConstantValue::CopyConstant
 )
 {
     *pDestination = *this;
-    // [....] 9/8/2004:  Added some overflow checks.
+    // Microsoft 9/8/2004:  Added some overflow checks.
     if (TypeCode == t_string && String.Spelling && String.LengthInCharacters+1 > String.LengthInCharacters)
     {
         size_t SizeOfString = VBMath::Multiply((String.LengthInCharacters+1), sizeof(WCHAR));

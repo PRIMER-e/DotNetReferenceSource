@@ -7,7 +7,7 @@
 //     to disable xps documents and xapps are set.
 //  History:
 //     2005/06/09 - akaza Created the file 
-//     2007/09/20 - [....]
+//     2007/09/20 - Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

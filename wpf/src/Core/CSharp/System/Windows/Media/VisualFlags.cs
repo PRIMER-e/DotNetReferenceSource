@@ -30,7 +30,7 @@ namespace System.Windows.Media
         // visual tree needs to be re-rendered. Today we are doing this by posting a render queue item.
         ShouldPostRender                                = 0x00000002,
 
-        //
+        //TODO: missing comment
         IsUIElement                                     = 0x00000004,
 
         // For UIElement -- It's in VisualFlags so that it can be propagated through the
@@ -44,7 +44,7 @@ namespace System.Windows.Media
         // Used on ModelVisual3D to signify that its content bounds
         // cache is valid.
         //
-        // NTRAID#Longhorn-1614112-2006/05/25-[....] - Stop over-invalidating _bboxSubgraph
+        // NTRAID#Longhorn-1614112-2006/05/25-danlehen - Stop over-invalidating _bboxSubgraph
         //
         // We use this flag to maintain a separate cache of a ModelVisual3D’s content
         // bounds.  A better solution that would be both a 2D and 3D win would be to
@@ -89,9 +89,13 @@ namespace System.Windows.Media
         // Controls if the bitmap effect emulation layer is enabled. 
         BitmapEffectEmulationDisabled                   = 0x00040000,
 
-        // UNUSED FLAG                                  = 0x00080000,
+        // These two DPI flags are used to determine the DPI value of a Visual.
+        // Combination of these two flags point to 4 possible choices (DpiScaleFlag1 being the LSB) : Choice 0-2 directly 
+        // represent the index in the static array (in UIElement) on which DPI is stored. Choice 3 indicates that the index is stored 
+        // in an uncommon field on the Visual.
+        DpiScaleFlag1                                   = 0x00080000,
 
-        // UNUSED FLAG                                  = 0x00100000,
+        DpiScaleFlag2                                   = 0x00100000,
 
         //TreeLevel counter - occupies 11 bits. 
         //NOTE: The location of these bits in this ulong should be synchronized with 

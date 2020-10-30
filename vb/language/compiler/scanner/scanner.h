@@ -314,7 +314,7 @@ struct Token
     }
 
     // Is this token the end of the parse stream?
-    // [....]: Consider - shouldn't this also consider tkNONE the end of the stream?  When we parse
+    // Microsoft: Consider - shouldn't this also consider tkNONE the end of the stream?  When we parse
     // buffers that we conjure up (as is done in vberrorfixgen.cpp) we don't seem to get a TEOF, but
     // rather get a tkNONE at the end of the line and if you don't stop there, you just end up in
     // an infinite loop in those places that fail to get the next line.f 
@@ -930,7 +930,7 @@ protected:
     // keyword in the current line. During scanning XML, multiline statement 
     // lambda will be scanned in a single call of ScanVBLine(). Therefore, 
     // a stack is needed to track all Async or Iterator keywords.
-    // Bug Dev11 157250 can repro if not using stack.
+    // 
     Stack<MethodDeclKind> m_SeenAsyncOrIteratorInCurrentLine;
 
     MethodDeclKind m_MethodDeclKind;
@@ -973,7 +973,7 @@ protected:
     // InputStreamPosition) are available in the input stream.
     bool NotCloseToEndOfInput (unsigned WithinChars)
     {
-     /* [....]: dev10 654336 
+     /* Microsoft: dev10 654336 
         We need to check for m_InputStreamPosition < m_InputStreamEnd because
         of how the buffer pointers are determined in the scanner.  m_InputStreamEnd is determined by: 
         m_InputStreamEnd = InputStream + InputStreamLength in the scanner’s ctor.  So this means that m_InputStreamEnd 

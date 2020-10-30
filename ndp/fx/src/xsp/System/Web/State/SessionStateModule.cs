@@ -27,6 +27,7 @@ namespace System.Web.SessionState {
     using System.Globalization;
     using System.Security.Permissions;
     using System.Text;
+    using System.Threading.Tasks;
     using System.Web.Hosting;
     using System.Web.Management;
     using Microsoft.Win32;
@@ -111,7 +112,7 @@ namespace System.Web.SessionState {
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    public sealed class SessionStateModule : IHttpModule {
+    public sealed class SessionStateModule : ISessionStateModule {
 
         internal const string SQL_CONNECTION_STRING_DEFAULT = "data source=localhost;Integrated Security=SSPI";
         internal const string STATE_CONNECTION_STRING_DEFAULT = "tcpip=loopback:42424";
@@ -747,6 +748,41 @@ namespace System.Web.SessionState {
             return redirected;
         }
 
+        internal void EnsureStateStoreItemLocked() {
+            // DevDiv 665141: 
+            // Ensure ownership of the session state item here as the session ID now can be put on the wire (by Response.Flush)
+            // and the client can initiate a request before this one reaches OnReleaseState and thus causing a race condition.
+            // Note: It changes when we call into the Session Store provider. Now it may happen at BeginAcquireState instead of OnReleaseState.
+
+            // Item is locked yet here only if this is a new session
+            if (!_rqSessionStateNotFound) {
+                return;
+            }
+
+            Debug.Assert(_rqId != null, "Session State ID must exist");
+            Debug.Assert(_rqItem != null, "Session State item must exist");
+
+            ChangeImpersonation(_rqContext, false);
+
+            try {
+                // Store the item if already have been created
+                _store.SetAndReleaseItemExclusive(_rqContext, _rqId, _rqItem, _rqLockId, true /*_rqSessionStateNotFound*/);
+
+                // Lock Session State Item in Session State Store
+                LockSessionStateItem();
+            }
+            catch {
+                throw;
+            }
+            finally {
+                RestoreImpersonation();
+            }
+
+            // Mark as old session here. The SessionState is fully initialized, the item is locked
+            _rqSessionStateNotFound = false;
+            s_sessionEverSet = true;
+        }
+ 
         // Called when AcquireState is done.  This function will add the returned
         // SessionStateStore item to the request context.
         void CompleteAcquireState() {
@@ -757,7 +793,6 @@ namespace System.Web.SessionState {
                 "!(s_allowDelayedStateStoreItemCreation && s_configRegenerateExpiredSessionId)");
 
             try {
-
                 if (_rqItem != null) {
                     _rqSessionStateNotFound = false;
 
@@ -797,12 +832,14 @@ namespace System.Web.SessionState {
                 }
 
                 if (delayInitStateStoreItem) {
-                    SessionStateUtility.AddDelayedHttpSessionStateToContext(_rqContext, this);
                     _rqSessionState = s_delayedSessionState;
                 }
                 else {
                     InitStateStoreItem(true);
                 }
+
+                // Set session state module
+                SessionStateUtility.AddHttpSessionStateModuleToContext(_rqContext, this, delayInitStateStoreItem);
 
                 if (_rqIsNewSession) {
                     Debug.Trace("SessionStateModuleOnAcquireState", "Calling OnStart");
@@ -911,6 +948,19 @@ namespace System.Web.SessionState {
             }
 
             return _rqId;
+        }
+
+        void LockSessionStateItem() {
+            bool locked;
+            TimeSpan lockAge;
+
+            Debug.Assert(_rqId != null, "_rqId != null");
+            Debug.Assert(_rqChangeImpersonationRefCount > 0, "Must call ChangeImpersonation first");
+
+            if (!_rqReadonly) {
+                SessionStateStoreData storedItem = _store.GetItemExclusive(_rqContext, _rqId, out locked, out lockAge, out _rqLockId, out _rqActionFlags);
+                Debug.Assert(storedItem != null, "Must succeed in locking session state item.");
+            }
         }
 
         bool GetSessionStateItem() {
@@ -1397,15 +1447,19 @@ namespace System.Web.SessionState {
                 }
             }
         }
-
-        // DevDiv Bugs 151914: Release session state before executing child request
-        internal void EnsureReleaseState(HttpApplication app) {
+        
+        public void ReleaseSessionState(HttpContext context) {
             if (HttpRuntime.UseIntegratedPipeline && _acquireCalled && !_releaseCalled) {
                 try {
-                    OnReleaseState(app, null);
+                    OnReleaseState(context.ApplicationInstance, null);
                 }
                 catch { }
             }
+        }
+
+        public Task ReleaseSessionStateAsync(HttpContext context) {
+            ReleaseSessionState(context);
+            return TaskAsyncHelper.CompletedTask;
         }
     }
 }

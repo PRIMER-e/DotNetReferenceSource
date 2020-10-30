@@ -1344,19 +1344,19 @@ Semantics::DefAsgEvalBlock
             // Consider control variable initialized, set the slot.
 
 
-            // Dev11 Bug 150829, if ControlVariableReference is NULL, it should 
-            // skip DefAsgSet. Also assert if ControlVariableReference is NULL.
+            // Dev11 
+
             if (NULL != ControlVariableReference)
             {
                 DefAsgSet(ControlVariableReference, ClosureDepth);
             }
             else
             {
-                // Reactivate  Dev11 Bug 150829, if this assert is hit.          
+                // Reactivate  Dev11 
                 VSFAIL("Why ControlVariableReference is NULL?");
             }
 
-            // UNDOONE [....]. Do we really need to loop here. Goto's into 'for' blocks are not allowed.
+            // UNDOONE Microsoft. Do we really need to loop here. Goto's into 'for' blocks are not allowed.
             DWORD_PTR isLoopInBitSetChanged = 0;
             do
             {
@@ -2196,7 +2196,7 @@ ILTree::PILNode Semantics::GetFinallyBlockInTryGroup(ILTree::PILNode ptree)
     return NULL;    // reached the end of the enclossing block, no finally at all
 }
 
-//[....] LIST and SEQ should not be processed recursively. Otherwise
+//Microsoft LIST and SEQ should not be processed recursively. Otherwise
 //long sequences run the risk of causing stack overflow unnecessarily.
 void Semantics::IterativelyCheckRightSkewedTree(
     ILTree::PILNode ptree,
@@ -2263,7 +2263,7 @@ void Semantics::DefAsgCheckUse
                 SetLocalIsUsed(pvar);
                 bool isStruct = (pvar->GetType()->GetVtype() == t_struct);
 
-                // [....] 2009.06.23 -- consider extending this to also do the analysis for primitive value-types and for structs
+                // Microsoft 2009.06.23 -- consider extending this to also do the analysis for primitive value-types and for structs
                 // whose members are all structs. They'll need different error messages of course (since they won't result in null
                 // reference exceptions).
                 ERRID errid;
@@ -2502,8 +2502,8 @@ void Semantics::DefAsgCheckUse
             if (ptree->AsCallExpression().ptreeThis)
             {
                 // Make definite assignment handle the special case of initializing structures for the
-                // scenario in bug VSWhidbey 270278.
-                //
+                // scenario in 
+
                 if (ptree->AsCallExpression().ptreeThis->bilop == SX_ADR &&
                     ptree->AsCallExpression().ptreeThis->AsExpressionWithChildren().Left->bilop == SX_SYM &&
                     ptree->AsCallExpression().Left->bilop == SX_SYM &&
@@ -2528,8 +2528,8 @@ void Semantics::DefAsgCheckUse
             } // while ptreeList
 
             // Make definite assignment handle the special case of initializing structures for the
-            // scenario in bug VSWhidbey 270278.
-            //
+            // scenario in 
+
             if (pinitializedStruct)
             {
                 DefAsgSet(pinitializedStruct, ClosureDepth);
@@ -2602,7 +2602,7 @@ void Semantics::DefAsgCheckUse
     case SX_LAMBDA:
         if (ptree->AsLambdaExpression().IsStatementLambda)
         {
-            // CLOSURE STRATEGY ([....])
+            // CLOSURE STRATEGY (Microsoft)
             // Here we are evaluating a closure expression, specifically a multiline lambda closure, inside
             // the context of the procedure that created it, to find unused and unassigned variables.
             // (Later once the closure has been lifted to a _Lambda$__ method, we'll evaluate its

@@ -8,7 +8,7 @@
 // Description: A special TextContainer node used to parent deleted nodes.
 //
 // History:  
-//  02/18/2004 : [....] - Created
+//  02/18/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

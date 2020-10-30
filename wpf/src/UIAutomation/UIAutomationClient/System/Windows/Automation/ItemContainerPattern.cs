@@ -8,7 +8,7 @@
 // Description: Client-side wrapper for ItemContainer Pattern
 //
 // History:  
-//  10/22/2008 : [....] - created
+//  10/22/2008 : Microsoft - created
 //
 //---------------------------------------------------------------------------
 

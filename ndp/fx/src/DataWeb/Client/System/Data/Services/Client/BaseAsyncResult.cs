@@ -328,8 +328,8 @@ namespace System.Data.Services.Client
         /// </remarks>
         internal void HandleCompleted()
         {
-            // Dev10 Bug #524145: even if background thread of async operation encounters
-            // an "uncatchable" exception, do the minimum to unblock the async result.
+            // Dev10 
+
             if (this.IsCompletedInternally && (System.Threading.Interlocked.Exchange(ref this.userNotified, 1) == 0))
             {
                 this.abortable = null; // reset abort via CancelRequest

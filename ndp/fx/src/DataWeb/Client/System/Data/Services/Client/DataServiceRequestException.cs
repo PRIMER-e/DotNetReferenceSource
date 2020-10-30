@@ -6,7 +6,7 @@
 //      Exception class for batch requests and CUD operations.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

@@ -11,7 +11,7 @@
 //          Created
 //     2003/06/03-kusumav
 //          Ported to WCP
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

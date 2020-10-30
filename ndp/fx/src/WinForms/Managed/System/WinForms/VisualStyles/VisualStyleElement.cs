@@ -4830,11 +4830,11 @@ namespace System.Windows.Forms.VisualStyles {
             }
         } // END TREEVIEW
 
-        // In Dev10, we replace outline +/- glyphs in PropertyGrid with triangle glyphs (Dev10 Bug 573429).
-        // Therefore, a new element ExplorerTreeView.Glyph is defined here.
-        // Due to limited resouce and schedule, we don't define all elements now, 
-        // and keep it internal use only.
-        // We'll consider to publish it later when we have enough resource.
+        // In Dev10, we replace outline +/- glyphs in PropertyGrid with triangle glyphs (Dev10 
+
+
+
+
         internal static class ExplorerTreeView {
             private static readonly string className = "Explorer::TreeView";
 

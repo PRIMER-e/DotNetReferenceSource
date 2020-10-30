@@ -72,6 +72,20 @@ namespace System.Transactions
         // Unique value amongst all enlistments for a given internal transaction.
         int enlistmentId;
 
+        internal Guid DistributedTxId
+        {
+            get
+            {
+                Guid returnValue = Guid.Empty;
+
+                if (this.Transaction != null )
+                {
+                    returnValue = this.Transaction.DistributedTxId;
+                }
+                return returnValue;
+            }
+        }
+
         // Parent Enlistment Object
         Enlistment enlistment;
         PreparingEnlistment preparingEnlistment;
@@ -425,7 +439,7 @@ namespace System.Transactions
 
     //
     // Since RecoveringInternalEnlistment does not have a transaction it must take
-    // a separate object as its [....] root.
+    // a separate object as its sync root.
     //
     class RecoveringInternalEnlistment : DurableInternalEnlistment
     {

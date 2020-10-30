@@ -101,7 +101,7 @@ namespace MS.Internal.PtsHost
             // Update chunk information
             UpdateChunkInfo(arrayTableRowDesc);
 
-            MbpInfo mbp = MbpInfo.FromElement(TableParagraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(TableParagraph.Element, TableParagraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if(ParentFlowDirection != PageFlowDirection)
             {
@@ -215,7 +215,7 @@ namespace MS.Internal.PtsHost
                 return;
             }
 
-            MbpInfo mbpInfo = MbpInfo.FromElement(TableParagraph.Element);
+            MbpInfo mbpInfo = MbpInfo.FromElement(TableParagraph.Element, TableParagraph.StructuralCache.TextFormatterHost.PixelsPerDip);
             if (ThisFlowDirection != PageFlowDirection)
             {
                 mbpInfo.MirrorBP();
@@ -738,7 +738,7 @@ namespace MS.Internal.PtsHost
         [SecurityCritical, SecurityTreatAsSafe]
         internal ReadOnlyCollection<ParagraphResult> GetChildrenParagraphResults(out bool hasTextContent)
         {
-            MbpInfo mbpInfo = MbpInfo.FromElement(TableParagraph.Element);
+            MbpInfo mbpInfo = MbpInfo.FromElement(TableParagraph.Element, TableParagraph.StructuralCache.TextFormatterHost.PixelsPerDip);
             if (ThisFlowDirection != PageFlowDirection)
             {
                 mbpInfo.MirrorBP();
@@ -1032,7 +1032,7 @@ namespace MS.Internal.PtsHost
 
             if (QueryTableDetails(out arrayTableRowDesc, out fskupdTable, out rectTable))
             {
-                MbpInfo mbp = MbpInfo.FromElement(TableParagraph.Element);
+                MbpInfo mbp = MbpInfo.FromElement(TableParagraph.Element, TableParagraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
                 for (int iR = arrayTableRowDesc.Length - 1; iR >= 0; --iR)
                 {
@@ -1682,7 +1682,7 @@ namespace MS.Internal.PtsHost
                     cellParaClient.ValidateVisual();
 
                     if (    fskupdCell == PTS.FSKUPDATE.fskupdNew
-                        //  PTS bug is a suspect here - this is a temp workaround:
+                        //  PTS 
                         ||  VisualTreeHelper.GetParent(cellParaClient.Visual) == null   )
                     {
                         Visual currentParent = VisualTreeHelper.GetParent(cellParaClient.Visual) as Visual;
@@ -2105,7 +2105,7 @@ namespace MS.Internal.PtsHost
             }
 
             // Use durAvailable as width limit for MBP, and MaxWidth as height limit since height values will not be used
-            MbpInfo mbpInfo = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbpInfo = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             totalPadding = Table.InternalCellSpacing * Table.ColumnCount + mbpInfo.Margin.Left + mbpInfo.Border.Left + mbpInfo.Padding.Left + mbpInfo.Padding.Right + mbpInfo.Border.Right + mbpInfo.Margin.Right;
             _durMinWidth += totalPadding;
@@ -2138,7 +2138,7 @@ namespace MS.Internal.PtsHost
             double durTableUserWidth;
             double cellSpacing = Table.InternalCellSpacing;
             // Use durAvailable for MBP width limits and MaxWidth for height limits. Height values are not used in this calculation.
-            MbpInfo mbpInfo = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbpInfo = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             double durTotalPadding = cellSpacing * Table.ColumnCount + TextDpi.FromTextDpi(mbpInfo.MBPLeft + mbpInfo.MBPRight);
             int ptsNoWidthChanges = PTS.True;
@@ -2554,7 +2554,7 @@ namespace MS.Internal.PtsHost
         /// </summary>
         private int GetTableOffsetFirstRowTop()
         {
-            MbpInfo mbp = MbpInfo.FromElement(TableParagraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(TableParagraph.Element, TableParagraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             return IsFirstChunk ? mbp.BPTop : 0;
         }

@@ -11,7 +11,7 @@
 //              http://avalon/connecteddata/Specs/CollectionView.mht
 //
 // History:
-//  07/14/2003 : [....] - Created
+//  07/14/2003 : Microsoft - Created
 //  10/08/2004 : kenlai - Refactored into only CompositeCollectionView
 //
 //---------------------------------------------------------------------------
@@ -760,7 +760,7 @@ namespace MS.Internal.Data
                     }
 
                     UpdateCurrencyAfterAdd(flatNewIndex, x, false);
-                    args = new NotifyCollectionChangedEventArgs(args.Action, args.NewItems[0]);
+                    args = new NotifyCollectionChangedEventArgs(args.Action, args.NewItems[0], flatNewIndex);
                     break;
 
                 case NotifyCollectionChangedAction.Remove:
@@ -772,7 +772,7 @@ namespace MS.Internal.Data
                     }
 
                     UpdateCurrencyAfterRemove(flatOldIndex, x, false);
-                    args = new NotifyCollectionChangedEventArgs(args.Action, args.OldItems[0]);
+                    args = new NotifyCollectionChangedEventArgs(args.Action, args.OldItems[0], flatOldIndex);
                     break;
 
                 case NotifyCollectionChangedAction.Replace:
@@ -822,7 +822,7 @@ namespace MS.Internal.Data
         // determine whether the items have reliable hash codes
         internal override bool HasReliableHashCodes()
         {
-            // sample an item from each contained collection (bug 1738297)
+            // sample an item from each contained collection (
             for (int k=0, n=_collection.Count; k<n; ++k)
             {
                 CollectionContainer cc = _collection[k] as CollectionContainer;

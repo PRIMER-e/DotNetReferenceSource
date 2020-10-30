@@ -8,7 +8,7 @@
 //      Implements some helper functions.
 //
 // History:
-//  07/30/03: [....]:       Add header and some new functions.
+//  07/30/03: Microsoft:       Add header and some new functions.
 //
 //---------------------------------------------------------------------------
 
@@ -331,8 +331,8 @@ namespace MS.Internal
             // Issue a trace message if user defines both xxxStyle and xxxStyleSelector
             // (bugs 1007020, 1019240).  Only explicit local values or resource
             // references count;  data-bound or styled values don't count.
-            // Do not throw here (bug 1434271), because it's very confusing if the
-            // user tries to continue from this exception.
+            // Do not throw here (
+
             if (TraceData.IsEnabled)
             {
                 object styleSelector = d.ReadLocalValue(styleSelectorProperty);
@@ -363,8 +363,8 @@ namespace MS.Internal
             // Issue a trace message if user defines both xxxTemplate and xxxTemplateSelector
             // (bugs 1007020, 1019240).  Only explicit local values or resource
             // references count;  data-bound or templated values don't count.
-            // Do not throw here (bug 1434271), because it's very confusing if the
-            // user tries to continue from this exception.
+            // Do not throw here (
+
             if (TraceData.IsEnabled)
             {
                 if (IsTemplateSelectorDefined(templateSelectorProperty, d))
@@ -440,15 +440,15 @@ namespace MS.Internal
 
                     // Special case to display the selected item in a ComboBox, when
                     // the items are XmlNodes and the DisplayMemberPath is an XPath
-                    // that uses namespace prefixes (Dev10 bug 459976).  We need an
-                    // XmlNamespaceManager to map prefixes to namespaces, and in this
-                    // special case we should use the ComboBox itself, rather than any
-                    // surrounding ItemsControl.  There's no elegant way to detect
-                    // this situation;  the following code is a child of necessity.
-                    // It relies on the fact that the "selection box" is implemented
-                    // by a ContentPresenter in the ComboBox's control template, and
-                    // any ContentPresenter whose TemplatedParent is a ComboBox is
-                    // playing the role of "selection box".
+                    // that uses namespace prefixes (Dev10 
+
+
+
+
+
+
+
+
                     if (d is System.Windows.Controls.ContentPresenter)
                     {
                         System.Windows.Controls.ComboBox cb = element as System.Windows.Controls.ComboBox;
@@ -465,7 +465,7 @@ namespace MS.Internal
                     parent = VisualTreeHelper.GetParent(v);
 
                     // In ListView, we should rise through a GridView*RowPresenter
-                    // even though it is not the TemplatedParent (bug 1937470)
+                    // even though it is not the TemplatedParent (
                     element = parent as System.Windows.Controls.Primitives.GridViewRowPresenterBase;
                 }
                 else
@@ -907,47 +907,91 @@ namespace MS.Internal
         internal static void SetItemValuesOnContainer(DependencyObject owner, DependencyObject container, object item)
         {
             int[] dpIndices = ItemValueStorageIndices;
-            List<KeyValuePair<int, object>> itemValues = GetItemValues(owner, item);
+            List<KeyValuePair<int, object>> itemValues = GetItemValues(owner, item) ?? new List<KeyValuePair<int, object>>();
 
-            if (itemValues != null)
+            for (int j = 0; j < dpIndices.Length; j++)
             {
+                int dpIndex = dpIndices[j];
+                DependencyProperty dp = DependencyProperty.RegisteredPropertyList.List[dpIndex];
+                object value = DependencyProperty.UnsetValue;
+
                 for (int i = 0; i < itemValues.Count; i++)
                 {
-                    int dpIndex = itemValues[i].Key;
-
-                    for (int j = 0; j < dpIndices.Length; j++)
+                    if (itemValues[i].Key == dpIndex)
                     {
-                        if (dpIndex == dpIndices[j])
-                        {
-                            object value = itemValues[i].Value;
-                            EntryIndex entryIndex = container.LookupEntry(dpIndex);
-                            ModifiedItemValue modifiedItemValue = value as ModifiedItemValue;
-                            DependencyProperty dp = DependencyProperty.RegisteredPropertyList.List[dpIndex];
+                        value = itemValues[i].Value;
+                        break;
+                    }
+                }
 
-                            if (modifiedItemValue == null)
-                            {
-                                // set as local value
-                                if (dp != null)
-                                {
-                                    // for real properties, call SetValue so that the property's
-                                    // change-callback is called
-                                    container.SetValue(dp, value);
-                                }
-                                else
-                                {
-                                    // for "fake" properties (no corresponding DP - e.g. VSP's desired-size),
-                                    // set the property directly into the effective value table
-                                    container.SetEffectiveValue(entryIndex, null /*dp*/, dpIndex, null /*metadata*/, value, BaseValueSourceInternal.Local);
-                                }
-                            }
-                            else if (modifiedItemValue.IsCoercedWithCurrentValue)
-                            {
-                                // set as current-value
-                                container.SetCurrentValue(dp, modifiedItemValue.Value);
-                            }
-                            break;
+                if (dp != null)
+                {
+                    if (value != DependencyProperty.UnsetValue)
+                    {
+                        ModifiedItemValue modifiedItemValue = value as ModifiedItemValue;
+                        if (modifiedItemValue == null)
+                        {
+                            // for real properties, call SetValue so that the property's
+                            // change-callback is called
+                            container.SetValue(dp, value);
+                        }
+                        else if (modifiedItemValue.IsCoercedWithCurrentValue)
+                        {
+                            // set as current-value
+                            container.SetCurrentValue(dp, modifiedItemValue.Value);
                         }
                     }
+                    else if (container != container.GetValue(ItemContainerGenerator.ItemForItemContainerProperty))
+                    {
+                        // at this point we have
+                        //   a. a real property (dp != null)
+                        //   b. with no saved value (value != Unset)
+                        //   c. a generated container (container != item)
+                        // If the container has a local or current value for the
+                        // property, it came from a previous lifetime before the
+                        // container was recycled and should be discarded (DDVSO 106802)
+                        EntryIndex entryIndex = container.LookupEntry(dpIndex);
+                        EffectiveValueEntry entry = new EffectiveValueEntry(dp);
+
+                        // first discard the current value, if any.
+                        if (entryIndex.Found)
+                        {
+                            entry = container.EffectiveValues[entryIndex.Index];
+
+                            if (entry.IsCoercedWithCurrentValue)
+                            {
+                                // 
+                                container.InvalidateProperty(dp, preserveCurrentValue:false);
+
+                                // side-effects may move the entry - re-fetch it
+                                entryIndex = container.LookupEntry(dpIndex);
+
+                                if (entryIndex.Found)
+                                {
+                                    entry = container.EffectiveValues[entryIndex.Index];
+                                }
+                            }
+                        }
+
+                        // next discard values that were set in a previous lifetime
+                        if (entryIndex.Found)
+                        {
+                            if ((entry.BaseValueSourceInternal == BaseValueSourceInternal.Local ||
+                                 entry.BaseValueSourceInternal == BaseValueSourceInternal.ParentTemplate) &&
+                                 !entry.HasModifiers)
+                            {
+                                // this entry denotes a value from a previous lifetime - discard it
+                                container.ClearValue(dp);
+                            }
+                        }
+                    }
+                }
+                else if (value != DependencyProperty.UnsetValue)
+                {
+                    // for "fake" properties (no corresponding DP - e.g. VSP's desired-size),
+                    // set the property directly into the effective value table
+                    EntryIndex entryIndex = container.LookupEntry(dpIndex);
+                    container.SetEffectiveValue(entryIndex, null /*dp*/, dpIndex, null /*metadata*/, value, BaseValueSourceInternal.Local);
                 }
             }
         }
@@ -1036,12 +1080,16 @@ namespace MS.Internal
             }
         }
 
+        // *** DEAD CODE  Only used in VSP45 compat mode ***
         internal static void ApplyCorrectionFactorToPixelHeaderSize(
             ItemsControl scrollingItemsControl,
             FrameworkElement virtualizingElement,
             Panel itemsHost,
             ref Size headerSize)
         {
+            if (!VirtualizingStackPanel.IsVSP45Compat)
+                return;
+
             bool shouldApplyItemsCorrectionFactor = itemsHost != null && itemsHost.IsVisible;
             if (shouldApplyItemsCorrectionFactor)
             {
@@ -1054,13 +1102,18 @@ namespace MS.Internal
             }
             headerSize.Width = Math.Max(virtualizingElement.DesiredSize.Width, headerSize.Width);
         }
+        // *** END DEAD CODE ***
 
+        // *** DEAD CODE  Only used in VSP45 compat mode ***
         internal static HierarchicalVirtualizationItemDesiredSizes ApplyCorrectionFactorToItemDesiredSizes(
             FrameworkElement virtualizingElement,
             Panel itemsHost)
         {
             HierarchicalVirtualizationItemDesiredSizes itemDesiredSizes =
                 GroupItem.HierarchicalVirtualizationItemDesiredSizesField.GetValue(virtualizingElement);
+
+            if (!VirtualizingStackPanel.IsVSP45Compat)
+                return itemDesiredSizes;
 
             if (itemsHost != null && itemsHost.IsVisible)
             {
@@ -1127,13 +1180,18 @@ namespace MS.Internal
             }
             return itemDesiredSizes;
         }
+        // *** END DEAD CODE ***
 
+        // *** DEAD CODE  Only used in VSP45 compat mode ***
         internal static void ComputeCorrectionFactor(
             ItemsControl scrollingItemsControl,
             FrameworkElement virtualizingElement,
             Panel itemsHost,
             FrameworkElement headerElement)
         {
+            if (!VirtualizingStackPanel.IsVSP45Compat)
+                return;
+
             Rect parentRect = new Rect(new Point(), virtualizingElement.DesiredSize);
             bool remeasure = false;
 
@@ -1193,7 +1251,7 @@ namespace MS.Internal
                     }
                 }
             }
-        }
+        }// *** END DEAD CODE ***
 
         // This class reprents an item value that arises from a non-local source (e.g. current-value)
         private class ModifiedItemValue
@@ -1499,7 +1557,8 @@ namespace MS.Internal
             ItemValueStorageField.GlobalIndex,
             TreeViewItem.IsExpandedProperty.GlobalIndex,
             Expander.IsExpandedProperty.GlobalIndex,
-            GroupItem.DesiredPixelItemsSizeCorrectionFactorField.GlobalIndex};
+            GroupItem.DesiredPixelItemsSizeCorrectionFactorField.GlobalIndex,
+            VirtualizingStackPanel.ItemsHostInsetProperty.GlobalIndex};
     }
 }
 

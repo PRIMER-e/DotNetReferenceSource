@@ -695,15 +695,15 @@ Scanner::MakeToken
         {
             if (Result->m_Prev->m_TokenType == tkEND)
             {   
-                // Bug Dev11 135219
-                // Consider the following case,
-                // ...
-                // End Function + Await (Async Funtion ...)
                 // 
-                // If there is an End before Function, we need to 
-                // reset m_SeenAsyncOrInteratorInCurrentLine to 
-                // NoneKind, otherwise m_SeenAsyncOrIteratorInCurrent
-                // sets to NormalKind, which intreprets Await as an identifier.
+
+
+
+
+
+
+
+
                 if (!m_SeenAsyncOrIteratorInCurrentLine.Empty())
                 {
                     m_SeenAsyncOrIteratorInCurrentLine.Pop();
@@ -961,7 +961,7 @@ Scanner::EatWhitespace
 (
 )
 {
-    // [....]: consider: this function advances the stream position
+    // Microsoft: consider: this function advances the stream position
     // by at least one - so it assumes we are on whitespace.
     // We need an assert here like: VSASSERT( IsBlank( m_InputStreamPosition ))
     // The lack of which just bit me
@@ -1022,7 +1022,7 @@ Scanner::EatLineContinuation
                     EatNewline( *m_InputStreamPosition );
                     if ( m_InputStreamPosition < m_InputStreamEnd )
                     {
-                        if ( IsBlank( *m_InputStreamPosition )) // Bug 660280 - make sure we are on whitespace first
+                        if ( IsBlank( *m_InputStreamPosition )) // 
                         {
                             EatWhitespace();
                         }
@@ -1544,7 +1544,7 @@ Scanner::ScanBracketedXmlQualifiedName
         WCHAR c = PeekNextChar();
         if (c == '>')
         {
-            // Bug 39579: Must disambiguate 'e.<foo> >' case from shift right operator
+            // 
             MakeToken(tkGT, 1);
             m_InputStreamPosition++;
         }
@@ -2974,7 +2974,7 @@ Scanner::XmlCanFollow
         // if the token before < was an error then not enough information to decide.
         return false;
     default:
-        // todo - [....] - This fails for line continuation case.
+        // todo - Microsoft - This fails for line continuation case.
         // Need a way to remember dot from prior lines.
         // This catches . ID when ID is a keyword.
         // Fix - When last token on line is keyword save tkID instead of the tkKeyword.
@@ -3080,9 +3080,9 @@ Scanner::CheckXmlForStatement()
     else if (t->m_TokenType == tkSharp)
     {
 
-        // The following if branch is added to fix bug 729007
-        // This fix assumes that if m_Spelling is null then id 
-        // must not be a keyword.
+        // The following if branch is added to fix 
+
+
         
         AssertIfFalse( id->m_Id.m_Spelling != NULL || !id->IsKeyword() );
         if (id->m_Id.m_Spelling == NULL)
@@ -3340,7 +3340,7 @@ Scanner::FindEndOfWhitespace
 )
 {
     // ****************************************************
-    // [....]: !!!! MANAGED COMPILER PORT !!!!
+    // Microsoft: !!!! MANAGED COMPILER PORT !!!!
     // Aleksey added +1 to peekPos in the managed compiler.
     // I have fixed NotCloseToEndOfInput() so that should be
     // reverted in the managed compiler when porting changes
@@ -3365,7 +3365,7 @@ Scanner::CheckForAnotherBlankLine
     unsigned peekPos = FindEndOfWhitespace(0); // find the offset where we hit whitespace
     
     // ****************************************************
-    // [....]: !!!! MANAGED COMPILER PORT !!!!
+    // Microsoft: !!!! MANAGED COMPILER PORT !!!!
     // Aleksey added +1 to peekPos in the managed compiler.
     // I have fixed NotCloseToEndOfInput() so that should be
     // reverted in the managed compiler when porting changes
@@ -4276,7 +4276,7 @@ Scanner::GetNextLineHelper()
              m_State.m_LexicalState == VBImplicitLineContinuation ) && 
             !m_State.m_ExplicitLineContinuation)
         {
-            /* [....]: Consider - I've introduced the new state VBImplicitLineContinuation, which
+            /* Microsoft: Consider - I've introduced the new state VBImplicitLineContinuation, which
                I test for above.  The safest thing to do for now is to continue to clear the same flags
                we were clearing before.  We are at the end of file after all.  But in the colorizer case
                we get called per line.  So it's an interesting question about whether it would help the
@@ -4311,7 +4311,7 @@ Scanner::GetNextLineHelper()
             else // Dev10 #713909 The else is so we don't make two successive EOL's when there aren't two. But we do need to make sure all lines end in EOL
             {
                 MakeToken(tkEOL, 0)->m_EOL.m_NextLineAlreadyScanned = true; // Set this to true since we are tacking on the EOF for the 'next line', below
-                //Bug 760510: The following line is added to adjust m_LineStart, a newline is added here and it need to be "eaten".
+                //
                 if (m_LineStart != m_InputStreamPosition)
                 { 
                     // m_LineStart must be reset after insert tkEOF, since m_StartColumn of tkEOF depends on the current m_LineStart.
@@ -4361,11 +4361,11 @@ Scanner::ScanXmlMarkup()
 
     m_State.m_IsEndElement = false;
 
-    // todo: [....] - Ensure that state is set before creating the token.
+    // todo: Microsoft - Ensure that state is set before creating the token.
 
     while (NotAtEndOfInput()) {
 
-       // Bug #568994 fix assert as we can be called after processing xml or an xml expression hole (VBImplicitLinecontiuation)
+       // 
        VSASSERT(m_State.m_LexicalState == XmlMarkup || m_State.m_LexicalState == VBImplicitLineContinuation, "Wrong scanner state");
 
        WCHAR c = PeekNextChar();

@@ -114,7 +114,6 @@ namespace System.Drawing {
         ///       Tests whether two <see cref='System.Drawing.Size'/> objects are different.
         ///    </para>
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static bool operator !=(Size sz1, Size sz2) {
             return !(sz1 == sz2);
         }
@@ -135,7 +134,6 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public bool IsEmpty {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return width == 0 && height == 0;
             }
@@ -152,7 +150,6 @@ namespace System.Drawing {
         ///    </para>
         /// </devdoc>
         public int Width {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return width;
             }
@@ -170,7 +167,6 @@ namespace System.Drawing {
         /// <see cref='System.Drawing.Size'/>.
         /// </devdoc>
         public int Height {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return height;
             }
@@ -238,7 +234,7 @@ namespace System.Drawing {
             
             Size comp = (Size)obj;
             // Note value types can't have derived classes, so we don't need to 
-            // check the types of the objects here.  -- [....], 2/21/2001
+            // check the types of the objects here.  -- Microsoft, 2/21/2001
             return (comp.width == this.width) && 
                    (comp.height == this.height);
         }

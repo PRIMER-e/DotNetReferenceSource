@@ -216,7 +216,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1080729
 // Developer: a-shsolk
-// Reason: Resolved as Duplicate of Bug 1080457(Resolved as By Design by weibz) by [....]
+// Reason: Resolved as Duplicate of Bug 1080457(Resolved as By Design by weibz) by huwang
 //*************************************************************************************************************************** 
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope = "member", Target = "Microsoft.Build.Tasks.Windows.MarkupCompilePass2.GeneratedLocalizationFiles")]
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope = "member", Target = "Microsoft.Build.Tasks.Windows.CodeGenerator.GeneratedLocalizationFiles")]
@@ -489,7 +489,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //*************************************************************************************************************************
 // Bug ID: 1206698
-// Developer: [....]
+// Developer: dwaynen
 // Reason: complex code happens
 //*************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="MS.Internal.Markup.XamlTypeMapper.GetClrInfoForClass(System.Boolean,System.Type,System.String,System.String,System.String,System.Boolean,System.String&):System.Reflection.MemberInfo")]
@@ -497,7 +497,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //*************************************************************************************************************************
 // Bug ID: 1340736
-// Developer: [....]
+// Developer: dwaynen
 // Reason: Uid & arity are OK terms
 //*************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", Scope="resource", Target="MessageStringTable.resources", MessageId="Uid")]
@@ -513,7 +513,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //*************************************************************************************************************************
 // Bug ID: 1225797
-// Developer: [....]
+// Developer: dwaynen
 //*************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors", Scope="type", Target="System.Windows.ResourceReferenceKeyNotFoundException")]
 
@@ -537,14 +537,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 202854
-// Developer: [....]
+// Developer: bchapman
 // Reason: Shared code that is too difficult to ifdef out of PresentationBuildTasks build.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance","CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.Markup.XamlReaderHelper+XamlNodeCollectionProcessor.#get_IsMarkedForInsertion()")]
 
 //**************************************************************************************************************************
 // Bug ID: 202854
-// Developer: [....]
+// Developer: bchapman
 // Reason: Don't want to change the Code for such a small thing now.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design","CA1032:ImplementStandardExceptionConstructors", Scope="type", Target="MS.Internal.Markup.XamlReaderHelper+MappingParser+MappingParseError")]
@@ -552,7 +552,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 693186
-// Developer: [....]
+// Developer: wfaught
 // Reason: The spelling is part of the XAML URL namespace.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId="winfx", Scope="resource", Target="MessageStringTable.resources", Justification="The spelling is part of the XAML URL namespace.")]

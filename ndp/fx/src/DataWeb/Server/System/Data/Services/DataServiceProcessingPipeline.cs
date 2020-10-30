@@ -6,7 +6,7 @@
 //      Class declaring events for the data service processing pipeline
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

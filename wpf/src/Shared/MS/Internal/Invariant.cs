@@ -106,10 +106,10 @@ namespace MS.Internal
         ///                  Passing in false shuts down the process, even in
         ///                  partial trust.  However, not shutting down in
         ///                  partial trust is even worse: by definition a false condition
-        ///                  means we've hit a bug in avalon code and we cannot safely
-        ///                  continue.
-        /// </SecurityNote>
-        // [SecurityCritical, SecurityTreatAsSafe] - Removed for performance, OK so long as this class remains internal
+        ///                  means we've hit a 
+
+
+
         internal static void Assert(bool condition)
         {
             if (!condition)
@@ -138,10 +138,10 @@ namespace MS.Internal
         ///                  Passing in false shuts down the process, even in
         ///                  partial trust.  However, not shutting down in
         ///                  partial trust is even worse: by definition a false condition
-        ///                  means we've hit a bug in avalon code and we cannot safely
-        ///                  continue.
-        /// </SecurityNote>
-        // [SecurityCritical, SecurityTreatAsSafe] - Removed for performance, OK so long as this class remains internal
+        ///                  means we've hit a 
+
+
+
         internal static void Assert(bool condition, string invariantMessage)
         {
             if (!condition)
@@ -173,10 +173,10 @@ namespace MS.Internal
         ///                  Passing in false shuts down the process, even in
         ///                  partial trust.  However, not shutting down in
         ///                  partial trust is even worse: by definition a false condition
-        ///                  means we've hit a bug in avalon code and we cannot safely
-        ///                  continue.
-        /// </SecurityNote>
-        // [SecurityCritical, SecurityTreatAsSafe] - Removed for performance, OK so long as this class remains internal
+        ///                  means we've hit a 
+
+
+
         internal static void Assert(bool condition, string invariantMessage, string detailMessage)
         {
             if (!condition)

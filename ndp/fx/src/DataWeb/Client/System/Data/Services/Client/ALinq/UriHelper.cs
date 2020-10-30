@@ -6,7 +6,7 @@
 //      Utility function for writing out URIs
 // </summary>
 //
-// @owner  [....]
+// @owner  aconrad
 //---------------------------------------------------------------------
 namespace System.Data.Services.Client
 {

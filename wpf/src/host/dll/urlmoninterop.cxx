@@ -9,7 +9,7 @@
 //          
 //  History:
 //     2005/06/14 - Created the file 
-//     2007/09/20 - [....]
+//     2007/09/20 - Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

@@ -30,6 +30,7 @@ using TypedDataSetGenerator=System.Data.Design.TypedDataSetGenerator;
 internal class XsdBuildProvider: BuildProvider {
 
     [SuppressMessage("Microsoft.Security", "MSEC1207:UseXmlReaderForLoad", Justification = "Developer-controlled .xsd files in application directory are implicitly trusted by ASP.Net.")]
+    [SuppressMessage("Microsoft.Security.Xml", "CA3056:UseXmlReaderForLoad", Justification = "Developer-controlled .xml files in application directory are implicitly trusted by ASP.Net.")]
     public override void GenerateCode(AssemblyBuilder assemblyBuilder)  {
 #if !FEATURE_PAL // FEATURE_PAL does not support System.Data.Design
         // Get the namespace that we will use
@@ -49,8 +50,8 @@ internal class XsdBuildProvider: BuildProvider {
         CodeNamespace codeNamespace = new CodeNamespace(ns);
         codeCompileUnit.Namespaces.Add(codeNamespace);
 
-        // Devdiv 18365, Dev10 bug 444516 
-        // Call a different Generate method if compiler version is v3.5 or above
+        // Devdiv 18365, Dev10 
+
         bool isVer35OrAbove = CompilationUtil.IsCompilerVersion35OrAbove(assemblyBuilder.CodeDomProvider.GetType());
 
         if (isVer35OrAbove) {
@@ -72,8 +73,8 @@ internal class XsdBuildProvider: BuildProvider {
                 if (isVer35) {
                     var aName = a.GetName();
                     if (aName.Name == "System.Data.DataSetExtensions") {
-                        // Dev10 Bug 861688 - We need to specify v3.5 version so that the build system knows to use the v3.5 version
-                        // because the loaded assembly here is always v4.0
+                        // Dev10 
+
                         aName.Version = new Version(3, 5, 0, 0);
                         CompilationSection.RecordAssembly(aName.FullName, a);
                     }

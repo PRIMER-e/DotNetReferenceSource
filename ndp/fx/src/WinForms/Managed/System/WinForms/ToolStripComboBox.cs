@@ -485,7 +485,7 @@ namespace System.Windows.Forms {
         protected override void OnSubscribeControlEvents(Control control) {
             ComboBox comboBox = control as ComboBox;
             if (comboBox != null) {
-                // Please keep this alphabetized and in [....] with Unsubscribe
+                // Please keep this alphabetized and in sync with Unsubscribe
                 // 
                 comboBox.DropDown                   += new EventHandler(HandleDropDown);
                 comboBox.DropDownClosed             += new EventHandler(HandleDropDownClosed);
@@ -502,7 +502,7 @@ namespace System.Windows.Forms {
         protected override void OnUnsubscribeControlEvents(Control control) {
             ComboBox comboBox = control as ComboBox;
             if (comboBox != null) {
-               // Please keep this alphabetized and in [....] with Unsubscribe
+               // Please keep this alphabetized and in sync with Unsubscribe
                // 
                comboBox.DropDown                   -= new EventHandler(HandleDropDown);
                comboBox.DropDownClosed             -= new EventHandler(HandleDropDownClosed);
@@ -637,7 +637,9 @@ namespace System.Windows.Forms {
                         // if the width is odd - favor pushing it over one pixel right.
                         middle.X += (dropDownRect.Width % 2);
                         g.FillPolygon(brush, new Point[] {
-                            new Point(middle.X - 2, middle.Y - 1), new Point(middle.X + 3, middle.Y - 1), new Point(middle.X, middle.Y + 2)
+                            new Point(middle.X - FlatComboAdapter.Offset2X, middle.Y - 1), 
+                            new Point(middle.X + FlatComboAdapter.Offset2X + 1, middle.Y - 1), 
+                            new Point(middle.X, middle.Y + FlatComboAdapter.Offset2Y)
                         });
 
                     }

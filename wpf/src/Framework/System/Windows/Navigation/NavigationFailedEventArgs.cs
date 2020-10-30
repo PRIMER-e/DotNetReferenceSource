@@ -14,7 +14,7 @@
 //              This event is fired on navigation container and refired on the NavigationApplication
 //
 // History:
-//  06/10/06: [....]   Created
+//  06/10/06: Microsoft   Created
 //
 //-------------------------------------------------------------------------------------------------
 

@@ -6,7 +6,7 @@
 //      Exception class for server errors.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

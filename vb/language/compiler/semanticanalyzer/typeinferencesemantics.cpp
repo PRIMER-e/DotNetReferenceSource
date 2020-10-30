@@ -603,7 +603,7 @@ AlgorithmStart:
             InferenceNode* current = (InferenceNode*)(childNodes->GetFirst()->Data());
             if (current->InferTypeAndPropagateHints(reportInferenceAssumptions, pSemantics, ppAsyncSubArgumentListAmbiguity))
             {
-                //consider: [....]
+                //consider: Microsoft
                 //              We should be asserting here, becuase this code is unreachable..
                 //              There are two implementations of InferTypeAndPropagateHints,
                 //              one for "named nodes" (nodes corresponding to arguments) and another
@@ -614,14 +614,14 @@ AlgorithmStart:
                 //              to happen the node must be inside a strongly connected component with more than one node 
                 //              (i.e. it must be involved in a cycle). If it wasn't we would be visiting it in
                 //              topological order, which means all incoming edges should have already been visited.
-                //              That means that if we reach this code, there is probably a bug in the traversal process. We
-                //              don't want to silently mask the bug. At a minimum we should either assert or generate a compiler error.
-                //              
-                //              An argument could be made that it is good to have this becuase InferTypeandPropagateHints is virtual,
-                //              and should some new node type be added it's implementation may return true, and so this would follow that path.
-                //              That argument does make some tiny amount of sense, and so we should keep this code here to make it easier
-                //              to make any such modifications in the future. However, we still need an assert to guard against graph traversal bugs, 
-                //              and in the event that such changes are made, leave it to the modifier to remove the assert if necessary.
+                //              That means that if we reach this code, there is probably a 
+
+
+
+
+
+
+
                 restartAlgorithm = true;
                 break;
             }
@@ -888,7 +888,7 @@ Semantics::InferenceGraph::AddLambdaToGraph
             }
             else
             {
-               //consider: [....]
+               //consider: Microsoft
                 //              This code is not necessary.
                 //              When delegateParameterType is null this method should have no effect,
                 //              because RefersToGenericParameter(NULL) will return false and AddTypeToGraph only
@@ -976,7 +976,7 @@ Semantics::InferenceGraph::AddAddressOfToGraph
             }
             else
             {
-                //consider: [....]
+                //consider: Microsoft
                 //              This code is not necessary.
                 //              When delegateParameterType is null this method should have no effect,
                 //              because RefersToGenericParameter(NULL) will return false and AddTypeToGraph only
@@ -1326,14 +1326,14 @@ Semantics::InferenceTypeNode::InferTypeAndPropagateHints
 
         if (dominantTypeDataList.Count() == 1)
         {
-            //consider: [....]
+            //consider: Microsoft
             //              This seems dangerous to me, that we 
             //              remove error reasons here.
             //              Instead of clearing these, what we should be doing is 
             //              asserting that they are not set.
             //              If for some reason they get set, but 
-            //              we enter this path, then we have a bug.
-            //              This code is just masking any such bugs.
+            //              we enter this path, then we have a 
+
             errorReasons &= ~InferenceErrorReasonsAmbiguous;
             errorReasons &= ~InferenceErrorReasonsNoBest;
 
@@ -1351,7 +1351,7 @@ Semantics::InferenceTypeNode::InferTypeAndPropagateHints
             }
             else
             {
-                //consider: [....]
+                //consider: Microsoft
                 //              This code appears to be operating under the assumption that if the error reason is not due to an 
                 //              ambiguity then it must be because there was no best match.
                 //              We should be asserting here to verify that assertion.
@@ -1367,7 +1367,7 @@ Semantics::InferenceTypeNode::InferTypeAndPropagateHints
 
     if (m_InferredType!=NULL)
     {
-        //consider: [....]
+        //consider: Microsoft
         //              Why do we set m_InferenceComplete here, when it just 
         //              gets overriden after the "if" statement?
         m_InferenceComplete = GetTypeInference()->RegisterInferredType(
@@ -1474,7 +1474,7 @@ Semantics::InferenceTypeNode::VerifyTypeAssertions()
         GraphNode*      assertedNode = assertionIter.Current();
         if (assertedNode->m_NodeType == NamedNodeType)
         {
-            //consider: [....]
+            //consider: Microsoft
             //              We should look into removing this assert.
             //              I searched through the entire compiler code base, and we do not 
             //              check this flag anywhere, so I'm not sure that the point of asserting here is.
@@ -1643,14 +1643,14 @@ Semantics::InferenceNamedNode::InferTypeAndPropagateHints
 
                             // 
                             // Port SP1 CL 2941063 to VS10
-                            // Bug 153317
-                            // If reportInferenceAssumptions is true then report an error if Option Strict On
-                            // or a warning if Option Strict Off because we have no hints about the lambda parameter
-                            // and we are assuming that it is an object. This flag was threaded down from 
-                            // Semantics::MatchArguments. The flag is necessary because m_ReportErrors is false
-                            // when we want to report this error, during type inference.
-                            // e.g. "Sub f(Of T, U)(ByVal x As Func(Of T, U))" invoked with "f(function(z)z)"
-                            // needs to put the squiggly on the first "z".
+                            // 
+
+
+
+
+
+
+
                             if (reportInferenceAssumptions)
                             {
                                 BackupValue<bool> backup_report_errors(&(pSemantics->m_ReportErrors));

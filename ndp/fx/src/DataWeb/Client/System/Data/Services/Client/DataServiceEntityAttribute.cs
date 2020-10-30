@@ -6,7 +6,7 @@
 //      Clr Attribute mark a class as entity
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 namespace System.Data.Services.Common
 {

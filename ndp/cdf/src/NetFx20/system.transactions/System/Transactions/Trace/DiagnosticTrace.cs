@@ -706,8 +706,8 @@ namespace System.Transactions.Diagnostics
                 foreach (object dataItem in exception.Data.Keys)
                 {
                     xml.WriteStartElement(DiagnosticStrings.DataTag);
-                    //Fix for Watson bug CSDMain 136718 - Add the null check incase the value is null. Only if both the key and value are non null, 
-                    //write out the xml elements corresponding to them
+                    //Fix for Watson 
+
                     if (dataItem != null && exception.Data[dataItem] != null)
                     {
                         xml.WriteElementString(DiagnosticStrings.KeyTag, DiagnosticTrace.XmlEncode(dataItem.ToString()));

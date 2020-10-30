@@ -70,10 +70,28 @@ namespace System.Windows.Forms
         //private object keyUsedDuringAutoSize    = null;
         //private object valueUsedDuringAutoSize  = null;
 
+        private static bool isScalingInitialized = false;
+        private static int OFFSET_2PIXELS = 2;
+        private static int offset2X = OFFSET_2PIXELS;
+        private static int offset2Y = OFFSET_2PIXELS;
+        private static byte nonXPTriangleHeight = DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleHeight;
+        private static byte nonXPTriangleWidth = DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleWidth;
+
         /// <include file='doc\DataGridViewComboBoxCell.uex' path='docs/doc[@for="DataGridViewComboBoxCell.DataGridViewComboBoxCell"]/*' />
         public DataGridViewComboBoxCell()
         {
             this.flags = DATAGRIDVIEWCOMBOBOXCELL_autoComplete;
+            if (!isScalingInitialized) 
+            {
+                if (DpiHelper.IsScalingRequired) 
+                {
+                    offset2X = DpiHelper.LogicalToDeviceUnitsX(OFFSET_2PIXELS);
+                    offset2Y = DpiHelper.LogicalToDeviceUnitsY(OFFSET_2PIXELS);
+                    nonXPTriangleWidth = (byte)DpiHelper.LogicalToDeviceUnitsX(DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleWidth);
+                    nonXPTriangleHeight = (byte)DpiHelper.LogicalToDeviceUnitsY(DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleHeight);
+                }
+                isScalingInitialized = true;
+            }
         }
 
         /// <include file='doc\DataGridViewComboBoxCell.uex' path='docs/doc[@for="DataGridViewComboBoxCell.AutoComplete"]/*' />
@@ -828,7 +846,7 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
+                // SECREVIEW : Late-binding does not represent a security thread, see 
                 dataGridViewCell = (DataGridViewComboBoxCell)System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -1111,8 +1129,8 @@ namespace System.Windows.Forms
             if (value == null || ((this.ValueType != null && !this.ValueType.IsAssignableFrom(value.GetType())) && value != System.DBNull.Value))
             {
                 // Do not raise the DataError event if the value is null and the row is the 'new row'.
-                // VS Whidbey bug 324054: In fact, unlike for other cell types, do not raise DataError event at all if value is null and therefore invalid.
-                // Using the DataGridViewComboBoxCell.DefaultNewRowValue property would be wrong.
+                // VS Whidbey 
+
                 if (value == null /* && ((this.DataGridView != null && rowIndex == this.DataGridView.NewRowIndex) || this.Items.Count == 0)*/)
                 {
                     // Debug.Assert(rowIndex != -1 || this.Items.Count == 0);
@@ -1430,7 +1448,7 @@ namespace System.Windows.Forms
                 if (this.DataGridView.ShowCellErrors)
                 {
                     // Making sure that there is enough room for the potential error icon
-                    preferredSize.Width = Math.Max(preferredSize.Width, borderAndPaddingWidths + SystemInformation.HorizontalScrollBarThumbWidth + 1 + DATAGRIDVIEWCELL_iconMarginWidth * 2 + DATAGRIDVIEWCELL_iconsWidth);
+                    preferredSize.Width = Math.Max(preferredSize.Width, borderAndPaddingWidths + SystemInformation.HorizontalScrollBarThumbWidth + 1 + DATAGRIDVIEWCELL_iconMarginWidth * 2 + iconsWidth);
                 }
             }
             if (freeDimension != DataGridViewFreeDimension.Width)
@@ -1447,7 +1465,7 @@ namespace System.Windows.Forms
                 if (this.DataGridView.ShowCellErrors)
                 {
                     // Making sure that there is enough room for the potential error icon
-                    preferredSize.Height = Math.Max(preferredSize.Height, borderAndPaddingHeights + DATAGRIDVIEWCELL_iconMarginHeight * 2 + DATAGRIDVIEWCELL_iconsHeight);
+                    preferredSize.Height = Math.Max(preferredSize.Height, borderAndPaddingHeights + DATAGRIDVIEWCELL_iconMarginHeight * 2 + iconsHeight);
                 }
             }
             return preferredSize;
@@ -2399,10 +2417,12 @@ namespace System.Windows.Forms
                                 // if the height is odd - favor pushing it over one pixel down.
                                 middle.Y += (dropRect.Height % 2);
 
-                                g.FillPolygon(SystemBrushes.ControlText, new Point[] {
-                                new Point(middle.X - 2, middle.Y - 1),
-                                new Point(middle.X + 3, middle.Y - 1),
-                                new Point(middle.X, middle.Y + 2) });
+                                g.FillPolygon(SystemBrushes.ControlText, new Point[] 
+                                {
+                                    new Point(middle.X - offset2X, middle.Y - 1),
+                                    new Point(middle.X + offset2X + 1, middle.Y - 1),
+                                    new Point(middle.X, middle.Y + offset2Y) 
+                                });
                             }
                             else if (!paintXPThemes)
                             {
@@ -2413,13 +2433,13 @@ namespace System.Windows.Forms
                                 dropRect.Width++;
 
                                 Point middle = new Point(dropRect.Left + (dropRect.Width - 1) / 2,
-                                        dropRect.Top + (dropRect.Height + DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleHeight) / 2);
+                                        dropRect.Top + (dropRect.Height + nonXPTriangleHeight) / 2);
                                 // if the width is event - favor pushing it over one pixel right.
                                 middle.X += ((dropRect.Width + 1) % 2);
                                 // if the height is odd - favor pushing it over one pixel down.
                                 middle.Y += (dropRect.Height % 2);
-                                Point pt1 = new Point(middle.X - (DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleWidth - 1) / 2, middle.Y - DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleHeight);
-                                Point pt2 = new Point(middle.X + (DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleWidth - 1) / 2, middle.Y - DATAGRIDVIEWCOMBOBOXCELL_nonXPTriangleHeight);
+                                Point pt1 = new Point(middle.X - (nonXPTriangleWidth - 1) / 2, middle.Y - nonXPTriangleHeight);
+                                Point pt2 = new Point(middle.X + (nonXPTriangleWidth - 1) / 2, middle.Y - nonXPTriangleHeight);
                                 g.FillPolygon(SystemBrushes.ControlText, new Point[] { pt1, pt2, middle });
                                 // quirk in GDI+ : if we dont draw the line below then the top right most pixel of the DropDown triangle will not paint
                                 // Would think that g.FillPolygon would have painted that...

@@ -30,6 +30,7 @@ namespace MS.Win32
         public const string PresentationHostDll = "PresentationHost_v0400.dll";
         public const string PresentationNativeDll = "PresentationNative_v0400.dll";
         public const string Psapi = "psapi.dll";
+        public const string Shcore = "shcore.dll";
         public const string Shell32 = "shell32.dll";
         public const string Shfolder = "shfolder.dll";
         public const string Urlmon = "urlmon.dll";

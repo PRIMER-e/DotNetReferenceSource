@@ -8,7 +8,7 @@
 //              consumed by TextFormatter.
 //
 // History:
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 

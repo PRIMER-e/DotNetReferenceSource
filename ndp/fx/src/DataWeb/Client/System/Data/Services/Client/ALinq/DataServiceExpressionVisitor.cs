@@ -6,7 +6,7 @@
 //      Expression Visitors for Linq to URI translator
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 namespace System.Data.Services.Client
 {

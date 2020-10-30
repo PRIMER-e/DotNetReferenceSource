@@ -5,9 +5,9 @@
 // Description: Base class for content in text based FrameworkElement.
 //
 // History:
-//  07/2003    : [....] - Created
-//  02/18/2004: [....] - new TOM method implementation for TextContainer rewrite.
-//  10/28/2004 : [....] - ContentElements refactoring.
+//  07/2003    : Microsoft - Created
+//  02/18/2004: Microsoft - new TOM method implementation for TextContainer rewrite.
+//  10/28/2004 : Microsoft - ContentElements refactoring.
 //
 //---------------------------------------------------------------------------
 

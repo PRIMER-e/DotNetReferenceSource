@@ -80,7 +80,6 @@ namespace System.Drawing {
         ///    the specified location and size.
         /// </devdoc>
         // !! Not in C++ version
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static Rectangle FromLTRB(int left, int top, int right, int bottom) {
             return new Rectangle(left,
                                  top,
@@ -97,11 +96,9 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public Point Location {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return new Point(X, Y);
             }
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             set {
                 X = value.X;
                 Y = value.Y;
@@ -114,11 +111,9 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public Size Size {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return new Size(Width, Height);
             }
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             set {
                 this.Width = value.Width;
                 this.Height = value.Height;
@@ -217,7 +212,6 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public int Right {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return X + Width;
             }
@@ -232,7 +226,6 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public int Bottom {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return Y + Height;
             }
@@ -294,7 +287,6 @@ namespace System.Drawing {
         ///       objects differ in location or size.
         ///    </para>
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static bool operator !=(Rectangle left, Rectangle right) {
             return !(left == right);
         }
@@ -397,7 +389,6 @@ namespace System.Drawing {
         ///       by the specified amount.
         ///    </para>
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public void Inflate(int width, int height) {
             this.X -= width;
             this.Y -= height;
@@ -501,7 +492,6 @@ namespace System.Drawing {
         /// <devdoc>
         ///    Adjusts the location of this rectangle by the specified amount.
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public void Offset(int x, int y) {
             this.X += x;
             this.Y += y;

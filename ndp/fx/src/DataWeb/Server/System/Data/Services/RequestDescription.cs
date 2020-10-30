@@ -6,7 +6,7 @@
 //      Provides a description of the request a client has submitted.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

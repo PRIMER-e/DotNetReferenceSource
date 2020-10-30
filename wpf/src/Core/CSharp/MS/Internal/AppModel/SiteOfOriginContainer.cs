@@ -12,7 +12,7 @@
 // the NotSupportedException.
 // 
 // History:
-//  06/16/2005: [....] - Initial creation. 
+//  06/16/2005: Microsoft - Initial creation. 
 //-----------------------------------------------------------------------------
 
 using System;

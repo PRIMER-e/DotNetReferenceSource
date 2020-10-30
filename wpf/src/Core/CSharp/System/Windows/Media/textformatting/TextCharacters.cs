@@ -243,6 +243,7 @@ namespace System.Windows.Media.TextFormatting
                 if (textRunProperties.Typeface.CheckFastPathNominalGlyphs(
                     new CharacterBufferRange(characterBufferReference, length),
                     textRunProperties.FontRenderingEmSize,
+                    (float)textRunProperties.PixelsPerDip,
                     1.0,
                     double.MaxValue,    // widthMax
                     true,               // keepAWord

@@ -47,18 +47,17 @@ namespace System.Web.SessionState {
             }
         }
 
-        static internal void AddDelayedHttpSessionStateToContext(HttpContext context, SessionStateModule module) {
-            context.AddDelayedHttpSessionState(module);
+        static internal void AddHttpSessionStateModuleToContext(HttpContext context, SessionStateModule module, bool delayed) {
+            context.AddHttpSessionStateModule(module, delayed);
         }
 
         static internal void RemoveHttpSessionStateFromContext(HttpContext context, bool delayed) {
-            if (delayed) {
-                context.RemoveDelayedHttpSessionState();
-            }
-            else {
+            if (!delayed) {
                 context.Items.Remove(SESSION_KEY);
             }
-        }
+
+            context.RemoveHttpSessionStateModule();
+         }
 
         // Called by custom session state module
         static public void RemoveHttpSessionStateFromContext(HttpContext context) {
@@ -72,6 +71,24 @@ namespace System.Web.SessionState {
 
         static public HttpStaticObjectsCollection GetSessionStaticObjects(HttpContext context) {
             return context.Application.SessionStaticObjects.Clone();
+        }
+
+        /// <summary>
+        /// Gets a value that indicates whether session state is required by the context.
+        /// </summary>
+        /// <param name="context">The HttpContext.</param>
+        /// <returns>A value that indicates whether session state is required by the context.</returns>
+        static public bool IsSessionStateRequired(HttpContext context) {
+            return context.RequiresSessionState;
+        }
+
+        /// <summary>
+        /// Gets a value that indicates whether session state is read-only in the context.
+        /// </summary>
+        /// <param name="context">The HttpContext.</param>
+        /// <returns>A value that indicates whether session state is read-only in the context.</returns>
+        static public bool IsSessionStateReadOnly(HttpContext context) {
+            return context.ReadOnlySessionState;
         }
 
         internal static SessionStateStoreData CreateLegitStoreData(HttpContext context,

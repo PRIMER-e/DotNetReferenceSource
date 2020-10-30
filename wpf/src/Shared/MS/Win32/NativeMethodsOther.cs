@@ -755,6 +755,8 @@ namespace MS.Win32
 
         internal const int CREATE_ALWAYS   = 2;
 
+        internal const int PROCESS_ALL_ACCESS = (int)(STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFF);
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public class WNDCLASSEX_D
         {

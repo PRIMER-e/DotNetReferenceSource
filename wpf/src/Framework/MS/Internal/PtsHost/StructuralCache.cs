@@ -214,6 +214,14 @@ namespace MS.Internal.PtsHost
             _backgroundFormatInfo.ThrottleBackgroundFormatting();
         }
 
+        /// <summary>
+        /// Whether PtsContext has been set
+        /// </summary>
+        internal bool HasPtsContext()
+        {
+            return _ptsContext != null;
+        }
+
         #endregion Internal Methods 
 
         // ------------------------------------------------------------------
@@ -481,7 +489,8 @@ namespace MS.Internal.PtsHost
             {
                 TextFormattingMode textFormattingMode = TextOptions.GetTextFormattingMode(this.PropertyOwner);
                 _ptsContext = new PtsContext(true, textFormattingMode);
-                _textFormatterHost = new TextFormatterHost(_ptsContext.TextFormatter, textFormattingMode);
+                _textFormatterHost = new TextFormatterHost(_ptsContext.TextFormatter, textFormattingMode, _owner.PixelsPerDip);
+
                 _section = new MS.Internal.PtsHost.Section(this);
             }
         }

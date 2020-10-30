@@ -267,7 +267,7 @@ namespace System.Windows.Documents
             FixedPage fp = _fixedTextBuilder.FixedTextContainer.FixedDocument.GetFixedPage(PageIndex);
             FormattedText ft;
             Point prevTextPoint = new Point(0, 0);
-
+            DpiScale dpi = fp.GetDpi();
             foreach (FixedNode currentFixedNode in fixedNodes)
             {
                 if (currentFixedNode.Page == FixedFlowMap.FixedOrderStartPage)
@@ -278,7 +278,8 @@ namespace System.Windows.Documents
                                             FlowDirection.LeftToRight,
                                             new Typeface("Courier New"), 
                                             8,
-                                            Brushes.DarkViolet);
+                                            Brushes.DarkViolet,
+                                            dpi.PixelsPerDip);
                     dc.DrawText(ft, prevTextPoint);
                     continue;
                 }
@@ -291,7 +292,8 @@ namespace System.Windows.Documents
                                             FlowDirection.LeftToRight,
                                             new Typeface("Courier New"), 
                                             8,
-                                            Brushes.DarkViolet);
+                                            Brushes.DarkViolet,
+                                            dpi.PixelsPerDip);
                     dc.DrawText(ft, prevTextPoint);
                     continue;
                 }
@@ -307,7 +309,8 @@ namespace System.Windows.Documents
                                             FlowDirection.LeftToRight,
                                             new Typeface("Courier New"),
                                             8,
-                                            Brushes.DarkViolet);
+                                            Brushes.DarkViolet,
+                                            dpi.PixelsPerDip);
                     dc.DrawText(ft, prevTextPoint);
                     continue;
                 }
@@ -343,7 +346,8 @@ namespace System.Windows.Documents
                                             FlowDirection.LeftToRight,
                                             new Typeface("Courier New"),
                                             8,
-                                            Brushes.DarkViolet);
+                                            Brushes.DarkViolet,
+                                            dpi.PixelsPerDip);
                     dc.DrawText(ft, prevTextPoint);
                     continue;
                 }
@@ -376,7 +380,8 @@ namespace System.Windows.Documents
                                             FlowDirection.LeftToRight,
                                             new Typeface("Courier New"),
                                             8,
-                                            Brushes.DarkViolet);
+                                            Brushes.DarkViolet,
+                                            dpi.PixelsPerDip);
                     dc.DrawText(ft, prevTextPoint);
                     continue;
                 }
@@ -421,7 +426,8 @@ namespace System.Windows.Documents
                                             FlowDirection.LeftToRight,
                                             new Typeface("Courier New"),
                                             8,
-                                            Brushes.DarkViolet);
+                                            Brushes.DarkViolet,
+                                            dpi.PixelsPerDip);
                     dc.DrawText(ft, prevTextPoint);
                     continue;
                 }
@@ -436,7 +442,8 @@ namespace System.Windows.Documents
                                         FlowDirection.LeftToRight,
                                         new Typeface("Courier New"),
                                         8,
-                                        Brushes.DarkViolet);
+                                        Brushes.DarkViolet,
+                                        dpi.PixelsPerDip);
                 dc.DrawText(ft, prevTextPoint);
             }
         }
@@ -458,6 +465,7 @@ namespace System.Windows.Documents
             //Iterate through flow node to draw Transparent Rect and draw its index
             //
             Point prevTextPoint=new Point(0, 0);
+            DpiScale dpi = fp.GetDpi();
             for (int i = FlowStart.Fp; i <= FlowEnd.Fp; i++)
             {
                 FlowNode fn = _fixedTextBuilder.FixedFlowMap[i];
@@ -484,7 +492,8 @@ namespace System.Windows.Documents
                                                 FlowDirection.LeftToRight,
                                                 new Typeface("Courier New"), 
                                                 8,
-                                                Brushes.DarkGreen);
+                                                Brushes.DarkGreen,
+                                                dpi.PixelsPerDip);
                         // Ideally, for FlowNodeType.Start, this should find next FlowNode with physical location, 
                         // and draw it around the physical location. 
                         prevTextPoint = CreateFromLastTextPoint(prevTextPoint);
@@ -499,8 +508,8 @@ namespace System.Windows.Documents
                                                 FlowDirection.LeftToRight,
                                                 new Typeface("Courier New"),
                                                 8,
-                                                Brushes.DarkGreen);
-
+                                                Brushes.DarkGreen,
+                                                dpi.PixelsPerDip);
                         prevTextPoint = CreateFromLastTextPoint(prevTextPoint);
                         dc.DrawText(ft, prevTextPoint);
                         break;
@@ -559,7 +568,8 @@ namespace System.Windows.Documents
                                                 FlowDirection.LeftToRight,
                                                 new Typeface("Courier New"),
                                                 8,
-                                                Brushes.DarkBlue);
+                                                Brushes.DarkBlue,
+                                                dpi.PixelsPerDip);
                         dc.DrawText(ft, prevTextPoint);
  
                         Pen pen = new Pen(Brushes.Blue, 2);
@@ -627,7 +637,8 @@ namespace System.Windows.Documents
                                                     FlowDirection.LeftToRight,
                                                     new Typeface("Courier New"),
                                                     8,
-                                                    Brushes.DarkGreen);
+                                                    Brushes.DarkGreen,
+                                                    dpi.PixelsPerDip);
                             dc.DrawText(ft, prevTextPoint);
                         }
 
@@ -651,12 +662,14 @@ namespace System.Windows.Documents
                 dc.DrawRectangle(null, pen , layoutBox);
                 
                 CultureInfo EnglishCulture = System.Windows.Markup.TypeConverterHelper.InvariantEnglishUS;
+                FixedPage fp = _fixedTextBuilder.FixedTextContainer.FixedDocument.GetFixedPage(PageIndex);
                 FormattedText ft = new FormattedText(i.ToString(), 
                                             EnglishCulture,
                                             FlowDirection.LeftToRight,
                                             new Typeface("Arial"), 
                                             10,
-                                            Brushes.White);
+                                            Brushes.White,
+                                            fp.GetDpi().PixelsPerDip);
                 Point labelLocation = new Point(layoutBox.Left-25, (layoutBox.Bottom + layoutBox.Top)/2 - 10);
                 Geometry geom = ft.BuildHighlightGeometry(labelLocation);
                 Pen backgroundPen = new Pen(Brushes.Black,1);

@@ -169,7 +169,7 @@ namespace System.Windows.Forms {
         protected override void OnSubscribeControlEvents(Control control) {
             TextBox textBox = control as TextBox;
             if (textBox != null) {
-                // Please keep this alphabetized and in [....] with Unsubscribe
+                // Please keep this alphabetized and in sync with Unsubscribe
                 // 
                 textBox.AcceptsTabChanged             += new EventHandler(HandleAcceptsTabChanged);
                 textBox.BorderStyleChanged            += new EventHandler(HandleBorderStyleChanged);
@@ -189,7 +189,7 @@ namespace System.Windows.Forms {
 
               TextBox textBox = control as TextBox;
               if (textBox != null) {
-                  // Please keep this alphabetized and in [....] with Subscribe
+                  // Please keep this alphabetized and in sync with Subscribe
                   // 
                   textBox.AcceptsTabChanged             -= new EventHandler(HandleAcceptsTabChanged);
                   textBox.BorderStyleChanged            -= new EventHandler(HandleBorderStyleChanged);

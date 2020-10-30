@@ -6,7 +6,7 @@
 //     Implements a COM message filter to allow retry for RPC calls.
 //
 //  History:
-//     2009/08/24   [....]      Created
+//     2009/08/24   Microsoft      Created
 //
 // ------------------------------------------------------------------------
 
@@ -14,18 +14,18 @@
 // or uncovered issues related to rejected RPC calls when PresentationHost and browser
 // processes are communicating. Two bugs are worth referencing here:
 //
-// - Dev10 bug 754024 - Crash hosting an XBAP inside another XBAP via a WebBrowser.Navigate
-// - Dev10 bug 794667 - WebBrowser: multiple fast navigations = COM exception
-//
-// Other conceptually related filters are implemented and can be found in DllMain.cxx,
-// in particular:
-//
-// - CMessageFilterMarshaler
-// - CMessageFilterDelegate
-// - CInPlaceFrameTranslateAcceleratorDelegate
-// - CWpfHostSupportFilterInputMessageDelegate
-//
-// This code hasn't been relocated due to quite some entanglement with it surroundings.
+// - Dev10 
+
+
+
+
+
+
+
+
+
+
+
 
 #pragma once 
 

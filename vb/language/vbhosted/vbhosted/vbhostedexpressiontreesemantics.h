@@ -137,11 +137,11 @@ protected:
         Type* TargetType
     );
 
-    // Dev10 bug 822565 - Since there is a difference in semantics for decimal conversions
-    // (rounding vs truncating) between lambdas converted to expr trees and other contexts,
-    // overriding this method in order to ensure compat with core compiler in non-expr tree
-    // lambda contexts.
-    //
+    // Dev10 
+
+
+
+
     RuntimeMembers GetHelperCastFromDecimal(
         Vtypes vtypeTo
     )

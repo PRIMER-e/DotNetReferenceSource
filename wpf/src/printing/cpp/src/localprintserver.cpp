@@ -806,7 +806,7 @@ Routine Description:
 
     Creates a PrintProperty object
     associated with a given property and links it with a delegate
-    that will keep the attribute value and the property in [....].
+    that will keep the attribute value and the property in sync.
 
 Arguments:
 
@@ -840,7 +840,7 @@ Routine Description:
 
     Creates a PrintProperty object
     associated with a given property and links it with a delegate
-    that will keep the attribute value and the property in [....].
+    that will keep the attribute value and the property in sync.
 
 Arguments:
 
@@ -1234,7 +1234,7 @@ Routine Description:
 
     This method creates the delegates associated with each property
     of this object. The purpose to invoke one of these delegated is to keep
-    the LocalPrintServer's properties in [....] with the attribute value collection.
+    the LocalPrintServer's properties in sync with the attribute value collection.
     The delegates are associated with the attribute value created for each of the
     object's property. The attribute value collection is updated through the thunking code
     with data coming from the Spooler service.

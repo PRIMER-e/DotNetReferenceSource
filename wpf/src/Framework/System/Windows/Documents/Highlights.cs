@@ -8,7 +8,7 @@
 // Description: Text highlights associated with a TextContainer.
 //
 // History:  
-//  7/1/2004 : [....] - Created.
+//  7/1/2004 : Microsoft - Created.
 //
 //---------------------------------------------------------------------------
 

@@ -898,9 +898,9 @@ namespace System.Windows.Controls
                     }
 
                     // Please note that unselecting rows is not really considered a
-                    // handlable operation. Please see Dev11 bug#245510 about
-                    // this issue.
-                    //e.Handled = true;
+                    // handlable operation. Please see Dev11 
+
+
                 }
             }
             else if (!focusWithin || !IsSelected || isCtrlKeyPressed)

@@ -328,7 +328,7 @@ namespace MS.Internal.AutomationProxies
 
             if (fRet && Misc.GetScrollInfo(hwnd, sbFlag, ref si) && si.nPos != newPos)
             {
-                // [....] treeview has some problems.  The first is that the SendMessage with WM_HSCROLL/WM_VSCROLL
+                // Microsoft treeview has some problems.  The first is that the SendMessage with WM_HSCROLL/WM_VSCROLL
                 // with SB_THUMBPOSITION is not moving the scroll position. The second problem is that SetScrollInfo()
                 // lose the theming for the scroll bars and it really does not move the scroll position.  The
                 // scrollbars change but it does not scroll the treeview control.

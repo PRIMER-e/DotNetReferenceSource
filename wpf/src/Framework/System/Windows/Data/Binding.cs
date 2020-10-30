@@ -165,10 +165,10 @@ namespace System.Windows.Data
 
         // PreSharp checks that the type of the DP agrees with the type of the static
         // accessors.  But setting the type of the DP to XmlNamespaceManager would
-        // load System.Xml during the static cctor, which is considered a perf bug.
-        // So instead we set the type of the DP to 'object' and use the
-        // ValidateValueCallback to ensure that only values of the right type are allowed.
-        // Meanwhile, disable the PreSharp warning
+        // load System.Xml during the static cctor, which is considered a perf 
+
+
+
         #pragma warning disable 7008
 
         /// <summary>
@@ -230,7 +230,7 @@ namespace System.Windows.Data
                 if (System.Windows.Threading.Dispatcher.CurrentDispatcher == null)
                     throw new InvalidOperationException();  // This is actually never called since CurrentDispatcher will throw if null.
 
-                Path = new PropertyPath(path);
+                Path = new PropertyPath(path, (object[])null);
             }
         }
 
@@ -339,7 +339,8 @@ namespace System.Windows.Data
 
                 if (_ppath != null && _ppath.StartsWithStaticProperty)
                 {
-                    if (_sourceInUse == SourceProperties.None || _sourceInUse == SourceProperties.StaticSource)
+                    if (_sourceInUse == SourceProperties.None || _sourceInUse == SourceProperties.StaticSource ||
+                        FrameworkCompatibilityPreferences.TargetsDesktop_V4_0) // (for compat - Dev11 738992)
                     {
                         SourceReference = StaticSourceRef;
                     }

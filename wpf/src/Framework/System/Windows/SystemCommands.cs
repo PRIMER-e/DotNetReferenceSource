@@ -99,7 +99,8 @@ namespace System.Windows
         public static void ShowSystemMenu(Window window, Point screenLocation)
         {
             Verify.IsNotNull(window, "window");
-            ShowSystemMenuPhysicalCoordinates(window, DpiHelper.LogicalPixelsToDevice(screenLocation));
+            DpiScale dpi = window.GetDpi();
+            ShowSystemMenuPhysicalCoordinates(window, DpiHelper.LogicalPixelsToDevice(screenLocation, dpi.DpiScaleX, dpi.DpiScaleY));
         }
 
         /// <SecurityNote>

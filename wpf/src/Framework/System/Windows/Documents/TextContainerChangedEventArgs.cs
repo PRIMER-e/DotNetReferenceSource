@@ -5,7 +5,7 @@
 // Description: The arguments sent when a TextChangedEvent is fired in a TextContainer.
 //
 // History:  
-//  8/3/2004 : [....] - Created - preparing for TextContainer eventing
+//  8/3/2004 : Microsoft - Created - preparing for TextContainer eventing
 //             breaking change.
 //
 //---------------------------------------------------------------------------

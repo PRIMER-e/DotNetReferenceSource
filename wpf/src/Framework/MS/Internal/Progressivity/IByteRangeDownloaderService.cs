@@ -27,9 +27,9 @@
 //      and unmanaged worlds
 //
 // History:
-//  06/20/2003: [....]     Created
-//  06/20/2003: [....]     Ported to WCP tree
-//  06/20/2003: [....]     Separated methods related to ByteRangeDownloader from
+//  06/20/2003: younggk     Created
+//  06/20/2003: younggk     Ported to WCP tree
+//  06/20/2003: younggk     Separated methods related to ByteRangeDownloader from
 //                              IBrowserHostServices.cs into this file
 // 
 //---------------------------------------------------------------------------

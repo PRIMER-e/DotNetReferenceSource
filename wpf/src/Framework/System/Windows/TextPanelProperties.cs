@@ -7,7 +7,7 @@
 // Description: Public types for FlowDocument properties. 
 //
 // History:  
-//  05/05/2003 : [....] - created.
+//  05/05/2003 : grzegorz - created.
 //
 //---------------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ namespace System.Windows
     /// <summary>
     /// Specifies point of reference for a figure in vertical direction.
     /// </summary>
-    // NOTE: Do not change values - they have to be in [....] with PTS enums: FSKREF & FSKALIGNFIG
+    // NOTE: Do not change values - they have to be in sync with PTS enums: FSKREF & FSKALIGNFIG
     public enum FigureVerticalAnchor
     {
         /// <summary>
@@ -128,7 +128,7 @@ namespace System.Windows
     /// <summary>
     /// Specifies point of reference for a figure in horizontal direction.
     /// </summary>
-    // NOTE: Do not change values - they have to be in [....] with PTS enums: FSKREF & FSKALIGNFIG
+    // NOTE: Do not change values - they have to be in sync with PTS enums: FSKREF & FSKALIGNFIG
     public enum FigureHorizontalAnchor
     {
         /// <summary>
@@ -188,7 +188,7 @@ namespace System.Windows
     /// <summary>
     /// Specifies which side content can wrap around an object.
     /// </summary>
-    // NOTE: Do not change values - they have to be in [....] with PTS enums: FSKWRAP
+    // NOTE: Do not change values - they have to be in sync with PTS enums: FSKWRAP
     public enum WrapDirection
     {
         /// <summary>

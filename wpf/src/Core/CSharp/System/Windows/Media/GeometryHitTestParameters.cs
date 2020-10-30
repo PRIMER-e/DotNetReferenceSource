@@ -109,9 +109,9 @@ namespace System.Windows.Media
         }
 
         // Use this property when retrieving the hit geometry internally.  Right now it avoids a
-        // a cast.  In the future it will avoid a copy as well (see bug 1133159).  The value from
-        // this property should never be exposed to the user (e.g., do not use it to return
-        // hit test results.)
+        // a cast.  In the future it will avoid a copy as well (see 
+
+
         internal PathGeometry InternalHitGeometry
         {
             get

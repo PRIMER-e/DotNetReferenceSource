@@ -7,7 +7,7 @@
 // Description: Visual representing line of text. 
 //
 // History:  
-//  05/20/2003 : [....] - created.
+//  05/20/2003 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 

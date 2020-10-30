@@ -60,8 +60,8 @@
 							TEXT("tcp\0") \
 							TEXT("np\0")
 
-#define DEFAULT_PROTOCOLS_WIN9X	"tcp\0" \
-										"np\0"
+#define DEFAULT_PROTOCOLS_WIN9X	TEXT("tcp\0") \
+										TEXT("np\0")
 
 #define DEFAULT_PROTOCOLS_SUPPORTED	TEXT("sm\0")  \
 										TEXT("tcp\0") \

@@ -219,7 +219,7 @@ namespace System.Windows.Ink
             //validate our cache
             if (_strokes.Count != _strokeInfos.Count)
             {
-                Debug.Assert(false, "Benign assert.  IncrementalHitTester's _strokeInfos cache is out of [....], rebuilding.");
+                Debug.Assert(false, "Benign assert.  IncrementalHitTester's _strokeInfos cache is out of sync, rebuilding.");
                 RebuildStrokeInfoCache();
                 return;
             }
@@ -227,7 +227,7 @@ namespace System.Windows.Ink
             {
                 if (_strokeInfos[i].Stroke != _strokes[i])
                 {
-                    Debug.Assert(false, "Benign assert.  IncrementalHitTester's _strokeInfos cache is out of [....], rebuilding.");
+                    Debug.Assert(false, "Benign assert.  IncrementalHitTester's _strokeInfos cache is out of sync, rebuilding.");
                     RebuildStrokeInfoCache();
                     return;
                 }
@@ -236,7 +236,7 @@ namespace System.Windows.Ink
 
         /// <summary>
         /// IHT's can get into a state where their StrokeInfo cache is too 
-        /// out of [....] with the StrokeCollection to incrementally update it.
+        /// out of sync with the StrokeCollection to incrementally update it.
         /// When we detect this has happened, we just rebuild the entire cache.
         /// </summary>
         private void RebuildStrokeInfoCache()

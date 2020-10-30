@@ -11,7 +11,7 @@
 //
 // History:
 //  06/11/2003 : t-gregr - Created
-//  01/19/2004 : [....] - Changed to Transform3DGroup
+//  01/19/2004 : Microsoft - Changed to Transform3DGroup
 //
 //---------------------------------------------------------------------------
 

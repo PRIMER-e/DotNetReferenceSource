@@ -1384,7 +1384,7 @@ namespace MS.Internal.AutomationProxies
                 // If the range is a nondegenerate selection, cp2 is the active end; if it’s a degenerate selection,
                 // the ambiguous cp is displayed at the start of the line (rather than at the end of the previous line).
                 // Set the end to the start and the start to the end to create an ambiguous cp.  This was added to 
-                // resolve Windows OS Bug 1030882.
+                // resolve Windows OS 
                 range.SetRange(range.End, range.Start);
 
                 Rect rect = new Rect(clientRect.Location, clientRect.Size);

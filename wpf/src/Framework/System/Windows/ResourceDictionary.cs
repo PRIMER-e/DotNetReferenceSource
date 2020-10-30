@@ -198,7 +198,7 @@ namespace System.Windows
                 }
 
                 // MimeObjectFactory.GetObjectAndCloseStream will try to find the object converter basing on the mime type.
-                // It can be a [....]/async converter. It's the converter's responsiblity to close the stream.
+                // It can be a sync/async converter. It's the converter's responsiblity to close the stream.
                 // If it fails to find a convert, this call will return null.
                 System.Windows.Markup.XamlReader asyncObjectConverter;
                 ResourceDictionary loadedRD = MimeObjectFactory.GetObjectAndCloseStream(s, contentType, uri, false, false, false /*allowAsync*/, false /*isJournalNavigation*/, out asyncObjectConverter)
@@ -2371,7 +2371,7 @@ namespace System.Windows
 
         /// <SecurityNote>
         /// Critical: accesses critical field _reader
-        /// Safe: keeps LoadPermission in [....] by nulling it out as well
+        /// Safe: keeps LoadPermission in sync by nulling it out as well
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
         private void CloseReader()

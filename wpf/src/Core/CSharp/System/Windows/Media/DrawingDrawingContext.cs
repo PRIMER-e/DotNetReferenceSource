@@ -1071,7 +1071,7 @@ namespace System.Windows.Media
             // Set the transform on the new DrawingGroup
             //
             
-            // NOTE: [....]  Disabling this API for now
+            // NOTE: Microsoft  Disabling this API for now
             
             _currentDrawingGroup.BitmapEffect = effect;
             _currentDrawingGroup.BitmapEffectInput = (effectInput != null) ?

@@ -178,7 +178,7 @@ namespace MS.Internal.AutomationProxies
                     return;
                 }
                 
-                //Only one event is generated for the [....] button so no need to check the pressed state.
+                //Only one event is generated for the Microsoft button so no need to check the pressed state.
                 if (wtv._acc != null)
                 {
                     if (idProp == SelectionItemPattern.ElementSelectedEvent)
@@ -243,7 +243,7 @@ namespace MS.Internal.AutomationProxies
             {
                 return this;
             }
-            // Only [....] RadioGroups should have this pattern.
+            // Only Microsoft RadioGroups should have this pattern.
             else if (iid == SelectionPattern.Pattern && _type == ButtonType.GroupBox)
             {
                 return ContainsRadioButtons()? this : null;
@@ -483,10 +483,10 @@ namespace MS.Internal.AutomationProxies
                 throw new ElementNotEnabledException();
             }
 
-            // Moved this outside the if block because it's needed for [....], which uses _acc.DoDefaultAction()
+            // Moved this outside the if block because it's needed for Microsoft, which uses _acc.DoDefaultAction()
             if (!IsShowAllProgramsButton())
             {
-                // SetFocus need here to resolve bug 1060649
+                // SetFocus need here to resolve 
                 Misc.SetFocus(_hwnd);
             }
 
@@ -536,10 +536,10 @@ namespace MS.Internal.AutomationProxies
                         }
                         catch (ElementNotAvailableException)
                         {
-                            // This is to resolve PS Bug 1074570.  There is a timing issue with the SendMessage and
-                            // the Cancel button on the Log Off Dialog box.  The button with be invoked but sometimes
-                            // the SendMessage will return a failure that will cause the ElementNotAvailableException
-                            // to be thrown.
+                            // This is to resolve PS 
+
+
+
                             return;
                         }
 
@@ -689,7 +689,7 @@ namespace MS.Internal.AutomationProxies
 
         unsafe private bool FindRadioButtonChild(IntPtr hwnd, void* lParam)
         {
-            // Only be concerned with [....] child controls.
+            // Only be concerned with Microsoft child controls.
             if (!WindowsFormsHelper.IsWindowsFormsControl(hwnd))
             {
                 return true;
@@ -729,7 +729,7 @@ namespace MS.Internal.AutomationProxies
 
         private unsafe bool FindSelectedRadioButtonChild(IntPtr hwnd, void* lParam)
         {
-            // Only be concerned with [....] child controls.
+            // Only be concerned with Microsoft child controls.
             if (!WindowsFormsHelper.IsWindowsFormsControl(hwnd))
             {
                 return true;
@@ -760,7 +760,7 @@ namespace MS.Internal.AutomationProxies
 
         private ButtonType _type;
         private int _style;
-        private Accessible _acc;  // Accessible is used for [....] Buttons.
+        private Accessible _acc;  // Accessible is used for Microsoft Buttons.
 
         #endregion
 

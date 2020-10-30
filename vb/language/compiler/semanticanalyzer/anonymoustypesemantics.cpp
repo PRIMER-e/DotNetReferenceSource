@@ -67,7 +67,7 @@ Semantics::InitializeAnonymousType
     BackupValue<TransientSymbolStore *> SymbolsCreatedDuringInterpretatio_Backup(&m_SymbolsCreatedDuringInterpretation);
     if (!m_SymbolsCreatedDuringInterpretation)
     {
-        m_SymbolsCreatedDuringInterpretation = &LocalTransients;    // Bug [30776] [31373] use a local transient symbols store for merging (binding)
+        m_SymbolsCreatedDuringInterpretation = &LocalTransients;    // 
     }
 
     ClassOrRecordType *AnonymousTypeTemplate =
@@ -1920,7 +1920,7 @@ Semantics::GenerateAnonymousTypeField
 // constructor accepts arguments that must match the field names for
 // System.Core's sake.
 //
-// If you EVER modify this code, please check with [....] before you do. It's
+// If you EVER modify this code, please check with Microsoft before you do. It's
 // quite likely that it is possible to break this.
 //
 // Ideally, this would be done using parse helpers.
@@ -2335,7 +2335,7 @@ MatchAnonymousType
         return false;   // Bad anonymous type
     }
 
-    // Devdiv Bug [26424] Anonymous Type is to support assembly level merging.
+    // Devdiv 
 #if 0
     // Allow method level merging only
     if (AnonymousClass->GetAnonymousTypeProc() != CurrentProcedure)
@@ -2412,7 +2412,7 @@ MatchAnonymousType
             return true;
         }
 
-#if 0   // Devdiv Bug [26424] Anonymous Type is merged at assembly level.
+#if 0   // Devdiv 
         // Allow method level merging only
         if (AnonymousType1->GetAnonymousTypeProc() != AnonymousType2->GetAnonymousTypeProc())
         {
@@ -2469,10 +2469,10 @@ GetAnonymousTypeHashCode
     bool CheckLocation
 )
 {
-    // Devdiv Bug [26424] Anonymous Type is merged at assembly level.
-    // NOTE method level anonymous type merging would require hashing anonymous type name to account for anonymous
-    // types of same shape but at different method levels.
-    // Since the final design is perform assembly level merging we are ok to return -1 instead.
+    // Devdiv 
+
+
+
     if (!MemberInfos || FieldCount == 0)
     {
         return -1;

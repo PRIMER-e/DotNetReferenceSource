@@ -54,7 +54,7 @@ namespace System.Transactions
 
             if ( transaction.complete )
             {
-                throw TransactionException.CreateTransactionCompletedException( SR.GetString( SR.TraceSourceLtm ) );
+                throw TransactionException.CreateTransactionCompletedException(SR.GetString(SR.TraceSourceLtm), transaction.DistributedTxId);
             }
 
             OletxTransaction oletxTx = transaction.Promote();
@@ -63,6 +63,21 @@ namespace System.Transactions
             return oletxTx;
         }
 
+
+        /// <summary>
+        /// This is the PromoterType value that indicates that the transaction is promoting to MSDTC.
+        /// 
+        /// If using the variation of Transaction.EnlistPromotableSinglePhase that takes a PromoterType and the
+        /// ITransactionPromoter being used promotes to MSDTC, then this is the value that should be 
+        /// specified for the PromoterType parameter to EnlistPromotableSinglePhase.
+        /// 
+        /// If using the variation of Transaction.EnlistPromotableSinglePhase that assumes promotion to MSDTC and
+        /// it that returns false, the caller can compare this value with Transaction.PromoterType to
+        /// verify that the transaction promoted, or will promote, to MSDTC. If the Transaction.PromoterType
+        /// matches this value, then the caller can continue with its enlistment with MSDTC. But if it
+        /// does not match, the caller will not be able to enlist with MSDTC.
+        /// </summary>
+        public static readonly Guid PromoterTypeDtc = new Guid("14229753-FFE1-428D-82B7-DF73045CB8DA");
 
         // This is here for the DangerousGetHandle call.  We need to do it.
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
@@ -292,7 +307,7 @@ namespace System.Transactions
                 throw new ArgumentNullException( "transaction" );
             }
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
                 MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
                     "TransactionInterop.GetTransmitterPropagationToken"
@@ -515,7 +530,7 @@ namespace System.Transactions
                 throw new ArgumentNullException( "transaction" );
             }
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
                 MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
                     "TransactionInterop.GetDtcTransaction"

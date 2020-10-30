@@ -37,6 +37,7 @@ namespace System {
         internal const int E_FAIL = unchecked((int)0x80004005); 
         internal const int E_POINTER = unchecked((int)0x80004003); 
         internal const int E_NOTIMPL = unchecked((int)0x80004001);
+        internal const int REGDB_E_CLASSNOTREG = unchecked((int)0x80040154);
         internal const int COR_E_AMBIGUOUSMATCH = unchecked((int)0x8000211D); 
         internal const int COR_E_APPDOMAINUNLOADED = unchecked((int)0x80131014); 
         internal const int COR_E_APPLICATION = unchecked((int)0x80131600); 

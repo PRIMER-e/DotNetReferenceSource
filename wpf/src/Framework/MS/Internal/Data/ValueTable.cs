@@ -38,7 +38,7 @@ namespace MS.Internal.Data
         // should we cache the value of the given property from the given item?
         internal static bool ShouldCache(object item, PropertyDescriptor pd)
         {
-            // custom property descriptors returning IBindingList (bug 1190076)
+            // custom property descriptors returning IBindingList (
             if (SystemDataHelper.IsDataSetCollectionProperty(pd))
             {
                 return true;

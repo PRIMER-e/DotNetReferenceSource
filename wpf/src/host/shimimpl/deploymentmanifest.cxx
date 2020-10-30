@@ -6,8 +6,8 @@
 //     Implements the interface to the deployment manifest
 //
 // History:
-//      2005/05/09 - [....]     Created
-//      2007/09/20   [....]     Ported Windows->DevDiv. See SourcesHistory.txt.
+//      2005/05/09 - Microsoft     Created
+//      2007/09/20   Microsoft     Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
 

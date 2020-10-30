@@ -131,7 +131,6 @@ namespace System.Drawing {
         //           : this is ok as long as the lparam is not obtained from external code.
         [ReflectionPermission(SecurityAction.Assert, Unrestricted=true),
          SecurityPermission(SecurityAction.Assert, Flags=SecurityPermissionFlag.UnmanagedCode)]
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static object PtrToStructure(IntPtr lparam, Type cls) {
             return Marshal.PtrToStructure(lparam, cls);
         }

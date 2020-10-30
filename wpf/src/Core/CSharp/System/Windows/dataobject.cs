@@ -1694,8 +1694,8 @@ namespace System.Windows
         }
 
         /// <summary>
-        /// Populates Ole datastructes from a [....] dataObject. This is the core
-        /// of [....] to OLE conversion.
+        /// Populates Ole datastructes from a Microsoft dataObject. This is the core
+        /// of Microsoft to OLE conversion.
         /// </summary>
         /// <SecurityNote>
         /// Critical - calls critical methods (saving objects to streams, etc.),

@@ -7,7 +7,7 @@
 // Description: TextFormatter host.
 //
 // History:  
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ namespace MS.Internal.PtsHost
     // ----------------------------------------------------------------------
     internal sealed class TextFormatterHost : TextSource
     {
-        internal TextFormatterHost(TextFormatter textFormatter, TextFormattingMode textFormattingMode)
+        internal TextFormatterHost(TextFormatter textFormatter, TextFormattingMode textFormattingMode, double pixelsPerDip)
         {
             if(textFormatter == null)
             {
@@ -34,6 +34,8 @@ namespace MS.Internal.PtsHost
             {
                 TextFormatter = textFormatter;
             }
+
+            PixelsPerDip = pixelsPerDip;
         }
 
         //-------------------------------------------------------------------
@@ -43,7 +45,13 @@ namespace MS.Internal.PtsHost
         {
             Debug.Assert(Context != null, "TextFormatter host is not initialized.");
             Debug.Assert(textSourceCharacterIndex >= 0, "Character index must be non-negative.");
-            return Context.GetTextRun(textSourceCharacterIndex);
+            TextRun run = Context.GetTextRun(textSourceCharacterIndex);
+            if (run.Properties != null)
+            {
+                run.Properties.PixelsPerDip = PixelsPerDip;
+            }
+
+            return run;
         }
 
         //-------------------------------------------------------------------

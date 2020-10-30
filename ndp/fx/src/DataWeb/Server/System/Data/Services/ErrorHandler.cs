@@ -6,7 +6,7 @@
 //      Provides some utility functions for this project
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

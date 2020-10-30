@@ -7,7 +7,7 @@
 **
 ** Class:  FileStream
 ** 
-** <OWNER>[....]</OWNER>
+** <OWNER>Microsoft</OWNER>
 **
 **
 ** Purpose: Exposes a Stream around a file, with full 
@@ -28,19 +28,22 @@ using System.Threading;
 using System.Threading.Tasks;
 #endif
 using System.Runtime.InteropServices;
+#if FEATURE_REMOTING
 using System.Runtime.Remoting.Messaging;
+#endif
 using System.Runtime.CompilerServices;
 using System.Globalization;
 using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
+using System.Diagnostics.Tracing;
 
 /*
  * FileStream supports different modes of accessing the disk - async mode
- * and [....] mode.  They are two completely different codepaths in the
- * [....] & async methods (ie, Read/Write vs. BeginRead/BeginWrite).  File
- * handles in NT can be opened in only [....] or overlapped (async) mode,
+ * and sync mode.  They are two completely different codepaths in the
+ * sync & async methods (ie, Read/Write vs. BeginRead/BeginWrite).  File
+ * handles in NT can be opened in only sync or overlapped (async) mode,
  * and we have to deal with this pain.  Stream has implementations of
- * the [....] methods in terms of the async ones, so we'll
+ * the sync methods in terms of the async ones, so we'll
  * call through to our base class to get those methods when necessary.
  *
  * Also buffering is added into FileStream as well. Folded in the
@@ -324,6 +327,9 @@ namespace System.IO {
                 (FileStreamAsyncResult)overlapped.AsyncResult;
             asyncResult._numBytes = (int)numBytes;
 
+            if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
+                FrameworkEventSource.Log.ThreadTransferReceive((long)(asyncResult.OverLapped), 2, string.Empty);
+
             // Handle reading from & writing to closed pipes.  While I'm not sure
             // this is entirely necessary anymore, maybe it's possible for 
             // an async read on a pipe to be issued and then the pipe is closed, 
@@ -365,7 +371,6 @@ namespace System.IO {
         {
             Contract.Assert(_handle != null, "_handle should not be null.");
             Contract.Assert(_overlapped != null, "Cancel should only be called on true asynchronous FileStreamAsyncResult, i.e. _overlapped is not null");
-            Contract.Assert(Environment.IsWindowsVistaOrAbove, "Cancel should only be called on Windows Vista or above.");
 
             if (IsCompleted)
                 return;
@@ -393,14 +398,11 @@ namespace System.IO {
         internal const int DefaultBufferSize = 4096;
 
 
-#if FEATURE_ASYNC_IO
+#if FEATURE_LEGACYNETCF
         // Mango didn't do support Async IO.
-        private static readonly bool _canUseAsync = Environment.RunningOnWinNT && !CompatibilitySwitches.IsAppEarlierThanWindowsPhone8;
+        private static readonly bool _canUseAsync = !CompatibilitySwitches.IsAppEarlierThanWindowsPhone8;
 #else
-        // @todo: This #ifdef factoring fixes the public api async behavior for M6 with minimal risk. When more
-        // time is available, we should more rigorously scrub out all references for FileStreamAsyncResult and AsyncFSCallback
-        // (this requires corresponding changes in the src\vm tree as well.)
-        private static readonly bool _canUseAsync = false;
+        private const bool _canUseAsync = true;
 #endif //FEATURE_ASYNC_IO
 
         private byte[] _buffer;   // Shared read/write buffer.  Alloc on first use.
@@ -431,11 +433,7 @@ namespace System.IO {
         internal FileStream() { 
         }
 #if FEATURE_CORECLR
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public FileStream(String path, FileMode mode) 
@@ -456,11 +454,7 @@ namespace System.IO {
 #endif // FEATURE_LEGACYNETCF
         }
     
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public FileStream(String path, FileMode mode, FileAccess access) 
@@ -481,11 +475,7 @@ namespace System.IO {
 #endif // FEATURE_LEGACYNETCF
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public FileStream(String path, FileMode mode, FileAccess access, FileShare share) 
@@ -506,11 +496,7 @@ namespace System.IO {
 #endif // FEATURE_LEGACYNETCF
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public FileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize) 
@@ -628,11 +614,7 @@ namespace System.IO {
         }
 
         // AccessControl namespace is not defined in Rotor
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         private void Init(String path, FileMode mode, FileAccess access, int rights, bool useRights, FileShare share, int bufferSize, FileOptions options, Win32Native.SECURITY_ATTRIBUTES secAttrs, String msgPath, bool bFromProxy, bool useLongPath, bool checkHost)
@@ -726,30 +708,25 @@ namespace System.IO {
             // Get absolute path - Security needs this to prevent something
             // like trying to create a file in c:\tmp with the name 
             // "..\WinNT\System32\ntoskrnl.exe".  Store it for user convenience.
-            int maxPath = useLongPath ? Path.MaxLongPath : Path.MaxPath;
-            String filePath = Path.NormalizePath(path, true, maxPath);
+            int maxPath = useLongPath
+                ? PathInternal.MaxLongPath 
+                : AppContextSwitches.BlockLongPaths ? PathInternal.MaxShortPath : PathInternal.MaxLongPath;
+
+            string filePath = Path.NormalizePath(path, true, maxPath);
 
             _fileName = filePath;
 
             // Prevent access to your disk drives as raw block devices.
-            if (filePath.StartsWith("\\\\.\\", StringComparison.Ordinal))
+            //
+            // We'll allow if in full trust and not in legacy mode. You can also get device access via \\?\ and \??\ so there isn't
+            // much point in making users jump through these hoops. Blocking is pointless in full trust as well.
+            if (
+#if FEATURE_CAS_POLICY
+                (!CodeAccessSecurityEngine.QuickCheckForAllDemands() || AppContextSwitches.UseLegacyPathHandling)
+                &&
+#endif
+                filePath.StartsWith("\\\\.\\", StringComparison.Ordinal))
                 throw new ArgumentException(Environment.GetResourceString("Arg_DevicesNotSupported"));
-
-            // In 4.0, we always construct a FileIOPermission object below. 
-            // If filePath contained a ':', we would throw a NotSupportedException in 
-            // System.Security.Util.StringExpressionSet.CanonicalizePath. 
-            // If filePath contained other illegal characters, we would throw an ArgumentException in 
-            // FileIOPermission.CheckIllegalCharacters.
-            // In 4.5 we on longer construct the FileIOPermission object in full trust.
-            // To preserve the 4.0 behavior we do an explicit check for ':' here and also call Path.CheckInvalidPathChars.
-            // Note that we need to call CheckInvalidPathChars before checking for ':' because that is what FileIOPermission does.
-
-            Path.CheckInvalidPathChars(filePath, true);
-
-#if !PLATFORM_UNIX
-            if (filePath.IndexOf( ':', 2 ) != -1)
-                throw new NotSupportedException( Environment.GetResourceString( "Argument_PathFormatNotSupported" ) );
-#endif // !PLATFORM_UNIX               
 
             bool read = false;
 
@@ -767,7 +744,12 @@ namespace System.IO {
 
             // All demands in full trust domains are no-ops, so skip 
 #if FEATURE_CAS_POLICY
-            if (!CodeAccessSecurityEngine.QuickCheckForAllDemands()) 
+            if (CodeAccessSecurityEngine.QuickCheckForAllDemands())
+            {
+                // Need to throw the same exceptions that are thrown if we actually called QuickDemand() below.
+                FileIOPermission.EmulateFileIOPermissionChecks(filePath);
+            }
+            else
 #endif // FEATURE_CAS_POLICY
             {
                 // Build up security permissions required, as well as validate we
@@ -816,16 +798,16 @@ namespace System.IO {
                 }
                 
                 AccessControlActions control = specifiedAcl ? AccessControlActions.Change : AccessControlActions.None;
-                new FileIOPermission(secAccess, control, new String[] { filePath }, false, false).Demand();
+                FileIOPermission.QuickDemand(secAccess, control, new String[] { filePath }, false, false);
 #else
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
                 if (checkHost) {
                     FileSecurityState state = new FileSecurityState(FileSecurityState.ToFileSecurityState(secAccess), path, filePath);
                     state.EnsureState();
                 }
-#elif !FEATURE_CORECLR
-                new FileIOPermission(secAccess, new String[] { filePath }, false, false).Demand();
-#endif // FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#else
+                FileIOPermission.QuickDemand(secAccess, filePath, false, false);
+#endif // FEATURE_CORECLR
 #endif
             }
 
@@ -887,7 +869,7 @@ namespace System.IO {
                     {
                         try {
 #if !FEATURE_CORECLR
-                            new FileIOPermission(FileIOPermissionAccess.PathDiscovery, new String[] { _fileName }, false, false ).Demand();
+                            FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, _fileName, false, false);
 #endif
                             canGiveFullPath = true;
                         }
@@ -914,8 +896,7 @@ namespace System.IO {
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_FileStreamOnNonFiles"));
             }
 
-#if !FEATURE_PAL
-#if !FEATURE_CORECLR
+#if FEATURE_ASYNC_IO
             // This is necessary for async IO using IO Completion ports via our 
             // managed Threadpool API's.  This (theoretically) calls the OS's 
             // BindIoCompletionCallback method, and passes in a stub for the 
@@ -942,8 +923,7 @@ namespace System.IO {
                 if (!b) 
                     throw new IOException(Environment.GetResourceString("IO.IO_BindHandleFailed"));
             }
-#endif // FEATURE_CORECLR
-#endif //!FEATURE_PAL
+#endif // FEATURE_ASYNC_IO
             if (!useRights) {
                 _canRead = (access & FileAccess.Read) != 0;
                 _canWrite = (access & FileAccess.Write) != 0;
@@ -1043,7 +1023,7 @@ namespace System.IO {
 
             int handleType = Win32Native.GetFileType(_handle);
             Contract.Assert(handleType == Win32Native.FILE_TYPE_DISK || handleType == Win32Native.FILE_TYPE_PIPE || handleType == Win32Native.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
-            _isAsync = isAsync && _canUseAsync;  // On Win9x, just do the right thing.
+            _isAsync = isAsync && _canUseAsync;
             _canRead = 0 != (access & FileAccess.Read);
             _canWrite = 0 != (access & FileAccess.Write);
             _canSeek = handleType == Win32Native.FILE_TYPE_DISK;
@@ -1216,19 +1196,15 @@ namespace System.IO {
         }
 
         public String Name {
-#if FEATURE_LEGACYNETCFIOSECURITY
-                [System.Security.SecurityCritical]
-#else
                 [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             get {
                 if (_fileName == null)
                     return Environment.GetResourceString("IO_UnknownFileName");
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, _fileName);
                 sourceState.EnsureState();
-#elif !FEATURE_CORECLR
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, new String[] { _fileName }, false, false).Demand();
+#else
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, _fileName, false, false);
 #endif
                 return _fileName;
             }
@@ -1250,7 +1226,7 @@ namespace System.IO {
 
                 Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
-                // Verify that internal position is in [....] with the handle
+                // Verify that internal position is in sync with the handle
                 if (_exposedHandle)
                     VerifyOSHandlePosition();
 
@@ -1379,7 +1355,7 @@ namespace System.IO {
 
         // Reading is done by blocks from the file, but someone could read
         // 1 byte from the buffer then write.  At that point, the OS's file
-        // pointer is out of [....] with the stream's position.  All write 
+        // pointer is out of sync with the stream's position.  All write 
         // functions should call this function to preserve the position in the file.
         private void FlushRead() {
             Contract.Assert(_writePos == 0, "FileStream: Write buffer must be empty in FlushRead!");
@@ -1654,7 +1630,7 @@ namespace System.IO {
                 offset -= (_readLen - _readPos);
             }
 
-            // Verify that internal position is in [....] with the handle
+            // Verify that internal position is in sync with the handle
             if (_exposedHandle)
                 VerifyOSHandlePosition();
 
@@ -1748,7 +1724,7 @@ namespace System.IO {
 
         // Checks the position of the OS's handle equals what we expect it to.
         // This will fail if someone else moved the FileStream's handle or if
-        // we've hit a bug in FileStream's position updating code.
+        // we've hit a 
         private void VerifyOSHandlePosition()
         {
             if (!CanSeek)
@@ -1971,7 +1947,7 @@ namespace System.IO {
                 // (either synchronously or asynchronously) before the first one 
                 // returns.  This would involve some sort of complex buffer locking
                 // that we probably don't want to get into, at least not in V1.
-                // If we did a [....] read to fill the buffer, we could avoid the
+                // If we did a sync read to fill the buffer, we could avoid the
                 // problem, and any async read less than 64K gets turned into a
                 // synchronous read by NT anyways...       -- 
 
@@ -2081,6 +2057,9 @@ namespace System.IO {
                 // location, not a relative one.  ReadFile seems consistent though.
                 SeekCore(numBytes, SeekOrigin.Current);
             }
+
+            if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
+                FrameworkEventSource.Log.ThreadTransferSend((long)(asyncResult.OverLapped), 2, string.Empty, false);
 
             // queue an async ReadFile operation and pass in a packed overlapped
             int hr = 0;
@@ -2338,6 +2317,9 @@ namespace System.IO {
 
             //Console.WriteLine("BeginWrite finishing.  pos: "+pos+"  numBytes: "+numBytes+"  _pos: "+_pos+"  Position: "+Position);
 
+            if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
+                FrameworkEventSource.Log.ThreadTransferSend((long)(asyncResult.OverLapped), 2, string.Empty, false);
+
             int hr = 0;
             // queue an async WriteFile operation and pass in a packed overlapped
             int r = WriteFileNative(_handle, bytes, offset, numBytes, intOverlapped, out hr);
@@ -2533,7 +2515,7 @@ namespace System.IO {
 
             if (r==0) {
                 hr = Marshal.GetLastWin32Error();
-                // We should never silently ---- an error here without some
+                // We should never silently swallow an error here without some
                 // extra work.  We must make sure that BeginReadCore won't return an 
                 // IAsyncResult that will cause EndRead to block, since the OS won't
                 // call AsyncFSCallback for us.  
@@ -2590,7 +2572,7 @@ namespace System.IO {
 
             if (r==0) {
                 hr = Marshal.GetLastWin32Error();
-                // We should never silently ---- an error here without some
+                // We should never silently swallow an error here without some
                 // extra work.  We must make sure that BeginWriteCore won't return an 
                 // IAsyncResult that will cause EndWrite to block, since the OS won't
                 // call AsyncFSCallback for us.  
@@ -2645,7 +2627,7 @@ namespace System.IO {
 
             // If async IO is not supported on this platform or 
             // if this FileStream was not opened with FileOptions.Asynchronous.
-            if (!_isAsync || !Environment.IsWindowsVistaOrAbove)
+            if (!_isAsync)
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
 
             var readTask = new FileStreamReadWriteTask<int>(cancellationToken);
@@ -2697,7 +2679,7 @@ namespace System.IO {
 
             // If async IO is not supported on this platform or 
             // if this FileStream was not opened with FileOptions.Asynchronous.
-            if (!_isAsync || !Environment.IsWindowsVistaOrAbove)
+            if (!_isAsync)
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
 
             var writeTask = new FileStreamReadWriteTask<VoidTaskResult>(cancellationToken);

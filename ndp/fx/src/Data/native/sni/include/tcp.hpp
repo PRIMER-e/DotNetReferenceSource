@@ -9,7 +9,7 @@
 // <owner current="true" primary="false">nantu</owner>
 //
 // Purpose: SNI Tcp Provider
-//
+// 
 // Notes:
 //          
 // @EndHeader@
@@ -122,6 +122,7 @@ public:
 	~Tcp();	
 
 	static BOOL s_fAutoTuning;
+	static BOOL s_fSkipCompletionPort;
 
 	static DWORD Initialize(PSNI_PROVIDER_INFO pInfo);
 	static DWORD Terminate();
@@ -134,8 +135,8 @@ public:
 							int timeout);
 	
 	DWORD LoadConnectEx(__in CONNECTEXFUNC** pfnCF);	
-	DWORD SocketOpenSync(__in ADDRINFO* AI, int timeout);
-	DWORD SocketOpenParallel(__in const ADDRINFO *AI, DWORD timeout);
+	DWORD SocketOpenSync(__in ADDRINFOW* AIW, int timeout);
+	DWORD SocketOpenParallel(__in const ADDRINFOW *AIW, DWORD timeout);
 	DWORD CheckConnection( );
 	DWORD ReadSync(__out SNI_Packet ** ppNewPacket, int timeout);
 	DWORD ReadAsync(__out SNI_Packet ** ppNewPacket, LPVOID pPacketKey);
@@ -154,12 +155,12 @@ public:
 	static DWORD GetPeerPort(__in SNI_Conn * pConn, __out USHORT * port);
 	static DWORD GetLocalAddress(__in SNI_Conn * pConn, __out PeerAddrInfo * addrinfo);
 	static DWORD GetLocalPort(__in SNI_Conn * pConn, __out USHORT * port);
-	static DWORD GetDnsName( char *szAddress, __out_ecount(len) char *szDnsName, int len);
-	static BOOL FIsLoopBack(const char* pszServer);
+	static DWORD GetDnsName( WCHAR *wszAddress, __out_ecount(len) WCHAR *wszDnsName, int len);
+	static BOOL FIsLoopBack(const WCHAR* pwszServer);
 
 	DWORD SetKeepAliveOption();
 	inline void SetSockBufAutoTuning(BOOL* pfAuto){ Assert (pfAuto); m_fAuto = (*pfAuto == TRUE && s_fAutoTuning ==TRUE); }
-	
+		
 	static DWORD AcceptDone( SNI_Conn * pConn, 
 								 __inout LPVOID pAcceptKey,
 								 DWORD dwBytes,
@@ -177,7 +178,7 @@ private:
 	// Returns a Windows error code otherwise.
 	DWORD DWSetSkipCompletionPortOnSuccess();
 	
-	// Sets parameters on the SNI_Packet to allow it to be used for a [....] Overlapped operation.
+	// Sets parameters on the SNI_Packet to allow it to be used for a sync Overlapped operation.
 	void PrepareForSyncCall(SNI_Packet *pPacket);
 	
 	// Sets parameters on the SNI_Packet to allow it to be used for an Async Overlapped operation.
@@ -186,10 +187,12 @@ private:
 	DWORD PostReadAsync(SNI_Packet *pPacket, DWORD cbBuffer);
 	static Tcp * AcceptConnection( SNI_Conn *pConn, SOCKET AcceptSocket, char * szAddressBuffer);
 
-	static bool IsNumericAddress( LPSTR name);
+	static bool IsNumericAddress( LPWSTR name);
 
 	DWORD Tcp::FInit(); 
 
+	DWORD ParallelOpen(__in ADDRINFOW *AddrInfoW, int timeout, DWORD dwStartTickCount);
+	
 	__inline  DWORD CheckAndAdjustSendBufferSizeBasedOnISB();
 	
 // helper for Tcp::Open
@@ -200,6 +203,9 @@ private:
 	void ReleaseHandleRef(); 
 
 	BOOL FCloseRefHandle(); 
+
+	static DWORD ShouldEnableSkipIOCompletion(__out BOOL* pfShouldEnable);
+	static UINT GetAddrCount(const ADDRINFOW *AIW);
 };
 
 #endif

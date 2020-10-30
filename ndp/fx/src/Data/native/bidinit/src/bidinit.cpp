@@ -2,10 +2,10 @@
 //              Copyright (c) 1988-2003 Microsoft Corporation.
 //
 // @File:  bidinit.cpp
-// @Owner: [....]
+// @Owner: Microsoft
 // @test:
 //
-// <owner current="true" primary="true">[....]</owner>
+// <owner current="true" primary="true">Microsoft</owner>
 //
 // Purpose:
 //   BID initialization code for SNIX
@@ -23,7 +23,7 @@
 #endif
 
 #define _BID_IDENTITY_A     "System.Data.SNI.1"
-#define _BID_[....]_LOAD
+#define _BID_SYNC_LOAD
 
 #include "BidApi_ldr.h"
 

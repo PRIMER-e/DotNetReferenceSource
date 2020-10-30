@@ -439,7 +439,7 @@ namespace System.Data.Services.Client
                 }
                 else
                 {
-                    // DEVNOTE([....]): The next link uri should never be edited by the client, and therefore it must be absolute
+                    // DEVNOTE(Microsoft): The next link uri should never be edited by the client, and therefore it must be absolute
                     result = DataServiceQueryContinuation.Create(
                         this.materializer.CurrentFeed.NextLink, 
                         this.materializer.MaterializeEntryPlan);
@@ -501,7 +501,7 @@ namespace System.Data.Services.Client
                 "<feed> or <links> tag expected");
 
             // Create the XElement for look-ahead
-            // DEVNOTE([....]):
+            // DEVNOTE(Microsoft):
             // This is not streaming friendly!
             XElement element = XElement.Load(this.reader);
             this.reader.Close();

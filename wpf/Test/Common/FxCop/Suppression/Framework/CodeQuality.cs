@@ -43,7 +43,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1038684
-// Developer: [....]/Chandras
+// Developer: BChapman/Chandras
 // Reason: This is Win32 Interop Code and need to be that way. We send a destroywindow message and expect the window
 //         to be deleted in correct way by win32 and we shouldn't be dealing with dispose here as it can turn the
 //     win32 event state wacky.
@@ -92,7 +92,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1218572, 1319521
-// Developer: [....], KenLai
+// Developer: DwayneN, KenLai
 // Reason: As per CoreUI Leads, this is an Architecture issue of property engine.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors", Scope="member", Target="System.Windows.Input.KeyboardNavigation+FocusVisualAdorner..ctor(System.Windows.ContentElement,System.Windows.UIElement,System.Windows.Style)")]
@@ -113,7 +113,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1233106
-// Developer: [....]
+// Developer: BenCar
 // Reason: As per CoreUI Leads, this is an Architecture issue of property engine. Also GetValueCore (the virtual method) is sealed in a base class (FrameworkElement)
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors", Scope="member", Target="System.Windows.Controls.Primitives.Selector..ctor()")]
@@ -127,7 +127,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1284595
-// Developer: [....]
+// Developer: grzegorz
 // Reason: The same instance of PageBreakRecord is stored in 2 places:
 //     1) PtsPage - creates it and uses it internally, also passes the instance to BreakRecordTable
 //     2) BreakRecordTable (lifetime of this object is greater than PtsPage) – stores to enable formatting
@@ -139,14 +139,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1313652
-// Developer: [....]
+// Developer: grzegorz
 // Reason: DocumentPageView.Dispose calls internally DestroyDocumentPage() which calls _documentPage.Dispose(). This is false warning.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", Scope="member", Target="System.Windows.Controls.Primitives.DocumentPageView.System.IDisposable.Dispose():System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1325743
-// Developer: [....]
+// Developer: ChangoV
 // Reason: There is no real issue here, since this is a closed hierarchy of classes, and we don't
 //   override this DependencyObject.GetValueCore(). (And the fact that there is such an override
 //   is completely irrelevant to JournalEntry.)
@@ -155,7 +155,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1340803
-// Developer: [....]
+// Developer: arathira
 // Reason: The _breakRecord member in PtsPage is a reference to a break record that is owned by the the BreakRecordTable. The
 // record should be disposed with the BreakRecordTable and not here.
 //***************************************************************************************************************************
@@ -163,7 +163,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1344480
-// Developer: [....]
+// Developer: grzegorz
 // Reason: The _firstChild member is Disposed in loop together with other children on TableParagraph.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", Scope="member", Target="MS.Internal.PtsHost.TableParagraph.Dispose():System.Void", MessageId="_firstChild")]
@@ -201,7 +201,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 121542
-// Developer: [....]
+// Developer: benwest
 // Reason: "mergeable" is used in published apis.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Documents.TextElementEditingBehaviorAttribute.IsMergeable", MessageId="Mergeable")]
@@ -209,7 +209,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 140708
-// Developer: [....]
+// Developer: sambent
 // Reason: A new ShutDownListener is "used" because it listens to events like AppDomain.DomainUnload.
 //      The reference implicit in the event's delegate list keeps the object alive.  FxCop doesn't understand this.
 //***************************************************************************************************************************
@@ -219,14 +219,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: no bug
-// Developer: [....]
+// Developer: sambent
 // Reason: FxCop doesn't understand that index must be >0 because of the previous line:  if (index == 0) throw...
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", Scope="member", Target="System.Windows.Data.BindingListCollectionView.#RemoveAt(System.Int32)", MessageId="index-1")]
 
 //**************************************************************************************************************************
 // Feature: Win7 Integration
-// Developer: [....]
+// Developer: joecast
 // Reason: Ignorable FxCop warnings: Intentional naming violations.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA2227:CollectionPropertiesShouldBeReadOnly", Scope="member", Target="System.Windows.Shell.TaskbarItemInfo.#ThumbButtonInfos")]
@@ -235,7 +235,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 692896 Dev10
-// Developer: [....]
+// Developer: joecast
 // Reason: Context is understood and these are ignorable.  We don't want to unnecessarily touch this code.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA1806:DoNotIgnoreMethodResults", MessageId="MS.Win32.NativeMethods+IOleCommandTarget.Exec(MS.Win32.NativeMethods+GUID,System.Int32,System.Int32,System.Object[],System.Int32)", Scope="member", Target="System.Windows.Controls.WebBrowser.#DoNavigate(System.Uri,System.Object&,System.Object&,System.Object&)")]

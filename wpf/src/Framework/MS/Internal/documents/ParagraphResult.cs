@@ -8,8 +8,8 @@
 //              information for a paragraph. 
 //
 // History:  
-//  05/20/2003 : [....] - Moving from Avalon branch.
-//  06/25/2004 : [....] - Performance work.
+//  05/20/2003 : Microsoft - Moving from Avalon branch.
+//  06/25/2004 : Microsoft - Performance work.
 //
 //---------------------------------------------------------------------------
 
@@ -950,7 +950,7 @@ namespace MS.Internal.Documents
         { 
             get 
             { 
-                MbpInfo mbp = MbpInfo.FromElement(_paraClient.Paragraph.Element);
+                MbpInfo mbp = MbpInfo.FromElement(_paraClient.Paragraph.Element, _paraClient.Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
                 return new Vector(LayoutBox.X + TextDpi.FromTextDpi(mbp.BPLeft), LayoutBox.Y + TextDpi.FromTextDpi(mbp.BPTop));
             }
         } 
@@ -1065,7 +1065,7 @@ namespace MS.Internal.Documents
         {
             get
             {
-                MbpInfo mbp = MbpInfo.FromElement(_paraClient.Paragraph.Element);
+                MbpInfo mbp = MbpInfo.FromElement(_paraClient.Paragraph.Element, _paraClient.Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
                 return new Vector(LayoutBox.X + TextDpi.FromTextDpi(mbp.BPLeft), LayoutBox.Y + TextDpi.FromTextDpi(mbp.BPTop));
             }
         } 
@@ -1238,7 +1238,7 @@ namespace MS.Internal.Documents
         {
             get
             {
-                MbpInfo mbp = MbpInfo.FromElement(_paraClient.Paragraph.Element);
+                MbpInfo mbp = MbpInfo.FromElement(_paraClient.Paragraph.Element, _paraClient.Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
                 return new Vector(LayoutBox.X + TextDpi.FromTextDpi(mbp.BPLeft), LayoutBox.Y + TextDpi.FromTextDpi(mbp.BPTop));
             }
         }

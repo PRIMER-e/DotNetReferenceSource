@@ -19,7 +19,7 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
     {
         System::Guid guid = System::Guid("b2d9f3ec-c9fe-4a11-a2ec-d86208f7c0a2");
         _GUID* pGuidForIDWriteLocalFontFileLoader = new _GUID();
-        *pGuidForIDWriteLocalFontFileLoader = Util::ToGUID(guid);
+        *pGuidForIDWriteLocalFontFileLoader = Native::Util::ToGUID(guid);
         _guidForIDWriteLocalFontFileLoader = gcnew NativePointerWrapper<_GUID>(pGuidForIDWriteLocalFontFileLoader);                
     }
 

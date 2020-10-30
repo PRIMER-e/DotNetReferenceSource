@@ -7,7 +7,7 @@
 // Description: DefaultValueFactory for DrawingAttributes
 //
 // History:
-//  2005/11/08 : [....] - Created
+//  2005/11/08 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

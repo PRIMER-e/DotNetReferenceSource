@@ -6,7 +6,7 @@
 //      Provides a type to tokenize text.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Parsing

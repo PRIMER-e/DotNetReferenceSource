@@ -8,7 +8,7 @@
 //              data of text paragraphs.
 //
 // History:
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -633,7 +633,7 @@ namespace MS.Internal.PtsHost
                             {
                                 lineWidth = lineDesc.dur;
 
-                                // Store dcpLim to check that line lengths are in [....]
+                                // Store dcpLim to check that line lengths are in sync
                                 dcpLim = lineDesc.dcpLim;
 
                                 breakRecLine = lineDesc.pfsbreakreclineclient;
@@ -668,7 +668,7 @@ namespace MS.Internal.PtsHost
                                 {
                                     lineWidth = element.dur;
 
-                                    // Store dcpLim to check that line lengths are in [....]
+                                    // Store dcpLim to check that line lengths are in sync
                                     dcpLim = element.dcpLim;
 
                                     breakRecLine = element.pfsbreakreclineclient;
@@ -703,7 +703,7 @@ namespace MS.Internal.PtsHost
             TextParagraph.FormatLineCore(line, breakRecLine, ctx, dcpLine, lineWidth, firstLine, dcpLine);
 
             // Assert that number of characters in Text line is the same as our expected length
-            Invariant.Assert(line.SafeLength == dcpLim - dcpLine, "Line length is out of [....]");
+            Invariant.Assert(line.SafeLength == dcpLim - dcpLine, "Line length is out of sync");
 
             cchContent = line.ContentLength;
             cchEllipses = line.GetEllipsesLength();
@@ -1159,7 +1159,7 @@ namespace MS.Internal.PtsHost
                                 lineWidth = lineDesc.dur;
                                 urDistance -= lineDesc.urStart;
 
-                                // Store dcpLim to check if line lengths are in [....]
+                                // Store dcpLim to check if line lengths are in sync
                                 dcpLim = lineDesc.dcpLim;
 
                                 breakRecLine = lineDesc.pfsbreakreclineclient;
@@ -1195,7 +1195,7 @@ namespace MS.Internal.PtsHost
                                     lineWidth = element.dur;
                                     urDistance -= element.urStart;
 
-                                    // Store dcpLim to check if line lengths are in [....]
+                                    // Store dcpLim to check if line lengths are in sync
                                     dcpLim = element.dcpLim;
 
                                     breakRecLine = element.pfsbreakreclineclient;
@@ -1231,7 +1231,7 @@ namespace MS.Internal.PtsHost
             TextParagraph.FormatLineCore(line, breakRecLine, ctx, dcpLine, lineWidth, firstLine, dcpLine);
 
             // Assert that number of characters in Text line is the same as our expected length
-            Invariant.Assert(line.SafeLength == dcpLim - dcpLine, "Line length is out of [....]");
+            Invariant.Assert(line.SafeLength == dcpLim - dcpLine, "Line length is out of sync");
 
             CharacterHit charHit = line.GetTextPositionFromDistance(urDistance);
             int cpPosition = charHit.FirstCharacterIndex + charHit.TrailingLength;
@@ -1693,7 +1693,7 @@ namespace MS.Internal.PtsHost
             }
 
 #if VERIFY_VISUALS
-            // Verify our visuals are in-[....] with the actual line visuals.
+            // Verify our visuals are in-sync with the actual line visuals.
             VerifyVisuals(ref textDetails);
 #endif
         }
@@ -1874,7 +1874,7 @@ namespace MS.Internal.PtsHost
                     TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
                     // Assert that number of characters in Text line is the same as our expected length
-                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                     // Get rect from cp
                     FlowDirection flowDirection;
@@ -1976,7 +1976,7 @@ namespace MS.Internal.PtsHost
                         TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                         // Assert that number of characters in Text line is the same as our expected length
-                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                         // Get rect from cp
                         FlowDirection flowDirection;
@@ -2327,7 +2327,7 @@ namespace MS.Internal.PtsHost
                     }
                     TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
-                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                     double duOffset = TextDpi.FromTextDpi(lineDesc.urStart);
                     double dvOffset = TextDpi.FromTextDpi(lineDesc.vrStart);
@@ -2437,7 +2437,7 @@ namespace MS.Internal.PtsHost
                         ctx.LineFormatLengthTarget = elemDesc.dcpLim - elemDesc.dcpFirst;
                     }
                     TextParagraph.FormatLineCore(line, elemDesc.pfsbreakreclineclient, ctx, elemDesc.dcpFirst, elemDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), elemDesc.dcpFirst);
-                    Invariant.Assert(line.SafeLength == elemDesc.dcpLim - elemDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == elemDesc.dcpLim - elemDesc.dcpFirst, "Line length is out of sync");
 
                     double duOffset = TextDpi.FromTextDpi(elemDesc.urStart);
                     double dvOffset = TextDpi.FromTextDpi(lineDesc.vrStart);
@@ -2666,7 +2666,7 @@ namespace MS.Internal.PtsHost
                     TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
                     // Assert that number of characters in Text line is the same as our expected length
-                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
                     isAtCaretUnitBoundary = line.IsAtCaretCharacterHit(charHit);
 
                     // Dispose the line
@@ -2795,7 +2795,7 @@ namespace MS.Internal.PtsHost
                         TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                         // Assert that number of characters in Text line is the same as our expected length
-                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
                         isAtCaretUnitBoundary = line.IsAtCaretCharacterHit(charHit);
 
                         // Dispose the line
@@ -2878,7 +2878,7 @@ namespace MS.Internal.PtsHost
                     TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
                     // Assert that number of characters in Text line is the same as our expected length
-                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                     // Create CharacterHit
                     CharacterHit charHit = new CharacterHit(dcp, 0);
@@ -3049,7 +3049,7 @@ namespace MS.Internal.PtsHost
                         TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                         // Assert that number of characters in Text line is the same as our expected length
-                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                         // Create CharacterHit from dcp, and get next
                         CharacterHit charHit = new CharacterHit(dcp, 0);
@@ -3169,7 +3169,7 @@ namespace MS.Internal.PtsHost
                     TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
                     // Assert that number of characters in Text line is the same as our expected length
-                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                     // Create CharacterHit and get backspace index from line API
                     CharacterHit textSourceCharacterIndex = new CharacterHit(dcp, 0);
@@ -3299,7 +3299,7 @@ namespace MS.Internal.PtsHost
                         TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                         // Assert that number of characters in Text line is the same as our expected length
-                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                         // Create CharacterHit from dcp, and get backspace
                         CharacterHit charHit = new CharacterHit(dcp, 0);
@@ -3375,7 +3375,7 @@ namespace MS.Internal.PtsHost
                     TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
                     // Assert that number of characters in Text line is the same as our expected length
-                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                     // Retrieve glyphs from this line
                     line.GetGlyphRuns(glyphRuns, Math.Max(dcpStart, lineDesc.dcpFirst), Math.Min(dcpEnd, lineDesc.dcpLim));
@@ -3442,7 +3442,7 @@ namespace MS.Internal.PtsHost
                         TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                         // Assert that number of characters in Text line is the same as our expected length
-                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                         // Retrieve glyphs from this line
                         line.GetGlyphRuns(glyphRuns, Math.Max(dcpStart, element.dcpFirst), Math.Min(dcpEnd, element.dcpLim));
@@ -3504,7 +3504,7 @@ namespace MS.Internal.PtsHost
                     TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
                     // Assert that number of characters in Text line is the same as our expected length
-                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                     // Create and validate line's visual
                     ContainerVisual lineVisual = line.CreateVisual();
@@ -3549,7 +3549,7 @@ namespace MS.Internal.PtsHost
                     TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
                     // Assert that number of characters in Text line is the same as our expected length
-                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                    Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                     // Create and validate line's visual
                     ContainerVisual lineVisual = line.CreateVisual();
@@ -3606,7 +3606,7 @@ namespace MS.Internal.PtsHost
             TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
             // Assert that number of characters in Text line is the same as our expected length
-            Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+            Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
             // Create and validate line's visual
             ContainerVisual lineVisual = line.CreateVisual();
@@ -3720,12 +3720,12 @@ namespace MS.Internal.PtsHost
                     }
                     else if (lineIndexFirstVisible != _lineIndexFirstVisual || (lineIndexFirstInvisible - lineIndexFirstVisible) != visualChildren.Count)
                     {
-                        // Need to resolve existing list with new list - [....] the beginning of the list
+                        // Need to resolve existing list with new list - sync the beginning of the list
 
 
                         //    |----------------| (Old committed range)
                         // |-------|             (New committed range)
-                        // Need to add visuals to the beginning to [....] the start position
+                        // Need to add visuals to the beginning to sync the start position
                         if (lineIndexFirstVisible < _lineIndexFirstVisual)
                         {
                             for (int index = lineIndexFirstVisible; index < _lineIndexFirstVisual; index++)
@@ -3742,7 +3742,7 @@ namespace MS.Internal.PtsHost
                         {
                             //    |----------------| (Old committed range)
                             //        |-------|             (New committed range)
-                            // Need to remove visuals from the beginning to [....] start positions.
+                            // Need to remove visuals from the beginning to sync start positions.
 
                             visualChildren.RemoveRange(0, lineIndexFirstVisible - _lineIndexFirstVisual);
                         }
@@ -3752,7 +3752,7 @@ namespace MS.Internal.PtsHost
                     Debug.Assert(_lineIndexFirstVisual == lineIndexFirstVisible);
 
 
-                    // Now [....] the end of the list, two cases..
+                    // Now sync the end of the list, two cases..
                     // Fewer lines than existed before, remove lines from end
                     // |---------------|
                     // |----------|
@@ -3916,7 +3916,7 @@ namespace MS.Internal.PtsHost
                         TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                         // Assert that number of characters in Text line is the same as our expected length
-                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                         // Create and validate line's visual
                         ContainerVisual lineVisual = line.CreateVisual();
@@ -3985,7 +3985,7 @@ namespace MS.Internal.PtsHost
                         TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                         // Assert that number of characters in Text line is the same as our expected length
-                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                        Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                         // Create and validate line's visual
                         ContainerVisual lineVisual = line.CreateVisual();
@@ -4101,14 +4101,14 @@ namespace MS.Internal.PtsHost
                         TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
                         // Assert that number of characters in Text line is the same as our expected length
-                        Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                        Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                         if (lineDesc.urStart + line.CalculateUOffsetShift() <= pt.u && pt.u <= (lineDesc.urStart + line.CalculateUOffsetShift() + lineDesc.dur))
                         {
                             int distance = pt.u - lineDesc.urStart;
 
                             // Assert that number of characters in Text line is the same as our expected length
-                            Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+                            Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
                             if ((line.Start <= distance) && (distance <= (line.Start + line.Width)))
                             {
@@ -4229,7 +4229,7 @@ namespace MS.Internal.PtsHost
             TextParagraph.FormatLineCore(line, lineDesc.pfsbreakreclineclient, ctx, lineDesc.dcpFirst, lineDesc.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), lineDesc.dcpFirst);
 
             // Assert that number of characters in Text line is the same as our expected length
-            Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of [....]");
+            Invariant.Assert(line.SafeLength == lineDesc.dcpLim - lineDesc.dcpFirst, "Line length is out of sync");
 
             // Get rectangles from start and end positions of range
             rectangles = line.GetRangeBounds(localStart, localEnd - localStart, TextDpi.FromTextDpi(lineDesc.urStart), TextDpi.FromTextDpi(lineDesc.vrStart));
@@ -4301,17 +4301,17 @@ namespace MS.Internal.PtsHost
                             TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                             // Assert that number of characters in Text line is the same as our expected length
-                            Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                            Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                             if (element.urStart + line.CalculateUOffsetShift() <= pt.u && pt.u <= (element.urStart + line.CalculateUOffsetShift() + element.dur))
                             {
                                 int distance = pt.u - element.urStart;
 
                                 // Assert that number of characters in Text line is the same as our expected length
-                                Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                                Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                                 // Assert that number of characters in Text line is the same as our expected length
-                                Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                                Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                                 if ((line.Start <= distance) && (distance <= (line.Start + line.Width)))
                                 {
@@ -4442,7 +4442,7 @@ namespace MS.Internal.PtsHost
                 TextParagraph.FormatLineCore(line, element.pfsbreakreclineclient, ctx, element.dcpFirst, element.dur, PTS.ToBoolean(lineDesc.fTreatedAsFirst), element.dcpFirst);
 
                 // Assert that number of characters in Text line is the same as our expected length
-                Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of [....]");
+                Invariant.Assert(line.SafeLength == element.dcpLim - element.dcpFirst, "Line length is out of sync");
 
                 // Get rectangles from start and end positions of range for this element
                 List<Rect> elementRectangles = line.GetRangeBounds(localStart, localEnd - localStart, TextDpi.FromTextDpi(element.urStart), TextDpi.FromTextDpi(lineDesc.vrStart));

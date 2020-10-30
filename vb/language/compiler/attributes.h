@@ -1411,7 +1411,7 @@ private:
     USHORT           m_cNamedProps;     // Count of named props in this arg blob (USHORT to match COM+)
     bool             m_fError;          // Did a recoverable error occur?
 
-    //[....] For performance reasons, do not allocate a buffer
+    //Microsoft For performance reasons, do not allocate a buffer
     //for this array with every Attribute instance. It is often not needed.
     //Allocate it only when preparing to perform operations
     //that will need it.

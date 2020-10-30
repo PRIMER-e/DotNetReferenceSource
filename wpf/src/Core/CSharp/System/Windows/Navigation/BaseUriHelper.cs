@@ -3,7 +3,7 @@
 //  File:           BaseUriHelper.cs
 //
 //
-//  History:        06/21/05 - [....] - created
+//  History:        06/21/05 - Microsoft - created
 //                  07/20/05 - weibz - Move the place
 //                                     Move the BaseUri helper from Framework
 //                                     down to core.

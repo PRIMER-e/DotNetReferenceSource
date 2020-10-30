@@ -83,9 +83,9 @@ namespace MS.Internal.Annotations.Component
 
             if (!_attachedAnnotations.ContainsKey(attachedAnnotation))
             {
-                // note, this is not always a bug, since an annotation might have resolved, but no annotation component found
-                // the tree traversal bug we have currently results in this failing even if annotation components were found, because
-                // in certain cases annotationService.AttachedAnnotations returns wrong list.
+                // note, this is not always a 
+
+
                 return;
             }
 
@@ -182,9 +182,9 @@ namespace MS.Internal.Annotations.Component
                 if (PresentationSource.FromVisual(annotatedElement) == null)
                 {
                     // The annotated element is no longer part of the application tree.
-                    // This probably means we are out of [....] - trying to add an annotation
-                    // for an element that has already gone away.  Bug # 1580288 tracks
-                    // the need to figure this out.
+                    // This probably means we are out of sync - trying to add an annotation
+                    // for an element that has already gone away.  
+
                     return;
                 }
 
@@ -221,8 +221,8 @@ namespace MS.Internal.Annotations.Component
             // then we treat the modify case as an add 
             if (!_attachedAnnotations.ContainsKey(attachedAnnotation))
             {
-                // this is not necessarily a bug, it can be that the old attached annotation does not have an
-                // associated annotation component.
+                // this is not necessarily a 
+
                 this.AddAttachedAnnotation(attachedAnnotation, true);
                 return;
             }

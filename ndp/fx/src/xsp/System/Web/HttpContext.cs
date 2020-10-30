@@ -22,6 +22,7 @@ namespace System.Web {
     using System.Linq;
     using System.Net;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Runtime.Remoting.Messaging;
     using System.Security.Permissions;
     using System.Security.Principal;
@@ -113,8 +114,9 @@ namespace System.Web {
         // Sql Cache Dependency
         private string _sqlDependencyCookie;
 
-        // Delayed session state item
-        SessionStateModule  _sessionStateModule;    // if non-null, it means we have a delayed session state item
+        // Session State
+        volatile SessionStateModule _sessionStateModule;
+        volatile bool               _delayedSessionState;   // Delayed session state item
 
         // non-compiled pages
         private TemplateControl _templateControl;
@@ -729,7 +731,7 @@ namespace System.Web {
         // which doesn't fit our expected patterns and where that code likely has negative side effects.
         // 
         // This flag is respected only by AspNetSynchronizationContext; it has no effect when the
-        // legacy [....] context is in use.
+        // legacy sync context is in use.
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public bool AllowAsyncDuringSyncStages {
             get {
@@ -756,6 +758,15 @@ namespace System.Web {
                 }
                 else {
                     _appInstance = value;
+
+                    // Use HttpApplication instance custom allocator provider
+                    if (_isIntegratedPipeline) {
+                        // The provider allows null - everyone should fallback to default implementation
+                        IAllocatorProvider allocator = _appInstance != null ? _appInstance.AllocatorProvider : null;
+
+                        _response.SetAllocatorProvider(allocator);
+                        ((IIS7WorkerRequest)_wr).AllocatorProvider = allocator;
+                    }
                 }
             }
         }
@@ -901,7 +912,6 @@ namespace System.Web {
         ///    </para>
         /// </devdoc>
         public HttpRequest Request {
-            [System.Runtime.TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
             get {
                  if (HideRequestResponse)
                     throw new HttpException(SR.GetString(SR.Request_not_available));
@@ -917,7 +927,6 @@ namespace System.Web {
         ///    </para>
         /// </devdoc>
         public HttpResponse Response {
-            [System.Runtime.TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
             get {
                 if (HideRequestResponse || HasWebSocketRequestTransitionCompleted)
                     throw new HttpException(SR.GetString(SR.Response_not_available));
@@ -998,12 +1007,14 @@ namespace System.Web {
                     return null;
                 }
 
-                if (_sessionStateModule != null) {
+                if (_delayedSessionState) {
                     lock (this) {
-                        if (_sessionStateModule != null) {
+                        if (_delayedSessionState) {
+                            Debug.Assert(_sessionStateModule != null, "_sessionStateModule != null");
+
                             // If it's not null, it means we have a delayed session state item
                             _sessionStateModule.InitStateStoreItem(true);
-                            _sessionStateModule = null;
+                            _delayedSessionState = false;
                         }
                     }
                 }
@@ -1012,15 +1023,42 @@ namespace System.Web {
             }
         }
 
-        internal void AddDelayedHttpSessionState(SessionStateModule module) {
-            if (_sessionStateModule != null) {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal void EnsureSessionStateIfNecessary() {
+            if (_sessionStateModule == null)
+            {
+                // If _sessionStateModule is null, we wouldn't be able to call 
+                // _sessionStateModule.EnsureStateStoreItemLocked(), so we return here.
+                // _sessionStateModule could be null in the following cases,
+                // 1. No session state acquired.
+                // 2. HttpResponse.Flush() happens after session state being released.
+                // 3. The session state module in use is not System.Web.SessionState.SessionStateModule.
+                //
+                // This method is for the in-framework SessionStateModule only.
+                //  OOB SessionStateModule can achieve this by using HttpResponse.AddOnSendingHeaders. 
+                return;
+            }
+
+            HttpSessionState session = (HttpSessionState)Items[SessionStateUtility.SESSION_KEY];
+
+            if (session != null &&                                 // The session has been initiated
+                session.Count > 0 &&                               // The session state is used
+                !string.IsNullOrEmpty(session.SessionID)) {        // Ensure the session Id is valid - it will force to create new if didn't exist
+                _sessionStateModule.EnsureStateStoreItemLocked();  // Lock the item if in use
+            }
+        }
+
+
+        internal void AddHttpSessionStateModule(SessionStateModule module, bool delayed) {
+            if (_sessionStateModule != null && _sessionStateModule != module) {
                 throw new HttpException(SR.GetString(SR.Cant_have_multiple_session_module));
             }
             _sessionStateModule = module;
+            _delayedSessionState = delayed;
         }
 
-        internal void RemoveDelayedHttpSessionState() {
-            Debug.Assert(_sessionStateModule != null, "_sessionStateModule != null");
+        internal void RemoveHttpSessionStateModule() {
+            _delayedSessionState = false;
             _sessionStateModule = null;
         }
 
@@ -1290,7 +1328,7 @@ namespace System.Web {
                 return _rootedObjects;
             }
             set {
-                // [....] the Principal between the containers
+                // Sync the Principal between the containers
                 SwitchPrincipalContainer(value);
                 _rootedObjects = value;
             }
@@ -1707,7 +1745,6 @@ namespace System.Web {
 
         */
 
-        [System.Runtime.TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
         internal void BeginCancellablePeriod() {
             // It could be caused by an exception in OnThreadStart
             if (Volatile.Read(ref _timeoutStartTimeUtcTicks) == -1) {
@@ -1725,7 +1762,6 @@ namespace System.Web {
             Interlocked.CompareExchange(ref _timeoutState, 0, 1);
         }
 
-        [System.Runtime.TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
         internal void WaitForExceptionIfCancelled() {
             while (Volatile.Read(ref _timeoutState) == -1)
                 Thread.Sleep(100);
@@ -1760,12 +1796,44 @@ namespace System.Web {
 
                     // abort the thread only if in cancelable state, avoiding race conditions
                     // the caller MUST timeout if the return is true
-                    if (Interlocked.CompareExchange(ref _timeoutState, -1, 1) == 1)
+                    if (Interlocked.CompareExchange(ref _timeoutState, -1, 1) == 1) {
+                        if (_wr.IsInReadEntitySync) {
+                            AbortConnection();
+                        }
                         return _thread;
+                    }
                 }
             }
 
             return null;
+        }
+
+        internal bool HasTimeoutExpired {
+            get {
+                // Check if it is allowed to timeout
+                if (Volatile.Read(ref _timeoutState) != 1 || !ThreadAbortOnTimeout) {
+                    return false;
+                }
+
+                // Check if the timeout has expired
+                long expirationUtcTicks = Volatile.Read(ref _timeoutStartTimeUtcTicks) + Timeout.Ticks; // don't care about overflow
+                if (expirationUtcTicks >= DateTime.UtcNow.Ticks) {
+                    return false;
+                }
+
+                // Dont't timeout when in debug
+                try {
+                    if (CompilationUtil.IsDebuggingEnabled(this) || System.Diagnostics.Debugger.IsAttached) {
+                        return false;
+                    }
+                }
+                catch {
+                    // ignore config errors
+                    return false;
+                }
+
+                return true;
+            }
         }
 
         // call a delegate within cancellable period (possibly throwing timeout exception)
@@ -2208,7 +2276,7 @@ namespace System.Web {
                         return CultureUtil.CreateReadOnlyCulture(userLanguages, requireSpecific);
                     }
                     catch {
-                        return CultureUtil.CreateReadOnlyCulture(configString, requireSpecific);
+                        return CultureUtil.CreateReadOnlyCulture(configString.Substring(5 /* "auto:".Length */), requireSpecific);
                     }
                 }
                 else {
@@ -2226,6 +2294,20 @@ namespace System.Web {
             NativeModuleNotEnabled, // iiswsock.dll isn't active in the pipeline
             NotAWebSocketRequest, // iiswsock.dll is active, but the current request is not a WebSocket request
             CurrentRequestIsChildRequest, // We are currently inside of a child request (IHttpContext::ExecuteRequest)
+        }
+
+        private void AbortConnection() {
+            IIS7WorkerRequest wr = _wr as IIS7WorkerRequest;
+
+            if (wr != null) { 
+                // Direct API Abort is suported in integrated mode only
+                wr.AbortConnection();
+            }
+            else {
+                // Close in classic mode acts as Abort (see HSE_REQ_CLOSE_CONNECTION) 
+                // It closes the underlined connection
+                _wr.CloseConnection();
+            }
         }
     }
 

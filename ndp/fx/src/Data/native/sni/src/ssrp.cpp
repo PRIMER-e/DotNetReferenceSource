@@ -147,7 +147,7 @@ OACR_WARNING_SUPPRESS(IPV6_ADDRESS_STRUCTURE_IPV4_SPECIFIC , " TEMPORARY SUPPRES
 		int len = sizeof multiaddr;
 
 		//convert ipv6 numeric address to fill in SOCKADDR_IN6 struct
-		if(WSAStringToAddress( SSRP_MULTICAST_ADDR, AF_INET6,	
+		if(WSAStringToAddressA( SSRP_MULTICAST_ADDR, AF_INET6,	
 				0, (LPSOCKADDR)&multiaddr,		&len))
 			goto ErrorExit;
 
@@ -205,13 +205,13 @@ public:
 	}
 
 		//opens udp sockets to server and sends a ssrp request
-	bool OpenUnicast( const char *szServer, __in_bcount(cBuf) char *pBuf, int cBuf )
+	bool OpenUnicast( const WCHAR *wszServer, __in_bcount(cBuf) char *pBuf, int cBuf )
 	{
-		BidxScopeAutoSNI3( SNIAPI_TAG _T( "szServer: '%hs', pBuf: %p, cBuf: %d\n"),
-						szServer, pBuf, cBuf);
+		BidxScopeAutoSNI3( SNIAPI_TAG _T( "wszServer: '%s', pBuf: %p, cBuf: %d\n"),
+						wszServer, pBuf, cBuf);
 
-		ADDRINFO 			* AddrInfo=0;
-		ADDRINFO 			Hints;
+		ADDRINFOW 			* AddrInfoW=0;
+		ADDRINFOW 			Hints;
 
 		if(m_nSockets>ARRAYSIZE(m_pSockets)-2)   //this method could add 2 more sockets, fail out if we don't have enough room. 
 		{
@@ -224,7 +224,7 @@ public:
 		Hints.ai_family = PF_UNSPEC;
 		Hints.ai_socktype = SOCK_DGRAM;
 
-		if( getaddrinfo_l( szServer, "1434", &Hints, &AddrInfo, GetDefaultLocale()))
+		if( GetAddrInfoW_l( wszServer, L"1434", &Hints, &AddrInfoW, GetDefaultLocale()))
 		{
 			DWORD dwRet = WSAGetLastError();
 			if ( EAI_NONAME == dwRet )
@@ -232,9 +232,9 @@ public:
 				//For numeric name in form of three-part address, e.g. 127.0.1 or two-part address, e.g. 127.1, retry getaddrinfo with AI_NUMERICHOST 
 				// as hint.ai_flags;			
 				Hints.ai_flags |=  AI_NUMERICHOST;			
-				if( getaddrinfo_l( szServer, "1434", &Hints, &AddrInfo, GetDefaultLocale()))				
+				if( GetAddrInfoW_l( wszServer, L"1434", &Hints, &AddrInfoW, GetDefaultLocale()))				
 				{
-					BidTrace1(ERROR_TAG _T("szServer: '%hs' not found\n"), szServer);
+					BidTrace1(ERROR_TAG _T("wszServer: '%s' not found\n"), wszServer);
 
 					BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("false\n"));
 					
@@ -243,7 +243,7 @@ public:
 			}
 			else
 			{
-				BidTrace1(ERROR_TAG _T("szServer: '%hs' not found\n"), szServer);
+				BidTrace1(ERROR_TAG _T("wszServer: '%s' not found\n"), wszServer);
 
 				BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("false\n"));
 
@@ -259,18 +259,18 @@ public:
 		//    - SSRP "unicast" targets all the addresses resolved for a given machine, up to 64 of them.
 		// This is a behavior change from previous client SSRP "unicast" implementation - previously, it targeted only the first IPv4 address it resolved and the first IPv6 address
 		// it resolved.
-		for( ADDRINFO *AI=AddrInfo; AI !=0 && m_nSockets < 64; AI = AI->ai_next )
+		for( ADDRINFOW *AIW=AddrInfoW; AIW !=0 && m_nSockets < 64; AIW = AIW->ai_next )
 		{
-			if( AI->ai_family != AF_INET && AI->ai_family != AF_INET6 )
+			if( AIW->ai_family != AF_INET && AIW->ai_family != AF_INET6 )
 				continue;
 
-			m_pSockets[m_nSockets] = socket(AI->ai_family, AI->ai_socktype, AI->ai_protocol);
+			m_pSockets[m_nSockets] = socket(AIW->ai_family, AIW->ai_socktype, AIW->ai_protocol);
 
 			if( m_pSockets[m_nSockets] == INVALID_SOCKET )
 				continue;
 			
 			if( SOCKET_ERROR == sendto( m_pSockets[m_nSockets], pBuf, cBuf, 0, 
-				AI->ai_addr, (int)AI->ai_addrlen))
+				AIW->ai_addr, (int)AIW->ai_addrlen))
 			{
 				closesocket( m_pSockets[m_nSockets] );
 				continue;
@@ -280,7 +280,7 @@ public:
 			m_nSockets++;
 		}
 
-		freeaddrinfo( AddrInfo );
+		FreeAddrInfoW( AddrInfoW );
 
 		if( m_nSockets == 0 )
 		{
@@ -295,12 +295,12 @@ public:
 
 	}
 
-	bool Open( __in LPCSTR szServer, __in LPCSTR szInstance )
+	bool Open( __in LPCWSTR wszServer, __in LPCSTR szInstance )
 	{
-		BidxScopeAutoSNI2( SNIAPI_TAG _T( "szServer: '%hs', szInstance: '%hs'\n"),
-						szServer, szInstance);
+		BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszServer: '%s', szInstance: '%hs'\n"),
+						wszServer, szInstance);
 
-		Assert( szServer );
+		Assert( wszServer );
 		Assert( szInstance );
 		Assert(m_nSockets==0);
 
@@ -312,7 +312,7 @@ public:
 		}
 		
 		//if server name is not specified it is a broadcast request
-		if( !szServer[0] )
+		if( !wszServer[0] )
 		{
 			Assert( !szInstance[0] );
 
@@ -368,7 +368,7 @@ public:
 				pBuf[0] = CLNT_UCAST_EX;
 			}
 
-			return OpenUnicast( szServer, pBuf, cBuf );
+			return OpenUnicast( wszServer, pBuf, cBuf );
 		}
 	}
 
@@ -470,15 +470,28 @@ public:
 	}
 };
 
-bool GetAdminPort( const char *szServer, const char *szInstance, __inout USHORT *pPort)
+bool GetAdminPort( const WCHAR *wszServer, const WCHAR *wszInstance, __inout USHORT *pPort)
 {
-	BidxScopeAutoSNI3( SNIAPI_TAG _T( "szServer: '%hs', szInstance: '%hs', pPort: %p\n"),
-						szServer, szInstance, pPort);
+	BidxScopeAutoSNI3( SNIAPI_TAG _T( "wszServer: '%s', wszInstance: '%s', pPort: %p\n"),
+						wszServer, wszInstance, pPort);
 
 	char	pBuf[MAX_NAME_SIZE+3];
 	int		cBuf;
 
    	SsrpSocket ssrpSocket;
+	
+	char szInstance[MAX_NAME_SIZE+3];
+	int ret = WideCharToMultiByte(CP_ACP, 0, wszInstance, wcslen(wszInstance), NULL, 0, NULL, NULL);
+	if (ret > MAX_NAME_SIZE+3)
+	{
+		goto ErrorExit;
+	}
+	ret = WideCharToMultiByte(CP_ACP, 0, wszInstance, wcslen(wszInstance), szInstance, sizeof(szInstance), NULL, NULL);
+	if (ret == 0)
+	{
+		goto ErrorExit;
+	}
+	szInstance[ret]='\0';
 
 	//format of the request packet is
 	//first byte CLNT_UCAST_DAC
@@ -492,7 +505,7 @@ bool GetAdminPort( const char *szServer, const char *szInstance, __inout USHORT 
 
 	cBuf = (int)strlen( szInstance )+3;
 	
-	if( false == ssrpSocket.OpenUnicast( szServer, pBuf, cBuf ))
+	if( false == ssrpSocket.OpenUnicast( wszServer, pBuf, cBuf ))
 		goto ErrorExit;
 
 	cBuf = ssrpSocket.Read( pBuf, 6);
@@ -525,11 +538,11 @@ ErrorExit:
 	return false;
 }
 
-DWORD ParseSsrpString(const char * szServer, __in LPSTR ssrpString, size_t cchSsrpString, __inout ProtList *pProtList)
+DWORD ParseSsrpString(const WCHAR * wszServer, __in LPSTR ssrpString, size_t cchSsrpString, __inout ProtList *pProtList)
 {
 	ProviderNum rgPSupported[10];
 	int nSupported=0;
-	LPSTR szClusEnv = NULL; 
+	LPWSTR wszClusEnv = NULL; 
 
 	//
 	// locate start of first protocol info
@@ -635,11 +648,11 @@ DWORD ParseSsrpString(const char * szServer, __in LPSTR ssrpString, size_t cchSs
 
 				//now szParamStart contains the the remainder without the server name
 				
-				if( IsLocalHost(szServer) )
+				if( IsLocalHost(wszServer) )
 				{
 					// _dupenv_s() returns non-zero for failure.  
 					//
-					if( _dupenv_s(&szClusEnv, NULL, "_CLUSTER_NETWORK_NAME_") )
+					if( _wdupenv_s(&wszClusEnv, NULL, L"_CLUSTER_NETWORK_NAME_") )
 					{
 						goto ErrorExit;
 					}
@@ -649,18 +662,18 @@ DWORD ParseSsrpString(const char * szServer, __in LPSTR ssrpString, size_t cchSs
 					//
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-					if( !szClusEnv
-					|| CSTR_EQUAL != CompareStringA(LOCALE_SYSTEM_DEFAULT,
+					if( !wszClusEnv
+					|| CSTR_EQUAL != CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									 NORM_IGNORECASE|NORM_IGNOREWIDTH,
-									 szClusEnv, -1,
-									 szServer, -1))
+									 wszClusEnv, -1,
+									 wszServer, -1))
 OACR_WARNING_POP
 					{
-						pProtElem->Np.Pipe[MAX_NAME_SIZE]='\0';
+						pProtElem->Np.Pipe[MAX_NAME_SIZE]=L'\0';
 						
-						if( FAILED(StringCchPrintfA(	pProtElem->Np.Pipe, 
-											CCH_ANSI_STRING(pProtElem->Np.Pipe), 
-											"\\\\.%s", 
+						if( FAILED(StringCchPrintfW(	pProtElem->Np.Pipe, 
+											ARRAYSIZE(pProtElem->Np.Pipe), 
+											L"\\\\.%hs", 
 											szParamStart)))
 						{
 								goto ErrorExit;
@@ -670,12 +683,12 @@ OACR_WARNING_POP
 					}
 				}
 
-				pProtElem->Np.Pipe[MAX_NAME_SIZE]='\0';
+				pProtElem->Np.Pipe[MAX_NAME_SIZE]=L'\0';
 
-				if( FAILED(StringCchPrintfA(	pProtElem->Np.Pipe, 
-									CCH_ANSI_STRING(pProtElem->Np.Pipe), 
-									"\\\\%s%s", 
-									szServer, 
+				if( FAILED(StringCchPrintfW(	pProtElem->Np.Pipe, 
+									ARRAYSIZE(pProtElem->Np.Pipe), 
+									L"\\\\%s%hs", 
+									wszServer, 
 									szParamStart)))
 				{
 						goto ErrorExit;
@@ -694,11 +707,12 @@ OACR_WARNING_POP
 
 				rgPSupported[nSupported++] = TCP_PROV;
 
-				if( 0 == Strtoi(szParamStart))
+				if( 0 == atoi(szParamStart))
 					goto ErrorExit;
 				
-				if( FAILED(StringCchCopyA( pProtElem->Tcp.szPort,
-									CCH_ANSI_STRING(pProtElem->Tcp.szPort),
+				if( FAILED(StringCchPrintfW( pProtElem->Tcp.wszPort,
+									ARRAYSIZE(pProtElem->Tcp.wszPort),
+									L"%hs",
 									szParamStart )))
 				{
 					goto ErrorExit;
@@ -741,11 +755,11 @@ OACR_WARNING_POP
 				
 				pProtElem->Via.Host[MAX_NAME_SIZE]='\0';
 
-				if( FAILED(StringCchPrintfA(	pProtElem->Via.Host, 
-									CCH_ANSI_STRING(pProtElem->Via.Host), 
-									"%s:%s",
+				if( FAILED(StringCchPrintfW(	pProtElem->Via.Host, 
+									ARRAYSIZE(pProtElem->Via.Host), 
+									L"%hs:%s",
 									szParamStart,
-									szServer)))
+									wszServer)))
 				{
 						goto ErrorExit;
 				}
@@ -776,11 +790,11 @@ OACR_WARNING_POP
 						*szPortEnd = 0;
 					}
 
-					int cLen = (int)strlen(pProtElem->Via.Param);
+					int cLen = (int)wcslen(pProtElem->Via.Param);
 
-					if( FAILED(StringCchPrintfA(	pProtElem->Via.Param + cLen, 
-										CCH_ANSI_STRING(pProtElem->Via.Param) - cLen, 
-										(cLen==0) ? "%s,%s":",%s,%s",
+					if( FAILED(StringCchPrintfW(	pProtElem->Via.Param + cLen, 
+										ARRAYSIZE(pProtElem->Via.Param) - cLen, 
+										(cLen==0) ? L"%hs,%hs":L",%hs,%hs",
 										szNicEnd+1, // port start
 										szParamStart )))// nic start
 					{
@@ -854,9 +868,9 @@ OACR_WARNING_POP
 
 	Assert( !nSupported );
 
-	if( NULL != szClusEnv )
+	if( NULL != wszClusEnv )
 	{
-		free(szClusEnv); 
+		free(wszClusEnv); 
 	}
 
 	BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("success\n"));
@@ -865,9 +879,9 @@ OACR_WARNING_POP
 	
 ErrorExit:
 
-	if( NULL != szClusEnv )
+	if( NULL != wszClusEnv )
 	{
-		free(szClusEnv); 
+		free(wszClusEnv); 
 	}
 
 	BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("fail\n"));
@@ -875,18 +889,31 @@ ErrorExit:
 	return ERROR_FAIL;
 }
 
-DWORD SsrpGetInfo( __in LPSTR szServer, __in LPSTR szInstance, __inout ProtList * pProtList)
+DWORD SsrpGetInfo( __in LPWSTR wszServer, __in LPWSTR wszInstance, __inout ProtList * pProtList)
 {
-	BidxScopeAutoSNI3( SNIAPI_TAG _T( "szServer: '%hs', szInstance: '%hs', pProtList: %p\n"),
-					szServer, szInstance, pProtList);
+	BidxScopeAutoSNI3( SNIAPI_TAG _T( "wszServer: '%s', wszInstance: '%s', pProtList: %p\n"),
+					wszServer, wszInstance, pProtList);
 
-	Assert( szInstance[0] );
+	Assert( wszInstance[0] );
 
-	Assert( szServer[0] );
+	Assert( wszServer[0] );
 
 	SsrpSocket ssrpSocket;
+	
+	char szInstance[MAX_NAME_SIZE+3];
+	int ret = WideCharToMultiByte(CP_ACP, 0, wszInstance, wcslen(wszInstance), NULL, 0, NULL, NULL);
+	if (ret > MAX_NAME_SIZE+3)
+	{
+		goto ErrorExit;
+	}
+	ret = WideCharToMultiByte(CP_ACP, 0, wszInstance, wcslen(wszInstance), szInstance, sizeof(szInstance), NULL, NULL);
+	if (ret == 0)
+	{
+		goto ErrorExit;
+	}
+	szInstance[ret]='\0';
 
-	if( false == ssrpSocket.Open( szServer, szInstance ))
+	if( false == ssrpSocket.Open( wszServer, szInstance ))
 	{
 		goto ErrorExit;
 	}
@@ -928,13 +955,24 @@ DWORD SsrpGetInfo( __in LPSTR szServer, __in LPSTR szInstance, __inout ProtList 
 
 	// Do not allow "." or "(local)" connections to 
 	// a clustered instance
-	if( IsLocalHost(szServer) && 
-		!IsLocalHost(&pBuf[14] ))
+
+	WCHAR pwBuf[1024];
+	if (FAILED(StringCchPrintfW(pwBuf,
+							ARRAYSIZE(pwBuf),
+							L"%hs",
+							&pBuf[14])))
+	{
+		goto ErrorExit;
+	}
+	pwBuf[1023] = L'\0';
+
+	if( IsLocalHost(wszServer) && 
+		!IsLocalHost(pwBuf))
 	{
 		goto ErrorExit;
 	}
 
-	return ParseSsrpString( szServer, szSvrEnd+1, strlen(szSvrEnd+1), pProtList);
+	return ParseSsrpString( wszServer, szSvrEnd+1, strlen(szSvrEnd+1), pProtList);
 
 ErrorExit:
 	
@@ -1098,16 +1136,16 @@ public:
 		return true;
 	}
 	
-	bool Initialize(__in LPCSTR szServer, __in DWORD waittime_least, __in DWORD waittimeout)
+	bool Initialize(__in LPCWSTR wszServer, __in DWORD waittime_least, __in DWORD waittimeout)
 	{
-		BidxScopeAutoSNI3( SNIAPI_TAG _T( "szServer: '%hs waittime_lease: %d, waittimeout: %d'\n"), szServer,waittime_least,waittimeout);
+		BidxScopeAutoSNI3( SNIAPI_TAG _T( "wszServer: '%s waittime_lease: %d, waittimeout: %d'\n"), wszServer,waittime_least,waittimeout);
 
 		if(waittime_least > 0 ) SetSsrpWaitTimeLeast(waittime_least); //don't support infinite -1;
 		if(waittimeout > 0 ) SetSsrpWaitTimeout(waittimeout); //don't support infinite -1 at this point
 
-		if( !m_SsrpSocket.Open( szServer, ""))
+		if( !m_SsrpSocket.Open( wszServer, ""))
 		{
-			Assert(szServer[0]);
+			Assert(wszServer[0]);
 
 			SetSsrpFinished();
 		}
@@ -1116,7 +1154,7 @@ public:
 		// when a server is specified we don't do Lan enum
 		//
 
-		if( szServer[0] || !InitializeLan())
+		if( wszServer[0] || !InitializeLan())
 		{
 			SetLanFinished();
 			
@@ -1606,28 +1644,24 @@ HANDLE SNIServerEnumOpenEx( LPWSTR pwszServer,
 							  _T("waittime_least: %d")
 							  _T("waittimeout: %d\n"), 
 					pwszServer, fExtendedInfo, waittime_least, waittimeout);
-	char szServer[MAX_NAME_SIZE+1] = "";
 
 	ServerEnum * pServerEnum = NULL;
-	
-    // Convert Unicode strings to Ascii
-    	if( pwszServer && WideCharToMultiByte( CP_ACP,
-                    0,
-                    pwszServer,
-                    -1,
-                    szServer,
-                    sizeof(szServer),
-                    NULL,
-                    NULL) == 0)
-    	{
+
+	WCHAR wszServer[MAX_NAME_SIZE+1] = L"";
+	if (pwszServer && wcslen(pwszServer) == 0)
+	{
 		BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%p\n"), NULL);
 
-        	return NULL;
-    	}
-	
-	if( !_stricmp(szServer, "(local)") || !_stricmp(szServer, "."))
+		return NULL;
+	}
+	else if(!pwszServer)
 	{
-		(void)StringCchCopyA( szServer, CCH_ANSI_STRING(szServer), "localhost");
+		pwszServer = wszServer;
+	}
+	
+	if( !_wcsicmp(pwszServer, L"(local)") || !_wcsicmp(pwszServer, L"."))
+	{
+		(void)StringCchCopyW( pwszServer, sizeof(pwszServer)/sizeof(WCHAR), L"localhost");
 	}
 	
 	pServerEnum = NewNoX(gpmo) ServerEnum( fExtendedInfo ? true : false);
@@ -1650,7 +1684,7 @@ HANDLE SNIServerEnumOpenEx( LPWSTR pwszServer,
 		return NULL;
 	}
 
-	if( !pServerEnum->Initialize( szServer,waittime_least, waittimeout ))
+	if( !pServerEnum->Initialize( pwszServer,waittime_least, waittimeout ))
 	{
 		delete pServerEnum;
 		

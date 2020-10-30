@@ -6,7 +6,7 @@
 //      Provides a class capable of processing query arguments.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

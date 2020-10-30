@@ -191,12 +191,12 @@ namespace System.Windows.Media
             // initialization will complete successfully.  In rare cases, function calls
             // earlier in this constructor throw exceptions, resulting in the MediaContext
             // being left in an uninitialized state; however, the Dispatcher could call methods
-            // on the MediaContext, resulting in unpredictable behaviour (see bug 1630647).
-            //
-            // NOTE: We must attach to the Dispatcher before creating a TimeManager,
-            // otherwise we will create a circular function loop where TimeManager attempts
-            // to create a Clock, which attempts to locate a MediaContext, which attempts to
-            // create a TimeManager, resulting in a stack overflow.
+            // on the MediaContext, resulting in unpredictable behaviour (see 
+
+
+
+
+
             dispatcher.Reserved0 = this;
 
             _timeManager = new TimeManager();
@@ -237,8 +237,8 @@ namespace System.Windows.Media
                     case DUCE.MilMessage.Type.Presented:
                         break;
                     case DUCE.MilMessage.Type.PartitionIsZombie:
-                        // we remove the [....] channels so that if the app handles the exception
-                        // it will get a new partition on the next [....] render request.
+                        // we remove the sync channels so that if the app handles the exception
+                        // it will get a new partition on the next sync render request.
                         _channelManager.RemoveSyncChannels();
                         NotifyPartitionIsZombie(message.HRESULTFailure.HRESULTFailureCode);
                         break;
@@ -933,7 +933,7 @@ namespace System.Windows.Media
         /// Processes the SyncMode composition engine notification.
         /// </summary>
         /// <param name="enabledResult">
-        /// The HRESULT of enabling [....] mode.
+        /// The HRESULT of enabling sync mode.
         /// </param>
         private void NotifySyncModeStatus(int enabledResult)
         {
@@ -1179,7 +1179,7 @@ namespace System.Windows.Media
             HookNotifications();
 
             // Create an ETW Event Resource for performance tracing
-            // [....]: It might be good enough to put this in the current batch without
+            // Microsoft: It might be good enough to put this in the current batch without
             // submitting it.
             _uceEtwEvent.CreateOrAddRefOnChannel(this, Channel, DUCE.ResourceType.TYPE_ETWEVENTRESOURCE);
 
@@ -1902,7 +1902,7 @@ namespace System.Windows.Media
                 // Reset current operation so it can be re-queued by layout
                 // This is needed when exception happens in the midst of layout/TemplateExpansion
                 // and it unwinds from the stack. If we don't clean this field here, the subsequent
-                // PostRender won't queue new render operation and the window gets stuck. Bug 1355561.
+                // PostRender won't queue new render operation and the window gets stuck. 
                 if (gotException
                     && _currentRenderOp != null)
                 {
@@ -2311,7 +2311,7 @@ namespace System.Windows.Media
                     }
                     
                     //
-                    // Issue a [....] flush, which will only return after
+                    // Issue a sync flush, which will only return after
                     // the last frame is presented
                     //
 
@@ -2452,7 +2452,7 @@ namespace System.Windows.Media
         }
 
         /// <summary>
-        /// Returns a [....] channel back to the pool.
+        /// Returns a sync channel back to the pool.
         /// </summary>
         internal void ReleaseSyncChannel(DUCE.Channel channel)
         {

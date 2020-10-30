@@ -8,7 +8,7 @@
 // SiteOfOriginPart is an implementation of the abstract PackagePart class. It contains an override for GetStreamCore.
 //
 // History:
-//  6/16/2005: [....] - Initial creation.
+//  6/16/2005: Microsoft - Initial creation.
 //
 //-----------------------------------------------------------------------------
 

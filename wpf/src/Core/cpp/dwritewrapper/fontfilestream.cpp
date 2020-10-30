@@ -7,7 +7,7 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
         // Previously we were using fontSource->GetStream() which caused crashes in the XPS scenarios
         // as the stream was getting closed by some other object. In XPS scenarios GetStream() would return
         // MS::Internal::IO:Packaging::SynchronizingStream which is owned by the XPS docs and according to 
-        // [....] XPS has some known issues regarding the lifetime management where by if the current XPS page is 
+        // Microsoft XPS has some known issues regarding the lifetime management where by if the current XPS page is 
         // flipped then the stream will get disposed. Thus, we cannot rely on the stream directly and hence we now use
         // fontSource->GetUnmanagedStream() which returns a copy of the content of the stream. Special casing XPS will not
         // guarantee that this problem will be fixed so we will use the GetUnmanagedStream(). Note: This path will only 

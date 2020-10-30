@@ -6,7 +6,7 @@
 //      Provides a base class for DataWeb services.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

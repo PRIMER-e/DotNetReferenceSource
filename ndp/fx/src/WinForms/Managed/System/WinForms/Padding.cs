@@ -148,7 +148,6 @@ namespace System.Windows.Forms {
         /// <include file='doc\Padding.uex' path='docs/doc[@for="Padding.Size"]/*' />
         [Browsable(false)]
         public Size Size {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return new Size(Horizontal, Vertical);
             }

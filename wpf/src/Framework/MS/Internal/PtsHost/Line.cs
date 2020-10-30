@@ -7,7 +7,7 @@
 // Description: Text line formatter.
 //
 // History:
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 #pragma warning disable 1634, 1691  // avoid generating warnings about unknown
@@ -1271,7 +1271,7 @@ namespace MS.Internal.PtsHost
         private System.Windows.Media.TextFormatting.TextLine _line;
 
         /// <summary>
-        /// Cached run list. This list needs to be in [....] with _line object.
+        /// Cached run list. This list needs to be in sync with _line object.
         /// Every time the line is recreated, this list needs to be updated. 
         /// </summary>
         private IList<TextSpan<TextRun>> _runs;

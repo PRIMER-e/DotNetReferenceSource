@@ -2958,6 +2958,7 @@ namespace MS.Internal.PtsHost.UnsafeNativeMethods
             IntPtr pmcsclientIn,
             int dvrDisplaced,
             out int pdvrUsed);
+    */
 
 
 

@@ -8,7 +8,7 @@
 // Description: Undo unit for TextContainer.SetValue, etc. calls.
 //
 // History:  
-//  03/03/2004 : [....] - Created
+//  03/03/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ namespace System.Windows.Documents
 
             position = new TextPointer(this.TextContainer, this.SymbolOffset, LogicalDirection.Forward);
 
-            Invariant.Assert(position.GetPointerContext(LogicalDirection.Backward) == TextPointerContext.ElementStart, "TextTree undo unit out of [....] with TextTree.");
+            Invariant.Assert(position.GetPointerContext(LogicalDirection.Backward) == TextPointerContext.ElementStart, "TextTree undo unit out of sync with TextTree.");
 
             if (_propertyRecord.Value != DependencyProperty.UnsetValue)
             {

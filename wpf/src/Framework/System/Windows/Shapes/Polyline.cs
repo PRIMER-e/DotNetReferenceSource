@@ -5,7 +5,7 @@
 // Implementation of Polyline shape element.
 //
 // History:
-//  05/30/02 - [....] - Created.
+//  05/30/02 - Microsoft - Created.
 //
 // Copyright (C) 2003 by Microsoft Corporation.  All rights reserved.
 //
@@ -126,9 +126,9 @@ namespace System.Windows.Shapes
             }
 
             // Create the Polyline PathGeometry
-            // ISSUE-[....]-07/11/2003 - Bug 859068
-            // The constructor for PathFigure that takes a PointCollection is internal in the Core
-            // so the below causes an A/V. Consider making it public.
+            // ISSUE-Microsoft-07/11/2003 - 
+
+
             if (pointCollection.Count > 0)
             {
                 pathFigure.StartPoint = pointCollection[0];

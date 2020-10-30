@@ -12,6 +12,7 @@ namespace System.Web {
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
+    using System.Threading.Tasks;
     using System.Web.Caching;
     using System.Web.Routing;
 
@@ -131,6 +132,12 @@ namespace System.Web {
             }
         }
 
+        public override bool HeadersWritten {
+            get {
+                return _httpResponse.HeadersWritten;
+            }
+        }
+
         public override Encoding HeaderEncoding {
             get {
                 return _httpResponse.HeaderEncoding;
@@ -227,6 +234,15 @@ namespace System.Web {
             }
         }
 
+        public override bool SuppressDefaultCacheControlHeader {
+            get {
+                return _httpResponse.SuppressDefaultCacheControlHeader;
+            }
+            set {
+                _httpResponse.SuppressDefaultCacheControlHeader = value;
+            }
+        }
+
         public override bool SuppressFormsAuthenticationRedirect {
             get {
                 return _httpResponse.SuppressFormsAuthenticationRedirect;
@@ -263,6 +279,10 @@ namespace System.Web {
 
         public override void AddFileDependency(string filename) {
             _httpResponse.AddFileDependency(filename);
+        }
+
+        public override ISubscriptionToken AddOnSendingHeaders(Action<HttpContextBase> callback) {
+            return _httpResponse.AddOnSendingHeaders(HttpContextWrapper.WrapCallback(callback));
         }
 
         public override void AddFileDependencies(ArrayList filenames) {
@@ -335,6 +355,10 @@ namespace System.Web {
 
         public override void Flush() {
             _httpResponse.Flush();
+        }
+
+        public override Task FlushAsync() {
+            return _httpResponse.FlushAsync();
         }
 
         public override void Pics(string value) {
@@ -451,6 +475,14 @@ namespace System.Web {
 
         public override void WriteSubstitution(HttpResponseSubstitutionCallback callback) {
             _httpResponse.WriteSubstitution(callback);
+        }
+
+        public override void PushPromise(string path) {
+            _httpResponse.PushPromise(path);
+        }
+
+        public override void PushPromise(string path, string method, NameValueCollection headers) {
+            _httpResponse.PushPromise(path, method, headers);
         }
     }
 }

@@ -7,7 +7,7 @@
 //
 //  Contents:  ValueSerializer for the ICommand interface
 //
-//  Created:   04/28/2005 [....]
+//  Created:   04/28/2005 Microsoft
 //
 //------------------------------------------------------------------------
 

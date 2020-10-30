@@ -8,7 +8,7 @@
 // Description: Client-side wrapper for SynchronizedInput Pattern
 //
 // History:  
-//  11/07/2008 : Added by [....].
+//  11/07/2008 : Added by Microsoft.
 //
 //---------------------------------------------------------------------------
 

@@ -18,7 +18,7 @@ namespace System.Windows.Controls
     /// VirtualizationCacheLengthUnit enum is used to indicate what kind of value the 
     /// VirtualizationCacheLength is holding.
     /// </summary>
-    // Note: Keep the VirtualizationCacheLengthUnit enum in [....] with the string representation 
+    // Note: Keep the VirtualizationCacheLengthUnit enum in sync with the string representation 
     //       of units (VirtualizationCacheLengthConverter._unitString). 
     public enum VirtualizationCacheLengthUnit 
     {

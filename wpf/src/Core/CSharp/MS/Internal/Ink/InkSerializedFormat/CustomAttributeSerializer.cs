@@ -60,7 +60,7 @@ namespace MS.Internal.Ink.InkSerializedFormat
         {
             VarEnum interopTypeInfo;
             object data = attribute.Value;
-            // NTRAID#T2-23063-2003/12/10-[....]: CODEQUALITY: Find better way to discover which properties should be persistable
+            // NTRAID#T2-23063-2003/12/10-Microsoft: CODEQUALITY: Find better way to discover which properties should be persistable
             if (attribute.Id == KnownIds.DrawingFlags)
             {
                 interopTypeInfo = VarEnum.VT_I4;

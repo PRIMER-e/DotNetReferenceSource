@@ -64,7 +64,7 @@ namespace MS.Internal.Ink.InkSerializedFormat
         internal abstract int InverseTransform(int xfData, int extra);
     }
     /// <summary>
-    /// Oddly named because we have unmanged code we keep in [....] with this that 
+    /// Oddly named because we have unmanged code we keep in sync with this that 
     /// has this name.
     /// </summary>
     internal class DeltaDelta : DataXform

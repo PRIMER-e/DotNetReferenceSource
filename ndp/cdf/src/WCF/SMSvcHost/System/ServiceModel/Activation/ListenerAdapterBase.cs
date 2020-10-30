@@ -37,7 +37,7 @@ namespace System.ServiceModel.Activation
         [ResourceConsumption(ResourceScope.Process)]
         static ListenerAdapterBase()
         {
-#pragma warning suppress 56523 // [....], the Win32Exception ctor calls Marshal.GetLastWin32Error
+#pragma warning suppress 56523 // Microsoft, the Win32Exception ctor calls Marshal.GetLastWin32Error
             webHostIpm = WebHostUnsafeNativeMethods.LoadLibraryEx(SMSvcHost.ListenerAdapterNativeLibrary, IntPtr.Zero, WebHostUnsafeNativeMethods.LOAD_WITH_ALTERED_SEARCH_PATH);
             if (webHostIpm.IsInvalid)
             {
@@ -98,7 +98,7 @@ namespace System.ServiceModel.Activation
 
         static Delegate GetProcDelegate<TDelegate>(WebHostUnsafeNativeMethods.SafeFreeLibrary library, string procName)
         {
-#pragma warning suppress 56523 // [....], the Win32Exception ctor calls Marshal.GetLastWin32Error
+#pragma warning suppress 56523 // Microsoft, the Win32Exception ctor calls Marshal.GetLastWin32Error
             IntPtr funcPtr = WebHostUnsafeNativeMethods.GetProcAddress(library, procName);
             if (funcPtr == IntPtr.Zero)
             {

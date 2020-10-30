@@ -1167,7 +1167,7 @@ bool MetaDataFile::_StepToBuiltSymbols()
 
     MetaImport::ImportTypes(m_pCompiler, this, &m_SymbolList, &errorTable);
 
-    // [....]: This is an inefficient way of doing this.  It reuses the mechanism Akash used to build up the namespace symbols
+    // Microsoft: This is an inefficient way of doing this.  It reuses the mechanism Akash used to build up the namespace symbols
     // but has a ton of overhead that is no longer needed since the horizontal linking mechanism is now different.  Rewrite this
     // when time allows to use a more efficient mechanism for encapsulating everything in namespace symbols.
 
@@ -1373,7 +1373,7 @@ metadata symbols into those namespaces.  In the end, the symbol table looks like
 would expect a file that went through Declared to look like.  When we get it to that point,
 then we can merge the namespaces from this file against other metadata or Basic files
 
-[....]: this whole process should probably be rewritten.  I essentially refactored the way
+Microsoft: this whole process should probably be rewritten.  I essentially refactored the way
 Akash had done this in order to reuse as much code as possible since we are so close to the
 beta.  This mechanism is oriented around the old philosophy that the hiearchy builder was
 oriented towards and so is slightly sub-obtimal for the new world.
@@ -1444,7 +1444,7 @@ MetaDataFile::BuildNamespacesForMetaDataFile()
             else
             {
                 // This fix was ported from VSQFE1087. We need to call GetUnnamedNamespace() if this is the Unnamed namespace.
-                // By doing that, we make sure that m_pUnnamedNamespace is set to this namespace. This fix was done by [....].
+                // By doing that, we make sure that m_pUnnamedNamespace is set to this namespace. This fix was done by Microsoft.
                 if (StringPool::StringLength(NamespaceOfCurrentSymbol) == 0)
                 {
                     NamespaceForSymbol = Project->GetCompiler()->GetUnnamedNamespace(this);

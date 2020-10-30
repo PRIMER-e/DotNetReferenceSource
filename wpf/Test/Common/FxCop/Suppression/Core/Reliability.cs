@@ -22,7 +22,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1413286
-// Developer: [....]
+// Developer: dwaynen
 // Reason: We have to pass a handle to an unmanaged component.  The method is marked SecurityCritical.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", Scope="member", Target="System.Windows.Media.Composition.DUCE+CompositionTarget.UpdateWindowSettings(System.Windows.Media.Composition.DUCE+ResourceHandle,System.Threading.AutoResetEvent,MS.Win32.NativeMethods+RECT,System.Windows.Media.Color,System.Single,System.Windows.Media.Composition.MILWindowLayerType,System.Windows.Media.Composition.MILTransparencyFlags,System.Boolean,System.Int32,System.Windows.Media.Composition.DUCE+Channel):System.Void", MessageId="System.Runtime.InteropServices.SafeHandle.DangerousGetHandle")]
@@ -34,8 +34,8 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 199045, 199068
-// Developer: [....]
-// Reason: A pointer is needed from the SafeHandle's to put in a structure that's sent to unmanaged code.  reviewed by [....]. 
+// Developer: brandf
+// Reason: A pointer is needed from the SafeHandle's to put in a structure that's sent to unmanaged code.  reviewed by andren. 
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability","CA2001:AvoidCallingProblematicMethods", MessageId="System.Runtime.InteropServices.SafeHandle.DangerousGetHandle", Scope="member", Target="System.Windows.Media.Imaging.WriteableBitmap.#OnCommittingBatch(System.Object,System.EventArgs)")]
 [module: SuppressMessage("Microsoft.Reliability","CA2001:AvoidCallingProblematicMethods", MessageId="System.Runtime.InteropServices.SafeHandle.DangerousGetHandle", Scope="member", Target="System.Windows.Media.Imaging.WriteableBitmap.#UpdateBitmapSourceResource(System.Windows.Media.Composition.DUCE+Channel,System.Boolean)")]
@@ -44,7 +44,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632951
-// Developer: [....]
+// Developer: brenclar
 // Reason: We have to pass a pointer to native code.  The method is marked SecurityCritical.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability","CA2001:AvoidCallingProblematicMethods", MessageId="System.Runtime.InteropServices.SafeHandle.DangerousGetHandle", Scope="member", Target="System.Windows.Media.Imaging.BitmapSource.#get_DUCECompatiblePtr()")]

@@ -1680,8 +1680,8 @@ namespace System.Windows.Forms {
                             // Setting the max width has the added benefit of enabling multiline
                             // tool tips!
                             //
-                            // [....]: temporarily commenting out this code to fix Pri0 bug 152233
-                            // UnsafeNativeMethods.SendMessage(new HandleRef(note, note.hwndFrom), NativeMethods.TTM_SETMAXTIPWIDTH, 0, SystemInformation.MaxWindowTrackSize.Width);
+                            // Microsoft: temporarily commenting out this code to fix Pri0 
+
                             WmNotifyNeedTextA(ref m);
                             m.Result = (IntPtr)1;
                             return;
@@ -1693,8 +1693,8 @@ namespace System.Windows.Forms {
                                 // Setting the max width has the added benefit of enabling multiline
                                 // tool tips!
                                 //
-                                // [....]: temporarily commenting out this code to fix Pri0 bug 152233
-                                // UnsafeNativeMethods.SendMessage(new HandleRef(note, note.hwndFrom), NativeMethods.TTM_SETMAXTIPWIDTH, 0, SystemInformation.MaxWindowTrackSize.Width);
+                                // Microsoft: temporarily commenting out this code to fix Pri0 
+
                                 WmNotifyNeedText(ref m);
                                 m.Result = (IntPtr)1;
                                 return;

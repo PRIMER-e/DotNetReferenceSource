@@ -10,7 +10,7 @@
 //              performs the actual pagination of content.
 //
 // History:  
-//  08/29/2005 : [....] - created.
+//  08/29/2005 : grzegorz - created.
 //
 //---------------------------------------------------------------------------
 

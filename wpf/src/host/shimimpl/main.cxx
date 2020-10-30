@@ -11,9 +11,9 @@
 //          Created
 //     2003/06/03-kusumav
 //          Ported to WCP
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
-//     2009/08/xx-[....],[....]
+//     2009/08/xx-Microsoft,Microsoft
 //          PresentationHost 'super-shim' refactoring. Defined ProcessCommandLine and renamed 
 //              WinMain->DelegatedWinMain. Compiling the 'shim implementation' code into PHDLL.
 //              See overview in DLL\PresentationHostDll.nativeproj.
@@ -226,7 +226,7 @@ Cleanup:
         because the Finalizer thread fails to switch to the object's right context and calls 
         IUnknown->Release() directly. See WOSB 1795776.
 
-        [....] says, "You should also call GetModuleHandle() on mscorwks.dll just to see if it is loaded. [...]
+        Microsoft says, "You should also call GetModuleHandle() on mscorwks.dll just to see if it is loaded. [...]
         CoEEShutdownCOM will cause mscorwks.dll to be loaded even if no managed code has been run."
 
         This patch may not be needed once PresentationHost is migrated to the DevDiv depot and starts

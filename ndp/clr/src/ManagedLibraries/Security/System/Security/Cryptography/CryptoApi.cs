@@ -3,7 +3,7 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 //
@@ -848,10 +848,11 @@ namespace System.Security.Cryptography {
         internal const uint RSA_PRIV_MAGIC          = 0x32415352;
 
         // CryptAcquireCertificatePrivateKey dwFlags
-        internal const uint CRYPT_ACQUIRE_CACHE_FLAG         = 0x00000001; 
-        internal const uint CRYPT_ACQUIRE_USE_PROV_INFO_FLAG = 0x00000002; 
-        internal const uint CRYPT_ACQUIRE_COMPARE_KEY_FLAG   = 0x00000004; 
-        internal const uint CRYPT_ACQUIRE_SILENT_FLAG        = 0x00000040; 
+        internal const uint CRYPT_ACQUIRE_CACHE_FLAG             = 0x00000001; 
+        internal const uint CRYPT_ACQUIRE_USE_PROV_INFO_FLAG     = 0x00000002; 
+        internal const uint CRYPT_ACQUIRE_COMPARE_KEY_FLAG       = 0x00000004; 
+        internal const uint CRYPT_ACQUIRE_SILENT_FLAG            = 0x00000040;
+        internal const uint CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG = 0x00020000;
 
         // CryptMsgOpenToDecode dwFlags
         internal const uint CMSG_BARE_CONTENT_FLAG             = 0x00000001;
@@ -2966,16 +2967,39 @@ namespace System.Security.Cryptography {
             get { return new SafeCryptProvHandle(IntPtr.Zero); }
         }
 
+        [DllImport("ncrypt.dll", SetLastError=true),
+         SuppressUnmanagedCodeSecurity,
+         ResourceExposure(ResourceScope.None),
+         ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        private static extern bool NCryptIsKeyHandle(IntPtr hCryptProv);
+
         [DllImport(CAPI.ADVAPI32, SetLastError=true),
          SuppressUnmanagedCodeSecurity,
          ResourceExposure(ResourceScope.None),
          ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern bool CryptReleaseContext(IntPtr hCryptProv, uint dwFlags); 
 
+        [DllImport("ncrypt.dll", SetLastError=true),
+         SuppressUnmanagedCodeSecurity,
+         ResourceExposure(ResourceScope.None),
+         ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        private static extern int NCryptFreeObject(IntPtr hObject);
+
         [SecurityCritical]
         override protected bool ReleaseHandle()
         {
-            return CryptReleaseContext(handle, 0);
+            IntPtr h = handle;
+            if (NCryptIsKeyHandle(h))
+            {
+                int status = NCryptFreeObject(h);
+                bool success = (status == 0);
+                return success;
+            }
+            else
+            {
+                bool success = CryptReleaseContext(h, 0);
+                return success;
+            }
         }
     }
 

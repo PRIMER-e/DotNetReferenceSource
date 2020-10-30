@@ -6,7 +6,7 @@
 //      Provides a class used to track updates for callbacks.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

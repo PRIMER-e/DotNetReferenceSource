@@ -207,6 +207,12 @@ namespace System.Windows.Controls.Primitives
 
         #region Protected Methods
 
+        protected override void OnDpiChanged(DpiScale oldDpiScaleInfo, DpiScale newDpiScaleInfo)
+        {
+            DisposeCurrentPage();
+            DisposeAsyncPage();
+        }
+
         /// <summary>
         /// Content measurement.
         /// </summary>
@@ -434,7 +440,7 @@ namespace System.Windows.Controls.Primitives
 
                 }
 
-                // Fire [....] notification if new page was connected.
+                // Fire sync notification if new page was connected.
                 if (_newPageConnected)
                 {
                     OnPageConnected();

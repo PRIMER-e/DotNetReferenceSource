@@ -386,7 +386,7 @@ namespace System.Windows.Forms.VisualStyles {
             }
 
             // VSWhidbey #282742: DrawThemeIcon currently seems to do nothing, but still return S_OK. As a workaround,
-            // we call DrawImage on the graphics object itself for now. A bug has been opened in Windows OS Bugs on this.
+            // we call DrawImage on the graphics object itself for now. A 
 
             //int returnVal = NativeMethods.S_FALSE;
             //using( WindowsGraphicsWrapper wgr = new WindowsGraphicsWrapper( dc, AllGraphicsProperties ) ) {

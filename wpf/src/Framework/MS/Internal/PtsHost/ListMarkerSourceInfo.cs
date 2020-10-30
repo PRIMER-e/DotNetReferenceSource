@@ -42,9 +42,9 @@ namespace MS.Internal.PtsHost
         /// <param name="lineHeight">
         /// Line height for list element
         /// </param>
-        internal static Thickness CalculatePadding(List list, double lineHeight)
+        internal static Thickness CalculatePadding(List list, double lineHeight, double pixelsPerDip)
         {
-            FormattedText formattedMarker = GetFormattedMarker(list);
+            FormattedText formattedMarker = GetFormattedMarker(list, pixelsPerDip);
             double leftPadding = formattedMarker.Width + 1.5 * lineHeight;
             leftPadding = (double)((int)(leftPadding / lineHeight) + 1) * lineHeight;
             return new Thickness(leftPadding, 0, 0, 0);
@@ -56,7 +56,7 @@ namespace MS.Internal.PtsHost
         /// <param name="list">
         /// List element for which formatted marker is to be calculated
         /// </param>
-        private static FormattedText GetFormattedMarker(List list)
+        private static FormattedText GetFormattedMarker(List list, double pixelsPerDip)
         {
             string markerString = "";
             FormattedText formattedMarker;
@@ -86,7 +86,7 @@ namespace MS.Internal.PtsHost
                 Typeface typeface = DynamicPropertyReader.GetModifiedTypeface(list, new FontFamily("Wingdings"));
                 
                 formattedMarker = new FormattedText(markerString, DynamicPropertyReader.GetCultureInfo(list), list.FlowDirection,
-                                      typeface, list.FontSize, list.Foreground);
+                                      typeface, list.FontSize, list.Foreground, pixelsPerDip);
 
             }
             else if (IsKnownIndexMarkerStyle(list.MarkerStyle))
@@ -130,7 +130,7 @@ namespace MS.Internal.PtsHost
 
                 // Create new formatted text using List defaulls                
                 formattedMarker = new FormattedText(markerString, DynamicPropertyReader.GetCultureInfo(list), list.FlowDirection,
-                                      DynamicPropertyReader.GetTypeface(list), list.FontSize, list.Foreground);
+                                      DynamicPropertyReader.GetTypeface(list), list.FontSize, list.Foreground, pixelsPerDip);
             }
             else
             {
@@ -140,9 +140,8 @@ namespace MS.Internal.PtsHost
                 Typeface typeface = DynamicPropertyReader.GetModifiedTypeface(list, new FontFamily("Wingdings"));
 
                 formattedMarker = new FormattedText(markerString, DynamicPropertyReader.GetCultureInfo(list), list.FlowDirection,
-                                      typeface, list.FontSize, list.Foreground);
+                                      typeface, list.FontSize, list.Foreground, pixelsPerDip);
             }
-
             return formattedMarker;
         }
 

@@ -278,7 +278,7 @@ namespace System.Data.Services.Client
             Debug.Assert(String.IsNullOrEmpty(baseUri.Query) && String.IsNullOrEmpty(baseUri.Fragment), "baseUri has query or fragment");
             Util.CheckArgumentNull(requestUri, "requestUri");
 
-            // there is a bug in (new Uri(Uri,Uri)) which corrupts the port of the result if out relativeUri is also absolute
+            // there is a 
             if (!requestUri.IsAbsoluteUri)
             {
                 if (baseUri.OriginalString.EndsWith("/", StringComparison.Ordinal))

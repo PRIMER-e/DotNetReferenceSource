@@ -6,7 +6,7 @@
 //
 // History:
 //  07/23/2003 : mleonov - Big rewrite to change cache structure
-//  08/08/2008 : [....] - Integrating with DWrite.
+//  08/08/2008 : Microsoft - Integrating with DWrite.
 //
 //---------------------------------------------------------------------------
 

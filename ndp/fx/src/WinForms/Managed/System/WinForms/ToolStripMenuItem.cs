@@ -268,6 +268,9 @@ namespace System.Windows.Forms {
                         if (indeterminateCheckedBmp != null) {
                             // 
                             indeterminateCheckedBmp.MakeTransparent(indeterminateCheckedBmp.GetPixel(1,1));
+                            if (DpiHelper.IsScalingRequired) {
+                                DpiHelper.ScaleBitmapLogicalToDevice(ref indeterminateCheckedBmp);
+                            }
                             indeterminateCheckedImage = indeterminateCheckedBmp;
                         }
                     }
@@ -279,6 +282,9 @@ namespace System.Windows.Forms {
                          if (checkedBmp != null) {  
                             // 
                             checkedBmp.MakeTransparent(checkedBmp.GetPixel(1,1));
+                            if (DpiHelper.IsScalingRequired) {
+                                DpiHelper.ScaleBitmapLogicalToDevice(ref checkedBmp);
+                            }
                             checkedImage = checkedBmp;
                         }
                     }

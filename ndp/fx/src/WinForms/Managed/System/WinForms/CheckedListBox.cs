@@ -774,7 +774,7 @@ namespace System.Windows.Forms {
                             for (int i = 1; i < tabStops.Length; i++)
                                 tabStops[i] = tabDistance;
 
-                            //(bug 111825)
+                            //(
                             if (Math.Abs(tabOffset) < tabDistance) {
                                 tabStops[0] =  tabDistance +tabOffset;
                             }

@@ -1807,7 +1807,7 @@ namespace MS.Internal.Ink.InkSerializedFormat
                 }
 
                 // Store any size information if necessary such as GIF image size
-                // NTRAID#T2-00000-2004/03/15-[....]: WORK: Not Yet Implemented
+                // NTRAID#T2-00000-2004/03/15-Microsoft: WORK: Not Yet Implemented
 
                 // Now store the Custom Guids
                 localEncodedSize = cumulativeEncodedSize;

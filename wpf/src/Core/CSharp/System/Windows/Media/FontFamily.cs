@@ -8,7 +8,7 @@
 //  Contents:  FontFamily
 //
 //  Created  :   5-25-2003 Worachai Chaoweeraprasit (wchao)
-//  Modified :   8-08-2008 [....] - Integrating with DWrite.
+//  Modified :   8-08-2008 Microsoft - Integrating with DWrite.
 //
 //------------------------------------------------------------------------
 
@@ -259,9 +259,9 @@ namespace System.Windows.Media
             }
         }
 
-        internal double GetLineSpacingForDisplayMode(double emSize)
+        internal double GetLineSpacingForDisplayMode(double emSize, double pixelsPerDip)
         {
-            return FirstFontFamily.LineSpacing(emSize, 1, Util.PixelsPerDip, TextFormattingMode.Display);
+            return FirstFontFamily.LineSpacing(emSize, 1, pixelsPerDip, TextFormattingMode.Display);
         }
 
         /// <summary>

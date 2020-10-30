@@ -13,7 +13,7 @@
 // should be considered for both classes.
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
-//  History:        04-24-02 - [....] - created
+//  History:        04-24-02 - Microsoft - created
 //------------------------------------------------------------------------------
 
 using System;
@@ -205,13 +205,13 @@ namespace MS.Internal.AppModel
             sei.cbSize = Marshal.SizeOf(sei);
             sei.fMask = UnsafeNativeMethods.ShellExecuteFlags.SEE_MASK_FLAG_DDEWAIT;
             /*
-            There is a bug on Windows Vista (with IE 7): ShellExecute via SEE_MASK_CLASSNAME fails for an 
-            http[s]:// URL. It works fine for file://. The cause appears to be that the DDE command template
-            defined in HKCR\IE.AssocFile.HTM\shell\opennew\ddeexec is used: [file://%1",-1,,,,,]. On XP, the
-            the key used is (supposedly) HKCR\htmlfile\shell\opennew\ddeexec, and its value is ["%1",,-1,0,,,,].
-            The workaround here is to add the SEE_MASK_CLASSNAME flag only for non-HTTP URLs. For HTTP, 
-            "plain" ShellExecute just works, incl. with Firefox/Netscape as the default browser.
-            */
+            There is a 
+
+
+
+
+
+*/
             if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
             {
                 sei.fMask |= UnsafeNativeMethods.ShellExecuteFlags.SEE_MASK_CLASSNAME;
@@ -308,10 +308,10 @@ namespace MS.Internal.AppModel
             {
                 // 2 potential ways to get here. 
                 //      a) We aren't a fusion hosted app. Assume full-trust. 
-                //      b) Some bug in hosting caused source Uri to be null. 
-                //
-                // For a - we will say there is no cross-domain check.     
-                //     b - we'll assume InternetZone, and use Source. 
+                //      b) Some 
+
+
+
 
                 bool fTrusted = SecurityHelper.CheckUnmanagedCodePermission(); 
 

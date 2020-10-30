@@ -11,7 +11,7 @@
 //      Design document: http://wpf/sites/Arrowhead/Shared%20Documents/Specs/Optimizing%20XBAP%20Progress%20Page.docx
 //
 //  History:
-//      2007/12/xx   [....]     Created
+//      2007/12/xx   Microsoft     Created
 //
 //------------------------------------------------------------------------
 

@@ -244,7 +244,7 @@ namespace System.Windows.Forms {
         //          if get_accChild() returns you nothing, you should continue to
         //          use the child VARIANT.  You will ask the container for the properties
         //          of the child identified by the VARIANT.  In other words, the
-        //          child in this case is accessible but not a full-----n object.
+        //          child in this case is accessible but not a full-blown object.
         //          Like a button on a titlebar which is 'small' and has no children.
         //          
         

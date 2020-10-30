@@ -6,7 +6,7 @@
 //      Provides a deserializer for json content.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers
@@ -65,13 +65,13 @@ namespace System.Data.Services.Serializers
 
         /// <summary>
         /// Converts the given value to the expected type as per json reader rules
-        /// Make sure these rules are in [....] with jsonwriter.
+        /// Make sure these rules are in sync with jsonwriter.
         /// </summary>
         /// <param name="value">value to the converted</param>
         /// <param name="propertyName">name of the property whose value is getting converted</param>
         /// <param name="typeToBeConverted">clr type to which the value needs to be converted to</param>
         /// <param name="provider">underlying data service provider.</param>
-        /// <returns>object which is in [....] with the properties type</returns>
+        /// <returns>object which is in sync with the properties type</returns>
         internal static object ConvertValues(object value, string propertyName, Type typeToBeConverted, DataServiceProviderWrapper provider)
         {
             if (value == null)

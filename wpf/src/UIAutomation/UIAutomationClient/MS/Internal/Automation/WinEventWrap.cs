@@ -167,7 +167,7 @@ namespace MS.Internal.Automation
         // Handlers may make a call to another process so don't want to lock around code that protects _clientCallbacks.  
         // Instead, grab the callbacks w/in a lock then call them outside of the lock.  This technique has potential for
         // error if (for instance) handler A could remove both itself and handler B but for now don't need to worry
-        // about handlers getting out of [....] with the ones in the master array because the callbacks are defined w/in
+        // about handlers getting out of sync with the ones in the master array because the callbacks are defined w/in
         // this code and the handler for new UI doesn't remove itself (or anyone else).
         internal object[] GetHandlers()
         {

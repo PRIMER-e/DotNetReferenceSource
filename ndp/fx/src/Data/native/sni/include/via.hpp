@@ -322,7 +322,7 @@ VIP_RETURN (__cdecl  * VipNSInitProc)(
 typedef
 VIP_RETURN (__cdecl  * VipNSGetHostByNameProc)(
     IN VIP_NIC_HANDLE NicHandle,
-    IN VIP_CHAR *Name,
+    IN VIP_WCHAR *Name,
     OUT VIP_NET_ADDRESS *Address,
     IN VIP_ULONG NameIndex);
 
@@ -449,7 +449,7 @@ inline VIP_DESCRIPTOR * BufGetDesc(__in const BYTE * pbBuf);
 inline DWORD DescGetFragInfo(VIP_DESCRIPTOR * pDesc);
 inline void DescSetFragInfo(VIP_DESCRIPTOR * pDesc, DWORD dwVal);
 inline DWORD MapVipErrorToSniError(VIP_RETURN vipStatus);
-DWORD Hash(__in LPCSTR string);
+DWORD Hash(__in LPCWSTR string);
 
 #define MAX_PROCS 31
 
@@ -483,7 +483,7 @@ private:
 	DWORD 	m_dwPendingReads;
 	DWORD 	m_dwQuickReads;
 
-	// [....] vars
+	// Sync vars
 	HANDLE hWriteEvent;
 	HANDLE hSyncReadEvent;
 	BufState SendBufState;
@@ -1033,6 +1033,7 @@ inline static VIP_RETURN  __cdecl VipCQNotify(
 inline static VIP_RETURN  __cdecl VipNSInit(
     IN VIP_NIC_HANDLE NicHandle,
     IN VIP_PVOID NSInitInfo)
+	
 {
 	if(s_pfnProcs[VipNSInitMethod] != NULL)
 		return ((VipNSInitProc)s_pfnProcs[VipNSInitMethod])(NicHandle,NSInitInfo);
@@ -1041,10 +1042,9 @@ inline static VIP_RETURN  __cdecl VipNSInit(
 }
 
 
-
 inline static VIP_RETURN  __cdecl VipNSGetHostByName(
     IN VIP_NIC_HANDLE NicHandle,
-    IN VIP_CHAR *Name,
+    IN VIP_WCHAR *Name,
     OUT VIP_NET_ADDRESS *Address,
     IN VIP_ULONG NameIndex)
 {

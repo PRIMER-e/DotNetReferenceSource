@@ -9,7 +9,7 @@
 //              as it does of just a color.
 //
 // History:
-//  04/28/2003 : [....] - Created it.
+//  04/28/2003 : Microsoft - Created it.
 //
 //---------------------------------------------------------------------------
 
@@ -17,6 +17,7 @@ using MS.Internal;
 using MS.Internal.PresentationCore;
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
@@ -96,6 +97,23 @@ namespace System.Windows.Media
             }
             
             KnownColor knownColor = KnownColors.ColorStringToKnownColor(stringValue);
+#if !PBTCOMPILER
+            // ***************** NOTE *****************
+            // This section under #if !PBTCOMPILER is not needed in XamlBrushSerializer.cs
+            // because XamlBrushSerializer.SerializeOn() is only compiled when PBTCOMPILER is set. 
+            // If this code were tried to be compiled in XamlBrushSerializer.cs, it wouldn't compile
+            // becuase of missing definition of s_knownSolidColorBrushStringCache. 
+            // This code is added in XamlBrushSerializer.cs nevertheless for maintaining consistency in the codebase
+            // between XamlBrushSerializer.SerializeOn() and SolidColorBrush.SerializeOn().
+            // ***************** NOTE *****************
+            lock (s_knownSolidColorBrushStringCache)
+            {
+                if (s_knownSolidColorBrushStringCache.ContainsValue(stringValue))
+                {
+                    knownColor = KnownColors.ArgbStringToKnownColor(stringValue);
+                }
+            }
+#endif 
             if (knownColor != KnownColor.UnknownColor)
             {
                 // Serialize values of the type "Red", "Blue" and other names
@@ -147,7 +165,18 @@ namespace System.Windows.Media
             if (brushType == SerializationBrushType.KnownSolidColor)
             {
                 uint knownColorUint = reader.ReadUInt32();
-                return KnownColors.SolidColorBrushFromUint(knownColorUint);
+                SolidColorBrush scp = KnownColors.SolidColorBrushFromUint(knownColorUint);
+#if !PBTCOMPILER
+                lock (s_knownSolidColorBrushStringCache)
+                {
+                    if (!s_knownSolidColorBrushStringCache.ContainsKey(scp))
+                    {
+                        string strColor = scp.Color.ConvertToString(null, System.Windows.Markup.TypeConverterHelper.InvariantEnglishUS);
+                        s_knownSolidColorBrushStringCache[scp] = strColor;
+                    }
+                }
+#endif 
+                return scp;
             }
             else if (brushType == SerializationBrushType.OtherColor)
             {
@@ -196,9 +225,137 @@ namespace System.Windows.Media
         /// </returns>
         internal override string ConvertToString(string format, IFormatProvider provider)
         {
-            return Color.ConvertToString(format, provider);
+            string strBrush = Color.ConvertToString(format, provider);
+
+#if !PBTCOMPILER 
+            // We maintain a cache of strings representing well-known SolidColorBrush objects corresponding to 
+            // each of the KnownColors. This cache is primarily intended to be passed to the localizer which 
+            // maintains SolidColorBrush values as a string. When the localizer passes
+            // this string back to SolidColorBrush.SerializeOn(), we'd know which ones to 
+            // serialize as SerializationBrushType.KnownSolidColor vs. which ones to write as 
+            // SerializationBrushType.OtherColor. 
+            // 
+            // The BamlReader.GetPropertyCustomRecordId() calls ConvertToString() with format=null && 
+            // provider = System.Windows.Markup.TypeConverterHelper.InvariantEnglishUS, so we use that
+            // to decide which string objects to cache.  
+            if ((format == null) && (provider == System.Windows.Markup.TypeConverterHelper.InvariantEnglishUS) && KnownColors.IsKnownSolidColorBrush(this))
+            {
+                lock (s_knownSolidColorBrushStringCache)
+                {
+                    string strCachedBrush = null; 
+                    if (s_knownSolidColorBrushStringCache.TryGetValue(this, out strCachedBrush))
+                    {
+                        strBrush = strCachedBrush;
+                    }
+                    else
+                    {
+                        s_knownSolidColorBrushStringCache[this] = strBrush;
+                    }
+                }
+            }
+#endif 
+            return strBrush;
         }
 
         #endregion
+
+#if !PBTCOMPILER
+        // A simple Two-way Dictionary implementation - only a few useful methods are
+        // defined. This class is used to maintain a cache of well-known SolidColorBrush 
+        // string values, and allow for fast lookup of those string values by reference. 
+        internal class TwoWayDictionary<TKey,TValue>
+        {
+            public TwoWayDictionary(): this(null, null)
+            {
+                // Forward to TwoWayDictionary(IEqualityComparer<TKey>, IEqualityComparer<TValue>)
+            }
+
+            public TwoWayDictionary(IEqualityComparer<TKey> keyComparer): this (keyComparer, null)
+            {
+                // Forward to TwoWayDictionary(IEqualityComparer<TKey>, IEqualityComparer<TValue>)
+            }
+
+            public TwoWayDictionary(IEqualityComparer<TValue> valueComparer) : this (null, valueComparer)
+            {
+                // Forward to TwoWayDictionary(IEqualityComparer<TKey>, IEqualityComparer<TValue>)
+            }
+
+            public TwoWayDictionary(IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+            {
+                fwdDictionary = new Dictionary<TKey, TValue>(keyComparer);
+                revDictionary = new Dictionary<TValue, List<TKey>>(valueComparer); 
+            }
+
+            public bool TryGetValue(TKey key, out TValue value)
+            {
+                return fwdDictionary.TryGetValue(key, out value);
+            }
+
+            public bool TryGetKeys(TValue value, out List<TKey> keys)
+            {
+                return revDictionary.TryGetValue(value, out keys); 
+            }
+
+            public bool ContainsValue(TValue value)
+            {
+                return revDictionary.ContainsKey(value); 
+            }
+
+            public bool ContainsKey(TKey key)
+            {
+                return fwdDictionary.ContainsKey(key); 
+            }
+
+            public TValue this[TKey key]
+            {
+                get
+                {
+                    return fwdDictionary[key];
+                }
+
+                set
+                {
+                    fwdDictionary[key] = value;
+
+                    List<TKey> keys; 
+                    if (!revDictionary.TryGetValue(value, out keys))
+                    {
+                        keys = new List<TKey>();
+                        revDictionary[value] = keys; 
+                    }
+                    keys.Add(key); 
+                }
+            }
+
+            public Dictionary<TKey, TValue>.Enumerator GetEnumerator()
+            {
+                return fwdDictionary.GetEnumerator();
+            }
+
+            // We define the reverse dictionary this way using a List because
+            // the forward dictionary would have unique keys but potentially
+            // repeating values for different keys. 
+            private Dictionary<TKey, TValue> fwdDictionary;
+            private Dictionary<TValue, List<TKey>> revDictionary; 
+        }
+
+        // An IEqualityComparer<T> used to compare objects by reference.
+        internal class ReferenceEqualityComparer<T> : EqualityComparer<T> where T : class
+        {
+            internal static ReferenceEqualityComparer<T> Singleton = new ReferenceEqualityComparer<T>();
+
+            public override bool Equals(T x, T y)
+            {
+                return object.ReferenceEquals(x, y);
+            }
+
+            public override int GetHashCode(T obj)
+            {
+                return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+            }
+        }
+
+        private static TwoWayDictionary<SolidColorBrush, string> s_knownSolidColorBrushStringCache = new TwoWayDictionary<SolidColorBrush, string>(ReferenceEqualityComparer<string>.Singleton);
+#endif 
     }
 }

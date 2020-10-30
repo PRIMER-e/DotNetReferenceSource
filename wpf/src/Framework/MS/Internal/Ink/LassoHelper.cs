@@ -41,7 +41,7 @@ namespace MS.Internal.Ink
         List<Point>         _lasso = null;
         Rect                _boundingBox;
 
-        // NTRAID#T2-00000-2003/07/14-vsmirnov - some of these are probably not in [....]
+        // NTRAID#T2-00000-2003/07/14-vsmirnov - some of these are probably not in sync
         // with the spec (which is not available at this moment), and also might
         // need to be different for the high contrast mode.
         public const double  MinDistanceSquared     = 49.0;

@@ -10,7 +10,7 @@
 //              ways of interpreting gradient stops.
 //
 // History:
-//  04/30/2003 : [....] - Created it.
+//  04/30/2003 : Microsoft - Created it.
 //
 //---------------------------------------------------------------------------
     

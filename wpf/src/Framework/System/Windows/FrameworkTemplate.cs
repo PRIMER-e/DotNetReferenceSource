@@ -21,6 +21,7 @@ using System.Security;                  // SecurityCriticalAttribute, SecurityTr
 using System.Threading;                 // Interlocked
 using System.Windows.Media.Animation;   // Timeline
 using System.Windows.Markup;     // XamlTemplateSerializer, ContentPropertyAttribute
+using System.Windows.Diagnostics;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -477,7 +478,7 @@ namespace System.Windows
         //  This method
         //  Creates the VisualTree
         //
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         internal bool ApplyTemplateContent(
             UncommonField<HybridDictionary[]> templateDataField,
             FrameworkElement container)
@@ -929,6 +930,10 @@ namespace System.Windows
                 delegate(object sender, System.Xaml.XamlObjectEventArgs args)
                 {
                     HandleAfterBeginInit(args.Instance, ref rootObject, container, feContainer, nameScope, nameEnumerator);
+                    if (XamlSourceInfoHelper.IsXamlSourceInfoEnabled)
+                    {
+                        XamlSourceInfoHelper.SetXamlSourceInfo(args.Instance, args, null);
+                    }
                 };
             // Delegate for BeforeProperties event
             settings.BeforePropertiesHandler =
@@ -993,8 +998,25 @@ namespace System.Windows
             {
                 int nestedTemplateDepth = 0;
 
+                // Prepare to provide source info if needed
+                IXamlLineInfoConsumer lineInfoConsumer = null;
+                IXamlLineInfo lineInfo = null;
+                if (XamlSourceInfoHelper.IsXamlSourceInfoEnabled)
+                {
+                    lineInfo = templateReader as IXamlLineInfo;
+                    if (lineInfo != null)
+                    {
+                        lineInfoConsumer = currentWriter as IXamlLineInfoConsumer;
+                    }
+                }
+
                 while (templateReader.Read())
                 {
+                    if (lineInfoConsumer != null)
+                    {
+                        lineInfoConsumer.SetLineInfo(lineInfo.LineNumber, lineInfo.LinePosition);
+                    }
+
                     // We need to call the ObjectWriter first because x:Name & RNPA needs to be registered
                     // before we call InvalidateProperties.
                     currentWriter.WriteNode(templateReader);

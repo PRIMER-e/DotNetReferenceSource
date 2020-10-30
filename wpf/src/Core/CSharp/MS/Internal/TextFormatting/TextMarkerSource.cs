@@ -59,7 +59,7 @@ namespace MS.Internal.TextFormatting
 
             _textParagraphProperties = textParagraphProperties;
             TextRunProperties defaultRunProperties = _textParagraphProperties.DefaultTextRunProperties;
-
+            PixelsPerDip = defaultRunProperties.PixelsPerDip;
             string symbolString = null;
 
             if(IsKnownSymbolMarkerStyle(markerStyle))
@@ -90,7 +90,8 @@ namespace MS.Internal.TextFormatting
                         defaultTypeface.Stretch
                         ),
                     defaultRunProperties.FontRenderingEmSize, 
-                    defaultRunProperties.FontHintingEmSize, 
+                    defaultRunProperties.FontHintingEmSize,
+                    PixelsPerDip, 
                     defaultRunProperties.TextDecorations, 
                     defaultRunProperties.ForegroundBrush,
                     defaultRunProperties.BackgroundBrush,
@@ -155,6 +156,7 @@ namespace MS.Internal.TextFormatting
         {
             if (textSourceCharacterIndex < _characterArray.Length)
             {
+                _textRunProperties.PixelsPerDip = PixelsPerDip;
                 return new TextCharacters(
                     _characterArray,
                     textSourceCharacterIndex,

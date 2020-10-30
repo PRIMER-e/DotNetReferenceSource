@@ -10,7 +10,7 @@
 //  controls from the Content view of the Automation Tree.
 //
 // History:  
-//  02/24/2005 : [....] created
+//  02/24/2005 : Microsoft created
 //---------------------------------------------------------------------------
 
 using System;

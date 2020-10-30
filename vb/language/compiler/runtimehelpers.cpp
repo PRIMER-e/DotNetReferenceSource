@@ -4022,7 +4022,7 @@ TryAgain:
         return ptyp->IsClass();
 
     case (Vtypes)c_class:
-        // [....]: 
+        // Microsoft: 
 
         if( ptyp->GetVtype() != t_string )
         {

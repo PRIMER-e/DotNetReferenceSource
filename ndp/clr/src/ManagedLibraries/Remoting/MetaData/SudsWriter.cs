@@ -13,7 +13,7 @@
 //          and generates types defined in it.
 //
 // Date:    April 01, 2000
-// Revised: November 15, 2000 (Wsdl) <EMAIL>[....]</EMAIL>
+// Revised: November 15, 2000 (Wsdl) <EMAIL>Microsoft</EMAIL>
 //
 //============================================================
 namespace System.Runtime.Remoting.MetadataServices

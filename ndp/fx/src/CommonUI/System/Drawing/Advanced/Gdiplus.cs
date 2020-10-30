@@ -152,11 +152,11 @@ namespace System.Drawing {
 
                 Debug.Unindent();
 
-                // [....] to event for handling shutdown
+                // Sync to event for handling shutdown
                 AppDomain currentDomain = AppDomain.CurrentDomain;
                 currentDomain.ProcessExit += new EventHandler(SafeNativeMethods.Gdip.OnProcessExit);
 
-                // Also [....] to DomainUnload for non-default domains since they will not get a ProcessExit if
+                // Also sync to DomainUnload for non-default domains since they will not get a ProcessExit if
                 // they are unloaded prior to ProcessExit (and this object's static fields are scoped to AppDomains, 
                 // so we must cleanup on AppDomain shutdown)
                 if (!currentDomain.IsDefaultAppDomain()) {
@@ -181,9 +181,9 @@ namespace System.Drawing {
 
 // Due to conditions at shutdown, we can't be sure all objects will be finalized here: e.g. a Global variable 
 // in the application/domain may still be holding a GDI+ object. If so, calling GdiplusShutdown will free the GDI+ heap,
-// causing AppVerifier exceptions due to active crit sections. See DevDiv2 Bug # 358109 for further details. 
-// For now, we will simply not call shutdown, the resultant heap leak should occur most often during shutdown anyway. 
-// If GDI+ moves their allocations to the standard heap we can revisit.
+// causing AppVerifier exceptions due to active crit sections. See DevDiv2 
+
+
 #if GDIP_SHUTDOWN
                     // Let any thread data collect and finalize before
                     // we tear down GDI+
@@ -4192,6 +4192,7 @@ namespace System.Drawing {
         //public extern static int GetLastError();
         
         public const int ERROR_ACCESS_DENIED = 5;
+        public const int ERROR_INVALID_PARAMETER = 87;
         public const int ERROR_PROC_NOT_FOUND = 127;
 
 

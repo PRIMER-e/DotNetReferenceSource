@@ -6,7 +6,7 @@
 //      Provides an HttpContext-based implementation.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

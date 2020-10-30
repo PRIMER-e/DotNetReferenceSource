@@ -140,7 +140,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope="member", Target="System.Windows.Media.MediaTimelineConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Type):System.Boolean")]
 [module: SuppressMessage("Microsoft.Security", "CA2103:ReviewImperativeSecurity", Scope="member", Target="System.Windows.Media.MediaTimelineHelper.CreateMedia(System.Uri,System.IntPtr):System.Void")]
 
-// [[....]]
+// [bkaneva]
 // The calling methods (BlurBitmapEffect.UpdateUnmanagedPropertyState  and DropShadowEffect.UpdateUnmanagedPropertyState)
 // have a DemandUIWindowPermission call
 
@@ -149,7 +149,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: Private run
-// Developer: [....]
+// Developer: andren
 // Reason: partial trust security team has reviewed all of these
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.MSInternal", "CA900:AptcaAssembliesShouldBeReviewed")]
@@ -1391,7 +1391,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1742261
-// Alias: [....]
+// Alias: bedej
 // Reason: s_pLocalTransport is a transport connection object, the same as s_pConnection for which there is already an
 // exception
 //***************************************************************************************************************************
@@ -1406,8 +1406,8 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Interop.InteropBitmap.InitializeFromHBitmap(System.IntPtr,System.IntPtr,System.Windows.Int32Rect,System.Windows.Media.Imaging.BitmapSizeOptions,MS.Internal.WICBitmapAlphaChannelOption):System.Void")]
 #endif
@@ -1420,7 +1420,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Media.Effects.BevelBitmapEffect.UpdateUnmanagedPropertyState(System.Runtime.InteropServices.SafeHandle):System.Void")]
 
 // bug 1381899
-// Developer: [....]
+// Developer: huwang
 // Reason: This function is already marked as SecurityCritical TreatAsSafe. AKaza agrees this should be excluded.
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="MS.Internal.AppModel.SiteOfOriginContainer.GetDeploymentUri():System.Uri")]
 
@@ -1429,7 +1429,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Media.Imaging.BitmapSource.CriticalCopyPixels(System.Windows.Int32Rect,System.IntPtr,System.Int32,System.Int32):System.Void")]
 
 // bug 1413285
-// Developer: [....]
+// Developer: dwaynen
 // Reason: This function is marked as SecurityCritical.
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Media.Composition.DUCE+CompositionTarget.UpdateWindowSettings(System.Windows.Media.Composition.DUCE+ResourceHandle,System.Threading.AutoResetEvent,MS.Win32.NativeMethods+RECT,System.Windows.Media.Color,System.Single,System.Windows.Media.Composition.MILWindowLayerType,System.Windows.Media.Composition.MILTransparencyFlags,System.Boolean,System.Int32,System.Windows.Media.Composition.DUCE+Channel):System.Void")]
 
@@ -1455,12 +1455,12 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "MS.Internal.FontCache.FileMapping.OpenFile(System.String):System.Void")]
 
-// [....] - this method only does matrix math
+// jordanpa - this method only does matrix math
 [module: SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage", Scope="member", Target="System.Windows.Media.MILUtilities.MIL3DCalcProjected2DBounds(System.Windows.Media.Composition.D3DMATRIX,System.Windows.Media.MILRect3D,System.Windows.Media.MILRectF_RB):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1468165
-// Developer: [....]/robertwl
+// Developer: rajatg/robertwl
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Media.ImageSourceConverter.GetBitmapStream(System.Byte[]):System.IO.Stream")]
 
@@ -1491,7 +1491,7 @@ using System.Diagnostics.CodeAnalysis;
 
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: rajatg
 // These new violations are a result of refactoring and are equivalent to other approved issues in Imaging code.
 // The DangerousGetHandle issue has no workaround and the code is as per what the CLR security folks recommend
 //**************************************************************************************************************************
@@ -1533,7 +1533,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Media.MediaPlayerState.CloseRenderTarget():System.Void")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: rajatg
 // Bug: 1632176
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Media.Imaging.WriteableBitmap.WritePixels(System.Windows.Int32Rect,System.IntPtr,System.Int32,System.Int32):System.Void")]
@@ -1571,14 +1571,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 109437
-// Developer: [....]
+// Developer: benwest
 // Reason: Methods are SecurityCritical -- it's ok to call LinkDemanded code.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Input.TextServicesContext.StartTransitoryExtension():System.Void")]
 
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: dwaynen
 // Reason: Methods are SecurityCritical -- it's ok to call LinkDemanded code.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Media.Imaging.WriteableBitmap.#WritePixels(System.Windows.Int32Rect,System.Array,System.Int32,System.Int32,System.Int32)")]
@@ -1586,14 +1586,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 199045
-// Developer: [....]
+// Developer: brandf
 // Reason: Method does not expose data from LinkDemanded code (Marshal.SizeOf)
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security","CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Media.Imaging.WriteableBitmap.#ValidateArrayAndGetInfo(System.Array,System.Boolean,System.Int32&,System.Int32&,System.Type&)")]
 
 //**************************************************************************************************************************
 // Bug IDs: 198727
-// Developer: [....]
+// Developer: gschneid
 // Reason: This method hooks up a reverse-p-invoke callback for native code to call back into managed code to produce glyph 
 // bitmaps. This is done independent of any arguments or user data (i.e. the user cannot manipulate which method is being used
 // for the reverse p-invoke). Note also that the method is marked as SecurityCritical and hence has been verified to not be called
@@ -1603,26 +1603,26 @@ using System.Diagnostics.CodeAnalysis;
 
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: bencar
 // Reason: ManipulationDevice is initializing the same way as MouseDevice, which also has a suppression.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security","CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Input.ManipulationDevice.#.ctor(System.Windows.Input.InputManager)")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: kedecond
 // Reason: All the callers are SecurityCritical - it is ok for them to call link demand methods
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.Windows.Input.ManipulationDevice+ManipulationInputProvider.#PushManipulationInput(System.Windows.PresentationSource,System.Windows.Input.InputEventArgs)")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: arathira
 // Reason: Callers are marked SecurityCritical and TreatAsSafe because CompositionTarget.TransformToDevice
 // and CompositionTarget.TransformToDevice are treated as safe.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.Windows.UIElement.#RoundRect(System.Windows.Rect,System.Windows.UIElement)")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: bencar
 // Reason: These methods are only meant to be called by our code (hence the link demand), but it is OK for them to be
 //         indirectly called from public API (what the rule checks for).
 //**************************************************************************************************************************
@@ -1642,7 +1642,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 692903
-// Developer: [....]
+// Developer: BrenClar
 // Reason: This is existing code. The use of IntPtr has previously been security reviewed and marked as SecurityCritical.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability","CA2006:UseSafeHandleToEncapsulateNativeResources", Scope="member", Target="System.Windows.Media.MediaContext+ChannelManager.#_pSyncConnection")]
@@ -1650,7 +1650,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: Dev10 692903
-// Developer: [....]
+// Developer: bartde
 // Reason: The IKIS methods on HwndSource are marked with a LinkDemand to encourage overrides to do that too;
 //         see HwndSource.cs for more details.
 //         The WeakEventPreprocessMessage methods are SecurityCritical and are considered safe to be exposed publicly;
@@ -1664,7 +1664,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: Dev10 798737
-// Developer: [....]
+// Developer: pantal
 // Reason: System.Windows.Input.Manipulations.dll operates as a Security Transparent Assembly with the new security model, 
 //         which this FxCop rule is not presently interpreting properly.
 //**************************************************************************************************************************
@@ -1691,7 +1691,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: Dev10 806220
-// Developer: [....]
+// Developer: vamsp
 // Reason: Method does not expose data from LinkDemanded code (PresentationSource.CompositionTarget)
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security","CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Input.TouchDevice.#Synchronize()")]

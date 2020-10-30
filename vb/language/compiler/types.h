@@ -83,7 +83,7 @@ const CompilationState CS_DecompileOnResourceChange = CS_Bound;
 // Access types.
 //
 
-enum ACCESS // [....]: I'm depending on these being ordered from most restrictive to least restrictive for comparative purposes in bindable
+enum ACCESS // Microsoft: I'm depending on these being ordered from most restrictive to least restrictive for comparative purposes in bindable
             // ACCESS_IntersectionProtectedFriend requires some explanation.  When determining the relative access of a friend member contained
             // by a Protected member, or vice-versa, what you end up with is an access that is not Protected Friend, is more restrictive than
             // either Protected or Friend by itself, yet doesn't have a corresponding access in the language.  But we need a way to represent
@@ -153,15 +153,15 @@ enum UserDefinedOperators
 // Events for the IEditSychronization interface.
 enum EDITSYNC
 {
-    [....]_STATEMENTS,
-    [....]_DECLARATIONS,
-    [....]_READYTOPRODUCE
+    SYNC_STATEMENTS,
+    SYNC_DECLARATIONS,
+    SYNC_READYTOPRODUCE
 };
 
 ////////////////////////////////////////////////////////////////////////////
 // IEditSynchronization
 ////////////////////////////////////////////////////////////////////////////
-// [....] between the library codefile events and user edits.
+// Sync between the library codefile events and user edits.
 //
 interface _declspec( uuid( "4B0DD5EE-48DF-4132-B01C-B1FF4C371BBF" ) )
 IEditSynchronization : IUnknown

@@ -18,7 +18,7 @@ namespace System.Windows
     /// <summary>
     /// the category of the string values of each localizable resource
     /// </summary>
-    // NOTE: Enum values must be made in [....] with the enum parsing logic in 
+    // NOTE: Enum values must be made in sync with the enum parsing logic in 
     // Framework/MS/Internal/Globalization/LocalizationComments.cs    
 #if PBTCOMPILER    
     internal enum LocalizationCategory

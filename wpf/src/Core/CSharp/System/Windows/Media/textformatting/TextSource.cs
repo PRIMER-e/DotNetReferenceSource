@@ -63,5 +63,17 @@ namespace System.Windows.Media.TextFormatting
         public abstract int GetTextEffectCharacterIndexFromTextSourceCharacterIndex(
             int         textSourceCharacterIndex
             );
+
+        /// <summary>
+        /// PixelsPerDip at which the text should be rendered. Any class which extends TextSource should update
+        /// this property whenever DPI changes for a Per Monitor DPI Aware Application.
+        /// </summary>
+        public double PixelsPerDip
+        {
+            get { return _pixelsPerDip; }
+            set { _pixelsPerDip = value; }
+        }
+
+        private double _pixelsPerDip = MS.Internal.FontCache.Util.PixelsPerDip;
     }
 }

@@ -171,10 +171,10 @@ namespace System.Windows.Controls
         /// </summary>
         protected override void ClearContainerForItemOverride(DependencyObject element, object item)
         {
-            // This method no longer does the work it used to (bug 1445288).
-            // It is called when a container is removed from the tree;  such a
-            // container will be GC'd soon, so there's no point in changing
-            // its properties.
+            // This method no longer does the work it used to (
+
+
+
 
             base.ClearContainerForItemOverride(element, item);
         }

@@ -365,15 +365,15 @@ namespace System.Windows.Forms {
 
                     // This code has been here since the inception of the project, 
                     // we can’t determine why we have to compare w/ 32 here.
-                    // This fails on 3-GB mode, (once the dll is loaded above 3GB memory space) (see Dev10 bug#732388)
+                    // This fails on 3-GB mode, (once the dll is loaded above 3GB memory space) (see Dev10 
                     if ((ulong)moduleHandle < (ulong)32) {
                         throw new Win32Exception(lastWin32Error, SR.GetString(SR.LoadDLLError,RichTextBoxConstants.DLL_RICHEDIT));
                     }
 
                     //Determine whether we're Rich Edit 2.0 or 3.0: see 
                     //http://msdn.microsoft.com/library/default.asp?url=/library/en-us/shellcc/platform/commctls/richedit/richeditcontrols/aboutricheditcontrols.asp
-                    StringBuilder pathBuilder = new StringBuilder(NativeMethods.MAX_PATH);
-                    UnsafeNativeMethods.GetModuleFileName(new HandleRef(null, moduleHandle), pathBuilder, pathBuilder.Capacity);
+
+                    StringBuilder pathBuilder = UnsafeNativeMethods.GetModuleFileNameLongPath(new HandleRef(null, moduleHandle));
                     string path = pathBuilder.ToString();
                     new FileIOPermission(FileIOPermissionAccess.Read, path).Assert();
                     FileVersionInfo versionInfo;
@@ -3119,8 +3119,8 @@ namespace System.Windows.Forms {
                 else {
                     result = Encoding.Default.GetString(bytes, 0, bytes.Length);
                 }
-                // workaround ??? for bug 117325. When the string is modified is can return 
-                // with an extra null termination (always?). If it does, get rid of it.
+                // workaround ??? for 
+
                 if(!String.IsNullOrEmpty(result) && (result[result.Length-1] == '\0')) {
                     result = result.Substring(0, result.Length-1);
                 }
@@ -3366,8 +3366,8 @@ namespace System.Windows.Forms {
             txrg.chrg = c;
             Debug.Assert((c.cpMax-c.cpMin)>0, "CHARRANGE was null or negative - can't do it!");
 
-            //Windows bug: 64-bit windows returns a bad range for us.  VSWhidbey 504502.  
-            //Putting in a hack to avoid an unhandled exception.
+            //Windows 
+
             if (c.cpMax > Text.Length || c.cpMax-c.cpMin <= 0) {
                 return string.Empty;
             }
@@ -3442,19 +3442,24 @@ namespace System.Windows.Forms {
 
                         // Only look at the first file.
                         StringBuilder path = new StringBuilder(NativeMethods.MAX_PATH);
-                        UnsafeNativeMethods.DragQueryFile(new HandleRef(endropfiles, endropfiles.hDrop), 0, path, NativeMethods.MAX_PATH);
-
-                        // Try to load the file as an RTF
-                        try {
-                            LoadFile(path.ToString(), RichTextBoxStreamType.RichText);
-                        }
-                        catch {
-                            // we failed to load as rich text so try it as plain text
-                            try {
-                                LoadFile(path.ToString(), RichTextBoxStreamType.PlainText);
+                        if (UnsafeNativeMethods.DragQueryFileLongPath(new HandleRef(endropfiles, endropfiles.hDrop), 0, path) != 0)
+                        {
+                            // Try to load the file as an RTF
+                            try
+                            {
+                                LoadFile(path.ToString(), RichTextBoxStreamType.RichText);
                             }
-                            catch {
-                                // ignore any problems we have
+                            catch
+                            {
+                                // we failed to load as rich text so try it as plain text
+                                try
+                                {
+                                    LoadFile(path.ToString(), RichTextBoxStreamType.PlainText);
+                                }
+                                catch
+                                {
+                                    // ignore any problems we have
+                                }
                             }
                         }
                         m.Result = (IntPtr)1;   // tell them we did the drop
@@ -3979,7 +3984,7 @@ namespace System.Windows.Forms {
 
                         // The below is the complete reverse of what the docs on MSDN suggest,
                         // but if we follow the docs, we would be firing OnDragDrop all the
-                        // time instead of OnDragOver (see bug 99294). MSDN seems to be wrong here.
+                        // time instead of OnDragOver (see 
                         
                         // drag - fDrag = false, grfKeyState != 0
                         // drop - fDrag = false, grfKeyState = 0

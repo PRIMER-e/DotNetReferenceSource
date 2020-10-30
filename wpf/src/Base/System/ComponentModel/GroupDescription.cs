@@ -11,9 +11,11 @@
 //
 //---------------------------------------------------------------------------
 
+using System.Collections;               // IComparer
 using System.Collections.ObjectModel;   // ObservableCollection
 using System.Collections.Specialized;   // NotifyCollectionChangedEvent*
 using System.Globalization;             // CultureInfo
+using MS.Internal;                      // Invariant.Assert
 
 namespace System.ComponentModel
 {
@@ -106,6 +108,46 @@ namespace System.ComponentModel
             return (_explicitGroupNames.Count > 0);
         }
 
+        /// <summary>
+        /// Collection of Sort criteria to sort the groups.
+        /// </summary>
+        public SortDescriptionCollection SortDescriptions
+        {
+            get
+            {
+                if (_sort == null)
+                    SetSortDescriptions(new SortDescriptionCollection());
+                return _sort;
+            }
+        }
+
+        /// <summary>
+        /// This method is used by TypeDescriptor to determine if this property should
+        /// be serialized.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool ShouldSerializeSortDescriptions()
+        {
+            return (_sort != null && _sort.Count > 0);
+        }
+
+        /// <summary>
+        /// Set a custom comparer to sort groups using an object that implements IComparer.
+        /// </summary>
+        /// <remarks>
+        /// Note: Setting the custom comparer object will clear previously set <seealso cref="GroupDescription.SortDescriptions"/>.
+        /// </remarks>
+        public IComparer CustomSort
+        {
+            get { return _customSort; }
+            set
+            {
+                _customSort = value;
+                SetSortDescriptions(null);
+                OnPropertyChanged(new PropertyChangedEventArgs("CustomSort"));
+            }
+        }
+
         #endregion Public Properties
 
         #region Public Methods
@@ -131,6 +173,24 @@ namespace System.ComponentModel
 
         #endregion Public Methods
 
+        #region Internal Properties
+
+        //------------------------------------------------------
+        //
+        //  Internal Properties
+        //
+        //------------------------------------------------------
+
+        /// <summary>
+        /// Collection of Sort criteria to sort the groups.  Does not do lazy initialization.
+        /// </summary>
+        internal SortDescriptionCollection SortDescriptionsInternal
+        {
+            get { return _sort; }
+        }
+
+        #endregion Internal Properties
+
         #region Private Methods
 
         //------------------------------------------------------
@@ -144,6 +204,47 @@ namespace System.ComponentModel
             OnPropertyChanged(new PropertyChangedEventArgs("GroupNames"));
         }
 
+        // set new SortDescription collection; rehook collection change notification handler
+        private void SetSortDescriptions(SortDescriptionCollection descriptions)
+        {
+            if (_sort != null)
+            {
+                ((INotifyCollectionChanged)_sort).CollectionChanged -= new NotifyCollectionChangedEventHandler(SortDescriptionsChanged);
+            }
+
+            bool raiseChangeEvent = (_sort != descriptions);
+
+            _sort = descriptions;
+
+            if (_sort != null)
+            {
+                Invariant.Assert(_sort.Count == 0, "must be empty SortDescription collection");
+                ((INotifyCollectionChanged)_sort).CollectionChanged += new NotifyCollectionChangedEventHandler(SortDescriptionsChanged);
+            }
+
+            if (raiseChangeEvent)
+            {
+                OnPropertyChanged(new PropertyChangedEventArgs("SortDescriptions"));
+            }
+        }
+
+        // SortDescription was added/removed, notify listeners
+        private void SortDescriptionsChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            // adding to SortDescriptions overrides custom sort
+            if (_sort.Count > 0)
+            {
+                if (_customSort != null)
+                {
+                    _customSort = null;
+                    OnPropertyChanged(new PropertyChangedEventArgs("CustomSort"));
+                }
+            }
+
+            OnPropertyChanged(new PropertyChangedEventArgs("SortDescriptions"));
+        }
+
+
         #endregion Private Methods
 
         #region Private fields
@@ -155,6 +256,8 @@ namespace System.ComponentModel
         //------------------------------------------------------
 
         ObservableCollection<object> _explicitGroupNames;
+        SortDescriptionCollection _sort;
+        IComparer _customSort;
 
         #endregion Private fields
     }

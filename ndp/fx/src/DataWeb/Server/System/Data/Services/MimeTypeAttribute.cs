@@ -7,7 +7,7 @@
 //      operations with a MIME type.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

@@ -142,12 +142,12 @@ namespace System.Windows.Media.Animation
                         {
                             Duration duration = child.ResolvedDuration;
 
-                            // A [....] clock with duration of zero or no begin time has no effect, so do skip it
+                            // A sync clock with duration of zero or no begin time has no effect, so do skip it
                             if ((!duration.HasTimeSpan || duration.TimeSpan > TimeSpan.Zero)
                                 && child._timeline.BeginTime.HasValue)
                             {
                                 _syncData = new SyncData(child);
-                                child._syncData = null;  // The child will no longer self-[....]
+                                child._syncData = null;  // The child will no longer self-sync
                             }
 
                             break;  // We only want the first child with CanSlip
@@ -434,7 +434,7 @@ namespace System.Windows.Media.Animation
         // Upon a discontinuous interactive operation (begin/seek/stop), this resets children with SyncData
         // (e.g. media) to track this change, specifically:
         //  1) Realign their begin times evenly with the parent, discounting past slippage that may have occured
-        //  2) Reset their state, in case they leave their "[....]" period.
+        //  2) Reset their state, in case they leave their "sync" period.
         internal override void ResetNodesWithSlip()
         {
             Debug.Assert(IsRoot);

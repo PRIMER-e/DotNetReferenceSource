@@ -31,11 +31,11 @@
 //  07/01/2002: mwatt:       Created 
 //  03/31/2003: kusumav:     Ported from src\ndphost\abi\iavalonserver.hxx for COM interop
 //  06/04/2003: kusumav:     Ported to WCP tree
-//  06/30/2003: [....]:     Separated methods related to ByteRangeDownloader into
+//  06/30/2003: younggk:     Separated methods related to ByteRangeDownloader into
 //                              IByteRangeDownloaderService.cs
-//  03/09/2005: [....]:     Added fragment to Run to enable navigation to
+//  03/09/2005: erichar:     Added fragment to Run to enable navigation to
 //                           bookmarks in a .container or .xapp
-//  09/12/2005: [....]:     Removed Stop() and Refresh() because these are handled by commanding
+//  09/12/2005: erichar:     Removed Stop() and Refresh() because these are handled by commanding
 // 
 //---------------------------------------------------------------------------
 
@@ -214,7 +214,7 @@ namespace MS.Internal.AppModel
     //  IMPORTANT:  IMPORTANT:  IMPORTANT:  IMPORTANT:                                            //
     //********************************************************************************************//
     //Start with 8001 , the enum defined on the managed world starts with 8001  as well
-    //KEEP THESE IN [....]
+    //KEEP THESE IN SYNC
     //The ApplicationCommands enums in wcp\host\inc\hostservices.idl and IBrowserHostServices.cs 
     //and the menuIDs wcp\host\docobj\resource.hxx and resources.rc
     //
@@ -263,7 +263,7 @@ namespace MS.Internal.AppModel
         ViewMenu = 0x3040
     }
 
-    //***Keep in [....] with host\Inc\HostServices.idl.
+    //***Keep in sync with host\Inc\HostServices.idl.
     internal enum EditingCommandIds: uint
     {
         Backspace = 1,

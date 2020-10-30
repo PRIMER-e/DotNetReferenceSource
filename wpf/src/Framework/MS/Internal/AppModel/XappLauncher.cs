@@ -455,8 +455,8 @@ namespace MS.Internal.AppModel
                 _progressPage.ApplicationName = args.ProductName;
 
                 // GetManifestCompletedEventArgs.PublisherName doesn't exist.
-                // DevDiv bug 166088 tracks this.
-                // The retrieval below takes surprisingly little time: < 1 ms.
+                // DevDiv 
+
                 XmlReader rdr = args.DeploymentManifest;
                 rdr.MoveToContent();
                 if (rdr.LocalName == "assembly")
@@ -499,11 +499,6 @@ namespace MS.Internal.AppModel
             Dispatcher.BeginInvoke(DispatcherPriority.Input,
                 new DispatcherOperationCallback(AssertApplicationRequirementsAsync), null);
             _assertAppRequirementsEvent = new ManualResetEvent(false);
-
-            // Cold-start optimization: While we are network-bound, use the CPU and disk to start PFC.
-            // This takes up to 2 seconds on Windows XP (it's faster on Vista).
-            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle,
-                new DispatcherOperationCallback(StartFontCacheServiceAsync), null);
 
             return null;
         }
@@ -609,32 +604,6 @@ namespace MS.Internal.AppModel
                     // Synchronize with DoDownloadApplicationCompleted(). [See explanation there.]
                     _assertAppRequirementsEvent.Set();
                 }
-            }
-            return null;
-        }
-
-        /// <SecurityNote>
-        /// Critical: Calls a method on the SecurityCritical class CacheManager.
-        /// TreatAsSafe: Starting the font cache service is safe. An application can do that indirectly
-        ///     by using text services.
-        /// </SecurityNote>
-        [SecurityCritical, SecurityTreatAsSafe]
-        object StartFontCacheServiceAsync(object unused)
-        {
-            if (CheckAccess()) // initial call by Dispatcher?
-            { // Do a callback to a thread-pool thread
-                DispatcherOperationCallback cb = new DispatcherOperationCallback(StartFontCacheServiceAsync);
-                cb.BeginInvoke(null, null, null);
-            }
-            else // on a thread-pool thread
-            {
-                // Note that an exception allowed to escape from here will be caught by the thread-pool manager.
-                // But that's okay in this scenario.
-                EventTrace.EasyTraceEvent(EventTrace.Keyword.KeywordHosting | EventTrace.Keyword.KeywordPerf, EventTrace.Event.WpfHost_StartingFontCacheServiceStart);
-                // Getting the instance will instantiate the DWriteFactory, which will cause DWrite to start the
-                // font cache.
-                Text.TextInterface.Factory factory = MS.Internal.FontCache.DWriteFactory.Instance;
-                EventTrace.EasyTraceEvent(EventTrace.Keyword.KeywordHosting | EventTrace.Keyword.KeywordPerf, EventTrace.Event.WpfHost_StartingFontCacheServiceEnd);
             }
             return null;
         }

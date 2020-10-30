@@ -61,7 +61,7 @@ namespace MS.Internal.PtsHost
             PTS.Validate(PTS.FsQuerySubtrackDetails(PtsContext.Context, _paraHandle.Value, out subtrackDetails));
 
             // Draw border and background info.
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
             if (ThisFlowDirection != PageFlowDirection)
             {
                 mbp.MirrorBP();
@@ -70,8 +70,11 @@ namespace MS.Internal.PtsHost
             uint fswdir = PTS.FlowDirectionToFswdir((FlowDirection)Paragraph.Element.GetValue(FrameworkElement.FlowDirectionProperty));
 
             Brush backgroundBrush = (Brush)Paragraph.Element.GetValue(TextElement.BackgroundProperty);
-
-            TextProperties textProperties = new TextProperties(Paragraph.Element, StaticTextPointer.Null, false /* inline objects */, false /* get background */);
+            
+            // This textProperties object is eventually used in creation of LineProperties, which leads to creation of a TextMarkerSource. TextMarkerSource relies on PixelsPerDip
+            // from TextProperties, therefore it must be set here properly.
+            TextProperties textProperties = new TextProperties(Paragraph.Element, StaticTextPointer.Null, false /* inline objects */, false /* get background */,
+                Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             // There might be possibility to get empty sub-track, skip the sub-track in such case.
             if (subtrackDetails.cParas != 0)

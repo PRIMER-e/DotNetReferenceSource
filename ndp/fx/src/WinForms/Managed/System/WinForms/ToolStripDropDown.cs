@@ -581,7 +581,7 @@ namespace System.Windows.Forms {
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Advanced)]
         internal bool IsRestrictedWindow {
             get {
-                /// SECREVIEW: make sure to keep changes here in [....] with Form.IsRestrictedWindow
+                /// SECREVIEW: make sure to keep changes here in sync with Form.IsRestrictedWindow
                 if (!state[stateIsRestrictedWindowChecked]) {
                     state[stateIsRestrictedWindowChecked] = true;
                     state[stateIsRestrictedWindow] = false;
@@ -1729,7 +1729,7 @@ namespace System.Windows.Forms {
 
         /// <include file='doc\ToolStripDropDown.uex' path='docs/doc[@for="ToolStripDropDown.SetBoundsCore"]/*' />
         /// <devdoc>
-        /// [....] sizes with the ToolStripDropDown
+        /// Sync sizes with the ToolStripDropDown
         /// </devdoc>
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified) {
             

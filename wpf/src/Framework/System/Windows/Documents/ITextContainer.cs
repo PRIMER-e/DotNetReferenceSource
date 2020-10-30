@@ -5,7 +5,7 @@
 // Description: An abstract interface describing a linear text document.
 //
 // History:  
-//  09/13/2004 : [....] - Created
+//  09/13/2004 : benwest - Created
 //
 //---------------------------------------------------------------------------
 
@@ -41,8 +41,8 @@ namespace System.Windows.Documents
         ITextPointer CreatePointerAtOffset(int offset, LogicalDirection direction);
 
         // Allocate a new ITextPointer at a specificed offset in unicode chars within the document.
-        // 
-
+        // TODO:benwest: this should probably be refactored out of ITextContainer
+        // since only TextStore supports it.
         ITextPointer CreatePointerAtCharOffset(int charOffset, LogicalDirection direction);
 
         ITextPointer CreateDynamicTextPointer(StaticTextPointer position, LogicalDirection direction);
@@ -128,9 +128,9 @@ namespace System.Windows.Documents
         // TextEditor owns setting and clearing this property inside its
         // ctor/OnDetach methods.
         //
-        // 
-
-
+        // TODO:benwest:9/29/05: It may be possible to remove this property
+        // by relying on a tree walk up from the Parent property looking
+        // for an attached TextEditor (which maps 1-to-1 with TextSelection).
         ITextSelection TextSelection { get; set; }
 
         // Optional undo manager, may be null.
@@ -146,8 +146,8 @@ namespace System.Windows.Documents
         int SymbolCount { get; }
 
         // Count of unicode characters in the tree.
-        // 
-
+        // TODO:benwest: this should probably be refactored out of ITextContainer
+        // since only TextStore supports it.
         int IMECharCount { get; }
 
         // Autoincremented counter of content changes in this TextContainer

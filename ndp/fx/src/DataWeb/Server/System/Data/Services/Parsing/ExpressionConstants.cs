@@ -6,7 +6,7 @@
 //      Provides constants used in Astoria expressions.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Parsing

@@ -237,8 +237,8 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1020624
-// Developer: [....]
-// Reason: Not fixing to maintain compat with the [....] API
+// Developer: DRelyea
+// Reason: Not fixing to maintain compat with the WinForms API
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.MessageBoxOptions.RtlReading")]
 
@@ -252,7 +252,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1048317
-// Developer: [....]
+// Developer: SamBent
 // Reason: The items in CompositeCollection have type Object. There's no way to be more type-safe than we already are.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1039:ListsAreStronglyTyped", Scope="type", Target="System.Windows.Data.CompositeCollection")]
@@ -270,7 +270,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 113119 & 1131908 & 1010853
-// Developer: [....]
+// Developer: SamBent
 // Reason: The items in CompositeCollection have type Object. There's no way to be more type-safe than we already are.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.StyleHelper.GetChildValueHelper(System.Windows.UncommonField`1<System.Collections.Hashtable[]>,MS.Utility.ItemStructList`1<System.Windows.ChildValueLookup>&,System.Windows.DependencyObject,System.Windows.FrameworkElement,System.Windows.FrameworkContentElement,System.Int32,System.Boolean):System.Object")]
@@ -329,7 +329,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1010754, 1169097
 // Developer: a-shsolk
-// Reason: Resolved as Won't Fix by [....]; not closed
+// Reason: Resolved as Won't Fix by bchapman; not closed
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1710:IdentifiersShouldHaveCorrectSuffix", Scope="member", Target="e:System.Windows.Interop.HwndHost.#MessageHook")]
 
@@ -344,7 +344,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1038599
 // Developer: a-shsolk
-// Reason: Resolved as Won't Fix by [....]
+// Reason: Resolved as Won't Fix by younggk
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2216:DisposableTypesShouldDeclareFinalizer", Scope = "member", Target = "MS.Internal.Progressivity.ByteRangeDownloader.System.IDisposable.Dispose():System.Void")]
 
@@ -366,14 +366,14 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1048316
 // Developer: a-shsolk
-// Reason: 	Resolved as Duplicate of Bug 938461(wont fix) by actdata ([....]); Closed by dbrown
+// Reason: 	Resolved as Duplicate of Bug 938461(wont fix) by actdata (sambent); Closed by dbrown
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Scope="type", Target="System.Windows.Data.CollectionView")]
 
 //**************************************************************************************************************************
 // Bug ID: 1048318
 // Developer: a-shsolk
-// Reason: Resolved as Duplicate of Bug 938168(wont fix) by actdata ([....]); Closed by dbrown
+// Reason: Resolved as Duplicate of Bug 938168(wont fix) by actdata (sambent); Closed by dbrown
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope = "member", Target = "System.Windows.Data.CollectionView.RaiseCurrentChanging(System.Object,System.ComponentModel.CancelEventArgs):System.Void")]
 
@@ -387,7 +387,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1048321
 // Developer: a-shsolk
-// Reason: Resolved as By Design by [....]; Closed by [....]
+// Reason: Resolved as By Design by benwest; Closed by mruiz
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope = "member", Target = "System.Windows.Documents.TextRange.Select(System.Windows.Documents.TextPointer,System.Windows.Documents.TextPointer):System.Void")]
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope = "member", Target = "System.Windows.Documents.TextRange.Contains(System.Windows.Documents.TextPointer):System.Boolean")]
@@ -424,7 +424,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1081881
 // Developer: a-shsolk
-// Reason: Resolved as By Design by actdata ([....]); violation on 'OneTime' which is intentionally a 2 word
+// Reason: Resolved as By Design by actdata (davidjen); violation on 'OneTime' which is intentionally a 2 word
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", Scope = "member", Target = "System.Windows.Data.BindingMode.OneTime")]
 
@@ -438,7 +438,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1010892
-// Developer: [....]
+// Developer: DavidJen
 // Reason: XmlDataProvider is built explicitly around the Xml DOM.
 // It is safe to exclude a message from this rule if the declaring type requires the specific functionality provided by the concrete type.
 //***************************************************************************************************************************
@@ -474,7 +474,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.HwndHost.WndProc(System.IntPtr,System.Int32,System.IntPtr,System.IntPtr,System.Boolean&):System.IntPtr")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: RRelyea
 // Reason: suppress all warning level violations of the AvoidExcessiveComplexity
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.Controls.MonthCalendar.OnPreviewKeyDown(System.Windows.Input.KeyEventArgs):System.Void")]
@@ -502,7 +502,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.Input.CommandValueSerializer.GetKnownCommand(System.String,System.Type):System.Windows.Input.UICommand")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: RRelyea
 // Reason: ok to exclude...internal classes only...
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1501:AvoidExcessiveInheritance", Scope="type", Target="MS.Internal.Documents.FindToolBar")]
@@ -513,7 +513,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1196960, 1196961
-// Developer: [....]
+// Developer: RRelyea
 // Reason: lots of false hits...including this case.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope="member", Target="System.Windows.Documents.TableTemplate.FindName(System.String,System.Windows.FrameworkContentElement):System.Windows.DependencyObject")]
@@ -527,8 +527,8 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Scope="member", Target="MS.Internal.Annotations.Component.AdornerPresentationContext..ctor(System.Windows.Documents.AdornerLayer,MS.Internal.Annotations.Component.AnnotationAdorner)")]
 #endif
@@ -565,7 +565,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1213054
-// Developer: [....]
+// Developer: SamBent
 // Reason: Pending ActProg approval.  (Dupe of 1010627.  Return type changed.)
 // Status: being addressed globally
 //***************************************************************************************************************************
@@ -573,7 +573,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1182084
-// Developer: [....]
+// Developer: SamBent
 // Reason: Method contains a large switch statement.
 // Status: being addressed globally
 //***************************************************************************************************************************
@@ -581,7 +581,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1010731
-// Developer: [....]
+// Developer: BenCar
 // Reason: Approved by PMVT, these methods contains large switch statements.
 // Status: being addressed globally
 //***************************************************************************************************************************
@@ -657,7 +657,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1182071
-// Developer: [....]
+// Developer: SamBent
 // Reason: This name is analogous to approved name ICollectionView (bugs 938461, 1048300).
 // Status: needs approval
 //***************************************************************************************************************************
@@ -775,7 +775,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1206642,1184021
-// Developer: [....]
+// Developer: bencar
 // Reason: Spelling of these identifiers is correct.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="type", Target="System.Windows.Controls.Resizer")]
@@ -786,7 +786,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1188356,1218567
-// Developer: [....]
+// Developer: bencar
 // Reason: These collection properties are DPs. Text properties were already approved in other elements.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope="member", Target="System.Windows.Controls.AccessText.TextDecorations")]
@@ -795,7 +795,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1208876,1184023,1206647,1218564
-// Developer: [....]
+// Developer: bencar
 // Reason: Virtuals exposing events.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope="member", Target="System.Windows.Controls.Control.OnMouseDoubleClick(System.Windows.Input.MouseButtonEventArgs):System.Void")]
@@ -852,7 +852,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1212727
-// Developer: [....]
+// Developer: dwaynen
 // Reason: complex code happens
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.Markup.Mapper.GetClrInfoForClass(System.Boolean,System.Type,System.String,System.String,System.String,System.Boolean,System.String&):System.Reflection.MemberInfo")]
@@ -904,14 +904,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1235316
-// Developer: [....]
+// Developer: BenCar
 // Reason: This is the approved name.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="type", Target="System.Windows.Controls.VirtualizingPanel")]
 
 //**************************************************************************************************************************
 // Bug ID: 1233101
-// Developer: [....]
+// Developer: dwaynen
 // Reason: complex code happens
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.FrameworkElement.OnPropertyChanged(System.Windows.DependencyPropertyChangedEventArgs):System.Void")]
@@ -920,21 +920,21 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1233102
-// Developer: [....]
+// Developer: dwaynen
 // Reason: complex code happens
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.StyleHelper.GetChildValueHelper(System.Windows.UncommonField`1<System.Collections.Specialized.HybridDictionary[]>,MS.Utility.ItemStructList`1<System.Windows.ChildValueLookup>&,System.Windows.DependencyProperty,System.Windows.DependencyObject,System.Windows.FrameworkElement,System.Windows.FrameworkContentElement,System.Int32,System.Boolean,System.Windows.ValueLookupType&,System.Windows.FrameworkElementFactory):System.Object")]
 
 //**************************************************************************************************************************
 // Bug ID: 1233103
-// Developer: [....]
+// Developer: dwaynen
 // Reason: complex code happens
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.FrameworkContentElement.GetRawValue(System.Windows.DependencyProperty,System.Object,System.Windows.PropertyMetadata,System.Windows.BaseValueSourceInternal&):System.Object")]
 
 //**************************************************************************************************************************
 // Bug ID: 1244807
-// Developer: [....]
+// Developer: dwaynen
 // Reason: no good solution
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors", Scope="member", Target="System.Windows.FrameworkContentElement..ctor()")]
@@ -1011,7 +1011,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1249905
-// Developer: [....]
+// Developer: benwest
 // Reason: Method is virtual and overrides need derived type.
 //**************************************************************************************************************************
 
@@ -1019,7 +1019,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1233098
-// Developer: [....]
+// Developer: dwaynen
 // Reason: The decision was made to make DependencyPropertyChangedEventArgs a struct for perf reasons.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Scope="member", Target="e:System.Windows.FrameworkElement.DataContextChanged")]
@@ -1027,7 +1027,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1234539
-// Developer: [....]
+// Developer: dwaynen
 // Reason: No good alternative
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors", Scope="member", Target="System.Windows.Navigation.NavigationWindow..ctor(System.Boolean)")]
@@ -1089,14 +1089,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1313623
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Paginator name has been already approved.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Controls.PrintDialog.PrintDocument(System.Windows.Documents.DocumentPaginator,System.String):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1313623
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Paginator name has been already approved.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Documents.Serialization.SerializerWriter.WriteAsync(System.Windows.Documents.DocumentPaginator,System.Printing.PrintTicket,System.Object):System.Void")]
@@ -1104,7 +1104,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1313636, 1313632, 1313645, 1319518, 1313640
-// Developer: [....]
+// Developer: benwest
 // Reason: These bugs flag switch statements that are not, in fact, complex.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope = "member", Target = "System.Windows.Documents.XamlToRtfWriter.WriteInlineChild(System.Windows.Documents.DocumentNode):System.Void")]
@@ -1143,7 +1143,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1340750, 1340751, 1340752, 1340753, 1340754, 1340755, 1340756, 1340757, 1340758
-// Developer: [....]
+// Developer: arathira
 // Reason: These Dispose methods call base.Dispose but do not place the call in a finally block because they do not throw
 // exceptions and cleanup is not necessary.
 //***************************************************************************************************************************
@@ -1232,7 +1232,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1344477, 1344478
-// Developer: [....]
+// Developer: grzegorz
 // Reason: These Dispose methods call base.Dispose but do not place the call in a finally block because they do not throw
 // exceptions and cleanup is not necessary.
 //***************************************************************************************************************************
@@ -1241,14 +1241,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1340765
-// Developer: [....]
+// Developer: benwest
 // Reason: The property name Uid follows the x:Uid name in XAML markup. They need to be consisent as they refer to the same thing.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", Scope="resource", Target="ExceptionStringTable.resources", MessageId="Uid")]
 
 //**************************************************************************************************************************
 // Bug ID: 1340765
-// Developer: [....]
+// Developer: benwest
 // Reason: The text in this exception strings maps to an existing interface name and must be consistent.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", Scope="resource", Target="ExceptionStringTable.resources", MessageId="Paginator")]
@@ -1257,13 +1257,13 @@ using System.Diagnostics.CodeAnalysis;
 
 //*************************************************************************************************************************
 // Bug ID: 1225797
-// Developer: [....]
+// Developer: dwaynen
 //*************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors", Scope="type", Target="System.Windows.ResourceReferenceKeyNotFoundException")]
 
 //*************************************************************************************************************************
 // Bug ID: 1313624, 1313625
-// Developer: [....]
+// Developer: grzegorz
 //*************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Annotations.AnnotationDocumentPaginator..ctor(System.Windows.Documents.DocumentPaginator,System.Windows.Annotations.Storage.AnnotationStore)", MessageId="0#Paginator")]
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Annotations.AnnotationDocumentPaginator..ctor(System.Windows.Documents.DocumentPaginator,System.IO.Stream)", MessageId="0#Paginator")]
@@ -1289,7 +1289,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1370518
-// Developer: [....]
+// Developer: grzegorz
 // Reason: These Dispose methods call base.Dispose but do not place the call in a finally block because they do not throw
 // exceptions and cleanup is not necessary.
 //***************************************************************************************************************************
@@ -1318,14 +1318,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1397872
-// Developer: [....]
+// Developer: benwest
 // Reason: ITextPointer is an internal interface -- we cannot expose it on a public API.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope="member", Target="System.Windows.Controls.RichTextBox.GetNextSpellingErrorPosition(System.Windows.Documents.TextPointer,System.Windows.Documents.LogicalDirection):System.Windows.Documents.TextPointer")]
 
 //**************************************************************************************************************************
 // Bug ID: 1397873
-// Developer: [....]
+// Developer: benwest
 // Reason: This collection property is a DP. Setter already approved in other elements.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope="member", Target="System.Windows.Controls.TextBox.TextDecorations")]
@@ -1333,7 +1333,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1414744
-// Developer: [....]
+// Developer: benwest
 // Reason: "Prereform" and "postreform" are terms used to describe spelling rules.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Controls.SpellingReform.PreAndPostreform", MessageId="Postreform")]
@@ -1343,7 +1343,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1414745
-// Developer: [....]
+// Developer: benwest
 // Reason: TextBoxBase is the most general object these attached properties may be set on, at runtime.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope="member", Target="System.Windows.Controls.SpellCheck.SetSpellingReform(System.Windows.Controls.Primitives.TextBoxBase,System.Windows.Controls.SpellingReform):System.Void")]
@@ -1464,7 +1464,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: no bug
-// Developer: [....]
+// Developer: sambent
 // Reason: These refer to the StringFormat property, not to the String type
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", Scope="member", Target="System.Windows.Controls.ContentPresenter.#OnContentStringFormatChanged(System.String,System.String)", MessageId="string")]
@@ -1483,7 +1483,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632977
-// Developer: [....]
+// Developer: sambent
 // Reason:  We're creating an exception due to a condition detected elsewhere (asynchronously).
 //          The argument name refers to the point of detection, not to the point of creating the exception.
 //**************************************************************************************************************************
@@ -1492,7 +1492,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632977
-// Developer: [....]
+// Developer: sambent
 // Reason:  Inheriting names from caller.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId="o", Scope="member", Target="System.Windows.Data.ListCollectionView.#Compare(System.Object,System.Object)")]
@@ -1500,7 +1500,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: Value and Type property names are flagged by fxcop as violations 
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods", Scope = "member", Target = "System.Windows.Controls.Primitives.RangeBase.#Value")]
@@ -1512,14 +1512,14 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods", Scope = "member", Target = "System.Windows.Media.Animation.ThicknessKeyFrame.#Value")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: DependencyPropertyChangedEventArgs is not derived from EventArgs. This cannot be changed now
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Scope = "member", Target = "System.Windows.FrameworkContentElement.#DataContextChanged")]
 [module: SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Scope = "member", Target = "System.Windows.FrameworkElement.#DataContextChanged")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: parameter name targetObject
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "object", Scope = "member", Target = "System.Windows.Setter.#ReceiveMarkupExtension(System.Object,System.Windows.Markup.XamlSetMarkupExtensionEventArgs)")]
@@ -1527,7 +1527,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "object", Scope = "member", Target = "System.Windows.Trigger.#ReceiveTypeConverter(System.Object,System.Windows.Markup.XamlSetTypeConverterEventArgs)")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: GridLines is flagged because Gridline is a dictionary word
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "GridLines", Scope = "member", Target = "System.Windows.Controls.DataGrid.#GridLinesVisibility")]
@@ -1539,13 +1539,13 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "GridLines", Scope = "type", Target = "System.Windows.Controls.DataGridGridLinesVisibility")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: ArgumentException thrown inside a property setter should have the paramName as the property name. 
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Scope = "member", Target = "System.Windows.Controls.PrintDialog.#set_PageRange(System.Windows.Controls.PageRange)")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: We don't want to change the parameter to base type 
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope = "member", Target = "System.Windows.Controls.SpellCheck.#GetIsEnabled(System.Windows.Controls.Primitives.TextBoxBase)")]
@@ -1554,14 +1554,14 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope = "member", Target = "System.Windows.Controls.DataGridRow.#GetRowContainingElement(System.Windows.FrameworkElement)")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: The type name should be plural e.g. DataGridHeadersVisibilities. We can't change this now.  
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1714:FlagsEnumsShouldHavePluralNames", Scope = "type", Target = "System.Windows.Controls.DataGridHeadersVisibility")]
 
 //**************************************************************************************************************************
 // Bug ID: 632978 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: bartde
 // Reason: Those would be breaking changes to fix.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Scope="member", Target="System.Windows.Interop.HwndHost.#MessageHook")]
@@ -1569,7 +1569,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632972 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: jezhan
 // Reason: The names are meaningful
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", Scope = "member", Target = "System.Windows.Baml2006.KeyRecord.#.ctor(System.Boolean,System.Boolean,System.Int32,System.String)")]
@@ -1577,7 +1577,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632972 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: jezhan
 // Reason: The arguments are meaningful
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Scope = "member", Target = "System.Windows.Baml2006.DependencyAccessorInfo.#GetDependencyObject(System.Object[],System.Int32)")]
@@ -1586,7 +1586,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632972 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: jezhan
 // Reason: This would break public API
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", Scope = "member", Target = "System.Windows.Markup.XamlWriter.#Save(System.Object,System.IO.TextWriter)")]
@@ -1601,37 +1601,37 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 692896 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: JoeCast
 // Reason: This is an intentional deviation to be consistent with WPF patterns of mutable collections.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA2227:CollectionPropertiesShouldBeReadOnly", Scope="member", Target="Microsoft.Win32.FileDialog.#CustomPlaces")]
 
 //**************************************************************************************************************************
 // Bug ID: 692896 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: kedecond
 // Reason: This method is present so that Push method (which is public in parent class) can never be called on derived class
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "System.Windows.TemplateContent+StackOfFrames.#Push(System.Windows.TemplateContent+Frame)")]
 //**************************************************************************************************************************
 // Bug ID: 692896 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: kedecond
 // Reason: CellAutomationValueHolder is a sealed class, so that virtual methods cannot be overridden. So it is OK to call these in the contructor.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors", Scope = "member", Target = "System.Windows.Controls.DataGrid+CellAutomationValueHolder.#.ctor(System.Object,System.Windows.Controls.DataGridColumn)")]
 //**************************************************************************************************************************
 // Bug ID: 692896 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: kedecond
 // Reason: hotfix is flagged by fxcop as spelling error
 [module: SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId = "hotfix", Scope = "resource", Target = "ExceptionStringTable.resources")]
 //**************************************************************************************************************************
 // Bug ID: 692896 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: kedecond
 // Reason: These are helper methods that call another method to raise events They donot raise any events themselves.
 [module: SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Scope = "member", Target = "System.Windows.VisualStateManager.#RaiseCurrentStateChanged(System.Windows.VisualStateGroup,System.Windows.VisualState,System.Windows.VisualState,System.Windows.FrameworkElement,System.Windows.FrameworkElement)")]
 [module: SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Scope = "member", Target = "System.Windows.VisualStateManager.#RaiseCurrentStateChanging(System.Windows.VisualStateGroup,System.Windows.VisualState,System.Windows.VisualState,System.Windows.FrameworkElement,System.Windows.FrameworkElement)")]
 //**************************************************************************************************************************
 // Bug ID: none
-// Developer: [....]
+// Developer: ifeanyie
 // Reason: This would break public API
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId="Paginator", Scope="member", Target="System.Windows.Documents.Serialization.SerializerWriter.#Write(System.Windows.Documents.DocumentPaginator)")]
@@ -1655,7 +1655,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: none
-// Developer: [....]
+// Developer: pantal
 // Reason: These items would break existing public API's, we can't change them.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design","CA1045:DoNotPassTypesByReference", MessageId="0#", Scope="member", Target="System.Windows.Interop.HwndHost.#TranslateCharCore(System.Windows.Interop.MSG&,System.Windows.Input.ModifierKeys)")]
@@ -1670,7 +1670,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: none
-// Developer: [....]
+// Developer: pantal
 // Reason: Won't fix legacy items, clearing up FxCop scans.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId="unsecure", Scope="resource", Target="ExceptionStringTable.resources")]
@@ -1686,14 +1686,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 744160
-// Developer: [....]
+// Developer: brandf
 // Reason: In Justification field
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design","CA1011:ConsiderPassingBaseTypesAsParameters", Scope="member", Target="System.Windows.VisualStateManager.#GetVisualStateGroups(System.Windows.FrameworkElement)", Justification="VisualStateManager is a FrameworkElement concept, just because we only call DO methods here, doesn't mean we should expose a DO.")]
 
 //**************************************************************************************************************************
 // Bug ID: none
-// Developer: [....]
+// Developer: pantal
 // Reason: PTS Cache is explicitly managing lifetime here.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly", Scope = "member", Target = "MS.Internal.PtsHost.PtsCache.#CreatePTSContext(System.Int32,System.Windows.Media.TextFormattingMode)")]
@@ -1701,7 +1701,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: none
-// Developer: [....]
+// Developer: pantal
 // Reason: Hwnd is a valid name. 
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId="Hwnd", Scope="resource", Target="ExceptionStringTable.resources")]
@@ -1712,13 +1712,13 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 
 //**************************************************************************************************************************
-// By design per [....].
+// By design per SamBent.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1720:IdentifiersShouldNotContainTypeNames", MessageId="object", Scope="member", Target="System.Windows.Data.BindingOperations.#EnableCollectionSynchronization(System.Collections.IEnumerable,System.Object)")]
 
 //**************************************************************************************************************************
 // Bug ID: none
-// Developer: [....]
+// Developer: juhanit
 // Reason: GC.KeepAlive is needed here. SafeHandle cannot be used for delegates.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability","CA2004:RemoveCallsToGCKeepAlive", Scope="member", Target="MS.Internal.Interop.MouseHookManager.#HookThreadProc()")]
@@ -1731,7 +1731,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: none
-// Developer: [....]
+// Developer: ifeanyie
 // Reason: Virtualizable is accepted terminology
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId="Virtualizable", Scope="member", Target="System.Windows.Controls.VirtualizingPanel.#IsContainerVirtualizableProperty")]
@@ -1741,7 +1741,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 204636
-// Developer: [....]
+// Developer: varsham
 // Reason: The value is transformed from a deferred value to an actual one. 
 // Hence is it appropriate to pass it through by reference.
 //**************************************************************************************************************************

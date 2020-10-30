@@ -476,9 +476,9 @@ namespace System.Windows.Documents
         // as non-spacing characters and provides IndexOf/LastIndexOf functionality.
         private static int BidiIgnoreDiacriticsMatchIndexCalculation(string textString, string findPattern, bool matchKashida, bool matchAlefHamza, bool matchWholeWord, bool matchLast, bool ignoreCase, CompareInfo compareInfo, bool hasPreceedingSeparatorChar, bool hasFollowingSeparatorChar, out int matchLength)
         {
-            // NB: See bug 1629855.  There is a bug in the xp nls tables where CompareOptions.IgnoreNonSpace will
-            // not ignore all arabic diacriticals.  We don't have a fix for this problem on xp.  On Vista
-            // we work around by using FindNLSString.
+            // NB: See 
+
+
 
             int matchIndex = -1;
             int startIndex = matchLast ? textString.Length - 1 : 0;

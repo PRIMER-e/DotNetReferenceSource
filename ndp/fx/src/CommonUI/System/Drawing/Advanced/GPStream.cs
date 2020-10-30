@@ -111,7 +111,6 @@ namespace System.Drawing.Internal {
             throw new ExternalException(SR.GetString(SR.NotImplemented), SafeNativeMethods.E_NOTIMPL);
         }
 
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public virtual int Read(IntPtr buf, /* cpr: int offset,*/  int length) {
             //        System.Text.Out.WriteLine("IStream::Read(" + length + ")");
             byte[] buffer = new byte[length];
@@ -120,7 +119,6 @@ namespace System.Drawing.Internal {
             return count;
         }
 
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public virtual int Read(byte[] buffer, /* cpr: int offset,*/  int length) {
             ActualizeVirtualPosition();
             return dataStream.Read(buffer, 0, length);

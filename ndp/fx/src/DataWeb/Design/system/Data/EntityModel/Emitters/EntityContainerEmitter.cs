@@ -3,8 +3,8 @@
 //      Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //
-// @owner       [....]
-// @backupOwner [....]
+// @owner       Microsoft
+// @backupOwner Microsoft
 //---------------------------------------------------------------------
 
 using System.CodeDom;
@@ -271,7 +271,7 @@ namespace System.Data.EntityModel.Emitters
                     // Assuming pair.Key is "abc" and pair.Value is "def" and len(def)=3, generate:
                     // if (typeName.StartsWith("abc", StringComparison.Ordinal)) 
                     //     return this.GetType().Assembly.GetType(string.Concat("def", typeName.Substring(3)), false)
-                    // DEVNOTE([....]): we should use GetType(xxx, FALSE) here so it will not throw and fall back to null
+                    // DEVNOTE(Microsoft): we should use GetType(xxx, FALSE) here so it will not throw and fall back to null
                     // GetType(type, bool throw, bool ignoreCase) does not exist in SL, do not use!
                     resolveTypeFromName.Statements.Add(
                         new CodeConditionStatement(

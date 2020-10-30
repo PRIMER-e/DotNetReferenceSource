@@ -54,11 +54,11 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
                 WCHAR const* pNumberSubstitutionLocaleName = NULL;
                 if (numberCulture != nullptr)
                 {
-                    pNumberSubstitutionLocaleNamePinned = Util::GetPtrToStringChars(numberCulture->IetfLanguageTag);
+                    pNumberSubstitutionLocaleNamePinned = Native::Util::GetPtrToStringChars(numberCulture->IetfLanguageTag);
                     pNumberSubstitutionLocaleName = pNumberSubstitutionLocaleNamePinned;
                 }
 
-                pin_ptr<const WCHAR> pCultureName = Util::GetPtrToStringChars(culture->IetfLanguageTag);
+                pin_ptr<const WCHAR> pCultureName = Native::Util::GetPtrToStringChars(culture->IetfLanguageTag);
                 
                 // NOTE: the text parameter is NOT copied inside TextAnalysisSource to improve perf.
                 // This is ok as long as we use the TextAnalysisSource in the same scope as we hold ref to text.
@@ -364,7 +364,7 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
         else
         {
             String^ localeName = cultureInfo->IetfLanguageTag;
-            pin_ptr<const WCHAR> pLocaleName = Util::GetPtrToStringChars(localeName);
+            pin_ptr<const WCHAR> pLocaleName = Native::Util::GetPtrToStringChars(localeName);
             pin_ptr<UINT32> pFeatureRangeLengthsPinned;
             UINT32* pFeatureRangeLengths = NULL;
 
@@ -664,7 +664,7 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
             try
             {
                 String^ localeName = cultureInfo->IetfLanguageTag;
-                pin_ptr<const WCHAR> pLocaleName = Util::GetPtrToStringChars(localeName);
+                pin_ptr<const WCHAR> pLocaleName = Native::Util::GetPtrToStringChars(localeName);
                 DWRITE_MATRIX transform = Factory::GetIdentityTransform();
 
                 if (features != nullptr)

@@ -109,7 +109,7 @@ namespace System.Windows.Forms.ButtonInternal {
                     layout.checkSize = CheckBoxRenderer.GetGlyphSize(g, CheckBoxRenderer.ConvertFromButtonState(GetState(), true, Control.MouseIsOver)).Width;
                 }
             }
-            // Dev10 bug 525537
+            // Dev10 
             else {
                 layout.checkSize = (int)(layout.checkSize * GetDpiScaleRatio(e.Graphics));
             }

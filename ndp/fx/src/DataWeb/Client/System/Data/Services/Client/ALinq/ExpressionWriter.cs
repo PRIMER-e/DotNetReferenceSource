@@ -6,7 +6,7 @@
 //      Serializes sub-expressions as query options in the URI.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

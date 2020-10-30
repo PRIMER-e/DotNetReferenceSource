@@ -11,8 +11,8 @@
 //              See spec at http://avalon/medialayer/Shared%20Documents/Freezables.doc
 //
 // History:
-//  05/01/2003 : [....] - Created
-//  07/11/2003 : [....] - Removed subsequent history.  See SourceDepot.
+//  05/01/2003 : Microsoft - Created
+//  07/11/2003 : Microsoft - Removed subsequent history.  See SourceDepot.
 //  08/05/2005 : t-kuberg - Added context information.
 //
 //---------------------------------------------------------------------------
@@ -699,7 +699,7 @@ namespace System.Windows
             DependencyProperty property
             )
         {
-            // NTRAID#Longhorn-1023842 -4/27/2005-[....]
+            // NTRAID#Longhorn-1023842 -4/27/2005-Microsoft
             //
             //    We should ensure dispatchers are consistent *before* modifying
             //    changed handlers, otherwise we will leave the freezable in an
@@ -1177,7 +1177,7 @@ namespace System.Windows
         {
             Debug.Assert(context != null);
 
-            // NTRAID#Longhorn-1677305-2006/05/25-[....] - Fix TemplateApplicationHelper::SetDependencyValueCore
+            // NTRAID#Longhorn-1677305-2006/05/25-Microsoft - Fix TemplateApplicationHelper::SetDependencyValueCore
             //
             // Debug_VerifyContextIsValid(context, property);
 
@@ -2087,7 +2087,7 @@ namespace System.Windows
                     && property.OwnerType.FullName == "System.Windows.Media.VisualBrush"
                     && owner.GetType().FullName != "System.Windows.Media.VisualBrush";    // ResourceDictionaries may not be owned by a VisualBrush.
 
-// NTRAID#Longhorn-1692587-2006/06/06-[....] - Find a way to bring back context verification.
+// NTRAID#Longhorn-1692587-2006/06/06-Microsoft - Find a way to bring back context verification.
 //                
 //                Invariant.Assert(effectiveValue == this || mayBeResourceDictionary,
 //                    String.Format(System.Globalization.CultureInfo.InvariantCulture,

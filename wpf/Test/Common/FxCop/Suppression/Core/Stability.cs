@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // Bug 1394144
 // SafeHandle is used to track refcount instead of explicit release
-// [....] - looks like an indirect way of releasing, following up with [....]
+// mruiz - looks like an indirect way of releasing, following up with rajatg
 [module: SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", Scope="member", Target="System.Windows.Media.Imaging.RenderTargetBitmap.CopyCommon(System.Windows.Media.Imaging.RenderTargetBitmap):System.Void", MessageId="System.Windows.Media.SafeMILHandle")]
 
 
@@ -18,8 +18,8 @@ using System.Diagnostics.CodeAnalysis;
 
 // Bug: No Bug
 // Reason: Code has been reviewed
-// Dev: [....]
-// [....] - these are not currently enabled
+// Dev: bkaneva
+// mruiz - these are not currently enabled
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1002:PublicVirtualCallerMustBeHardened", Scope="member", Target="System.Windows.Media.Effects.BitmapEffect.UnmanagedEffect(System.Boolean):System.Runtime.InteropServices.SafeHandle")]
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1002:PublicVirtualCallerMustBeHardened", Scope="member", Target="System.Windows.Media.Effects.BitmapEffect.Internal_CreateUnmanagedEffect():System.Runtime.InteropServices.SafeHandle")]
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1002:PublicVirtualCallerMustBeHardened", Scope="member", Target="System.Windows.Media.Effects.BitmapEffect.Internal_UpdateUnmanagedPropertyState(System.Runtime.InteropServices.SafeHandle):System.Void")]

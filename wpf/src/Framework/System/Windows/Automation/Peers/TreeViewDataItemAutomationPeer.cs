@@ -8,7 +8,7 @@
 //              full-fleged peer called wrapper peer, TreeViewItemAutomationPeer, if the item is realized.
 //
 // History:
-//  20/12/2008 : [....] - Added
+//  20/12/2008 : Microsoft - Added
 //
 //---------------------------------------------------------------------------
 

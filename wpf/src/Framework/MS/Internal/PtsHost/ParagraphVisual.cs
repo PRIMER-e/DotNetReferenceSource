@@ -7,7 +7,7 @@
 // Description: Visual representing a paragraph. 
 //
 // History:  
-//  05/20/2003 : [....] - created.
+//  05/20/2003 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 

@@ -3,7 +3,7 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 //
@@ -16,6 +16,7 @@ namespace System.Security.Cryptography
 {
     using Microsoft.Win32;
     using System.IO;
+    using System.Reflection;
     using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
@@ -87,7 +88,7 @@ namespace System.Security.Cryptography
         internal const int CALG_RC4               = (ALG_CLASS_DATA_ENCRYPT | ALG_TYPE_STREAM | 1);
 #endif // FEATURE_CRYPTO
 
-                                        internal const int PROV_RSA_FULL          = 1;
+        internal const int PROV_RSA_FULL          = 1;
         internal const int PROV_DSS_DH            = 13;
         internal const int PROV_RSA_AES           = 24;
 
@@ -134,13 +135,17 @@ namespace System.Security.Cryptography
     }
 
     internal static class Utils {
-        
+
 #if !FEATURE_PAL && FEATURE_CRYPTO
         [SecuritySafeCritical]
 #endif
         static Utils()
         {
         }
+
+        // Provider type to use by default for RSA operations. We want to use RSA-AES CSP
+        // since it enables access to SHA-2 operations. All currently supported OSes support RSA-AES.
+        internal const int DefaultRsaProviderType = Constants.PROV_RSA_AES;
 
 #if FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
         // Private object for locking instead of locking on a public type for SQL reliability work.
@@ -149,33 +154,7 @@ namespace System.Security.Cryptography
         private static Object InternalSyncObject {
             get { return s_InternalSyncObject; }
         }
-#endif // FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
 
-        // Provider type to use by default for RSA operations.  On systems which support the RSA-AES CSP, we
-        // want to use that since it enables access to SHA-2 operations, downlevel we fall back to the
-        // RSA-FULL CSP.
-        private static volatile int _defaultRsaProviderType;
-        private static volatile bool _haveDefaultRsaProviderType;
-        internal static int DefaultRsaProviderType
-        {
-            get {
-                if (!_haveDefaultRsaProviderType)
-                {
-                    // The AES CSP is only supported on WinXP and higher
-                    bool osSupportsAesCsp = Environment.OSVersion.Platform == PlatformID.Win32NT &&
-                                            (Environment.OSVersion.Version.Major > 5 ||
-                                            (Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor >= 1));
-
-                    _defaultRsaProviderType = osSupportsAesCsp ? Constants.PROV_RSA_AES : Constants.PROV_RSA_FULL;
-                    _haveDefaultRsaProviderType = true;
-                }
-
-                return _defaultRsaProviderType;
-            }
-        }
-
-#if FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
-#if !FEATURE_PAL
         [System.Security.SecurityCritical] // auto-generated
         private static volatile SafeProvHandle _safeProvHandle;
         internal static SafeProvHandle StaticProvHandle {
@@ -184,16 +163,13 @@ namespace System.Security.Cryptography
                 if (_safeProvHandle == null) {
                     lock (InternalSyncObject) {
                         if (_safeProvHandle == null) {
-                            SafeProvHandle safeProvHandle = AcquireProvHandle(new CspParameters(DefaultRsaProviderType));
-                            Thread.MemoryBarrier();
-                            _safeProvHandle = safeProvHandle;
+                            _safeProvHandle = AcquireProvHandle(new CspParameters(DefaultRsaProviderType));
                         }
                     }
                 }
                 return _safeProvHandle;
             }
         }
-#endif // !FEATURE_PAL
 
         [System.Security.SecurityCritical] // auto-generated
         private static volatile SafeProvHandle _safeDssProvHandle;
@@ -203,9 +179,7 @@ namespace System.Security.Cryptography
                 if (_safeDssProvHandle == null) {
                     lock (InternalSyncObject) {
                         if (_safeDssProvHandle == null) {
-                            SafeProvHandle safeProvHandle = CreateProvHandle(new CspParameters(Constants.PROV_DSS_DH), true);
-                            Thread.MemoryBarrier();
-                            _safeDssProvHandle = safeProvHandle;
+                            _safeDssProvHandle = CreateProvHandle(new CspParameters(Constants.PROV_DSS_DH), true);
                         }
                     }
                 }
@@ -506,7 +480,7 @@ namespace System.Security.Cryptography
         }
 #endif // FEATURE_CRYPTO
 
-        private static volatile RNGCryptoServiceProvider _rng = null;
+        private static volatile RNGCryptoServiceProvider _rng;
         internal static RNGCryptoServiceProvider StaticRandomNumberGenerator {
             get {
                 if (_rng == null)
@@ -1011,6 +985,73 @@ namespace System.Security.Cryptography
                 if (lhs[i + k] != rhs[j + k])
                     return false;
             }
+            return true;
+        }
+
+        internal static HashAlgorithmName OidToHashAlgorithmName(string oid)
+        {
+            switch (oid)
+            {
+                case Constants.OID_OIWSEC_SHA1:
+                    return HashAlgorithmName.SHA1;
+
+                case Constants.OID_OIWSEC_SHA256:
+                    return HashAlgorithmName.SHA256;
+
+                case Constants.OID_OIWSEC_SHA384:
+                    return HashAlgorithmName.SHA384;
+
+                case Constants.OID_OIWSEC_SHA512:
+                    return HashAlgorithmName.SHA512;
+
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
+        //
+        // Backward-compat hack for third-party RSA-derived classes:
+        // 
+        // Because the SignHash()/VerifyHash()/Encrypt()/Decrypt() methods are new on RSA, we may 
+        // encounter older third-party RSA-derived classes that don't override them
+        // (and if they don't override them, these methods will throw since they are effectively abstract methods that had to declared non-abstract
+        // for backward compat reasons.)
+        //
+        internal static bool DoesRsaKeyOverride(RSA rsaKey, string methodName, Type[] parameterTypes)
+        {
+            // A fast-path check for the common cases where we know we implemented the overrides.
+            Type t = rsaKey.GetType();
+            if (rsaKey is RSACryptoServiceProvider)
+            {
+#if DEBUG
+                // On checked builds, do the slow-path check anyway so it gets exercised.
+                bool foundOverride = DoesRsaKeyOverrideSlowPath(t, methodName, parameterTypes);
+                BCLDebug.Assert(foundOverride, "RSACryptoServiceProvider expected to override " + methodName);
+#endif
+                return true;
+            }
+
+            string fullName = t.FullName;
+            if (fullName == "System.Security.Cryptography.RSACng")
+            {
+#if DEBUG
+                // On checked builds, do the slow-path check anyway so it gets exercised.
+                bool foundOverride = DoesRsaKeyOverrideSlowPath(t, methodName, parameterTypes);
+                BCLDebug.Assert(foundOverride, "RSACng expected to override " + methodName);
+#endif
+                return true;
+            }
+            return DoesRsaKeyOverrideSlowPath(t, methodName, parameterTypes);
+        }
+
+        private static bool DoesRsaKeyOverrideSlowPath(Type t, string methodName, Type[] parameterTypes)
+        {
+            MethodInfo method = t.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance, null, parameterTypes, null);
+            BCLDebug.Assert(method != null, "method != null"); 
+            Type declaringType = method.DeclaringType;
+            if (declaringType == typeof(RSA))
+                return false;
+
             return true;
         }
 

@@ -43,50 +43,50 @@ class CacheItem
 {
 	friend class Cache;
 
-    LPSTR m_szValName;  // Name of the cache value
-    LPSTR m_szValue;    // Cache value content
+    LPWSTR m_wszValName;  // Name of the cache value
+    LPWSTR m_wszValue;    // Cache value content
     CacheItem * m_pNext;       // Pointer to next element in list
 
 public:
 
 	CacheItem():
 		m_pNext(0),
-		m_szValName(0),
-		m_szValue(0)
+		m_wszValName(0),
+		m_wszValue(0)
 	{
 	}
 	~CacheItem()
 	{
-		delete m_szValName;	//szValue is inside this also
+		delete m_wszValName;	//szValue is inside this also
 	}
 
-	BOOL SetValue( const char *szValName, const char *szValue)
+	BOOL SetValue( const WCHAR *wszValName, const WCHAR *wszValue)
 	{
-		BidxScopeAutoSNI2( SNIAPI_TAG _T( "szValName: \"%hs\", szValue: \"%hs\"\n"), 
-						szValName, szValue);
+		BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszValName: \"%s\", wszValue: \"%s\"\n"), 
+						wszValName, wszValue);
 	
-		int cchValName=(int)strlen(szValName) + 1;
-		int cchVal=(int)strlen(szValue) + 1;
+		int cchValName=(int)wcslen(wszValName) + 1;
+		int cchVal=(int)wcslen(wszValue) + 1;
 
-   		m_szValName = NewNoX(gpmo) char[ cchValName + cchVal];
-		if( !m_szValName )
+   		m_wszValName = NewNoX(gpmo) WCHAR[ cchValName + cchVal];
+		if( !m_wszValName )
 		{
 			BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{BOOL}\n"), FALSE);
 			return FALSE;
 		}
 		
-		m_szValue = m_szValName + cchValName;
-		(void)StringCchCopyA(m_szValName,cchValName,szValName);
-		(void)StringCchCopyA(m_szValue,cchVal,szValue);
+		m_wszValue = m_wszValName + cchValName;
+		(void)StringCchCopyW(m_wszValName,cchValName,wszValName);
+		(void)StringCchCopyW(m_wszValue,cchVal,wszValue);
 
 		BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{BOOL}\n"), TRUE);
 
 		return TRUE;
 	}
 	
-	inline BOOL CopyValue(__out_ecount(cchDest) char *szDest, DWORD cchDest)
+	inline BOOL CopyValue(__out_ecount(cchDest) WCHAR *wszDest, DWORD cchDest)
 	{
-		return SUCCEEDED(StringCchCopyA(szDest, cchDest, m_szValue));
+		return SUCCEEDED(StringCchCopyW(wszDest, cchDest, m_wszValue));
 	}
 };
 
@@ -116,12 +116,12 @@ public:
 			pHead=pNext;
 		}
 	}
-	BOOL Insert( const char *szValName, const char *szValue)
+	BOOL Insert( const WCHAR *wszValName, const WCHAR *wszValue)
 	{
-		BidxScopeAutoSNI2( SNIAPI_TAG _T( "szValName: \"%hs\", szValue: \"%hs\"\n"), 
-						szValName, szValue);
+		BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszValName: \"%s\", wszValue: \"%s\"\n"), 
+						wszValName, wszValue);
 		
-		if(MAX_CACHEENTRY_LENGTH<strlen(szValue))
+		if(MAX_CACHEENTRY_LENGTH<wcslen(wszValue))
 		{			
 			BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{BOOL}\n"), FALSE);
 			return FALSE;
@@ -135,7 +135,7 @@ public:
 			return FALSE;
 		}
 
-	    	if( !pNewItem->SetValue(szValName, szValue ))
+	    	if( !pNewItem->SetValue(wszValName, wszValue ))
 	    	{
 	    		delete pNewItem;
 			BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{BOOL}\n"), FALSE);
@@ -150,19 +150,19 @@ public:
 	}
 
 	// Find item in the cache
-	CacheItem * Find( const char * szValName)   
+	CacheItem * Find( const WCHAR * wszValName)   
 	{                           
-		BidxScopeAutoSNI1( SNIAPI_TAG _T( "szValName: \"%hs\"\n"), szValName);
+		BidxScopeAutoSNI1( SNIAPI_TAG _T( "wszValName: \"%s\"\n"), wszValName);
 
 		CacheItem *pCurrent;
 
 		for ( pCurrent = pHead; pCurrent; pCurrent = pCurrent->m_pNext )
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-			if ( CSTR_EQUAL == CompareStringA(LOCALE_SYSTEM_DEFAULT,
+			if ( CSTR_EQUAL == CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									 NORM_IGNORECASE|NORM_IGNOREWIDTH,
-									 pCurrent->m_szValName, -1,
-									 szValName, -1))
+									 pCurrent->m_wszValName, -1,
+									 wszValName, -1))
 OACR_WARNING_POP
 				break;
 
@@ -172,9 +172,9 @@ OACR_WARNING_POP
 	}
 
 	// Remove item from the cache
-	BOOL Remove(const char * szValName)           
+	BOOL Remove(const WCHAR * wszValName)           
 	{
-		BidxScopeAutoSNI1( SNIAPI_TAG _T( "szValName: \"%hs\"\n"), szValName);
+		BidxScopeAutoSNI1( SNIAPI_TAG _T( "wszValName: \"%s\"\n"), wszValName);
 		
 		CacheItem ** ppCurrentItem = &pHead;
 
@@ -183,10 +183,10 @@ OACR_WARNING_POP
 
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-			if ( CSTR_EQUAL == CompareStringA(LOCALE_SYSTEM_DEFAULT,
+			if ( CSTR_EQUAL == CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									 NORM_IGNORECASE|NORM_IGNOREWIDTH,
-									 (*ppCurrentItem)->m_szValName, -1,
-									 szValName, -1))
+									 (*ppCurrentItem)->m_wszValName, -1,
+									 wszValName, -1))
 OACR_WARNING_POP
 			{
 				CacheItem * pDeleteItem = *ppCurrentItem;
@@ -220,8 +220,8 @@ void Initialize()
 
 	Assert( !pgLastConnectCache );
 
-	LPSTR szValueNameList = 0;
-	LPSTR szValue = 0;
+	LPWSTR wszValueNameList = 0;
+	LPWSTR wszValue = 0;
 
 	// Initialize in memory Cache
 	pgLastConnectCache = NewNoX(gpmo) Cache();
@@ -256,36 +256,36 @@ void Initialize()
 	if (FAILED (DWordAdd(dwcbMaxValueLen, 1, &dwcbMaxValueLen)))
 		goto ErrorExit1;
 
-	szValueNameList = NewNoX(gpmo) char[ dwcbValueNameListLen ];
-	if( NULL == szValueNameList )
+	wszValueNameList = NewNoX(gpmo) WCHAR[ dwcbValueNameListLen ];
+	if( NULL == wszValueNameList )
 	{
 		goto ErrorExit1;
 	}
 
-	if ( ERROR_SUCCESS != CSgetCachedValueList( szValueNameList,
+	if ( ERROR_SUCCESS != CSgetCachedValueList( wszValueNameList,
 												&dwcbValueNameListLen, 
 												NULL ) )
 	{
 		goto ErrorExit1;
 	}
 
-	szValue     = NewNoX(gpmo) char [ dwcbMaxValueLen ];
-	if( NULL == szValue )
+	wszValue     = NewNoX(gpmo) WCHAR [ dwcbMaxValueLen ];
+	if( NULL == wszValue )
 	{
 		goto ErrorExit1;
 	}
 
-	for ( char * szValueName = szValueNameList; 
-		0 != *szValueName; 
-		szValueName += _tcslen( szValueName ) + 1 )
+	for ( WCHAR * wszValueName = wszValueNameList; 
+		0 != *wszValueName; 
+		wszValueName += wcslen( wszValueName ) + 1 )
 	{
-		if ( ERROR_SUCCESS == CSgetCachedValue( szValueName,
-												szValue, 
+		if ( ERROR_SUCCESS == CSgetCachedValue( wszValueName,
+												wszValue, 
 												dwcbMaxValueLen ) )
         {
             // There is a valid registry entry
             // So, insert into the LastConnectCache
-            if( !pgLastConnectCache->Insert( szValueName, szValue) )
+            if( !pgLastConnectCache->Insert( wszValueName, wszValue) )
             {
 				goto ErrorExit1;
             }
@@ -294,8 +294,8 @@ void Initialize()
 
 ErrorExit1:
 	
-	delete [] szValueNameList;
-	delete [] szValue;
+	delete [] wszValueNameList;
+	delete [] wszValue;
 
 	BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("success\n"));
 
@@ -338,9 +338,9 @@ void Shutdown()
 #ifndef SNIX
 //	For SNIX version, see below
 //
-void RemoveEntry( const char *szAlias)
+void RemoveEntry( const WCHAR *wszAlias)
 {
-	BidxScopeAutoSNI1( SNIAPI_TAG _T( "szAlias: '%hs'\n"), szAlias);
+	BidxScopeAutoSNI1( SNIAPI_TAG _T( "wszAlias: '%s'\n"), wszAlias);
 
 	BidTraceU1( SNI_BID_TRACE_ON, SNI_TAG _T("pgLastConnectCache: %p\n"), pgLastConnectCache);
 
@@ -353,12 +353,12 @@ void RemoveEntry( const char *szAlias)
 
 	a_csCache.Enter();
 
-    if( pgLastConnectCache->Remove( szAlias) )
+    if( pgLastConnectCache->Remove( wszAlias) )
     {
 		LONG ret;
 		
 	    // Remove from registry
-		ret = CSdeleteCachedValue( const_cast<char *>(szAlias) );
+		ret = CSdeleteCachedValue( const_cast<WCHAR *>(wszAlias) );
 
 		if( ERROR_SUCCESS != ret )
     	{
@@ -372,9 +372,9 @@ void RemoveEntry( const char *szAlias)
 }
 #endif	//	#ifndef SNIX
 
-BOOL GetEntry( const char *szAlias, __out ProtElem *pProtElem)
+BOOL GetEntry( const WCHAR *wszAlias, __out ProtElem *pProtElem)
 {
-	BidxScopeAutoSNI2( SNIAPI_TAG _T( "szAlias: '%hs', pProtElem: %p\n"), szAlias, pProtElem);
+	BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszAlias: '%s', pProtElem: %p\n"), wszAlias, pProtElem);
 
 	BidTraceU1( SNI_BID_TRACE_ON, SNI_TAG _T("pgLastConnectCache: %p\n"), pgLastConnectCache);
 
@@ -390,19 +390,19 @@ BOOL GetEntry( const char *szAlias, __out ProtElem *pProtElem)
 
 	a_csCache.Enter();
 
-    char szCacheInfo[MAX_CACHEENTRY_LENGTH+1];
+    WCHAR wszCacheInfo[MAX_CACHEENTRY_LENGTH+1];
     CacheItem * pItem;
 
     // Look for item in the cache
-    if( (pItem = pgLastConnectCache->Find(szAlias)) == NULL)
+    if( (pItem = pgLastConnectCache->Find(wszAlias)) == NULL)
     {
 		a_csCache.Leave(); 
         goto ErrorExit;
     }
     else    
     {
-        BOOL fSuccess = pItem->CopyValue(szCacheInfo, 
-			sizeof(szCacheInfo)/sizeof(szCacheInfo[0]));  
+        BOOL fSuccess = pItem->CopyValue(wszCacheInfo, 
+			sizeof(wszCacheInfo)/sizeof(wszCacheInfo[0]));  
 		
 		a_csCache.Leave(); 
 
@@ -413,25 +413,25 @@ BOOL GetEntry( const char *szAlias, __out ProtElem *pProtElem)
     }
 
     // We may have a blank value, check for that
-    if( !szCacheInfo[0] )
+    if( !wszCacheInfo[0] )
         goto ErrorExit;
 
-	char *pPtr;
-	char *pEnd;
+	WCHAR *pwPtr;
+	WCHAR *pwEnd;
 
-	pPtr=szCacheInfo;
+	pwPtr=wszCacheInfo;
 
     // This is a check to ensure we do not break clients
     // which have older entries in their LastConnect cache
-    if( pPtr[0] < 'A' )     // Okay, its a version number
+    if( pwPtr[0] < L'A' )     // Okay, its a version number
     {
         // Get version info
-		pEnd=strchr(pPtr,':');
-		if(!pEnd)
+		pwEnd=wcschr(pwPtr,L':');
+		if(!pwEnd)
 			goto ErrorExit;
         
-        *pEnd = 0;
-        pPtr = pEnd+1;
+        *pwEnd = 0;
+        pwPtr = pwEnd+1;
 
     }
     // Otherwise return ERROR_FAIL - this will force it to be
@@ -441,68 +441,68 @@ BOOL GetEntry( const char *szAlias, __out ProtElem *pProtElem)
         goto ErrorExit;
     }
 
-	char *pszProtName = 0;
+	WCHAR *pwszProtName = 0;
 	
-	if(pEnd=strchr(pPtr,':')){
-		*pEnd=0;
-		if(strlen(pPtr)>MAX_PROTOCOLNAME_LENGTH)
+	if(pwEnd=wcschr(pwPtr,L':')){
+		*pwEnd=0;
+		if(wcslen(pwPtr)>MAX_PROTOCOLNAME_LENGTH)
 			goto ErrorExit;
 
-		pszProtName = pPtr;
+		pwszProtName = pwPtr;
 		
-		pPtr = pEnd+1;
+		pwPtr = pwEnd+1;
 	}
 	else
 		goto ErrorExit;
 
-    switch(	 pszProtName[0] )
+    switch(	 pwszProtName[0] )
     {
-        case 'n':   // Named Pipe
+        case L'n':   // Named Pipe
 
             pProtElem->SetProviderNum(NP_PROV);
-            if( FAILED( StringCchCopyA(
-				pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), pPtr ) ) )
+            if( FAILED( StringCchCopyW(
+				pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), pwPtr ) ) )
             {
 				goto ErrorExit;
             }
 
             break;
 
-        case 'v':   // VIA
+        case L'v':   // VIA
 
             pProtElem->SetProviderNum(VIA_PROV);
-            if( FAILED( StringCchCopyA(
-				pProtElem->Via.Host, CCH_ANSI_STRING(pProtElem->Via.Host), pPtr ) ) )
+            if( FAILED( StringCchCopyW(
+				pProtElem->Via.Host, ARRAYSIZE(pProtElem->Via.Host), pwPtr ) ) )
             {
 				goto ErrorExit;
             }
 
             break;
 
-        case 't':   // Tcp
+        case L't':   // Tcp
 
 			pProtElem->SetProviderNum(TCP_PROV);
-			if(pEnd=strchr(pPtr,','))
+			if(pwEnd=wcschr(pwPtr,L','))
 			{
-				if( sizeof(pProtElem->Tcp.szPort) <= strlen(pEnd+1))
+				if( ARRAYSIZE(pProtElem->Tcp.wszPort) <= wcslen(pwEnd+1))
 					goto ErrorExit;
 
-				if(Strtoi(pEnd+1)==0)
+				if(Wcstoi(pwEnd+1)==0)
 					goto ErrorExit;
 
 				// We verified the destination size above, so ignore 
 				// the return value.  
-				(void)StringCchCopyA( pProtElem->Tcp.szPort, CCH_ANSI_STRING(pProtElem->Tcp.szPort), pEnd+1);
+				(void)StringCchCopyW( pProtElem->Tcp.wszPort, ARRAYSIZE(pProtElem->Tcp.wszPort), pwEnd+1);
 			}
 			else
 				goto ErrorExit;
 
             break;
 
-        case 'l':   // Lpc
+        case L'l':   // Lpc
 
             pProtElem->SetProviderNum(SM_PROV);
-            if( FAILED( StringCchCopyA( pProtElem->Sm.Alias, CCH_ANSI_STRING(pProtElem->Sm.Alias), pPtr ) ) )
+            if( FAILED( StringCchCopyW( pProtElem->Sm.Alias, ARRAYSIZE(pProtElem->Sm.Alias), pwPtr ) ) )
             {
 				goto ErrorExit;
             }
@@ -527,9 +527,9 @@ ErrorExit:
 #ifndef SNIX
 //	For SNIX version, see below
 //
-void SetEntry( const char *szAlias, __in ProtElem *pProtElem)
+void SetEntry( const WCHAR *wszAlias, __in ProtElem *pProtElem)
 {
-	BidxScopeAutoSNI2( SNIAPI_TAG _T( "szAlias: '%hs', pProtElem: %p\n"), szAlias, pProtElem);
+	BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszAlias: '%s', pProtElem: %p\n"), wszAlias, pProtElem);
 
 	BidTraceU1( SNI_BID_TRACE_ON, SNI_TAG _T("pgLastConnectCache: %p\n"), pgLastConnectCache);
 
@@ -538,9 +538,9 @@ void SetEntry( const char *szAlias, __in ProtElem *pProtElem)
 		return;
 	}
 
-	Assert( strchr(szAlias,'\\'));
+	Assert( wcschr(wszAlias,L'\\'));
 	
-    char szCacheVal[MAX_CACHEENTRY_LENGTH+1];
+    WCHAR wszCacheVal[MAX_CACHEENTRY_LENGTH+1];
 
     // Enter critical section
 	CAutoSNICritSec a_csCache( critsecCache, SNI_AUTOCS_DO_NOT_ENTER );
@@ -552,16 +552,16 @@ void SetEntry( const char *szAlias, __in ProtElem *pProtElem)
     switch(pProtElem->GetProviderNum())
     {
         case TCP_PROV:   // Tcp
-            if( FAILED( StringCchPrintfA(
-				szCacheVal, CCH_ANSI_STRING(szCacheVal), "0:tcp:%s,%s", pProtElem->m_szServerName, pProtElem->Tcp.szPort ) ) )
+            if( FAILED( StringCchPrintfW(
+				wszCacheVal, ARRAYSIZE(wszCacheVal), L"0:tcp:%s,%s", pProtElem->m_wszServerName, pProtElem->Tcp.wszPort ) ) )
             {
 				goto ErrorExit;
             }
             break;
 
         case NP_PROV:   // Named Pipe
-            if( FAILED( StringCchPrintfA(
-				szCacheVal, CCH_ANSI_STRING(szCacheVal), "0:np:%s", pProtElem->Np.Pipe ) ) )
+            if( FAILED( StringCchPrintfW(
+				wszCacheVal, ARRAYSIZE(wszCacheVal), L"0:np:%s", pProtElem->Np.Pipe ) ) )
             {
 				goto ErrorExit;
             }
@@ -569,8 +569,8 @@ void SetEntry( const char *szAlias, __in ProtElem *pProtElem)
 
         case SM_PROV:   //Lpc
 			///does shared memory use cache?
-            if( FAILED( StringCchPrintfA(
-				szCacheVal, CCH_ANSI_STRING(szCacheVal), "0:lpc:%s", pProtElem->Sm.Alias ) ) )
+            if( FAILED( StringCchPrintfW(
+				wszCacheVal, ARRAYSIZE(wszCacheVal), L"0:lpc:%s", pProtElem->Sm.Alias ) ) )
             {
 				goto ErrorExit;
             }
@@ -578,7 +578,7 @@ void SetEntry( const char *szAlias, __in ProtElem *pProtElem)
 
         case VIA_PROV:   // Via
         	/// this is not useful information to cache
-            if( FAILED( StringCchPrintfA(szCacheVal, CCH_ANSI_STRING(szCacheVal), "0:via:%s", pProtElem->Via.Host ) ) )
+            if( FAILED( StringCchPrintfW(wszCacheVal, ARRAYSIZE(wszCacheVal), L"0:via:%s", pProtElem->Via.Host ) ) )
             {
 				goto ErrorExit;
             }
@@ -594,16 +594,16 @@ void SetEntry( const char *szAlias, __in ProtElem *pProtElem)
 
     unsigned int chCacheVal;
 
-    chCacheVal=(unsigned int)strlen(szCacheVal);
+    chCacheVal=(unsigned int)wcslen(wszCacheVal);
 
     Assert(chCacheVal<=MAX_CACHEENTRY_LENGTH);
 
     if(MAX_CACHEENTRY_LENGTH<chCacheVal)
 		goto ErrorExit;
     
-	pgLastConnectCache->Remove(szAlias);
+	pgLastConnectCache->Remove(wszAlias);
 
-    if( !pgLastConnectCache->Insert( szAlias, szCacheVal) )
+    if( !pgLastConnectCache->Insert( wszAlias, wszCacheVal) )
     {
     	goto ErrorExit;
     }
@@ -611,11 +611,11 @@ void SetEntry( const char *szAlias, __in ProtElem *pProtElem)
     // Set in registry
     DWORD dwValueLen;
 
-    dwValueLen = (DWORD)(strlen(szCacheVal) * sizeof(char));
+    dwValueLen = (DWORD)(wcslen(wszCacheVal) * sizeof(WCHAR));
 
 
-	if( ERROR_SUCCESS != CSsetCachedValue( const_cast<char *>(szAlias), 
-										   szCacheVal ) )											
+	if( ERROR_SUCCESS != CSsetCachedValue( const_cast<WCHAR *>(wszAlias), 
+										   wszCacheVal ) )											
     {
         goto ErrorExit;
     }
@@ -675,9 +675,9 @@ ErrorExit:
 
 //	SNIX version, which does not use or manipulate registry
 //
-void RemoveEntry( const char *szAlias)
+void RemoveEntry( const WCHAR *wszAlias)
 {
-	BidxScopeAutoSNI1( SNIAPI_TAG _T( "szAlias: '%hs'\n"), szAlias);
+	BidxScopeAutoSNI1( SNIAPI_TAG _T( "wszAlias: '%s'\n"), wszAlias);
 
 	BidTraceU1( SNI_BID_TRACE_ON, SNI_TAG _T("pgLastConnectCache: %p\n"), pgLastConnectCache);
 
@@ -690,7 +690,7 @@ void RemoveEntry( const char *szAlias)
 
 	a_csCache.Enter();
 
-    pgLastConnectCache->Remove( szAlias); 
+    pgLastConnectCache->Remove( wszAlias); 
 
 	a_csCache.Leave(); 
 
@@ -699,9 +699,9 @@ void RemoveEntry( const char *szAlias)
 
 //	SNIX version, which does not use or manipulate registry
 //
-void SetEntry( const char *szAlias, ProtElem *pProtElem)
+void SetEntry( const WCHAR *wszAlias, ProtElem *pProtElem)
 {
-	BidxScopeAutoSNI2( SNIAPI_TAG _T( "szAlias: '%hs', pProtElem: %p\n"), szAlias, pProtElem);
+	BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszAlias: '%s', pProtElem: %p\n"), wszAlias, pProtElem);
 
 	BidTraceU1( SNI_BID_TRACE_ON, SNI_TAG _T("pgLastConnectCache: %p\n"), pgLastConnectCache);
 
@@ -710,9 +710,9 @@ void SetEntry( const char *szAlias, ProtElem *pProtElem)
 		return;
 	}
 
-	Assert( strchr(szAlias,'\\'));
+	Assert( wcschr(wszAlias,L'\\'));
 	
-    char szCacheVal[MAX_CACHEENTRY_LENGTH+1];
+    WCHAR wszCacheVal[MAX_CACHEENTRY_LENGTH+1];
 
     // Enter critical section
 	CAutoSNICritSec a_csCache( critsecCache, SNI_AUTOCS_DO_NOT_ENTER );
@@ -724,16 +724,16 @@ void SetEntry( const char *szAlias, ProtElem *pProtElem)
     switch(pProtElem->GetProviderNum())
     {
         case TCP_PROV:   // Tcp
-            if( FAILED( StringCchPrintfA(
-				szCacheVal, CCH_ANSI_STRING(szCacheVal), "0:tcp:%s,%s", pProtElem->m_szServerName, pProtElem->Tcp.szPort ) ) )
+            if( FAILED( StringCchPrintfW(
+				wszCacheVal, ARRAYSIZE(wszCacheVal), L"0:tcp:%s,%s", pProtElem->m_wszServerName, pProtElem->Tcp.wszPort ) ) )
             {
 				goto ErrorExit;
             }
             break;
 
         case NP_PROV:   // Named Pipe
-            if( FAILED( StringCchPrintfA(
-				szCacheVal, CCH_ANSI_STRING(szCacheVal), "0:np:%s", pProtElem->Np.Pipe ) ) )
+            if( FAILED( StringCchPrintfW(
+				wszCacheVal, ARRAYSIZE(wszCacheVal), L"0:np:%s", pProtElem->Np.Pipe ) ) )
             {
 				goto ErrorExit;
             }
@@ -741,8 +741,8 @@ void SetEntry( const char *szAlias, ProtElem *pProtElem)
 
         case SM_PROV:   //Lpc
 			///does shared memory use cache?
-            if( FAILED( StringCchPrintfA(
-				szCacheVal, CCH_ANSI_STRING(szCacheVal), "0:lpc:%s", pProtElem->Sm.Alias ) ) )
+            if( FAILED( StringCchPrintfW(
+				wszCacheVal, ARRAYSIZE(wszCacheVal), L"0:lpc:%s", pProtElem->Sm.Alias ) ) )
             {
 				goto ErrorExit;
             }
@@ -750,7 +750,7 @@ void SetEntry( const char *szAlias, ProtElem *pProtElem)
 
         case VIA_PROV:   // Via
         	/// this is not useful information to cache
-            if( FAILED( StringCchPrintfA(szCacheVal, CCH_ANSI_STRING(szCacheVal), "0:via:%s", pProtElem->Via.Host ) ) )
+            if( FAILED( StringCchPrintfW(wszCacheVal, ARRAYSIZE(wszCacheVal), L"0:via:%s", pProtElem->Via.Host ) ) )
             {
 				goto ErrorExit;
             }
@@ -766,16 +766,16 @@ void SetEntry( const char *szAlias, ProtElem *pProtElem)
 
     unsigned int chCacheVal;
 
-    chCacheVal=(unsigned int)strlen(szCacheVal);
+    chCacheVal=(unsigned int)wcslen(wszCacheVal);
 
     Assert(chCacheVal<=MAX_CACHEENTRY_LENGTH);
 
     if(MAX_CACHEENTRY_LENGTH<chCacheVal)
 		goto ErrorExit;
     
-	pgLastConnectCache->Remove(szAlias);
+	pgLastConnectCache->Remove(wszAlias);
 
-    if( !pgLastConnectCache->Insert( szAlias, szCacheVal) )
+    if( !pgLastConnectCache->Insert( wszAlias, wszCacheVal) )
     {
     	goto ErrorExit;
     }
@@ -795,24 +795,24 @@ ErrorExit:
 } // namespace LastConnectCache 
 
 
-DWORD GetProtocolEnum( const char    * pszProtocol,
+DWORD GetProtocolEnum( const WCHAR    * pwszProtocol,
 						   __out ProviderNum * pProtNum )
 {
-	BidxScopeAutoSNI2( SNIAPI_TAG _T( "pszProtocol: '%hs', pProtNum: %p\n"), pszProtocol, pProtNum);
+	BidxScopeAutoSNI2( SNIAPI_TAG _T( "pwszProtocol: '%s', pProtNum: %p\n"), pwszProtocol, pProtNum);
 
-	if( !_stricmp("TCP", pszProtocol) )
+	if( !_wcsicmp(L"TCP", pwszProtocol) )
 	{
 		*pProtNum = TCP_PROV;
 	}
-	else if( !_stricmp("NP", pszProtocol) )
+	else if( !_wcsicmp(L"NP", pwszProtocol) )
 	{
 		*pProtNum = NP_PROV;
 	}
-	else if( !_stricmp("SM", pszProtocol) )
+	else if( !_wcsicmp(L"SM", pwszProtocol) )
 	{
 		*pProtNum = SM_PROV;
 	}
-	else if( !_stricmp("VIA", pszProtocol) )
+	else if( !_wcsicmp(L"VIA", pwszProtocol) )
 	{
 		*pProtNum = VIA_PROV;
 	}
@@ -832,21 +832,21 @@ DWORD GetProtocolEnum( const char    * pszProtocol,
 //	For SNIX version, see below
 //
 DWORD GetProtocolDefaults( 	__out ProtElem * pProtElem,
-									const char * pszProtocol,
-									const char * szServer )
+									const WCHAR * pwszProtocol,
+									const WCHAR * wszServer )
 {
-	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtElem: %p, pszProtocol: '%hs', szServer: '%hs'\n"), pProtElem, pszProtocol, szServer);
+	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtElem: %p, pwszProtocol: '%s', wszServer: '%s'\n"), pProtElem, pwszProtocol, wszServer);
 
 	LONG       lResult;
-	char     * szFoundChar = NULL;
+	WCHAR     * wszFoundChar = NULL;
 	ProviderNum    eProviderNum;
 	DWORD  nlReturn = ERROR_FAIL;
-	LPSTR szClusEnv = NULL;
+	LPWSTR wszClusEnv = NULL;
 	bool  fSetDefaultValues = false;
 
 	CS_PROTOCOL_PROPERTY ProtocolProperty;
 
-	nlReturn = GetProtocolEnum( pszProtocol,
+	nlReturn = GetProtocolEnum( pwszProtocol,
 							    &eProviderNum );
 
 	if( nlReturn != ERROR_SUCCESS )
@@ -871,14 +871,14 @@ DWORD GetProtocolDefaults( 	__out ProtElem * pProtElem,
 			{	
 				// Get the protocol Properties
 				//
-				lResult = CSgetProtocolProperty( (char *)pszProtocol,
+				lResult = CSgetProtocolProperty( (WCHAR *)pwszProtocol,
 												 CS_PROP_TCP_DEFAULT_PORT,
 												 &ProtocolProperty );
 
 				if( (ERROR_SUCCESS == lResult) && 
 					(REG_DWORD == ProtocolProperty.dwPropertyType) )
 				{
-					(void)StringCchPrintfA(pProtElem->Tcp.szPort,CCH_ANSI_STRING(pProtElem->Tcp.szPort),"%d",ProtocolProperty.PropertyValue.dwDoubleWordValue);
+					(void)StringCchPrintfW(pProtElem->Tcp.wszPort,ARRAYSIZE(pProtElem->Tcp.wszPort),L"%d",ProtocolProperty.PropertyValue.dwDoubleWordValue);
 				}
 				else	// We had a problem so just use known default
 				{
@@ -888,7 +888,7 @@ DWORD GetProtocolDefaults( 	__out ProtElem * pProtElem,
 
 			if( fSetDefaultValues )
 			{
-				(void)StringCchCopyA(pProtElem->Tcp.szPort,CCH_ANSI_STRING(pProtElem->Tcp.szPort),"1433");
+				(void)StringCchCopyW(pProtElem->Tcp.wszPort,ARRAYSIZE(pProtElem->Tcp.wszPort),L"1433");
 			}
 
 			break;
@@ -896,40 +896,40 @@ DWORD GetProtocolDefaults( 	__out ProtElem * pProtElem,
 		case NP_PROV:	
 			// _dupenv_s() returns non-zero for failure.  
 			//
-			if( _dupenv_s(&szClusEnv, NULL, "_CLUSTER_NETWORK_NAME_" ) )
+			if( _wdupenv_s(&wszClusEnv, NULL, L"_CLUSTER_NETWORK_NAME_" ) )
 			{
 				goto ErrorExit; 
 			}
 			
-			(void)StringCchCopyA( pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), "\\\\" );
+			(void)StringCchCopyW( pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), L"\\\\" );
 
 			// If string passed in matches Computername AND
 			// the cluster env var is NOT set, then put "." in pipe name
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-			if( CSTR_EQUAL == CompareStringA(LOCALE_SYSTEM_DEFAULT,
+			if( CSTR_EQUAL == CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									 NORM_IGNORECASE|NORM_IGNOREWIDTH,
-									 szServer, -1,
-									 gszComputerName, -1)&&
-				((NULL == szClusEnv) || !_stricmp(szClusEnv, ""))
+									 wszServer, -1,
+									 gwszComputerName, -1)&&
+				((NULL == wszClusEnv) || !_wcsicmp(wszClusEnv, L""))
 			  )
 OACR_WARNING_POP
 			{
-				(void)StringCchCatA( pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), "." );
+				(void)StringCchCatW( pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), L"." );
 			}
 
 			// In all other cases leave as is
 			else
 			{
-				if( FAILED( StringCchCatA( 
-					pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), szServer ) ) )
+				if( FAILED( StringCchCatW( 
+					pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), wszServer ) ) )
 				{
 					goto ErrorExit; 
 				}
 			}
 
-			if( FAILED( StringCchCatA( 
-				pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), "\\PIPE\\" ) ) )
+			if( FAILED( StringCchCatW( 
+				pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), L"\\PIPE\\" ) ) )
 			{
 				goto ErrorExit; 
 			}
@@ -943,14 +943,14 @@ OACR_WARNING_POP
 			{
 				// Get the protocol Properties
 				//
-				lResult = CSgetProtocolProperty( (char *)pszProtocol,
+				lResult = CSgetProtocolProperty( (WCHAR *)pwszProtocol,
                                                  CS_PROP_NP_DEFAULT_PIPE,
                                                  &ProtocolProperty );
 
 				if( (ERROR_SUCCESS == lResult) &&
 					(REG_SZ == ProtocolProperty.dwPropertyType) )
 				{
-					if( FAILED( StringCchCatA( pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), 
+					if( FAILED( StringCchCatW( pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), 
 						    ProtocolProperty.PropertyValue.szStringValue ) ) )
 					{
 						goto ErrorExit; 
@@ -964,7 +964,7 @@ OACR_WARNING_POP
 		
 			if( fSetDefaultValues )
 			{
-				if( FAILED( StringCchCatA( pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), "sql\\query" ) ) )
+				if( FAILED( StringCchCatW( pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), L"sql\\query" ) ) )
 				{
 					goto ErrorExit; 
 				}		
@@ -973,8 +973,8 @@ OACR_WARNING_POP
 			break;
 
 		case SM_PROV:
-			if( FAILED( StringCchCopyA( 
-				pProtElem->Sm.Alias, CCH_ANSI_STRING(pProtElem->Sm.Alias), szServer ) ) )
+			if( FAILED( StringCchCopyW( 
+				pProtElem->Sm.Alias, ARRAYSIZE(pProtElem->Sm.Alias), wszServer ) ) )
 			{
 				goto ErrorExit; 
 			}				
@@ -990,11 +990,11 @@ OACR_WARNING_POP
 			//	In Yukon/Whidbey (SNAC/SNIX) the only supported 
 			//	vendor is QLogic.  
 			//
-			(void)StringCchCopyA( pProtElem->Via.Vendor, CCH_ANSI_STRING(pProtElem->Via.Vendor), CS_VALUE_VIA_VENDOR_NAME_QLOGIC );
+			(void)StringCchCopyW( pProtElem->Via.Vendor, ARRAYSIZE(pProtElem->Via.Vendor), CS_VALUE_VIA_VENDOR_NAME_QLOGIC );
 			
 			// Copy the server name into the host
-			if( FAILED( StringCchCopyA( 
-				pProtElem->Via.Host, CCH_ANSI_STRING(pProtElem->Via.Host), szServer ) ) )
+			if( FAILED( StringCchCopyW( 
+				pProtElem->Via.Host, ARRAYSIZE(pProtElem->Via.Host), wszServer ) ) )
 			{
 				goto ErrorExit; 
 			}					    				
@@ -1005,17 +1005,17 @@ OACR_WARNING_POP
 			}
 			else
 			{
-				lResult = CSgetProtocolProperty( (char *)pszProtocol,
+				lResult = CSgetProtocolProperty( (WCHAR *)pszProtocol,
 												 CS_PROP_VIA_DEFAULT_PORT,
 												 &ProtocolProperty );
 
 				if( (ERROR_SUCCESS == lResult) && 
 					(REG_SZ == ProtocolProperty.dwPropertyType) &&
 					ProtocolProperty.PropertyValue.szStringValue[0] &&
-					strchr(ProtocolProperty.PropertyValue.szStringValue, ':') )
+					wcschr(ProtocolProperty.PropertyValue.szStringValue, L':') )
 				{
-					LPSTR szTmp = strchr(ProtocolProperty.PropertyValue.szStringValue, ':');
-					int iPort = atoi(szTmp+1);
+					LPWSTR szTmp = wcschr(ProtocolProperty.PropertyValue.szStringValue, L':');
+					int iPort = _wtoi(szTmp+1);
 
 					if( (0 <= iPort) && (USHRT_MAX >= iPort) )
 					{
@@ -1049,9 +1049,9 @@ OACR_WARNING_POP
 			goto ErrorExit;
 	}
 
-	if( NULL != szClusEnv )
+	if( NULL != wszClusEnv )
 	{
-		free(szClusEnv); 
+		free(wszClusEnv); 
 	}
 
 	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_SUCCESS);
@@ -1060,9 +1060,9 @@ OACR_WARNING_POP
 
 ErrorExit:
 
-	if( NULL != szClusEnv )
+	if( NULL != wszClusEnv )
 	{
-		free(szClusEnv); 
+		free(wszClusEnv); 
 	}
 
 	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_FAIL);
@@ -1074,10 +1074,10 @@ ErrorExit:
 //	For SNIX versions, see below
 //
 DWORD GetProtocolList( 	__inout ProtList * pProtList, 
-							const char * szServer,
-							const char * szOriginalServer )
+							const WCHAR * wszServer,
+							const WCHAR * wszOriginalServer )
 {
-	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtList: %p, szServer: '%hs', szOriginalServer: '%hs'\n"), pProtList, szServer, szOriginalServer);
+	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtList: %p, wszServer: '%s', wszOriginalServer: '%s'\n"), pProtList, wszServer, wszOriginalServer);
 
 	LONG       lResult      = 0;
 	DWORD      dwBufferSize = 0;
@@ -1145,7 +1145,7 @@ DWORD GetProtocolList( 	__inout ProtList * pProtList,
 	{
 		// If the protocol is shared memory and its NOT a 
 		// local host, then just continue
-		if( !_stricmp(pszProt, "sm") && !IsLocalHost(szServer) )
+		if( !_wcsicmp(pszProt, L"sm") && !IsLocalHost(wszServer) )
 		{
 			// Do nothing.
 		}
@@ -1165,7 +1165,7 @@ DWORD GetProtocolList( 	__inout ProtList * pProtList,
 				if( !newProtElem )
 					goto ErrorExit;
 
-				if( ERROR_SUCCESS != newProtElem->Init( szServer, szOriginalServer ) )
+				if( ERROR_SUCCESS != newProtElem->Init( wszServer, wszOriginalServer ) )
 				{
 					delete newProtElem;
 					goto ErrorExit;
@@ -1173,7 +1173,7 @@ DWORD GetProtocolList( 	__inout ProtList * pProtList,
 
 				nlReturn = GetProtocolDefaults( newProtElem,
 												   pszProt,
-												    szServer );
+												    wszServer );
 
 				if( nlReturn == ERROR_FAIL )
 				{
@@ -1237,8 +1237,8 @@ ErrorExit:
 //	is used also by MDAC in case the registry list is not 
 //	present, or if it is empty.  
 //
-#define DEFAULT_PROTOCOLS_WIN9X	"tcp\0" \
-								"np\0"
+#define DEFAULT_PROTOCOLS_WIN9X	TEXT("tcp\0") \
+								TEXT("np\0")
 
 extern BOOL gfIsWin9x;
 
@@ -1246,20 +1246,20 @@ extern BOOL gfIsWin9x;
 //	SNIX version, which does not use or manipulate registry
 //
 DWORD GetProtocolDefaults( 	ProtElem * pProtElem,
-									const char * pszProtocol,
-									const char * szServer )
+									const WCHAR * pwszProtocol,
+									const WCHAR * wszServer )
 {
-	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtElem: %p, pszProtocol: '%hs', szServer: '%hs'\n"), pProtElem, pszProtocol, szServer);
+	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtElem: %p, pwszProtocol: '%s', wszServer: '%s'\n"), pProtElem, pwszProtocol, wszServer);
 
 	LONG       lResult;
-	char     * szFoundChar = NULL;
+	WCHAR     * wszFoundChar = NULL;
 	ProviderNum    eProviderNum;
 	DWORD  nlReturn = ERROR_FAIL;
-	LPSTR szClusEnv = NULL;
+	LPWSTR wszClusEnv = NULL;
 
 	CS_PROTOCOL_PROPERTY ProtocolProperty;
 
-	nlReturn = GetProtocolEnum( pszProtocol,
+	nlReturn = GetProtocolEnum( pwszProtocol,
 							    &eProviderNum );
 
 	if( nlReturn != ERROR_SUCCESS )
@@ -1276,51 +1276,51 @@ DWORD GetProtocolDefaults( 	ProtElem * pProtElem,
 	switch( eProviderNum )
 	{
 		case TCP_PROV:
-			(void)StringCchCopyA(pProtElem->Tcp.szPort,CCH_ANSI_STRING(pProtElem->Tcp.szPort),"1433");
+			(void)StringCchCopyW(pProtElem->Tcp.wszPort,ARRAYSIZE(pProtElem->Tcp.wszPort),L"1433");
 			break;
 
 		case NP_PROV:
 			// _dupenv_s() returns non-zero for failure.  
 			//
-			if( _dupenv_s(&szClusEnv, NULL, "_CLUSTER_NETWORK_NAME_" ) )
+			if( _wdupenv_s(&wszClusEnv, NULL, L"_CLUSTER_NETWORK_NAME_" ) )
 			{
 				goto ErrorExit; 
 			}
 			
-			(void)StringCchCopyA( pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), "\\\\" );
+			(void)StringCchCopyW( pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), L"\\\\" );
 
 			// If string passed in matches Computername AND
 			// the cluster env var is NOT set, then put "." in pipe name
-			if( CSTR_EQUAL == CompareStringA(LOCALE_SYSTEM_DEFAULT,
+			if( CSTR_EQUAL == CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									 NORM_IGNORECASE|NORM_IGNOREWIDTH,
-									 szServer, -1,
-									 gszComputerName, -1) &&
-				((NULL == szClusEnv) || !_stricmp(szClusEnv, ""))
+									 wszServer, -1,
+									 gwszComputerName, -1) &&
+				((NULL == wszClusEnv) || !_wcsicmp(wszClusEnv, L""))
 			  )
 			{
-				(void)StringCchCatA( pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), "." );
+				(void)StringCchCatW( pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), L"." );
 			}
 
 			// In all other cases leave as is
 			else
 			{
-				if( FAILED( StringCchCatA( 
-					pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), szServer ) ))
+				if( FAILED( StringCchCatW( 
+					pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), wszServer ) ))
 				{
 					goto ErrorExit; 
 				}
 			}
 
-			if( FAILED( StringCchCatA( 
-				pProtElem->Np.Pipe, CCH_ANSI_STRING(pProtElem->Np.Pipe), "\\PIPE\\sql\\query" ) ) )
+			if( FAILED( StringCchCatW( 
+				pProtElem->Np.Pipe, ARRAYSIZE(pProtElem->Np.Pipe), L"\\PIPE\\sql\\query" ) ) )
 			{
 				goto ErrorExit; 
 			}
 			break;
 
 		case SM_PROV:
-			if( FAILED( StringCchCopyA( 
-				pProtElem->Sm.Alias, CCH_ANSI_STRING(pProtElem->Sm.Alias), szServer ) ) )
+			if( FAILED( StringCchCopyW( 
+				pProtElem->Sm.Alias, ARRAYSIZE(pProtElem->Sm.Alias), wszServer ) ) )
 			{
 				goto ErrorExit; 
 			}					    				
@@ -1335,26 +1335,26 @@ DWORD GetProtocolDefaults( 	ProtElem * pProtElem,
 
 
 
-			(void)StringCchCopyA( pProtElem->Via.Vendor, CCH_ANSI_STRING(pProtElem->Via.Vendor), CS_VALUE_VIA_VENDOR_NAME_QLOGIC );
+			(void)StringCchCopyW( pProtElem->Via.Vendor, ARRAYSIZE(pProtElem->Via.Vendor), CS_VALUE_VIA_VENDOR_NAME_QLOGIC );
 			
 			// Copy the server name into the host
-			if( FAILED( StringCchCopyA( 
-				pProtElem->Via.Host, CCH_ANSI_STRING(pProtElem->Via.Host), szServer ) ) )
+			if( FAILED( StringCchCopyW( 
+				pProtElem->Via.Host, ARRAYSIZE(pProtElem->Via.Host), wszServer ) ) )
 			{
 				goto ErrorExit; 
 			}					    				
 
-			lResult = CSgetProtocolProperty( (char *)pszProtocol,
+			lResult = CSgetProtocolProperty( (WCHAR *)pwszProtocol,
 										 CS_PROP_VIA_DEFAULT_PORT,
 										 &ProtocolProperty );
 
 			if( (ERROR_SUCCESS == lResult) && 
 				(REG_SZ == ProtocolProperty.dwPropertyType) &&
 				ProtocolProperty.PropertyValue.szStringValue[0] &&
-				strchr(ProtocolProperty.PropertyValue.szStringValue, ':') )
+				wcschr(ProtocolProperty.PropertyValue.szStringValue, L':') )
 			{
-				LPSTR szTmp = strchr(ProtocolProperty.PropertyValue.szStringValue, ':');
-				int iPort = atoi(szTmp+1);
+				LPWSTR wszTmp = wcschr(ProtocolProperty.PropertyValue.szStringValue, L':');
+				int iPort = _wtoi(wszTmp+1);
 				
 				if( (0 <= iPort) && (USHRT_MAX >= iPort) )
 				{
@@ -1376,9 +1376,9 @@ DWORD GetProtocolDefaults( 	ProtElem * pProtElem,
 			goto ErrorExit;
 	}
 
-	if( NULL != szClusEnv )
+	if( NULL != wszClusEnv )
 	{
-		free(szClusEnv); 
+		free(wszClusEnv); 
 	}
 
 	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_SUCCESS);
@@ -1387,9 +1387,9 @@ DWORD GetProtocolDefaults( 	ProtElem * pProtElem,
 
 ErrorExit:
 
-	if( NULL != szClusEnv )
+	if( NULL != wszClusEnv )
 	{
-		free(szClusEnv); 
+		free(wszClusEnv); 
 	}
 
 	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_FAIL);
@@ -1400,10 +1400,10 @@ ErrorExit:
 //	SNIX version, which does not use or manipulate registry
 //
 DWORD GetProtocolList( 	ProtList * pProtList, 
-							const char * szServer,
-							const char * szOriginalServer )
+							const WCHAR * wszServer,
+							const WCHAR * wszOriginalServer )
 {
-	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtList: %p, szServer: '%hs', szOriginalServer: '%hs'\n"), pProtList, szServer, szOriginalServer);
+	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pProtList: %p, wszServer: '%s', wszOriginalServer: '%s'\n"), pProtList, wszServer, wszOriginalServer);
 
 	LONG       lResult      = 0;
 	TCHAR		* pszProt;
@@ -1422,7 +1422,7 @@ DWORD GetProtocolList( 	ProtList * pProtList,
 	{
 		// If the protocol is shared memory and its NOT a 
 		// local host, then just continue
-		if( !_stricmp(pszProt, "sm") && !IsLocalHost(szServer) )
+		if( !_wcsicmp(pszProt, L"sm") && !IsLocalHost(wszServer) )
 			continue;
 		
 		newProtElem = NewNoX(gpmo) ProtElem();
@@ -1430,7 +1430,7 @@ DWORD GetProtocolList( 	ProtList * pProtList,
 		if( !newProtElem )
 			goto ErrorExit;
 
-		if( ERROR_SUCCESS != newProtElem->Init( szServer, szOriginalServer ) )
+		if( ERROR_SUCCESS != newProtElem->Init( wszServer, wszOriginalServer ) )
 		{
 			delete newProtElem;
 			goto ErrorExit;
@@ -1438,7 +1438,7 @@ DWORD GetProtocolList( 	ProtList * pProtList,
 
 		nlReturn = GetProtocolDefaults( newProtElem,
 										   pszProt,
-										    szServer );
+										    wszServer );
 
 		if( nlReturn == ERROR_FAIL )
 		{

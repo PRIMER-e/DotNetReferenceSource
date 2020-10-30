@@ -9,7 +9,7 @@
 //  Comments:
 //              Last Modified: 15-May-2005
 //
-//              <owner current="true" primary="true">[....]</owner>
+//              <owner current="true" primary="true">Microsoft</owner>
 //
 #ifndef __BIDAPI_H__ ////////////////////////////////////////////////////////////////////////////
 #define __BIDAPI_H__

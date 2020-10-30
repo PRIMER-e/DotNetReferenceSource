@@ -248,7 +248,7 @@ namespace System.Windows.Forms
 
         internal int ActualDisplayIndexToColumnIndex(int actualDisplayIndex, DataGridViewElementStates includeFilter)
         {
-            // [....]: is there a faster way to get the column index?
+            // Microsoft: is there a faster way to get the column index?
             DataGridViewColumn dataGridViewColumn = GetFirstColumn(includeFilter);
             for (int i = 0; i < actualDisplayIndex; i ++)
             {

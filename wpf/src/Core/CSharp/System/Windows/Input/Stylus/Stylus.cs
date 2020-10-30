@@ -806,7 +806,7 @@ namespace System.Windows.Input
         public static bool Capture(IInputElement element, CaptureMode captureMode)
         {
             // The stylus code watches mouse capture changes and it will trigger us to
-            // [....] up all the stylusdevice capture settings to be the same as the mouse.
+            // sync up all the stylusdevice capture settings to be the same as the mouse.
             // So we just call Mouse.Capture() here to trigger this all to happen.
             return Mouse.Capture(element, captureMode);
         }

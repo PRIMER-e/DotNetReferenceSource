@@ -121,9 +121,9 @@ namespace System.Windows.Forms {
                 Size requiredSize;
                 // Note: The result from the BCM_GETIDEALSIZE message isn't accurate if the font has been
                 // changed, because this method is called before the font is set into the device context.
-                // Commenting this line is the fix for bug VSWhidbey#228843.
-                //if(UnsafeNativeMethods.SendMessage(hWnd, NativeMethods.BCM_GETIDEALSIZE, 0, size) != IntPtr.Zero) {
-                //    requiredSize = size.ToSize(); ...
+                // Commenting this line is the fix for 
+
+
                 requiredSize = TextRenderer.MeasureText(this.Text, this.Font);
                 requiredSize = SizeFromClientSize(requiredSize);
 

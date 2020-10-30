@@ -8,7 +8,7 @@
 // Description: Miscellaneous helper routines
 //
 // History:
-//  12/06/2004 : Created [....]
+//  12/06/2004 : Created Microsoft
 //
 //---------------------------------------------------------------------------
 
@@ -806,7 +806,7 @@ namespace MS.Internal.AutomationProxies
         }
 
         // Call IsCriticalException w/in a catch-all-exception handler to allow critical exceptions
-        // to be thrown (this is copied from exception handling code in [....] but feel free to
+        // to be thrown (this is copied from exception handling code in Microsoft but feel free to
         // add new critical exceptions).  Usage:
         //      try
         //      {
@@ -1398,7 +1398,7 @@ namespace MS.Internal.AutomationProxies
             return x >= rc.left && x < rc.right && y >= rc.top && y < rc.bottom;
         }
 
-        internal static bool ReadProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr source, IntPtr dest, IntPtr size, out int bytesRead)
+        internal static bool ReadProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr source, IntPtr dest, IntPtr size, out IntPtr bytesRead)
         {
             bool result = UnsafeNativeMethods.ReadProcessMemory(hProcess, source, dest, size, out bytesRead);
             int lastWin32Error = Marshal.GetLastWin32Error();
@@ -1411,7 +1411,7 @@ namespace MS.Internal.AutomationProxies
             return result;
         }
 
-        internal static bool ReadProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr source, MS.Internal.AutomationProxies.SafeCoTaskMem destAddress, IntPtr size, out int bytesRead)
+        internal static bool ReadProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr source, MS.Internal.AutomationProxies.SafeCoTaskMem destAddress, IntPtr size, out IntPtr bytesRead)
         {
             bool result = UnsafeNativeMethods.ReadProcessMemory(hProcess, source, destAddress, size, out bytesRead);
             int lastWin32Error = Marshal.GetLastWin32Error();
@@ -1825,7 +1825,7 @@ namespace MS.Internal.AutomationProxies
             return result;
         }
 
-        internal static bool WriteProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr dest, IntPtr sourceAddress, IntPtr size, out int bytesWritten)
+        internal static bool WriteProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr dest, IntPtr sourceAddress, IntPtr size, out IntPtr bytesWritten)
         {
             bool result = UnsafeNativeMethods.WriteProcessMemory(hProcess, dest, sourceAddress, size, out bytesWritten);
             int lastWin32Error = Marshal.GetLastWin32Error();
@@ -1924,7 +1924,7 @@ namespace MS.Internal.AutomationProxies
         private static bool EnumToolTipWindows(IntPtr hwnd, ref UnsafeNativeMethods.ENUMTOOLTIPWINDOWINFO lParam)
         {
             // Use ProxyGetClassName here instead of GetClassName(),
-            // since for a [....] tooltip the latter will return
+            // since for a Microsoft tooltip the latter will return
             // "WindowsForms10.tooltips_class32.app.0.b7ab7b".
             // Instead, ProxyGetClassName uses WM_GETOBJECT with
             // OBJID_QUERYCLASSNAMEIDX, which will return the correct answer.
@@ -2032,10 +2032,10 @@ namespace MS.Internal.AutomationProxies
             {
                 // Right to left mirroring style
 
-                // This is to take in count for a bug in GetTitleBarInfo().  It does not calculate the
-                // rcTitleBar correctly when the WS_EX_LAYOUTRTL extended style is set.  It assumes
-                // SYSMENU is always on the left and removes its space from the wrong side of rcTitleBar.
-                // Use the bounding rectangle of the whole title bar to get the true left boundary.
+                // This is to take in count for a 
+
+
+
                 leftEdge = (int)(Misc.GetTitleBarRect(hwnd).Left);
                 for (int i = NativeMethods.INDEX_TITLEBAR_MAC; i > NativeMethods.INDEX_TITLEBAR_SELF; i--)
                 {

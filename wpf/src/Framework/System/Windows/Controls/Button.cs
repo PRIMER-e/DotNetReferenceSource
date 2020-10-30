@@ -274,7 +274,7 @@ namespace System.Windows.Controls
                 if ((Command == null) && IsCancel)
                 {
                     // Can't invoke Window.DialogCancelCommand directly. Have to raise event.
-                    // Filed bug 936090: Commanding perf issue: can't directly invoke a command.
+                    // Filed 
                     MS.Internal.Commands.CommandHelpers.ExecuteCommand(Window.DialogCancelCommand, null, this);
                 }
             }

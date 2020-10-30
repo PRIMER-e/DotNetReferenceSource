@@ -5,7 +5,7 @@
 * Purpose:  AttributeContext and  *AttributeData
 *
 * History:
-*    11/21/08:   [....]       Ported from XamlReaderHelper.cs
+*    11/21/08:   Microsoft       Ported from XamlReaderHelper.cs
 *
 * Copyright (C) 2008 by Microsoft Corporation.  All rights reserved.
 *

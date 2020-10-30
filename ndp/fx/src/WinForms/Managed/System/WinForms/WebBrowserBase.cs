@@ -100,7 +100,7 @@ namespace System.Windows.Forms {
         /// <include file='doc\WebBrowserBase.uex' path='docs/doc[@for="WebBrowserBase.WebBrowserBase"]/*' />
         /// <devdoc>
         ///     <para>
-        /// Creates a new instance of a [....] control which wraps an ActiveX control
+        /// Creates a new instance of a Microsoft control which wraps an ActiveX control
         /// given by the clsid parameter.
         ///     </para>
         /// </devdoc>

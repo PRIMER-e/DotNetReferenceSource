@@ -129,7 +129,7 @@ namespace MS.Internal.PtsHost
         ///     d) Your object is callable during Finalization.
         ///     e) Your Finalizer could be called multiple times.
         ///     f) Your Finalizer runs in a delicate security context.
-        /// See: http://blogs.msdn.com/[....]/archive/2004/02/20/77460.aspx
+        /// See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
         /// </remarks>
         /// <SecurityNote>
         /// Critical, because sets SecurityCriticalDataForSet.
@@ -148,7 +148,7 @@ namespace MS.Internal.PtsHost
                 // a finalizable object is promoted, and it is safe to access its 
                 // members if they do not have their own finalizers.
                 // Hence it is OK to access _ptsContext during finalization.
-                // See: http://blogs.msdn.com/[....]/archive/2004/02/20/77460.aspx
+                // See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
                 ptsContext = _ptsContext.Target as PtsContext;
                 if (ptsContext != null && !ptsContext.Disposed)
                 {

@@ -7,9 +7,9 @@
 //    and PresentationHost
 //
 //  History
-//      2005/5/4-[....]
+//      2005/5/4-Microsoft
 //          Moved browser invoke methods to a shared location
-//      2007/09/20-[....]
+//      2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -20,16 +20,17 @@
 #include "..\inc\Definitions.hxx"
 #include "..\inc\Registry.hxx"
 
+#include <knownfolders.h>
 #include <tchar.h>
 #include <StrSafe.h>
+#include <shlobj.h>
 #include <shlwapi.h>
 #include <shellapi.h>
 
 
 //*****************************************************************************
 // InvokeBrowser
-// This function calls ShellExecuteEx to open the provided URL with the program
-// that is registered with the shell to open .htm files.
+// This function calls ShellExecuteEx to open the provided URL with Internet Explorer
 //
 // Parameters:
 //   __in pwzUrl    the URL to be launched
@@ -39,33 +40,20 @@
 //   otherwise - failed. In typical cases, ShellExecuteEx() displays an error message.
 //*****************************************************************************
 
-#define HTM_EXTENSION   L".htm"
-#define OPEN_VERB       L"open"
-#define BUFFER_LENGTH   (MAX_PATH*2) // To allow for args or whatever
-
 HRESULT InvokeBrowser(__in LPCWSTR pwzUrl)
 {
     EventWriteWpfHostUm_InvokingBrowser(pwzUrl);
 
     HRESULT hr = S_OK;
     SHELLEXECUTEINFO ShellExecInfo = { 0 };
-    
-    WCHAR wzBuffer[BUFFER_LENGTH];
-    DWORD dwCharCount = BUFFER_LENGTH;
+    LPWSTR pszIEPath = new WCHAR[MAX_PATH];
 
-    CKHR(AssocQueryString(
-        0, // ASSOCF flags,
-        ASSOCSTR_COMMAND , // ASSOCSTR str,
-        HTM_EXTENSION, // LPCTSTR pszAssoc,
-        OPEN_VERB, // LPCTSTR pszExtra,
-        wzBuffer, // LPTSTR pszOut,
-        &dwCharCount // DWORD *pcchOut
-    ));
+    CHECK_HR(GetInternetExplorerPath(pszIEPath));
 
     ShellExecInfo.cbSize = sizeof(ShellExecInfo);
-    ShellExecInfo.fMask = SEE_MASK_FLAG_DDEWAIT | SEE_MASK_CLASSNAME;
-    ShellExecInfo.lpFile = pwzUrl;
-    ShellExecInfo.lpClass = HTM_EXTENSION;
+    ShellExecInfo.fMask = SEE_MASK_NOASYNC;
+    ShellExecInfo.lpFile = pszIEPath;
+    ShellExecInfo.lpParameters = pwzUrl;
     ShellExecInfo.nShow = SW_SHOWDEFAULT;
     
     if (!ShellExecuteEx(&ShellExecInfo))
@@ -74,7 +62,67 @@ HRESULT InvokeBrowser(__in LPCWSTR pwzUrl)
     }
 
 Cleanup:
+    delete[] pszIEPath;
     return hr;
+}
+
+/**************************************************************************
+// GetInternetExplorerPath
+//   Helper that finds the full path for IE
+//
+// Remarks
+//   We use PathAppend below instead of the safer PathCchAppend for 
+//   Vista and Win7 compatibility.
+**************************************************************************/
+HRESULT GetInternetExplorerPath(_Out_writes_(MAX_PATH) LPWSTR pszPath)
+{
+#pragma prefast(push)
+#pragma prefast(disable:25025, "We don't know of a better API to use in place of PathAppend. The OACR spreadsheet and MSDN do not suggest any either.")
+
+    HRESULT hr = S_OK;
+    BOOL fResult = TRUE;
+
+    BOOL fIsWow64Process = FALSE;
+    IsWow64Process(GetCurrentProcess(), &fIsWow64Process);
+
+    if (fIsWow64Process)
+    {
+        if (!ExpandEnvironmentStringsW(L"%ProgramW6432%\\Internet Explorer", pszPath, MAX_PATH))
+        {
+            CHECK_HR(HRESULT_FROM_WIN32(GetLastError()));
+        }
+
+        CHECK_BOOL(PathAppend(pszPath, L"IEXPLORE.EXE"));
+    }
+    else
+    {
+        PWSTR pszProgramFilesPath = nullptr;
+
+        CHECK_HR(SHGetKnownFolderPath(FOLDERID_ProgramFiles, 0, nullptr, &pszProgramFilesPath));
+
+        hr = StringCchCopyW(pszPath, MAX_PATH, pszProgramFilesPath);
+        CoTaskMemFree(pszProgramFilesPath);
+        CHECK_HR(hr);
+
+        CHECK_BOOL(PathAppend(pszPath, L"Internet Explorer"));
+        CHECK_BOOL(PathAppend(pszPath, L"IEXPLORE.EXE"));
+    }
+
+Cleanup:
+
+    if (!SUCCEEDED(hr) || !fResult)
+    {
+        StringCchCopy(pszPath, 1, L"");
+    }
+
+    if (SUCCEEDED(hr) && !fResult)
+    {
+        hr = E_FAIL;
+    }
+
+    return hr;
+
+#pragma prefast(pop)
 }
 
 /**************************************************************************

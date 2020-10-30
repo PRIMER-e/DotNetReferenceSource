@@ -189,7 +189,7 @@ namespace System.Web.UI {
                     return null;
                 }
 
-                // Note: duplicated (somewhat) in GetMacKeyModifier, keep in [....]
+                // Note: duplicated (somewhat) in GetMacKeyModifier, keep in sync
                 // See that method for comments on why these modifiers are in place
 
                 List<string> specificPurposes = new List<string>() {
@@ -216,14 +216,10 @@ namespace System.Web.UI {
                     return null;
                 }
 
-                // Note: duplicated (somewhat) in GetSpecificPurposes, keep in [....]
+                // Note: duplicated (somewhat) in GetSpecificPurposes, keep in sync
 
                 // Use the page's directory and class name as part of the key (ASURT 64044)
-                // We need to make sure that the hash is case insensitive, since the file system
-                // is, and strange view state errors could otherwise happen (ASURT 128657)
-                int pageHashCode = StringComparer.InvariantCultureIgnoreCase.GetHashCode(
-                    _page.TemplateSourceDirectory);
-                pageHashCode += StringComparer.InvariantCultureIgnoreCase.GetHashCode(_page.GetType().Name);
+                uint pageHashCode = _page.GetClientStateIdentifier();
 
                 string viewStateUserKey = _page.ViewStateUserKey;
                 if (viewStateUserKey != null) {

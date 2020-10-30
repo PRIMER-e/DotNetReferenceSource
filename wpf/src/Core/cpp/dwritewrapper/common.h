@@ -147,7 +147,7 @@ private:
     static PermissionSet^ _fullTrustPermissionSet = nullptr;
 };
 
-#define ConvertHresultToException(hr, msg) Util::ConvertHresultToException(hr)
+#define ConvertHresultToException(hr, msg) Native::Util::ConvertHresultToException(hr)
 
 }}}}}//MS::Internal::Text::TextInterface::Native
 

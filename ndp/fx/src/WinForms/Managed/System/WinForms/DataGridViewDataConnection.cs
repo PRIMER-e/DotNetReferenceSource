@@ -1108,7 +1108,7 @@ namespace System.Windows.Forms
 
             private void ResetDataConnectionState()
             {
-                // [....]: I wish there would be a Reset method on BitVector32...
+                // Microsoft: I wish there would be a Reset method on BitVector32...
                 this.dataConnectionState = new BitVector32(DATACONNECTIONSTATE_finishedAddNew);
 
                 if (this.currencyManager != null)

@@ -16,7 +16,7 @@
 //  07/31/2002: RogerCh: Add LockBytes support, suppress unmanaged code security.
 //  05/20/2003: RogerCh: Ported to WCP tree.
 //  05/28/2003: RogerCh: Removed name checks - now handled by LongNameManager
-//  02/10/2006: [....]: Separated the security suppressed interfaces and APIs
+//  02/10/2006: Microsoft: Separated the security suppressed interfaces and APIs
 //                  Created the wrapper class that calls unmanaged APIs
 //
 //-----------------------------------------------------------------------------
@@ -51,13 +51,13 @@ namespace MS.Internal.IO.Packaging.CompoundFile
     {
         /// <summary>
         /// Utility function to update a grfMode value based on FileAccess.
-        /// 6/12/2002: Fixes bug #4938, 4960, 5096, 4858
-        /// </summary>
-        /// <param name="access">FileAccess we're translating</param>
-        /// <param name="grfMode">Mode flag parameter to modify</param>
-        // <SecurityNote>
-        //     SecurityTreatAsSafe:  Makes NO call to security suppressed unmanaged code
-        // </SecurityNote>
+        /// 6/12/2002: Fixes 
+
+
+
+
+
+
         internal static void UpdateModeFlagFromFileAccess( FileAccess access, ref int grfMode )
         {
             // Supporting write-only scenarios container-wide gets tricky and it 

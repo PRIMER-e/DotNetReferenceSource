@@ -188,7 +188,7 @@ namespace System.Windows.Interop
                 _haveCapture = true;
             }
 
-            // WORKAROUND for bug 969748
+            // WORKAROUND for 
             if(success && !_active)
             {
                 NativeMethods.POINT ptCursor = new NativeMethods.POINT();
@@ -374,10 +374,10 @@ namespace System.Windows.Interop
         }
 
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
-        /// <SecurityNote>
-        ///     Critical: This code is critical since it handles all mouse messages and could be used to spoof input
-        /// </SecurityNote>
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+
+
+
         [SecurityCritical]
         internal IntPtr FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -956,8 +956,8 @@ namespace System.Windows.Interop
         [SecurityCritical]
         private void PossiblyDeactivate(IntPtr hwndCapture, bool stillActiveIfOverSelf)
         {
-            // we may have been disposed by a re-entrant call (bug 1536643).
-            // If so, there's nothing more to do.
+            // we may have been disposed by a re-entrant call (
+
             if (null == _source || null == _source.Value )
             {
                 return;
@@ -1275,7 +1275,7 @@ namespace System.Windows.Interop
                             // If we get this far:
                             // - the mouse is NOT over "A"
                             // - "A" does NOT have capture
-                            // We consider this a "spurious" mouse move and ignore it. (Win32 bug?)
+                            // We consider this a "spurious" mouse move and ignore it. (Win32 
                             System.Diagnostics.Debug.WriteLine("HwndMouseInputProvider: Spurious mouse event received!");
                             return false;
                         }

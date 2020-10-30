@@ -288,8 +288,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
-                //
+                // SECREVIEW : Late-binding does not represent a security thread, see 
+
                 dataGridViewColumn = (DataGridViewImageColumn)System.Activator.CreateInstance(thisType);
             }
             if (dataGridViewColumn != null)

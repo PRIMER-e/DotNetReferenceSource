@@ -300,6 +300,12 @@ typedef wchar_t     TCHAR;
 #define _sntscanf_l     _snwscanf_l
 #define _sntscanf_s     _snwscanf_s
 #define _sntscanf_s_l   _snwscanf_s_l
+#define _vtscanf        vwscanf
+#define _vtscanf_s      vwscanf_s
+#define _vftscanf       vfwscanf
+#define _vftscanf_s     vfwscanf_s
+#define _vstscanf       vswscanf
+#define _vstscanf_s     vswscanf_s
 
 
 /* Unformatted i/o */
@@ -341,22 +347,32 @@ typedef wchar_t     TCHAR;
 /* String conversion functions */
 
 #define _tcstod     wcstod
+#define _tcstof     wcstof
 #define _tcstol     wcstol
+#define _tcstold    wcstold
+#define _tcstoll    wcstoll
 #define _tcstoul    wcstoul
+#define _tcstoull   wcstoull
 #define _tcstoi64   _wcstoi64
 #define _tcstoui64  _wcstoui64
 #define _ttof       _wtof
 #define _tstof      _wtof
 #define _tstol      _wtol
+#define _tstoll     _wtoll
 #define _tstoi      _wtoi
 #define _tstoi64    _wtoi64
 #define _tcstod_l     _wcstod_l
+#define _tcstof_l     _wcstof_l
 #define _tcstol_l     _wcstol_l
+#define _tcstold_l    _wcstold_l
+#define _tcstoll_l    _wcstoll_l
 #define _tcstoul_l    _wcstoul_l
+#define _tcstoull_l   _wcstoull_l
 #define _tcstoi64_l   _wcstoi64_l
 #define _tcstoui64_l  _wcstoui64_l
 #define _tstof_l      _wtof_l
 #define _tstol_l      _wtol_l
+#define _tstoll_l     _wtoll_l
 #define _tstoi_l      _wtoi_l
 #define _tstoi64_l    _wtoi64_l
 
@@ -368,6 +384,7 @@ typedef wchar_t     TCHAR;
 #define _ultot      _ultow
 #define _ttoi       _wtoi
 #define _ttol       _wtol
+#define _ttoll      _wtoll
 
 #define _ttoi64     _wtoi64
 #define _i64tot_s   _i64tow_s
@@ -677,6 +694,8 @@ _Check_return_ __inline int __CRTDECL _tccmp(_In_z_ const wchar_t *_Cpc1, _In_z_
 #define _istprint_l   _iswprint_l
 #define _istpunct   iswpunct
 #define _istpunct_l   _iswpunct_l
+#define _istblank   iswblank
+#define _istblank_l   _iswblank_l
 #define _istspace   iswspace
 #define _istspace_l   _iswspace_l
 #define _istupper   iswupper
@@ -986,6 +1005,12 @@ extern "C" {
 #define _sntscanf_l     _snscanf_l
 #define _sntscanf_s     _snscanf_s
 #define _sntscanf_s_l   _snscanf_s_l
+#define _vtscanf        vscanf
+#define _vtscanf_s      vscanf_s
+#define _vftscanf       vfscanf
+#define _vftscanf_s     vfscanf_s
+#define _vstscanf       vsscanf
+#define _vstscanf_s     vsscanf_s
 
 
 /* Unformatted i/o */
@@ -1026,18 +1051,28 @@ extern "C" {
 /* String conversion functions */
 
 #define _tcstod     strtod
+#define _tcstof     strtof
 #define _tcstol     strtol
+#define _tcstold    strtold
+#define _tcstoll    strtoll
 #define _tcstoul    strtoul
+#define _tcstoull   strtoull
 #define _ttof       atof
 #define _tstof      atof
 #define _tstol      atol
+#define _tstoll     atoll
 #define _tstoi      atoi
 #define _tstoi64    _atoi64
 #define _tcstod_l     _strtod_l
+#define _tcstof_l     _strtof_l
 #define _tcstol_l     _strtol_l
+#define _tcstold_l    _strtold_l
+#define _tcstoll_l    _strtoll_l
 #define _tcstoul_l    _strtoul_l
+#define _tcstoull_l   _strtoull_l
 #define _tstof_l      _atof_l
 #define _tstol_l      _atol_l
+#define _tstoll_l     _atoll_l
 #define _tstoi_l      _atoi_l
 #define _tstoi64_l    _atoi64_l
 
@@ -1049,6 +1084,7 @@ extern "C" {
 #define _ultot      _ultoa
 #define _ttoi       atoi
 #define _ttol       atol
+#define _ttoll      atoll
 
 #define _ttoi64     _atoi64
 #define _tcstoi64   _strtoi64
@@ -2059,6 +2095,8 @@ _Check_return_ inline char * __CRTDECL _tcsstr(_In_z_ char *_S, _In_z_ const cha
 #define _istprint_l     _ismbcprint_l
 #define _istpunct       _ismbcpunct
 #define _istpunct_l     _ismbcpunct_l
+#define _istblank       _ismbcblank
+#define _istblank_l     _ismbcblank_l
 #define _istspace       _ismbcspace
 #define _istspace_l     _ismbcspace_l
 #define _istupper       _ismbcupper
@@ -2234,6 +2272,8 @@ _Check_return_ __inline int __CRTDECL _tccmp(_In_z_ const char *_cpc1, _In_z_ co
 #define _istprint_l   _isprint_l
 #define _istpunct   ispunct
 #define _istpunct_l   _ispunct_l
+#define _istblank   isblank
+#define _istblank_l   _isblank_l
 #define _istspace   isspace
 #define _istspace_l   _isspace_l
 #define _istupper   isupper

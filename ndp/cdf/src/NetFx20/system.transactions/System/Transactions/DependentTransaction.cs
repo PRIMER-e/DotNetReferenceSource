@@ -59,7 +59,7 @@ namespace System.Transactions
 
                 if (this.complete)
                 {
-                    throw TransactionException.CreateTransactionCompletedException(SR.GetString(SR.TraceSourceLtm));
+                    throw TransactionException.CreateTransactionCompletedException(SR.GetString(SR.TraceSourceLtm), this.DistributedTxId);
                 }
 
                 this.complete = true;

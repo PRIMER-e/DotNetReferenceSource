@@ -7,7 +7,7 @@
 // Description: Wrapper for PTS page. 
 //
 // History:  
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -769,7 +769,7 @@ namespace MS.Internal.PtsHost
         ///     d) Your object is callable during Finalization.
         ///     e) Your Finalizer could be called multiple times.
         ///     f) Your Finalizer runs in a delicate security context.
-        /// See: http://blogs.msdn.com/[....]/archive/2004/02/20/77460.aspx
+        /// See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
         /// </remarks>
         /// <SecurityNote>
         /// Critical, because sets value of Critical data for set.
@@ -785,7 +785,7 @@ namespace MS.Internal.PtsHost
                 // a finalizable object is promoted, and it is safe to access its 
                 // members if they do not have their own finalizers.
                 // Hence it is OK to access _section during finalization.
-                // See: http://blogs.msdn.com/[....]/archive/2004/02/20/77460.aspx
+                // See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
                 if (!IsEmpty)
                 {
                     _section.PtsContext.OnPageDisposed(_ptsPage, disposing, true);
@@ -843,8 +843,8 @@ namespace MS.Internal.PtsHost
             {
                 PTS.FSRECT rect = GetRect();
                 PTS.FSBBOX bbox = GetBoundingBox();
-                // Workaround for PTS bug 860: get max of the page rect and 
-                // bounding box of the page.
+                // Workaround for PTS 
+
                 if (!FinitePage && PTS.ToBoolean(bbox.fDefined))
                 {
                     rect.dv = Math.Max(rect.dv, bbox.fsrc.dv);
@@ -858,8 +858,8 @@ namespace MS.Internal.PtsHost
                     _contentSize.Width = Math.Max(Math.Max(TextDpi.FromTextDpi(bbox.fsrc.du), TextDpi.MinWidth), _calculatedSize.Width);
                     _contentSize.Height = Math.Max(TextDpi.MinWidth, TextDpi.FromTextDpi(bbox.fsrc.dv));
                     // In bottomless pages, page size reported by PTS is 
-                    // actually content size (see PTS bug 860 for exceptions).
-                    // Take PTS calculated value into account.
+                    // actually content size (see PTS 
+
                     if (!FinitePage)
                     {
                         _contentSize.Height = Math.Max(_contentSize.Height, _calculatedSize.Height);

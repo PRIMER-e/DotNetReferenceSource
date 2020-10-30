@@ -7,8 +7,8 @@
 // Description: Column properties group. 
 //
 // History:  
-//  05/05/2003 : [....] - created.
-//  07/18/2003 : [....] - converted to new Property Engine.
+//  05/05/2003 : Microsoft - created.
+//  07/18/2003 : Microsoft - converted to new Property Engine.
 //
 //---------------------------------------------------------------------------
 

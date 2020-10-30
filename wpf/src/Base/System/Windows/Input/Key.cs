@@ -412,7 +412,7 @@ namespace System.Windows.Input
         /// </summary>
         Apps,
 
-        // 
+        // TODO: Missing VK_POWER?
 
         /// <summary>
         ///     The Computer Sleep key.
@@ -854,7 +854,7 @@ namespace System.Windows.Input
         /// </summary>
         Oem8,
 
-        // 
+        // TODO: VK_OEM_AX = 0xE1
         
         /// <summary>
         ///     The Oem 102 key.
@@ -866,8 +866,8 @@ namespace System.Windows.Input
         /// </summary>
         OemBackslash  = Oem102,
 
-        // 
-
+        // TODO: VK_ICO_HELP = 0xE3;
+        // TODO: VK_ICO_00 = 0xE4;
         
         /// <summary>
         ///     A special key masking the real key being processed by an IME.
@@ -879,13 +879,13 @@ namespace System.Windows.Input
         /// </summary>
         System,
         
-        // 
-
-
-
-
-
-
+        // TODO: VK_OEM_RESET = 0xE9;
+        // TODO: VK_OEM_JUMP = 0xEA;
+        // TODO: VK_OEM_PA1 = 0xEB;
+        // TODO: VK_OEM_PA2 = 0xEC;
+        // TODO: VK_OEM_PA3 = 0xED;
+        // TODO: VK_OEM_WSCTRL = 0xEE;
+        // TODO: VK_OEM_CUSEL = 0xEF;
 
         /// <summary>
         ///     The OEM_ATTN key.

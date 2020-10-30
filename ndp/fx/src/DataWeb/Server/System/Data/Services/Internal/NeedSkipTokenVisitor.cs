@@ -6,7 +6,7 @@
 //      Visitor to evaluate if skip tokens are needed for an expansion
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Internal

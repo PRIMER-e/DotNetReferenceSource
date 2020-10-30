@@ -6,7 +6,7 @@
 //      Provides an enumeration for the kind of key based on the heuristic
 // </summary>
 //
-// @owner  [....]
+// @owner  pratikp
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

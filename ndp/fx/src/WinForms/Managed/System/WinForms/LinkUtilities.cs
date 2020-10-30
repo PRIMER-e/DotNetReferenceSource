@@ -120,7 +120,15 @@ using System.Security.Permissions;
             //new RegistryPermission(RegistryPermissionAccess.Read, "HKCU\\" + IEMainRegPath).Assert();
             new RegistryPermission(PermissionState.Unrestricted).Assert();
             try {
-                RegistryKey key = Registry.CurrentUser.OpenSubKey(IEMainRegPath);
+                RegistryKey key = null;
+                try {
+                    key = Registry.CurrentUser.OpenSubKey(IEMainRegPath);
+                }
+                catch (System.Security.SecurityException) {
+                    // User does not have right to access Registry path HKCU\\Software\\Microsoft\\Internet Explorer\\Main.
+                    // Catch SecurityException silently and let the return value fallback to AlwaysUnderline.
+                }
+
                 if (key != null) {
                     string s = (string)key.GetValue("Anchor Underline");
                     key.Close();

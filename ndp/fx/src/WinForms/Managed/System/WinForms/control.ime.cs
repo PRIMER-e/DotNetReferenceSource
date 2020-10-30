@@ -64,7 +64,7 @@ namespace System.Windows.Forms {
     IArrangedElement,
     IBindableComponent {
 
-        // See IME feature spec at http://dotnetclient/Whidbey/dev/General%20Documentation/[....].Ime.doc
+        // See IME feature spec at http://dotnetclient/Whidbey/dev/General%20Documentation/Microsoft.Ime.doc
 
         /// <devdoc>
         ///     Constants starting/ending the WM_CHAR messages to ignore count.  See ImeWmCharsToIgnore property.
@@ -411,7 +411,7 @@ namespace System.Windows.Forms {
 
                 if( Control.propagatingImeMode == ImeMode.Inherit ) {
                     // Initialize the propagating IME mode to the value the IME associated to the focused window currently has,
-                    // this enables propagating the IME mode from/to unmanaged applications hosting [....] controls.
+                    // this enables propagating the IME mode from/to unmanaged applications hosting Microsoft controls.
                     Debug.WriteLineIf( CompModSwitches.ImeMode.Level >= TraceLevel.Verbose, "Initializing PropagatingImeMode" );
 
                     ImeMode imeMode = ImeMode.Inherit;
@@ -421,7 +421,7 @@ namespace System.Windows.Forms {
                         imeMode = ImeContext.GetImeMode(focusHandle);
 
                         // If focused control is disabled we won't be able to get the app ime context mode, try the top window.
-                        // this is the case of a disabled [....] control hosted in a non-Form shell.
+                        // this is the case of a disabled Microsoft control hosted in a non-Form shell.
                         if( imeMode == ImeMode.Disable ) {
                             focusHandle = UnsafeNativeMethods.GetAncestor(new HandleRef(null, focusHandle), NativeMethods.GA_ROOT);
 
@@ -832,14 +832,14 @@ namespace System.Windows.Forms {
             Form appForm = topMostWinformsParent as Form;
 
             if( (appForm == null || appForm.Modal) && !topMostWinformsParent.ContainsFocus ) { 
-                // This means the [....] component container is not a [....] host and it is no longer focused.
+                // This means the Microsoft component container is not a Microsoft host and it is no longer focused.
                 // Or it is not the main app host. See VSW#531520,604741 (VSU QFE#5055), DDB#95889, TFS VSTSDEVDIV463760
 
                 Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Info, "Unfocused TopMostParent = " + topMostWinformsParent);
 
-                // We need to reset the PropagatingImeMode to force reinitialization when the [....] component gets focused again; 
-                // this enables inheritting the propagating mode from an unmanaged application hosting a [....] component.
-                // But before leaving the [....] container we need to set the IME to the propagating IME mode since the focused control
+                // We need to reset the PropagatingImeMode to force reinitialization when the Microsoft component gets focused again; 
+                // this enables inheritting the propagating mode from an unmanaged application hosting a Microsoft component.
+                // But before leaving the Microsoft container we need to set the IME to the propagating IME mode since the focused control
                 // may not support IME which would leave the IME disabled.
                 // See the PropagatingImeMode property and VSW#531520.
 
@@ -850,7 +850,7 @@ namespace System.Windows.Forms {
                     IgnoreWmImeNotify = true;
 
                     try {
-                        Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Verbose, "Setting IME context to PropagatingImeMode (leaving [....] container). this = " + this);
+                        Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Verbose, "Setting IME context to PropagatingImeMode (leaving Microsoft container). this = " + this);
                         ImeContext.SetImeStatus(PropagatingImeMode, topMostWinformsParent.Handle);
 
                         Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Verbose, "Resetting PropagatingImeMode. this = " + this);

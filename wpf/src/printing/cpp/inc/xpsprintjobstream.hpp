@@ -17,7 +17,7 @@
 
     Author: 
 
-        Ifeanyi Echeruo ([....]) May 7th 2010
+        Ifeanyi Echeruo (Microsoft) May 7th 2010
                                                                              
     Revision History:  
 --*/

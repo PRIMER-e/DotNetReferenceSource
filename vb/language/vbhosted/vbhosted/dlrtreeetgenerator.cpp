@@ -141,7 +141,7 @@ DLRExpressionTree* DLRTreeETGenerator::CreateCastExpr
     //
     // Consider: why is there a separate notion of a conversion and a cast? The
     // original implementation of ExpressionTreeSemantics tried to keep them
-    // separate. Need to find out the reason for this from [....]. If there is no
+    // separate. Need to find out the reason for this from Microsoft. If there is no
     // strong reason, then the CreateCastExpr should be removed and the uses
     // just replaced with CreateConvertExpr.
 

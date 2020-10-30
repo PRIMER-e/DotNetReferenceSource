@@ -522,7 +522,7 @@ struct Symbols
         //
         // This means we can assert that we have a hash table here.
 
-        VSASSERT(pcontainer->GetHashRaw()->IsHash(), "m_ChildrenNotLoaded and the container's union are out of [....]!");
+        VSASSERT(pcontainer->GetHashRaw()->IsHash(), "m_ChildrenNotLoaded and the container's union are out of sync!");
         pcontainer->SetChildrenNotLoaded(false);
     }
 

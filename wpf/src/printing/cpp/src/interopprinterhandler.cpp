@@ -2953,7 +2953,7 @@ ThunkDocumentEvent(
     if (outputBuffer == nullptr)
     {
         //Work around in order to resolve problem with pre-vista x64 spooler code
-        //Windows OS Bug: 1818440
+        //Windows OS 
         outputBuffer = SafeMemoryHandle::Wrap((IntPtr)&dummy);
         outputBufferSize = IntPtr::Size;
     }

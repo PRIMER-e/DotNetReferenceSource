@@ -7,7 +7,7 @@
 // Description: Text line formatter.
 //
 // History:
-//  04/25/2003 : [....] - moving from Avalon branch.
+//  04/25/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -72,6 +72,7 @@ namespace MS.Internal.Text
             _textAlignment = owner.TextAlignment;
             _showParagraphEllipsis = false;
             _wrappingWidth = _owner.RenderSize.Width;
+            PixelsPerDip = _owner.GetDpi().PixelsPerDip;
         }
 
         // ------------------------------------------------------------------

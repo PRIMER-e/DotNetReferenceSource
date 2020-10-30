@@ -9,8 +9,8 @@
 //              float-based classes and structs in our code.
 //
 // History:
-//  04/28/2003 : [....] - Created this header
-//  05/20/2003 : [....] - Move to Shared.
+//  04/28/2003 : Microsoft - Created this header
+//  05/20/2003 : Microsoft - Move to Shared.
 //
 //---------------------------------------------------------------------------
 

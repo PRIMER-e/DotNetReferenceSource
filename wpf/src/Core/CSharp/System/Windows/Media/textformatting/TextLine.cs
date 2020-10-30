@@ -33,6 +33,20 @@ namespace System.Windows.Media.TextFormatting
     public abstract class TextLine : ITextMetrics, IDisposable
     {
         /// <summary>
+        /// Constructing a TextLine. This constructor must be called for every class that is inherited from TextLine
+        /// </summary>
+        /// <param name="pixelsPerDip">pixelsPerDip should be set to the TextSource's PixelsPerDip</param>
+        protected TextLine(double pixelsPerDip)
+        {
+            _pixelsPerDip = pixelsPerDip;
+        }
+
+        protected TextLine()
+        {
+
+        }
+
+        /// <summary>
         /// Clean up text line internal resource
         /// </summary>
         public abstract void Dispose();
@@ -117,6 +131,13 @@ namespace System.Windows.Media.TextFormatting
             CharacterHit    characterHit
             );
 
+        public double PixelsPerDip
+        {
+            get { return _pixelsPerDip; }
+            set { _pixelsPerDip = value; }
+        }
+
+        private double _pixelsPerDip = MS.Internal.FontCache.Util.PixelsPerDip;
 
         /// <summary>
         /// Determine whether the input character hit is a valid caret stop. 

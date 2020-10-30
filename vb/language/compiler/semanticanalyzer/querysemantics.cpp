@@ -63,7 +63,7 @@ ILTree::Expression * Semantics::AttemptQueryNameLookup(
             m_JoinKeyBuilderList->CheckName(NameBinding->PVariable(), Name, location);
         }
         else
-        // (Bug 49307 - DevDiv Bugs) Convert Property ref into property get call
+        // (
         if(Result && !IsBad(Result) &&
             HasFlag(Flags, ExprIsExplicitCallTarget) &&
             Result->bilop == SX_SYM && IsProcedure(Result->AsSymbolReferenceExpression().Symbol) &&
@@ -218,7 +218,7 @@ Semantics::AttemptInterpretMemberReference
                     base,
                     memberInfo->candidateGenericBindingContext,
                     ExprSuppressMeSynthesis |
-                    //  (Bug 53114 - DevDiv Bugs)
+                    //  (
                      (memberInfo->Next() ?
                                                         ExprSuppressImplicitVariableDeclaration |
                                                         ExprLeadingQualifiedName
@@ -576,7 +576,7 @@ Semantics::InferControlVariableType
                 ReplaceGenericParametersWithArguments(paramType, GenericBindingContext, m_SymbolCreator);
     }
 
-    // Do not allow ByRef (Bug 64295 - DevDiv Bugs)
+    // Do not allow ByRef (
     if (paramType && paramType->IsPointerType())
     {
         return NULL;
@@ -1136,7 +1136,7 @@ Semantics::GetControlVariableType
             else if(ControlVariableDeclaration->Type->Opcode == ParseTree::Type::ArrayWithoutSizes ||
                     ControlVariableDeclaration->Type->Opcode == ParseTree::Type::ArrayWithSizes)
             {
-                // Bug #90856 - DevDiv Bugs
+                // 
                 ReportSemanticError( ERRID_CantSpecifyArrayAndNullableOnBoth, ControlVariableDeclaration->TextSpan);
                 TypeIsBad = true;
             }
@@ -1199,7 +1199,7 @@ Semantics::InterpretQueryControlVariableDeclaration
         return AllocateBadExpression(TextSpan);
     }
 
-    // [....]:
+    // Microsoft:
     // See dev10 496875. When we call InterpretExpression, it binds a lambda for us.
     // Then when we call ConvertWithErrorChecking, it may relax it for us.
     // We don't what that for lambdas the user typed. So find the type first, if it
@@ -1430,14 +1430,14 @@ Semantics::CheckControlVariableIdentifier
         Location  location = Name.TextSpan;
         Identifier * name = Name.Name;
 
-        // Bug 40202 - DevDiv Bugs
+        // 
         if (Name.TypeCharacter != chType_NONE)
         {
             ReportSemanticError(
                 ERRID_QueryAnonymousTypeDisallowsTypeChar,
                 location);
 
-            return false; // Bug 44597 - DevDiv Bugs
+            return false; // 
         }
 
         return CheckControlVariableName(name, location);
@@ -1468,7 +1468,7 @@ Semantics::CheckControlVariableName
             }
         }
 
-        // Bug 42478 - DevDiv Bugs
+        // 
         if (m_Procedure && m_Procedure->GetGenericParamsHash() &&
              m_Procedure->GetGenericParamsHash()->SimpleBind( name ))
         {
@@ -1483,7 +1483,7 @@ Semantics::CheckControlVariableName
             if (!CheckNameForShadowingOfLocals(
                     name,
                     location,
-                // (Bug 44887 - DevDiv Bugs)
+                // (
                     m_CreateImplicitDeclarations ? ERRID_IterationVariableShadowLocal2 : ERRID_IterationVariableShadowLocal1,
                     true /*DeferForImplicitDeclarations*/))
             {
@@ -2305,7 +2305,7 @@ Semantics::InterpretJoinKeys
                             boundKey2->GetExpressionLambdaBody()->ResultType->IsAnonymousType()) ||
                    (boundKey1->GetExpressionLambdaBody()->ResultType->IsAnonymousDelegate()&&
                             boundKey2->GetExpressionLambdaBody()->ResultType->IsAnonymousDelegate() &&
-                            BCSYM::AreTypesEqual(boundKey1->GetExpressionLambdaBody()->ResultType, boundKey2->GetExpressionLambdaBody()->ResultType)))&& //Check for anonymous delegates added for Dev10 bug 474653                    
+                            BCSYM::AreTypesEqual(boundKey1->GetExpressionLambdaBody()->ResultType, boundKey2->GetExpressionLambdaBody()->ResultType)))&& //Check for anonymous delegates added for Dev10 
                    (!m_SymbolsCreatedDuringInterpretation || !m_MergeAnonymousTypeTemplates)))
             {
                 AssertIfTrue(ERRID_InternalCompilerError);
@@ -2785,7 +2785,7 @@ Semantics::LambdaBodyBuildKeyExpressions::BuildKey
                 }
                 else
                 {
-                    // there is a bug with lambdas having the same location
+                    // there is a 
                     if(m_KeySegmentCount==0)
                     {
                         m_Key1->TextSpan.SetStart(&key1->TextSpan);
@@ -5007,8 +5007,8 @@ Semantics::InterpretFilterExpression
     }
     else if(boundPredicate->GetExpressionLambdaBody()->ResultType == GetFXSymbolProvider()->GetObjectType())
     {
-        // We are going to special case Object here due to the (Bug 54486 - DevDiv Bugs)
-        // We are leaving it in Boolean state
+        // We are going to special case Object here due to the (
+
         boundPredicate->SetExpressionLambdaBody(convertedPredicate);
 
         // keep any warnings that could get

@@ -7,9 +7,9 @@
 // Description: Base for pages returned from the Paginator.GetPage. 
 //
 // History:  
-//  05/02/2003 : [....] - created.
-//  09/28/2004 : [....] - updated pagination model.
-//  08/29/2005 : [....] - updated pagination model.
+//  05/02/2003 : Microsoft - created.
+//  09/28/2004 : Microsoft - updated pagination model.
+//  08/29/2005 : Microsoft - updated pagination model.
 //
 //---------------------------------------------------------------------------
 

@@ -282,7 +282,7 @@ namespace System.Windows.Forms {
         private IntPtr CalendarFontHandle {
             get {
                 if (calendarFont == null) {
-                    Debug.Assert(calendarFontHandleWrapper == null, "font handle out of [....] with Font");
+                    Debug.Assert(calendarFontHandleWrapper == null, "font handle out of sync with Font");
                     return FontHandle;
                 }
 

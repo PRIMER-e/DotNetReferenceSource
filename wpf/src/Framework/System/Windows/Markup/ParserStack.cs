@@ -5,7 +5,7 @@
 * Purpose:  ParserStack...once was in XamlReaderHelper.cs
 *
 * History:
-*    11/21/08:    [....]      Moved from XamlReaderHelper.cs as we were replacing the parser.
+*    11/21/08:    Microsoft      Moved from XamlReaderHelper.cs as we were replacing the parser.
 *
 * Copyright (C) 2008 by Microsoft Corporation.  All rights reserved.
 *

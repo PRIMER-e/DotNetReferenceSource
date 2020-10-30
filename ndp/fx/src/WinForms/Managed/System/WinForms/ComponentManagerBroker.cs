@@ -59,31 +59,31 @@ namespace System.Windows.Forms {
     ///    the component manager we get is a native COM object.
     /// 
     ///    So, if you're with me so far you probably want to know how it all works, probably due to some
-    ///    nasty bug I introduced.  Sorry about that.
-    /// 
-    ///    There are two main classes here:  ComponentManagerBroker and ComponentManagerProxy.
-    /// 
-    ///    ComponentManagerBroker:
-    ///    This class has a static API that can be used to retrieve a component manager proxy.
-    ///    The API uses managed remoting to attempt to communicate with our secondary domain.
-    ///    It will create the domain if it doesn't exist.  It communicates with an instance of itself
-    ///    on the other side of the domain.  That instance maintains a ComponentManagerProxy
-    ///    object for each thread that comes in with a request.
-    /// 
-    ///    ComponentManagerProxy:
-    ///    This class implements both IMsoComponentManager and IMsoComponent. It implements
-    ///    IMsoComponent so it can register with with the real IMsoComponentManager that was
-    ///    passed into this method.  After registering itself it will return an instance of itself
-    ///    as IMsoComponentManager.  After that the component manager broker stays
-    ///    out of the picture.  Here's a diagram to help:
-    /// 
-    ///    UCM <-> CProxy / CMProxy <-> AC
-    /// 
-    ///    UCM: Unmanaged component manager
-    ///    CProxy: IMsoComponent half of ComponentManagerProxy
-    ///    CMProxy: IMsoComponentManager half of ComponentManagerProxy
-    ///    AC: Application's IMsoComponent implementation
-    /// </devdoc>
+    ///    nasty 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     internal sealed class ComponentManagerBroker : MarshalByRefObject {
 
         // These are constants per process and are initialized in 
@@ -499,7 +499,7 @@ namespace System.Windows.Forms {
 
         bool UnsafeNativeMethods.IMsoComponentManager.FUpdateComponentRegistration(IntPtr dwComponentID, NativeMethods.MSOCRINFOSTRUCT info) {
             if (_original == null) return false;
-            // We assume that all [....] domains use the same registration.
+            // We assume that all Microsoft domains use the same registration.
             return _original.FUpdateComponentRegistration(_componentId, info);
         }
 

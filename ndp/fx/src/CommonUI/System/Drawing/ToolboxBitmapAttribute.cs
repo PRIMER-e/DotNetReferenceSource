@@ -17,6 +17,8 @@ namespace System.Drawing {
     using System.Globalization;
     using System.Runtime.Versioning;
 
+    using DpiHelper = System.Windows.Forms.DpiHelper;
+
     /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute"]/*' />
     /// <devdoc>
     ///     ToolboxBitmapAttribute defines the images associated with
@@ -39,17 +41,41 @@ namespace System.Drawing {
         /// </devdoc>
         private Image largeImage;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.largeDim"]/*' />
+        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.originalBitmap"]/*' />
         /// <devdoc>
-        ///     The default size of the large image.
+        ///     The original small image for this component, before scaling per DPI.
         /// </devdoc>
-        private static readonly Point largeDim = new Point(32, 32);
+        private Bitmap originalBitmap;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.largeDim"]/*' />
+        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.imageFile"]/*' />
+        /// <devdoc>
+        ///     The path to the image file for this toolbox item, if any.
+        /// </devdoc>
+        private string imageFile;
+
+        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.imagetype"]/*' />
+        /// <devdoc>
+        ///     The Type used to retrieve the toolbox image for this component, if provided upon initialization of this class.
+        /// </devdoc>
+        private Type imageType;
+
+        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.imageName"]/*' />
+        /// <devdoc>
+        ///     The resource name of the toolbox image for the component, if provided upon initialization of this class.
+        /// </devdoc>
+        private string imageName;
+
+        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.largeSize"]/*' />
         /// <devdoc>
         ///     The default size of the large image.
         /// </devdoc>
-        private static readonly Point smallDim = new Point(16, 16);
+        private static readonly Size largeSize = new Size(32, 32);
+
+        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.smallSize"]/*' />
+        /// <devdoc>
+        ///     The default size of the large image.
+        /// </devdoc>
+        private static readonly Size smallSize = new Size(16, 16);
 
         // Used to help cache the last result of BitmapSelector.GetFileName
         private static string lastOriginalFileName;
@@ -63,6 +89,7 @@ namespace System.Drawing {
         [ResourceConsumption(ResourceScope.Machine)]
         public ToolboxBitmapAttribute(string imageFile)
             : this(GetImageFromFile(imageFile, false), GetImageFromFile(imageFile, true)) {
+            this.imageFile = imageFile;
         }
 
         /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.ToolboxBitmapAttribute1"]/*' />
@@ -73,6 +100,7 @@ namespace System.Drawing {
         [ResourceConsumption(ResourceScope.Machine)]
         public ToolboxBitmapAttribute(Type t)
             : this(GetImageFromResource(t, null, false), GetImageFromResource(t, null, true)) {
+            this.imageType = t;
         }
 
         /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.ToolboxBitmapAttribute2"]/*' />
@@ -83,6 +111,8 @@ namespace System.Drawing {
         [ResourceConsumption(ResourceScope.Machine)]
         public ToolboxBitmapAttribute(Type t, string name)
             : this(GetImageFromResource(t, name, false), GetImageFromResource(t, name, true)) {
+            this.imageType = t;
+            this.imageName = name;
         }
 
 
@@ -172,7 +202,6 @@ namespace System.Drawing {
             if ((large && largeImage == null) ||
                 (!large && smallImage == null)) {
 
-                Point largeDim = new Point(32, 32);
                 Image img = null;
                 if (large) {
                     img = largeImage;
@@ -187,7 +216,7 @@ namespace System.Drawing {
 
                 //last resort for large images.
                 if (large && largeImage == null && smallImage != null) {
-                    img = new Bitmap((Bitmap)smallImage, largeDim.X, largeDim.Y);
+                    img = new Bitmap((Bitmap)smallImage, largeSize.Width, largeSize.Height);
                 }
 
                 Bitmap b = img as Bitmap;
@@ -219,16 +248,50 @@ namespace System.Drawing {
 
         }
 
+        [ResourceExposure(ResourceScope.Machine)]
+        [ResourceConsumption(ResourceScope.Machine)]
+        internal Bitmap GetOriginalBitmap() {
+
+            if (originalBitmap != null) {
+                return originalBitmap;
+            }
+
+            // If the control does not have a toolbox icon associated with it, then exit. 
+            if (smallImage == null) {
+                return null;
+            }
+
+            // If we are not scaling for DPI, then the small icon had not been modified
+            if (!DpiHelper.IsScalingRequired) {
+                originalBitmap = smallImage as Bitmap;
+                return originalBitmap;
+            }
+
+            // Get small unscaled icon (toolbox can handle only 16x16).
+            if (!string.IsNullOrEmpty(imageFile)) {
+                originalBitmap = GetImageFromFile(imageFile, false, false) as Bitmap;
+            }
+            else if (imageType != null) {
+                originalBitmap = GetImageFromResource(imageType, imageName, false, false) as Bitmap;
+            }
+
+            return originalBitmap;
+        }
+
         //helper to get the right icon from the given stream that represents an icon
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        private static Image GetIconFromStream(Stream stream, bool large) {
+        private static Image GetIconFromStream(Stream stream, bool large, bool scaled) {
             if (stream == null) {
                 return null;
             }
             Icon ico = new Icon(stream);
-            Icon sizedico = new Icon(ico, large ? new Size(largeDim.X, largeDim.Y):new Size(smallDim.X, smallDim.Y));
-            return sizedico.ToBitmap();
+            Icon sizedico = new Icon(ico, large ? largeSize : smallSize);
+            Bitmap b = sizedico.ToBitmap();
+            if (DpiHelper.IsScalingRequired && scaled) {
+                DpiHelper.ScaleBitmapLogicalToDevice(ref b);
+            }
+            return b;
         }
 
         // Cache the last result of BitmapSelector.GetFileName because we commonly load images twice
@@ -247,7 +310,7 @@ namespace System.Drawing {
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        private static Image GetImageFromFile(string imageFile, bool large) {
+        private static Image GetImageFromFile(string imageFile, bool large, bool scaled = true) {
             Image image = null;
             try {
                 if (imageFile != null) {
@@ -261,7 +324,7 @@ namespace System.Drawing {
                         FileStream reader = System.IO.File.Open(imageFile, FileMode.Open);
                         if (reader != null) {
                             try {
-                                image = GetIconFromStream(reader, large);
+                                image = GetIconFromStream(reader, large, scaled);
                             }
                             finally {
                                 reader.Close();
@@ -271,6 +334,10 @@ namespace System.Drawing {
                     else if (!large) {
                         //we only read small from non-ico files.
                         image = Image.FromFile(imageFile);
+                        Bitmap b = image as Bitmap;
+                        if (DpiHelper.IsScalingRequired && scaled) {
+                            DpiHelper.ScaleBitmapLogicalToDevice(ref b);
+                        }
                     }
                 }
             } catch (Exception e) {            
@@ -285,7 +352,7 @@ namespace System.Drawing {
 
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        static private Image GetBitmapFromResource(Type t, string bitmapname, bool large) {
+        static private Image GetBitmapFromResource(Type t, string bitmapname, bool large, bool scaled) {
             if (bitmapname == null) {
                 return null;
             }
@@ -300,7 +367,12 @@ namespace System.Drawing {
                 img = b;
                 MakeBackgroundAlphaZero(b);
                 if (large) {
-                    img = new Bitmap(b, largeDim.X, largeDim.Y);
+                    img = new Bitmap(b, largeSize.Width , largeSize.Height);
+                }
+                if (DpiHelper.IsScalingRequired && scaled) {
+                    b = (Bitmap)img;
+                    DpiHelper.ScaleBitmapLogicalToDevice(ref b);
+                    img = b;
                 }
             }
             return img;
@@ -308,12 +380,22 @@ namespace System.Drawing {
 
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        static private Image GetIconFromResource(Type t, string bitmapname, bool large) {
+        static private Image GetIconFromResource(Type t, string bitmapname, bool large, bool scaled) {
             if (bitmapname == null) {
                 return null;
             }
 
-            return GetIconFromStream(BitmapSelector.GetResourceStream(t, bitmapname), large);
+            return GetIconFromStream(BitmapSelector.GetResourceStream(t, bitmapname), large, scaled);
+        }
+
+        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImageFromResource"]/*' />
+        /// <devdoc>
+        ///    <para>[To be supplied.]</para>
+        /// </devdoc>
+        [ResourceExposure(ResourceScope.Machine)]
+        [ResourceConsumption(ResourceScope.Machine)]
+        public static Image GetImageFromResource(Type t, string imageName, bool large) {
+            return GetImageFromResource(t, imageName, large, true /*scaled*/);
         }
 
         /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImageFromResource"]/*' />
@@ -323,7 +405,7 @@ namespace System.Drawing {
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        public static Image GetImageFromResource(Type t, string imageName, bool large) {
+        internal static Image GetImageFromResource(Type t, string imageName, bool large, bool scaled) {
             Image img = null;
             try {
 
@@ -362,13 +444,13 @@ namespace System.Drawing {
 
                 }
                 if (rawbmpname != null) {
-                    img = GetBitmapFromResource(t, rawbmpname, large);
+                    img = GetBitmapFromResource(t, rawbmpname, large, scaled);
                 }
                 if (img == null && bmpname != null) {
-                    img = GetBitmapFromResource(t, bmpname, large);
+                    img = GetBitmapFromResource(t, bmpname, large, scaled);
                 }
                 if (img == null && iconname != null) {
-                    img = GetIconFromResource(t, iconname, large);
+                    img = GetIconFromResource(t, iconname, large, scaled);
                 }
             }
             catch (Exception e) {

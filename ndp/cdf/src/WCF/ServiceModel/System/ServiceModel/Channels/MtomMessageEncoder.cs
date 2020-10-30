@@ -69,7 +69,7 @@ namespace System.ServiceModel.Channels
 
     // Some notes:
     // The Encoding passed in is used for the SOAP envelope
-    class MtomMessageEncoder : MessageEncoder
+    class MtomMessageEncoder : MessageEncoder, ITraceSourceStringProvider
     {
         Encoding writeEncoding;
 
@@ -597,6 +597,11 @@ namespace System.ServiceModel.Channels
                 }
                 return recycledStatePool;
             }
+        }
+
+        string ITraceSourceStringProvider.GetSourceString()
+        {
+            return base.GetTraceSourceString();
         }
 
         class MtomBufferedMessageData : BufferedMessageData

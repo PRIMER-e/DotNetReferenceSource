@@ -78,6 +78,7 @@ namespace MS.Utility
             TouchUpReported = 2005,
             ManipulationReportFrame = 2006,
             ManipulationEventRaised = 2007,
+            PenThreadPoolThreadAcquisition = 2008,
             CreateStickyNoteBegin = 3001,
             CreateStickyNoteEnd = 3002,
             DeleteTextNoteBegin = 3003,
@@ -306,8 +307,6 @@ namespace MS.Utility
             WpfHost_DownloadApplicationEnd = 9072,
             WpfHost_DownloadProgressUpdate = 9073,
             WpfHost_XappLauncherAppNavigated = 9074,
-            WpfHost_StartingFontCacheServiceStart = 9075,
-            WpfHost_StartingFontCacheServiceEnd = 9076,
             WpfHost_UpdateBrowserCommandsStart = 9077,
             WpfHost_UpdateBrowserCommandsEnd = 9078,
             WpfHost_PostShutdown = 9079,
@@ -448,6 +447,9 @@ namespace MS.Utility
                 case Event.ManipulationEventRaised:
                     // 51f685eb-b111-400d-b3e3-46022f66a894
                     return new Guid(0x51F685EB, 0xB111, 0x400D, 0xB3, 0xE3, 0x46, 0x2, 0x2F, 0x66, 0xA8, 0x94);
+                case Event.PenThreadPoolThreadAcquisition:
+                    // 6c325c36-4d5f-4328-b1c6-e164796dfe2b
+                    return new Guid(0x6C325C36, 0x4D5F, 0x4328, 0xB1, 0xC6, 0xE1, 0x64, 0x79, 0x6D, 0xFE, 0x2B);
                 case Event.CreateStickyNoteBegin:
                 case Event.CreateStickyNoteEnd:
                     // e3dbffac-1e92-4f48-a65a-c290bd5f5f15
@@ -838,8 +840,6 @@ namespace MS.Utility
                 case Event.WpfHost_DownloadApplicationEnd:
                 case Event.WpfHost_DownloadProgressUpdate:
                 case Event.WpfHost_XappLauncherAppNavigated:
-                case Event.WpfHost_StartingFontCacheServiceStart:
-                case Event.WpfHost_StartingFontCacheServiceEnd:
                 case Event.WpfHost_UpdateBrowserCommandsStart:
                 case Event.WpfHost_UpdateBrowserCommandsEnd:
                 case Event.WpfHost_PostShutdown:
@@ -1051,6 +1051,8 @@ namespace MS.Utility
                     return 136;
                 case Event.ManipulationEventRaised:
                     return 137;
+                case Event.PenThreadPoolThreadAcquisition:
+                    return 147;
                 case Event.CreateStickyNoteBegin:
                 case Event.CreateStickyNoteEnd:
                     return 92;
@@ -1360,8 +1362,6 @@ namespace MS.Utility
                 case Event.WpfHost_DownloadApplicationEnd:
                 case Event.WpfHost_DownloadProgressUpdate:
                 case Event.WpfHost_XappLauncherAppNavigated:
-                case Event.WpfHost_StartingFontCacheServiceStart:
-                case Event.WpfHost_StartingFontCacheServiceEnd:
                 case Event.WpfHost_UpdateBrowserCommandsStart:
                 case Event.WpfHost_UpdateBrowserCommandsEnd:
                 case Event.WpfHost_PostShutdown:
@@ -1511,6 +1511,7 @@ namespace MS.Utility
                 case Event.TouchUpReported:
                 case Event.ManipulationReportFrame:
                 case Event.ManipulationEventRaised:
+                case Event.PenThreadPoolThreadAcquisition:
                 case Event.WClientResourceCacheValue:
                 case Event.WClientResourceCacheNull:
                 case Event.WClientResourceCacheMiss:
@@ -1828,11 +1829,9 @@ namespace MS.Utility
                 case Event.DWMDraw_GeometryStart:
                     return 60;
                 case Event.WpfHostUm_VersionActivateStart:
-                case Event.WpfHost_StartingFontCacheServiceStart:
                 case Event.DWMDraw_GeometryEnd:
                     return 61;
                 case Event.WpfHostUm_VersionActivateEnd:
-                case Event.WpfHost_StartingFontCacheServiceEnd:
                 case Event.DWMDraw_ImageStart:
                     return 62;
                 case Event.DWMDraw_ImageEnd:
@@ -1921,6 +1920,7 @@ namespace MS.Utility
                 case Event.TouchUpReported:
                 case Event.ManipulationReportFrame:
                 case Event.ManipulationEventRaised:
+                case Event.PenThreadPoolThreadAcquisition:
                 case Event.WClientParseXamlBegin:
                 case Event.WClientParseXamlBamlInfo:
                 case Event.WClientParseXamlEnd:
@@ -2191,8 +2191,6 @@ namespace MS.Utility
                 case Event.WpfHost_DownloadApplicationEnd:
                 case Event.WpfHost_DownloadProgressUpdate:
                 case Event.WpfHost_XappLauncherAppNavigated:
-                case Event.WpfHost_StartingFontCacheServiceStart:
-                case Event.WpfHost_StartingFontCacheServiceEnd:
                 case Event.WpfHost_UpdateBrowserCommandsStart:
                 case Event.WpfHost_UpdateBrowserCommandsEnd:
                 case Event.WpfHost_PostShutdown:
@@ -2239,14 +2237,14 @@ namespace MS.Utility
                 case Event.WClientUICommitChannel:
                 case Event.WClientUceNotifyPresent:
                 case Event.WClientScheduleRender:
-                case Event.WClientUIContextDispatchBegin:
                 case Event.WClientUIContextDispatchEnd:
-                case Event.WClientUIContextPost:
-                case Event.WClientUIContextAbort:
-                case Event.WClientUIContextPromote:
                 case Event.WClientUIContextIdle:
                     return 2;
                 case Event.WClientLayoutBegin:
+                case Event.WClientUIContextDispatchBegin:
+                case Event.WClientUIContextPost:
+                case Event.WClientUIContextAbort:
+                case Event.WClientUIContextPromote:
                     return 3;
                 default: throw new ArgumentException(SR.Get(SRID.InvalidEvent),"arg");
             }

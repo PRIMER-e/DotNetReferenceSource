@@ -91,7 +91,7 @@ Error:                              \
 #if IDE 
 // Any unsafe entry points in our code must ensure our IDE code is NOT
 // already on the stack. If you are hitting the throw below you have
-// a re-entrancy bug to investigate.
+// a re-entrancy 
 #define VB_VERIFY_NOT_REENTRANT()                                           \
     int *pnVBCodeONStackTlsValue =VBTLSThreadData::GetVBCodeOnStack();      \
     if (*pnVBCodeONStackTlsValue  > 0)                                      \

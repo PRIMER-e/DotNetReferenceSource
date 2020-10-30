@@ -5,11 +5,11 @@
 //  File:       VisualDrawingContext.cs
 //
 //  History: 
-//      [....]: 04/19/2003
+//      Microsoft: 04/19/2003
 //          Created it based on the DrawingVisualDrawingContext used in the AvPhat branch.
-//      [....]: 07/02/2003
+//      Microsoft: 07/02/2003
 //          Renamed to RetainedDrawingContext, which derives from DrawingContext
-//      [....]: 07/16/2003
+//      Microsoft: 07/16/2003
 //          Renamed again to DrawingVisualDrawingContext, which derives from RenderDataDrawingContext
 //
 //------------------------------------------------------------------------------

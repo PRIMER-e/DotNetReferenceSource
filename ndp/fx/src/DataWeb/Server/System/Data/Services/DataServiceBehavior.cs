@@ -6,7 +6,7 @@
 // Holds configuration of service behavior.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

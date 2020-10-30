@@ -7,7 +7,7 @@
 //      data sources to provider metadata.
 // </summary>
 //
-// @owner  [....]
+// @owner  pratikp
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

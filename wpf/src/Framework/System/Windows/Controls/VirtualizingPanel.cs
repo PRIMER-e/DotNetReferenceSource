@@ -45,8 +45,8 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Fetch the logical/item offset for this child with respect to the top of the 
-        ///     panel. This is similar to a TransformToAncestor operation. Just works 
+        ///     Fetch the logical/item offset for this child with respect to the top of the
+        ///     panel. This is similar to a TransformToAncestor operation. Just works
         ///     in logical units.
         /// </summary>
         protected virtual double GetItemOffsetCore(UIElement child)
@@ -289,7 +289,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Attached property for use on a container being presented by this panel. The parent panel 
+        ///     Attached property for use on a container being presented by this panel. The parent panel
         ///     is expected to honor this property and not virtualize containers that are designated non-virtualizable.
         /// </summary>
         public static readonly DependencyProperty IsContainerVirtualizableProperty =
@@ -327,7 +327,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Attached property for use on a container being presented by this panel. The parent panel 
+        ///     Attached property for use on a container being presented by this panel. The parent panel
         ///     is expected to honor this property and not cache container sizes that are designated such.
         /// </summary>
         internal static readonly DependencyProperty ShouldCacheContainerSizeProperty =
@@ -346,7 +346,34 @@ namespace System.Windows.Controls
                 throw new ArgumentNullException("element");
             }
 
-            return (bool)element.GetValue(ShouldCacheContainerSizeProperty);
+            if (VirtualizingStackPanel.IsVSP45Compat)
+            {
+                return (bool)element.GetValue(ShouldCacheContainerSizeProperty);
+            }
+            else
+            {
+                // this property can cause infinite loops.  Suppose element X sets this
+                // to false, so that we don't cache the size of X.  When X leaves
+                // the viewport, we will estimate its size using the average container
+                // size (that average doesn't include X).  When it returns, we will
+                // use the actual size.  This difference can cause infinite re-measure
+                // or bad scroll result (scroll to the wrong offset) when X is near
+                // the edge of the viewport.
+                //
+                // The property is only set on the DataGridRow that hosts the
+                // NewItemPlaceholder.  The intent was to avoid treating a
+                // DataGrid as having non-uniform containers only on account of the
+                // NewItem row.   While this helps a common case (a non-grouped
+                // DataGrid whose containers are all the same, except the placeholder
+                // which is different), it doesn't justify breaking other cases.
+                //
+                // Ignore the value (always return true).  This fixes the loops and
+                // bad scrolls, and only increases perf in the case mentioned above,
+                // and even then only memory consumption (hashtable lookup is O(1)),
+                // and only proportional to the number of items the user actually
+                // scrolls into view.
+                return true;
+            }
         }
 
         private static bool ValidateCacheSizeBeforeOrAfterViewport(object value)

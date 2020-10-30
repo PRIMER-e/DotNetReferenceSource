@@ -7,8 +7,8 @@
 //
 // History:
 //
-//     2005-05-19: [....] -        Created
-//     2007/09/20: [....]          Ported Windows->DevDiv. See SourcesHistory.txt.
+//     2005-05-19: Microsoft -        Created
+//     2007/09/20: Microsoft          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 // Copyright (C) by Microsoft Corporation.  All rights reserved.
 // 

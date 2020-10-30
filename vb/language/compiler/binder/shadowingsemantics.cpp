@@ -173,9 +173,9 @@ Bindable::CheckForOverloadOverridesShadowsClashesInSameContainer
     while (BindableMemberInfo *CurrentMemberInfo = MemberInfos->GetNext())
     {
         // Types overloaded on arity do not have to match in terms of these specifiers, see
-        // Bug VSWhidbey 209623. No need to check for namespaces too. So skip this check
-        // for all containers.
-        //
+        // 
+
+
         if (CurrentMemberInfo->Member->IsContainer())
         {
             continue;
@@ -916,9 +916,9 @@ Bindable::GenerateErrorIfShadowingAnyMustOverrideMember
     bool fHideBySig
 )
 {
-    // Don't mark metadata members bad. The members should still be usable.Bug VSWhidbey 336579.
-    //
-    // 
+    // Don't mark metadata members bad. The members should still be usable.
+
+
 
 
 
@@ -1539,7 +1539,7 @@ Bindable::ResolveOverridingForContainer
         if (!MemberInfo->Member->IsProc() ||
             !MemberInfo->Member->PProc()->IsOverridesKeywordUsed() ||
             MemberInfo->Member->IsUserDefinedOperator() ||  // should I do this?
-            MemberInfo->Member->PProc()->IsPartialMethodDeclaration() ) // Bug #112817 - DevDiv Bugs
+            MemberInfo->Member->PProc()->IsPartialMethodDeclaration() ) // 
         {
             continue;
         }
@@ -1642,9 +1642,9 @@ Bindable::ResolveOverridingForMember
             }
         }
     
-        // Bug VSWhidbey 525377. Mark metadata properties that override
-        // withevents properties as withevents properties.
-        //
+        // 
+
+
         if (DefinedInMetaData() &&
             OverriddenMember->IsProperty() &&
             OverriddenMember->CreatedByWithEventsDecl() &&
@@ -1662,7 +1662,7 @@ Bindable::ResolveOverridingForMember
             // we are overriding and other members in intermediate classes that we overload (hidebysig).
             // We have an unresolved issue here. But to guarantee that the assembly produced is
             // verifiable, we force the case to that of the overridden method.
-            // UNRESOLVED ISSUE:[....] - do we want to emit methodimpl if we are overloading (hidebysig)
+            // UNRESOLVED ISSUE:Microsoft - do we want to emit methodimpl if we are overloading (hidebysig)
             // against methods with a different case than the one we are overriding? or give an error?
             //
             Symbols::SetEmittedName(OverridingMemberInfo->Member, OverriddenMember->GetEmittedName());
@@ -1670,11 +1670,11 @@ Bindable::ResolveOverridingForMember
 
         // Emit methodimpls when there is a IntermediateMetaDataContainer for more robust versioning.
         // We revert to the everett behavior and no longer emit methodimpl for the following condition
-        // because the VB compiler cannot import such metadata currently - see bug 553748. This needs
-        // to be enable for orcas.
-        //HaveIntermediateClassDefinedInDifferentAssemblyOrModule(
-        //    CurrentContainer()->PClass(),
-        //    OverriddenMember->GetContainer()->PClass())))
+        // because the VB compiler cannot import such metadata currently - see 
+
+
+
+
 
         if (IsMethod(OverridingMemberInfo->Member) &&
             InAccessibleVirtualMethodInIntermediateClass)
@@ -1828,7 +1828,7 @@ Bindable::FindMemberOverriddenByOverridingMember
             // Note: Synthetic Members cannnot override non-synthetic members and viceversa
             //
             if (IsSynthetic(PossibleOverriddenMember) != OverridingMemberInfo->IsSynthetic() &&
-                !(DefinedInMetaData() &&                             // Bug VSWhidbey 525447
+                !(DefinedInMetaData() &&                             // 
                   PossibleOverriddenMember->CreatedByWithEventsDecl()))
             {
                 continue;
@@ -2652,8 +2652,8 @@ Bindable::IgnoreClashingErrorsOnSyntheticMembers
 
     // For clashes involving metadata members, ignore synthetic clashes if atleast one of them
     // is unbindable. This will help VB apps be more robust with respect to metadata patterns
-    // that do not follow VB standards. For an example, see bug VSWhidbey 187219.
-    //
+    // that do not follow VB standards. For an example, see 
+
     if ((DefinedInMetaData(MemberInfo1->Member->GetContainer()) ||
             DefinedInMetaData(MemberInfo2->Member->GetContainer())) &&
         (MemberInfo1->Member->GetImmediateParent()->PHash()->IsUnBindableChildrenHash() ||
@@ -2762,7 +2762,7 @@ Bindable::ReportOverloadsError
 
 
 
-        // Note: [....]
+        // Note: Microsoft
         // For friend assemblies, we have to allow friend modifiers through, but we will do
         // it only if the current project has declared friends.
 

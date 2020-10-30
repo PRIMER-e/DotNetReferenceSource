@@ -5,7 +5,7 @@
 // ==--==
 //  URLString
 //
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 //
 //  Implementation of membership condition for zones
 //
@@ -32,9 +32,7 @@ namespace System.Security.Util {
         private String m_userpass;
         private SiteString m_siteString;
         private int m_port;
-#if !PLATFORM_UNIX
         private LocalSiteString m_localSite;
-#endif // !PLATFORM_UNIX
         private DirectoryString m_directory;
         
         private const String m_defaultProtocol = "file";
@@ -92,9 +90,7 @@ namespace System.Security.Util {
             m_userpass = "";
             m_siteString = new SiteString();
             m_port = -1;
-#if !PLATFORM_UNIX
             m_localSite = null;
-#endif // !PLATFORM_UNIX
             m_directory = new DirectoryString();
             m_parseDeferred = false;
         }
@@ -237,14 +233,9 @@ namespace System.Security.Util {
                 }
                 else if (url[index+1] != '\\')
                 {
-#if !PLATFORM_UNIX
                     if (url.Length > index + 2 &&
                         url[index+1] == '/' &&
                         url[index+2] == '/')
-#else
-                    if (url.Length > index + 1 &&
-                        url[index+1] == '/' ) // UNIX style "file:/home/me" is allowed, so account for that
-#endif  // !PLATFORM_UNIX
                     {
                         m_protocol = url.Substring( 0, index );
 
@@ -266,23 +257,7 @@ namespace System.Security.Util {
                                 throw new ArgumentException( Environment.GetResourceString( "Argument_InvalidUrl" ) );
                             }
                         }
-#if !PLATFORM_UNIX
                         temp = url.Substring( index + 3 );
-#else
-                        // In UNIX, we don't know how many characters we'll have to skip past.
-                        // Skip past \, /, and :
-                        //
-                        for ( int j=index ; j<url.Length ; j++ )
-                        {
-                            if ( url[j] != '\\' && url[j] != '/' && url[j] != ':' )
-                            {
-                                index = j;
-                                break;
-                            }
-                        }
-
-                        temp = url.Substring( index );
-#endif  // !PLATFORM_UNIX
                      }                                
                     else
                     {
@@ -379,13 +354,24 @@ namespace System.Security.Util {
         // 3. Throws a PathTooLongException if the length of the resulting URL is >= MAX_PATH.
         //    This is done to prevent security issues due to canonicalization truncations.
         // Remove this method when the Path class supports "\\?\"
-        internal static String PreProcessForExtendedPathRemoval(String url, bool isFileUrl)
+        internal static string PreProcessForExtendedPathRemoval(string url, bool isFileUrl)
         {
-            bool uncShare = false;
-            return PreProcessForExtendedPathRemoval(url, isFileUrl, ref uncShare);
+            return PreProcessForExtendedPathRemoval(checkPathLength: true, url: url, isFileUrl: isFileUrl);
         }
 
-        private static String PreProcessForExtendedPathRemoval(String url, bool isFileUrl, ref bool isUncShare)
+        internal static string PreProcessForExtendedPathRemoval(bool checkPathLength, string url, bool isFileUrl)
+        {
+            bool isUncShare = false;
+            return PreProcessForExtendedPathRemoval(checkPathLength: checkPathLength, url: url, isFileUrl: isFileUrl, isUncShare: ref isUncShare);
+        }
+
+        // Keeping this signature to avoid reflection breaks
+        private static string PreProcessForExtendedPathRemoval(string url, bool isFileUrl, ref bool isUncShare)
+        {
+            return PreProcessForExtendedPathRemoval(checkPathLength: true, url: url, isFileUrl: isFileUrl, isUncShare: ref isUncShare);
+        }
+
+        private static string PreProcessForExtendedPathRemoval(bool checkPathLength, string url, bool isFileUrl, ref bool isUncShare)
         {
             // This is the modified URL that we will return
             StringBuilder modifiedUrl = new StringBuilder(url);
@@ -459,22 +445,29 @@ namespace System.Security.Util {
             }
 
             // ITEM 3 - If the path is greater than or equal (due to terminating NULL in windows) MAX_PATH, we throw.
-            if (modifiedUrl.Length >= Path.MAX_PATH)
+            if (checkPathLength)
             {
-                throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
+                // This needs to be a separate method to avoid hitting the static constructor on AppContextSwitches
+                CheckPathTooLong(modifiedUrl);
             }
 
             // Create the result string from the StringBuilder
             return modifiedUrl.ToString();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CheckPathTooLong(StringBuilder path)
+        {
+            if (path.Length >= (AppContextSwitches.BlockLongPaths ? PathInternal.MaxShortPath : PathInternal.MaxLongPath))
+            {
+                throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
+            }
+        }
 
         // Do any misc massaging of data in the URL
         private String PreProcessURL(String url, bool isFileURL)
         {
-
-#if !PLATFORM_UNIX
-            if (isFileURL) {
+           if (isFileURL) {
                 // Remove when the Path class supports "\\?\"
                 url = PreProcessForExtendedPathRemoval(url, true, ref m_isUncShare);
             }
@@ -482,34 +475,12 @@ namespace System.Security.Util {
                 url = url.Replace('\\', '/');
             }
             return url;
-#else
-            // Remove superfluous '/'
-            // For UNIX, the file path would look something like:
-            //      file:///home/johndoe/here
-            //      file:/home/johndoe/here
-            //      file:../johndoe/here
-            //      file:~/johndoe/here
-            String temp = url;            
-            int  nbSlashes = 0;
-            while(nbSlashes<temp.Length && '/'==temp[nbSlashes])
-                nbSlashes++;  
-            
-            // if we get a path like file:///directory/name we need to convert 
-            // this to /directory/name.
-            if(nbSlashes > 2)
-               temp = temp.Substring(nbSlashes-1, temp.Length - (nbSlashes-1));
-            else if (2 == nbSlashes) /* it's a relative path */
-               temp = temp.Substring(nbSlashes, temp.Length - nbSlashes);
-            return temp;
-#endif // !PLATFORM_UNIX
-
         }
 
         private void ParseFileURL(String url)
         {
-
             String temp = url;
-#if !PLATFORM_UNIX            
+
             int index = temp.IndexOf( '/');
 
             if (index != -1 &&
@@ -604,9 +575,6 @@ namespace System.Security.Util {
                     m_directory = new DirectoryString( directoryString, true);
                 }
             }
-#else // !PLATFORM_UNIX
-            m_directory = new DirectoryString( temp, true);
-#endif // !PLATFORM_UNIX
 
             m_siteString = null;
             return;
@@ -619,15 +587,12 @@ namespace System.Security.Util {
 
             if (index == -1)
             {
-#if !PLATFORM_UNIX
                 m_localSite = null;    // for drive letter
-#endif // !PLATFORM_UNIX
                 m_siteString = new SiteString( temp );
                 m_directory = new DirectoryString();
             }
             else
             {
-#if !PLATFORM_UNIX 
                 String site = temp.Substring( 0, index );
                 m_localSite = null;
                 m_siteString = new SiteString( site );
@@ -642,12 +607,6 @@ namespace System.Security.Util {
                 {
                     m_directory = new DirectoryString( directoryString, false );
                 }
-#else
-                String directoryString = temp.Substring( index + 1 );
-                String site = temp.Substring( 0, index );
-                m_directory = new DirectoryString( directoryString, false );
-                m_siteString = new SiteString( site );
-#endif //!PLATFORM_UNIX
             }
             return;
         }
@@ -736,11 +695,7 @@ namespace System.Security.Util {
                 }
                 else
                 {
-#if !PLATFORM_UNIX
                     return m_localSite.ToString();
-#else
-            return( "" );
-#endif // !PLATFORM_UNIX
                 }
             }
         }
@@ -791,22 +746,15 @@ namespace System.Security.Util {
 
                 if (String.Equals(m_protocol, "file", StringComparison.OrdinalIgnoreCase) && !m_isUncShare)
                 {
-#if !PLATFORM_UNIX
                     string host = m_localSite != null ? m_localSite.ToString() : null;
                     // If the host name ends with the * character, treat this as an absolute URL since the *
                     // could represent the rest of the full path.
                     if (host.EndsWith('*'))
                         return false;
-#endif // !PLATFORM_UNIX
                     string directory = m_directory != null ? m_directory.ToString() : null;
 
-#if !PLATFORM_UNIX
                     return host == null || host.Length < 2 || !host.EndsWith(':') ||
                            String.IsNullOrEmpty(directory);
-#else
-                    return String.IsNullOrEmpty(directory);
-#endif // !PLATFORM_UNIX
-
                 }
 
                 // Since this is not a local URL, it cannot be relative
@@ -818,7 +766,6 @@ namespace System.Security.Util {
         {
             DoDeferredParse();
 
-#if !PLATFORM_UNIX
             if (String.Compare( m_protocol, "file", StringComparison.OrdinalIgnoreCase) != 0)
                 return null;
          
@@ -844,14 +791,6 @@ namespace System.Security.Util {
             directory += "\\" + intermediateDirectory;
             
             return directory;
-#else
-            // In Unix, directory contains the full pathname
-            // (this is what we get in Win32)
-            if (String.Compare( m_protocol, "file", StringComparison.OrdinalIgnoreCase ) != 0)
-                return null;
-
-            return this.Directory;
-#endif    // !PLATFORM_UNIX
     }
 
 
@@ -859,7 +798,6 @@ namespace System.Security.Util {
         {
             DoDeferredParse();
 
-#if !PLATFORM_UNIX
             if (String.Compare( m_protocol, "file", StringComparison.OrdinalIgnoreCase ) != 0)
                 return null;
 
@@ -900,28 +838,6 @@ namespace System.Security.Util {
             }
 
             return directory;
-#else
-            if (String.Compare( m_protocol, "file", StringComparison.OrdinalIgnoreCase) != 0)
-                return null;
-            
-            String directory = this.Directory.ToString();
-            int slashIndex = 0;
-            for (int i = directory.Length; i > 0; i--)
-            {
-               if (directory[i-1] == '/')
-               {
-                   slashIndex = i;
-                   break;
-               }
-            }
-            
-            if (slashIndex > 0)
-            {
-                directory = directory.Substring( 0, slashIndex );
-            }
-
-            return directory;
-#endif // !PLATFORM_UNIX            
         }
 
         public override SiteString Copy()
@@ -954,7 +870,6 @@ namespace System.Security.Util {
             if (String.Compare( normalUrl1.m_protocol, normalUrl2.m_protocol, StringComparison.OrdinalIgnoreCase) == 0 &&
                 normalUrl1.m_directory.IsSubsetOf( normalUrl2.m_directory ))
             {
-#if !PLATFORM_UNIX
                 if (normalUrl1.m_localSite != null)
                 {
                     // We do a little extra processing in here for local files since we allow
@@ -963,7 +878,6 @@ namespace System.Security.Util {
                     return normalUrl1.m_localSite.IsSubsetOf( normalUrl2.m_localSite );
                 }
                 else
-#endif // !PLATFORM_UNIX
                 {
                     if (normalUrl1.m_port != normalUrl2.m_port)
                         return false;
@@ -1002,7 +916,6 @@ namespace System.Security.Util {
             if (this.m_protocol != null)
                 accumulator = info.GetCaseInsensitiveHashCode( this.m_protocol );
 
-#if !PLATFORM_UNIX
             if (this.m_localSite != null)
             {
                 accumulator = accumulator ^ this.m_localSite.GetHashCode();
@@ -1012,11 +925,6 @@ namespace System.Security.Util {
                 accumulator = accumulator ^ this.m_siteString.GetHashCode();
             }
             accumulator = accumulator ^ this.m_directory.GetHashCode();
-#else
-            accumulator = accumulator ^ info.GetCaseInsensitiveHashCode(this.m_urlOriginal);
-#endif // !PLATFORM_UNIX
-            
-
 
             return accumulator;
         }    
@@ -1051,14 +959,9 @@ namespace System.Security.Util {
 
             if (String.Compare( normalUrl1.m_protocol, "file", StringComparison.OrdinalIgnoreCase) == 0)
             {
-#if !PLATFORM_UNIX
                 if (!normalUrl1.m_localSite.IsSubsetOf( normalUrl2.m_localSite ) ||
                     !normalUrl2.m_localSite.IsSubsetOf( normalUrl1.m_localSite ))
                      return false;
-#else
-                return url1.IsSubsetOf( url2 ) &&
-                       url2.IsSubsetOf( url1 );
-#endif // !PLATFORM_UNIX
             }
             else
             {
@@ -1087,11 +990,7 @@ namespace System.Security.Util {
 
             if (String.Compare( m_protocol, "file", StringComparison.OrdinalIgnoreCase) == 0)
             {
-#if !PLATFORM_UNIX
                 builtUrl = builtUrl.AppendFormat("FILE:///{0}/{1}", m_localSite.ToString(), m_directory.ToString());
-#else
-                builtUrl = builtUrl.AppendFormat("FILE:///{0}", m_directory.ToString());
-#endif // !PLATFORM_UNIX
             }
             else
             {
@@ -1105,8 +1004,7 @@ namespace System.Security.Util {
 
             return StringBuilderCache.GetStringAndRelease(builtUrl).ToUpper(CultureInfo.InvariantCulture);
         }
-        
-#if !PLATFORM_UNIX
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
@@ -1164,14 +1062,6 @@ namespace System.Security.Util {
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetDeviceName( String driveLetter, StringHandleOnStack retDeviceName );
-
-#else
-        internal URLString SpecialNormalizeUrl()
-        {
-            return this;
-        }
-#endif // !PLATFORM_UNIX
-
     }
 
     
@@ -1262,7 +1152,6 @@ namespace System.Security.Util {
         }
     }
 
-#if !PLATFORM_UNIX
     [Serializable]
     internal class LocalSiteString : SiteString
     {
@@ -1345,5 +1234,4 @@ namespace System.Security.Util {
             }
         }
     }
-#endif // !PLATFORM_UNIX
 }

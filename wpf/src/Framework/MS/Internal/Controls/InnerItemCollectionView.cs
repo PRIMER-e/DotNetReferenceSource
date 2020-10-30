@@ -241,7 +241,7 @@ namespace MS.Internal.Controls
             {
                 _rawList.Clear();
 
-                // Refresh will [....] the _viewList to the cleared _rawList
+                // Refresh will sync the _viewList to the cleared _rawList
                 RefreshOrDefer();
             }
         }
@@ -721,7 +721,7 @@ namespace MS.Internal.Controls
             return node;
         }
 
-        // NOTE: Only change the item's logical links if the host is a Visual (bug 986386)
+        // NOTE: Only change the item's logical links if the host is a Visual (
         void SetModelParent(object item)
         {
             // to avoid the unnecessary, expensive code in AddLogicalChild, check for DO first
@@ -794,7 +794,7 @@ namespace MS.Internal.Controls
                 int newCurrentPosition = CurrentPosition + 1;
                 if (newCurrentPosition < ViewCount)
                 {
-                    // CurrentItem might be out of [....] if underlying list is not INCC
+                    // CurrentItem might be out of sync if underlying list is not INCC
                     // or if this Add is the result of a Replace (Rem + Add)
                     SetCurrent(_viewList[newCurrentPosition], newCurrentPosition);
                 }

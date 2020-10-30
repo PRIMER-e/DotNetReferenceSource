@@ -7,7 +7,7 @@
 //      can be present
 // </summary>
 //
-// @owner  [....]
+// @owner  pratikp
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

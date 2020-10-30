@@ -181,15 +181,15 @@ inline void DescSetOrigBuf(VIP_DESCRIPTOR * pDesc, BYTE * pbBuf)
 }
 
 
-DWORD Hash(__in LPCSTR string)
+DWORD Hash(__in LPCWSTR string)
 {
-	BidxScopeAutoSNI1( SNIAPI_TAG _T( "string: \"%hs\"\n"), string);
+	BidxScopeAutoSNI1( SNIAPI_TAG _T( "string: \"%s\"\n"), string);
 
 	DWORD i;
 	DWORD dwHash  = 0;
-	char c;
+	WCHAR c;
 
-	for(i = 0; i < (DWORD) strlen(string); i++)
+	for(i = 0; i < (DWORD) wcslen(string); i++)
 	{
 		c = string[i];
 		dwHash += c;
@@ -778,8 +778,8 @@ void Via::HandleReceiveEvent(VIP_VI_HANDLE hVi, __out bool *pfQuit)
 	// 3. If there is data other than Ack, i.e a valid data payload,    
 	//        3.a If ReadAsync has been posted earlier, post a read to consumer only if it is
 	//			a completed packet (not frag), or there is error.
-	//        3.b If no Read(A)[....] posted,  indicate that there is stuff to be read by enqueueing
-	//		a desc. Read(a)[....] will first check check it.
+	//        3.b If no Read(A)sync posted,  indicate that there is stuff to be read by enqueueing
+	//		a desc. Read(a)sync will first check check it.
 	// 4. If send limit open up windows to send another packet, do so.
 	// 5. In error case, close connection, clean up resource and notify upper layer consumer.
 
@@ -998,7 +998,7 @@ void Via::HandleReceiveEvent(VIP_VI_HANDLE hVi, __out bool *pfQuit)
 			}
 		}
 
-		// [....]
+		// Sync
 		else
 		{
 			dwNetError = pVia->pReadDoneQ.EnQueue((HANDLE) pDesc);
@@ -1012,7 +1012,7 @@ void Via::HandleReceiveEvent(VIP_VI_HANDLE hVi, __out bool *pfQuit)
 
 	}
 
-	// [....] - Signal write thread
+	// Sync - Signal write thread
 	if( pVia->m_pConn->m_fSync )
 	{
 		if(WAITING == pVia->SendBufState)
@@ -1300,7 +1300,7 @@ DWORD Via::SendAck(int timeout)
 
 	// Check if we NEED to and CAN send an Ack, but there are other write packets ahead of this one.
 	
-	// [....] - Signal write thread
+	// Sync - Signal write thread
 	if( m_pConn->m_fSync )
 	{
 		if(WAITING == SendBufState && SeqNum + 1 < DestSendLimit )

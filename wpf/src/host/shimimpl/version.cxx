@@ -6,9 +6,9 @@
 //     Implements the connection to PHDLL (PresentationHostDLL.dll v3 or PresentationHost_vX.dll for v4+).
 //
 // History:
-//      2005/05/09 - [....]
+//      2005/05/09 - Microsoft
 //          Created
-//      2007/09/20-[....]
+//      2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -74,14 +74,14 @@ HRESULT CVersion::Attach()
             // Dev10.582711 - CRT initialization for PresentationCore v3 fails when hosted by PresentationHost v4.
             // This is an involved issue, with a history going back to v3.5 SP1. 
             // See \\ddindex2\sources2\orc----p\wpf\src\core\crtinit.cpp for the initial issue and hacky 
-            // workaround and the above bug for the unfortunate flaw that cropped up in v4.
-            // The essence of the patch here is that we apply a Fusion activation context for loading the VC 8 CRT
-            // based on the manifest embedded in PHDLL v3, which is the same as what PresentationCore.dll has
-            // (as long as they are the same build flavor--this was a caveat about the original workaround too).
-            // This activation context needs to be active only when PresentationCore (v3) is doing its 
-            // initialization and binding to msvcr80.dll, but it doesn't hurt to keep it active for the whole
-            // lifetime of the process. In some sense this gives v3 a more compatible runtime environment 
-            // because PH v3 used to have that manifest reference to the VC 8 CRT.
+            // workaround and the above 
+
+
+
+
+
+
+
             if(m_dwMajor == 3)
             {
                 ActivationContext actctx;

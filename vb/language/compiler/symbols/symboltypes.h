@@ -94,7 +94,7 @@ typedef unsigned __int64 DECLFLAGS;
 #define DECLF_InvalidFlagsOnDefault             ((DECLFLAGS)( DECLF_Private | DECLF_Shared ))
 #define DECLF_InvalidStdModuleMemberFlags       ((DECLFLAGS)( DECLF_Protected | DECLF_ProtectedFriend | DECLF_Shared | DECLF_Default | DECLF_MustOverride | DECLF_Overridable | DECLF_ShadowsKeywordUsed | DECLF_OverridesKeywordUsed ))
 #define DECLF_InvalidFlagsInNotInheritableClass ((DECLFLAGS)( DECLF_Protected | DECLF_ProtectedFriend | DECLF_Overridable | DECLF_NotOverridable | DECLF_MustOverride ))
-#define DECLF_InvalidInterfaceMemberFlags       ((DECLFLAGS)( DECLF_AccessFlags | DECLF_Shared | DECLF_Friend | DECLF_MustOverride | DECLF_Overridable | DECLF_OverridesKeywordUsed )) // [....]: fixit Can remove DECLF_Friend because it is in DECLF_AccessFlags
+#define DECLF_InvalidInterfaceMemberFlags       ((DECLFLAGS)( DECLF_AccessFlags | DECLF_Shared | DECLF_Friend | DECLF_MustOverride | DECLF_Overridable | DECLF_OverridesKeywordUsed )) // Microsoft: fixit Can remove DECLF_Friend because it is in DECLF_AccessFlags
 
 // When updating this flag set, make sure to also update Symbols::CalculateInitialParamFlags.  If adding a
 // new flag, update Symbols::GetParam as well

@@ -8,7 +8,7 @@
 //  Contents:  Implements a converter to an instance descriptor for 
 //             DynamicResourceExtension
 //
-//  Created:   04/28/2005 [....]
+//  Created:   04/28/2005 Microsoft
 //
 //------------------------------------------------------------------------
 

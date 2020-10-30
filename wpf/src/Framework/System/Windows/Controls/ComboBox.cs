@@ -498,8 +498,9 @@ namespace System.Windows.Controls
         private static object CoerceIsSelectionBoxHighlighted(object o, object value)
         {
             ComboBox comboBox = (ComboBox)o;
+            ComboBoxItem highlightedElement;
             return (!comboBox.IsDropDownOpen && comboBox.IsKeyboardFocusWithin) ||
-                   (comboBox.HighlightedInfo != null && comboBox.HighlightedElement.Content == comboBox._clonedElement);
+                   ((highlightedElement = comboBox.HighlightedElement) != null && highlightedElement.Content == comboBox._clonedElement);
         }
 
         #endregion
@@ -656,13 +657,38 @@ namespace System.Windows.Controls
             }
         }
 
+        // When the IME composition we're waiting for completes, run the text search logic
+        private void OnEditableTextBoxPreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            if (IsWaitingForTextComposition &&
+                e.TextComposition.Source == EditableTextBoxSite &&
+                e.TextComposition.Stage == System.Windows.Input.TextCompositionStage.Done)
+            {
+                IsWaitingForTextComposition = false;
+                TextUpdated(EditableTextBoxSite.Text, true);
+
+                // ComboBox.Text has just changed, but EditableTextBoxSite.Text hasn't.
+                // As a courtesy to apps and controls that expect a TextBox.TextChanged
+                // event after ComboTox.Text changes, raise such an event now.
+                // (A notable example is TFS's WpfFieldControl - see Dev11 964048)
+                EditableTextBoxSite.RaiseCourtesyTextChangedEvent();
+            }
+        }
+
         // If TextSearch is enabled search for an item matching the new text
         // (partial search if user is typing, exact search if setting Text)
         private void TextUpdated(string newText, bool textBoxUpdated)
         {
             // Only process this event if it is coming from someone outside setting Text directly
-            if (!UpdatingText && !UpdatingSelectedItem && !Helper.IsComposing(EditableTextBoxSite))
+            if (!UpdatingText && !UpdatingSelectedItem)
             {
+                // if a composition is in progress, wait for it to complete
+                if (Helper.IsComposing(EditableTextBoxSite))
+                {
+                    IsWaitingForTextComposition = true;
+                    return;
+                }
+
                 try
                 {
                     // Set the updating flags so we don't reenter this function
@@ -1622,6 +1648,7 @@ namespace System.Windows.Controls
             {
                 EditableTextBoxSite.TextChanged += new TextChangedEventHandler(OnEditableTextBoxTextChanged);
                 EditableTextBoxSite.SelectionChanged += new RoutedEventHandler(OnEditableTextBoxSelectionChanged);
+                EditableTextBoxSite.PreviewTextInput += new TextCompositionEventHandler(OnEditableTextBoxPreviewTextInput);
             }
 
             if (_dropDownPopup != null)
@@ -1643,6 +1670,7 @@ namespace System.Windows.Controls
             {
                 EditableTextBoxSite.TextChanged -= new TextChangedEventHandler(OnEditableTextBoxTextChanged);
                 EditableTextBoxSite.SelectionChanged -= new RoutedEventHandler(OnEditableTextBoxSelectionChanged);
+                EditableTextBoxSite.PreviewTextInput -= new TextCompositionEventHandler(OnEditableTextBoxPreviewTextInput);
             }
         }
 
@@ -1990,6 +2018,13 @@ namespace System.Windows.Controls
             set { _cacheValid[(int)CacheBits.UpdatingSelectedItem] = value; }
         }
 
+        // A text composition is active (in the EditableTextBoxSite);  postpone Text changes
+        private bool IsWaitingForTextComposition
+        {
+            get { return _cacheValid[(int)CacheBits.IsWaitingForTextComposition]; }
+            set { _cacheValid[(int)CacheBits.IsWaitingForTextComposition] = value; }
+        }
+
         #endregion
 
         #region Private Members
@@ -2012,6 +2047,7 @@ namespace System.Windows.Controls
             IsContextMenuOpen           = 0x04,
             UpdatingText                = 0x08,
             UpdatingSelectedItem        = 0x10,
+            IsWaitingForTextComposition = 0x20,
         }
 
         #endregion Private Members

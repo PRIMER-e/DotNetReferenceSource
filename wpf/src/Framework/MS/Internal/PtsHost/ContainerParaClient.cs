@@ -8,7 +8,7 @@
 //              related data of paragraph containers.
 //
 // History:  
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ namespace MS.Internal.PtsHost
             PTS.Validate(PTS.FsQuerySubtrackDetails(PtsContext.Context, _paraHandle.Value, out subtrackDetails));
 
             // Adjust rectangle and offset to take into account MBPs
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if(ParentFlowDirection != PageFlowDirection)
             {
@@ -218,7 +218,7 @@ namespace MS.Internal.PtsHost
             // Draw border and background info.
 
             // Adjust rectangle and offset to take into account MBPs
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if(ThisFlowDirection != PageFlowDirection)
             {

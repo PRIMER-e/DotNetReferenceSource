@@ -4,10 +4,10 @@
 //    Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //
-// Description: 
-//              
-// History:  
-//  6/8/2005 : [....] - Created
+// Description:
+//
+// History:
+//  6/8/2005 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 
@@ -18,6 +18,7 @@ using MS.Internal.PresentationCore;
 using System;
 using System.Diagnostics;
 using System.Security;
+using System.Windows.Diagnostics;
 using System.Windows.Media.Composition;
 using System.Windows.Media;
 
@@ -55,15 +56,15 @@ namespace System.Windows.Media.Media3D
         //  Constructors
         //
         //------------------------------------------------------
-        
+
         #region Constructors
-        
+
         // Prevent 3rd parties from extending this abstract base class.
         internal Visual3D()
         {
             _internalIsVisible = true;
         }
-        
+
         #endregion Constructors
 
 
@@ -106,7 +107,7 @@ namespace System.Windows.Media.Media3D
         }
 
         /// <summary>
-        /// This is used to create or addref the visual resource 
+        /// This is used to create or addref the visual resource
         /// on the given channel
         /// </summary>
         /// <param name="channel"></param>
@@ -119,7 +120,7 @@ namespace System.Windows.Media.Media3D
         }
 
         /// <summary>
-        /// Sends a command to compositor to remove the child 
+        /// Sends a command to compositor to remove the child
         /// from its parent on the channel.
         /// </summary>
         void DUCE.IResource.RemoveChildFromParent(
@@ -180,7 +181,7 @@ namespace System.Windows.Media.Media3D
                 owner.SetFlagsOnAllChannels(true, VisualProxyFlags.IsTransformDirty);
             }
 
-            // NTRAID#Longhorn-1614112-2006/05/25-[....] - Stop over-invalidating _bboxSubgraph
+            // NTRAID#Longhorn-1614112-2006/05/25-Microsoft - Stop over-invalidating _bboxSubgraph
             //
             // We currently maintain a cache of both a ModelVisual3D’s content
             // and subgraph bounds.  A better solution that would be both a 2D
@@ -188,7 +189,7 @@ namespace System.Windows.Media.Media3D
             // visual’s transform changes.
             owner.RenderChanged(/* sender = */ owner, EventArgs.Empty);
         }
-        
+
         /// <summary>
         ///     Transform for this Visual3D.
         /// </summary>
@@ -206,13 +207,13 @@ namespace System.Windows.Media.Media3D
         }
 
         #endregion Public Methods
-        
+
         //------------------------------------------------------
         //
         //  Public Properties
         //
         //------------------------------------------------------
-        
+
         //------------------------------------------------------
         //
         //  Public Events
@@ -224,7 +225,7 @@ namespace System.Windows.Media.Media3D
         //  Protected Methods
         //
         //------------------------------------------------------
-        
+
         #region Protected Methods
 
         /// <summary>
@@ -239,8 +240,8 @@ namespace System.Windows.Media.Media3D
         ///    unmarshal our composition resources).
         /// </summary>
         protected void AddVisual3DChild(Visual3D child)
-        {            
-            // It is invalid to modify the children collection that we 
+        {
+            // It is invalid to modify the children collection that we
             // might be iterating during a property invalidation tree walk.
             if (IsVisualChildrenIterationInProgress)
             {
@@ -251,20 +252,20 @@ namespace System.Windows.Media.Media3D
             Debug.Assert(child.InternalVisualParent == null);
 
             child.SetParent(this);
-            
+
             // set the inheritance context so databinding, etc... work
             ProvideSelfAsInheritanceContext(child, null);
-            
+
             // The child already might be dirty. Hence we need to propagate dirty information
             // from the parent and from the child.
             Visual3D.PropagateFlags(
-                this, 
-                VisualFlags.IsSubtreeDirtyForPrecompute, 
+                this,
+                VisualFlags.IsSubtreeDirtyForPrecompute,
                 VisualProxyFlags.IsSubtreeDirtyForRender);
 
             Visual3D.PropagateFlags(
-                child, 
-                VisualFlags.IsSubtreeDirtyForPrecompute, 
+                child,
+                VisualFlags.IsSubtreeDirtyForPrecompute,
                 VisualProxyFlags.IsSubtreeDirtyForRender);
 
             // 
@@ -272,8 +273,9 @@ namespace System.Windows.Media.Media3D
 
             // Fire notifications
             OnVisualChildrenChanged(child, /* visualRemoved = */ null);
-            
+
             child.FireOnVisualParentChanged(null);
+            VisualDiagnostics.OnVisualChildChanged(this, child, true);
         }
 
 
@@ -287,7 +289,7 @@ namespace System.Windows.Media.Media3D
         /// </summary>
         protected void RemoveVisual3DChild(Visual3D child)
         {
-            // It is invalid to modify the children collection that we 
+            // It is invalid to modify the children collection that we
             // might be iterating during a property invalidation tree walk.
             if (IsVisualChildrenIterationInProgress)
             {
@@ -297,17 +299,19 @@ namespace System.Windows.Media.Media3D
             Debug.Assert(child != null);
             Debug.Assert(child.InternalVisualParent == this);
 
+            VisualDiagnostics.OnVisualChildChanged(this, child, false);
+
             child.SetParent(/* newParent = */ (Visual3D) null);  // CS0121: Call is ambigious without casting null to Visual3D.
-                    
+
             // remove the inheritance context
             RemoveSelfAsInheritanceContext(child, null);
-                        
+
             //
-            // Remove the child on all the channels 
+            // Remove the child on all the channels
             // this visual is being marshalled to.
             //
 
-            for (int i = 0, limit = _proxy.Count; i < limit; i++) 
+            for (int i = 0, limit = _proxy.Count; i < limit; i++)
             {
                 DUCE.Channel channel = _proxy.GetChannel(i);
 
@@ -325,7 +329,7 @@ namespace System.Windows.Media.Media3D
             //
 
             Visual3D.PropagateFlags(
-                this, 
+                this,
                 VisualFlags.IsSubtreeDirtyForPrecompute,
                 VisualProxyFlags.IsSubtreeDirtyForRender);
 
@@ -341,7 +345,7 @@ namespace System.Windows.Media.Media3D
         /// <summary>
         ///    The InternalIsVisible property roughly corresponds to the Opacity in the Visual world.
         ///    When it is set to true, then the actual transform used for this visual on the MIL side
-        ///    is set to a zero scale transform.  This makes the object invisible.        
+        ///    is set to a zero scale transform.  This makes the object invisible.
         /// </summary>
         internal bool InternalIsVisible
         {
@@ -364,21 +368,21 @@ namespace System.Windows.Media.Media3D
                     else
                     {
                         Transform3D transform = Transform;
-                        
+
                         if (transform != null)
                         {
                             DisconnectAttachedResource(
                                 VisualProxyFlags.IsTransformDirty,
                                 ((DUCE.IResource)transform));
-                        }                        
+                        }
                     }
-                    
+
                     SetFlagsOnAllChannels(true, VisualProxyFlags.IsTransformDirty);
 
                     RenderChanged(/* sender = */ this, EventArgs.Empty);
-                    
-                    _internalIsVisible = value;   
-                }                
+
+                    _internalIsVisible = value;
+                }
             }
         }
 
@@ -404,12 +408,12 @@ namespace System.Windows.Media.Media3D
         }
 
         private void Visual3DModelPropertyChanged(object o, EventArgs e)
-        { 
+        {
             // forward on to the main property changed method.  Since this method is
             // only called on subproperty chanes, oldValue is meaningless.
             Visual3DModelPropertyChanged(null, /* isSubpropertyChange = */ true);
         }
-        
+
         /// <summary>
         ///     The Model3D to render
         /// </summary>
@@ -418,14 +422,14 @@ namespace System.Windows.Media.Media3D
             get
             {
                 VerifyAPIReadOnly();
-                
+
                 return _visual3DModel;
             }
 
             set
             {
                 VerifyAPIReadWrite();
-                
+
                 if (value != _visual3DModel)
                 {
                     // remove the old change listener
@@ -484,7 +488,7 @@ namespace System.Windows.Media.Media3D
                         VisualFlags.RegisteredForAncestorChanged);
                 }
             }
-            
+
             // Fire the Ancestor changed Event on the nodes.
             AncestorChangedEventArgs args = new AncestorChangedEventArgs(this, oldParent);
             ProcessAncestorChangedNotificationRecursive(this, args);
@@ -565,7 +569,7 @@ namespace System.Windows.Media.Media3D
             else
             {
                 Visual3D eAsVisual3D = e as Visual3D;
-                
+
                 // If the flag is not set, then we are Done.
                 if(!eAsVisual3D.CheckFlagsAnd(VisualFlags.SubTreeHoldsAncestorChanged))
                 {
@@ -589,7 +593,7 @@ namespace System.Windows.Media.Media3D
                     {
                         Visual3D.ProcessAncestorChangedNotificationRecursive(child, args);
                     }
-                }                
+                }
             }
         }
 
@@ -601,7 +605,7 @@ namespace System.Windows.Media.Media3D
         protected internal virtual void OnVisualParentChanged(DependencyObject oldParent)
         {
         }
-        
+
         /// <summary>
         /// OnVisualChildrenChanged is called when the VisualCollection of the Visual is edited.
         /// </summary>
@@ -610,7 +614,7 @@ namespace System.Windows.Media.Media3D
             DependencyObject visualRemoved)
         {
         }
-        
+
         #endregion Protected Methods
 
         //------------------------------------------------------
@@ -618,7 +622,7 @@ namespace System.Windows.Media.Media3D
         //  Internal Methods
         //
         //------------------------------------------------------
-        
+
         #region Internal Methods
 
         internal bool DoesRayHitSubgraphBounds(RayHitTestParameters rayParams)
@@ -666,7 +670,7 @@ namespace System.Windows.Media.Media3D
             {
                 // This should never happen, users can not extend the abstract HitTestParameters3D class.
                 Invariant.Assert(false,
-                    String.Format(System.Globalization.CultureInfo.InvariantCulture, 
+                    String.Format(System.Globalization.CultureInfo.InvariantCulture,
                         "'{0}' HitTestParameters3D are not supported on {1}.",
                         hitTestParameters.GetType().Name, this.GetType().Name));
             }
@@ -716,7 +720,7 @@ namespace System.Windows.Media.Media3D
 
             return HitTestResultBehavior.Continue;
         }
-        
+
         internal HitTestResultBehavior HitTestChildren(
             HitTestFilterCallback filterCallback,
             RayHitTestParameters rayParams)
@@ -736,7 +740,7 @@ namespace System.Windows.Media.Media3D
             if (container != null)
             {
                 int childrenCount = container.GetChildrenCount();
-                
+
                 for (int i = childrenCount - 1; i >= 0; i--)
                 {
                     Visual3D child = container.GetChild(i);
@@ -745,12 +749,12 @@ namespace System.Windows.Media.Media3D
                     // transform into the content's space before hit testing.
                     Transform3D transform = child.Transform;
                     rayParams.PushVisualTransform(transform);
-                    
+
                     // Perform the hit-test against the child.
                     HitTestResultBehavior result = child.RayHitTest(filterCallback, rayParams);
-            
+
                     rayParams.PopTransform(transform);
-                    
+
                     if (result == HitTestResultBehavior.Stop)
                     {
                         return HitTestResultBehavior.Stop;
@@ -760,13 +764,13 @@ namespace System.Windows.Media.Media3D
 
             return HitTestResultBehavior.Continue;
         }
-        
+
         internal void RayHitTestInternal(
             HitTestFilterCallback filterCallback,
             RayHitTestParameters rayParams)
         {
             Model3D model = _visual3DModel;
-            
+
             if (model != null)
             {
                 // If our Model3D hit test intersects anything we should return "this" Visual3D
@@ -784,7 +788,7 @@ namespace System.Windows.Media.Media3D
         internal void RenderChanged(object sender, EventArgs e)
         {
             PropagateFlags(
-                this, 
+                this,
                 VisualFlags.IsSubtreeDirtyForPrecompute,
                 VisualProxyFlags.IsSubtreeDirtyForRender);
         }
@@ -820,7 +824,7 @@ namespace System.Windows.Media.Media3D
                     GeneralTransform3DTo2D transform = TransformToAncestor(viewport3DVisual);
                     contentBounds = transform.TransformBounds(VisualContentBounds);
                 }
-                
+
                 return contentBounds;
             }
         }
@@ -835,7 +839,7 @@ namespace System.Windows.Media.Media3D
                     Rect3D transformedBBoxSubgraphIgnored;
                     PrecomputeRecursive(out transformedBBoxSubgraphIgnored);
                 }
-                
+
                 Debug_VerifyCachedSubgraphBounds();
 
                 return _bboxSubgraph;
@@ -850,7 +854,7 @@ namespace System.Windows.Media.Media3D
         internal Rect3D GetContentBounds()
         {
             Model3D model = _visual3DModel;
-            
+
             if (model == null)
             {
                 return Rect3D.Empty;
@@ -873,12 +877,12 @@ namespace System.Windows.Media.Media3D
         internal Rect3D CalculateSubgraphBoundsOuterSpace()
         {
             Rect3D bounds = CalculateSubgraphBoundsInnerSpace();
-            
+
             return M3DUtil.ComputeTransformedAxisAlignedBoundingBox(ref bounds, Transform);
         }
 
         /// <summary>
-        /// Returns the subgraph bounds in the Visual3D's inner coordinate space. 
+        /// Returns the subgraph bounds in the Visual3D's inner coordinate space.
         /// </summary>
         internal Rect3D CalculateSubgraphBoundsInnerSpace()
         {
@@ -997,7 +1001,7 @@ namespace System.Windows.Media.Media3D
         ///       During this virtual call it is not valid to modify the Visual tree.
         ///
         ///       It is okay to type this protected API to the 2D Visual.  The only 2D Visual with
-        ///       3D childern is the Viewport3DVisual which is sealed.  -- [....] 01/17/06
+        ///       3D childern is the Viewport3DVisual which is sealed.  -- Microsoft 01/17/06
         /// </summary>
         protected virtual Visual3D GetVisual3DChild(int index)
         {
@@ -1038,13 +1042,22 @@ namespace System.Windows.Media.Media3D
         {
             return GetVisual3DChild(index);
         }
-        
+
+        #region ForceInherit property support
+
+        internal virtual void InvalidateForceInheritPropertyOnChildren(DependencyProperty property)
+        {
+            UIElement3D.InvalidateForceInheritPropertyOnChildren(this, property);
+        }
+
+        #endregion ForceInherit property support
+
         //------------------------------------------------------
         //
         //  DEBUG
         //
         //------------------------------------------------------
-        
+
         #region DEBUG
 
         [Conditional("DEBUG")]
@@ -1070,7 +1083,7 @@ namespace System.Windows.Media.Media3D
 #if DEBUG
             currentBounds = Debug_CalculateSubgraphBounds();
 #endif
-            // currentBounds includes Transform so we need to 
+            // currentBounds includes Transform so we need to
             // temporarily transform _bboxSubgraph
             Rect3D cachedBounds = M3DUtil.ComputeTransformedAxisAlignedBoundingBox(ref _bboxSubgraph, Transform);
 
@@ -1084,7 +1097,7 @@ namespace System.Windows.Media.Media3D
 
             Debug.Assert(model != null);
 
-            Debug_VerifyBoundsEqual(model.CalculateSubgraphBoundsOuterSpace(), 
+            Debug_VerifyBoundsEqual(model.CalculateSubgraphBoundsOuterSpace(),
                                     _bboxContent, "Cached content bounds is incorrect!");
         }
 
@@ -1118,7 +1131,7 @@ namespace System.Windows.Media.Media3D
                 // Update the subgraph bounding box which includes the content bounds
                 // and the bounds of our children.
                 //
-                
+
                 _bboxSubgraph = GetContentBounds();
 
                 for (int i = 0, count = Visual3DChildrenCount; i < count; i++)
@@ -1135,13 +1148,13 @@ namespace System.Windows.Media.Media3D
 
             bboxSubgraph = M3DUtil.ComputeTransformedAxisAlignedBoundingBox(ref _bboxSubgraph, Transform);
        }
-        
+
         internal void RenderRecursive(RenderContext ctx)
         {
             DUCE.Channel channel = ctx.Channel;
             DUCE.ResourceHandle handle = DUCE.ResourceHandle.Null;
             VisualProxyFlags flags = c_Model3DVisualProxyFlagsDirtyMask;
-            
+
             //
             // Ensure that the resource for this Visual is sent to our current channel.
             //
@@ -1158,9 +1171,9 @@ namespace System.Windows.Media.Media3D
             else
             {
                 //
-                // Create the visual resource on the current channel. 
-                // 
-                // Note: we need to update all set properties (the dirty 
+                // Create the visual resource on the current channel.
+                //
+                // Note: we need to update all set properties (the dirty
                 //       bit mask is set by default).
                 //
 
@@ -1187,27 +1200,27 @@ namespace System.Windows.Media.Media3D
                 {
                     //
                     // Set the new transform resource for this visual.  If transform is
-                    // null we don't need to do this.  Also note that the old transform 
+                    // null we don't need to do this.  Also note that the old transform
                     // was disconnected in the Transform property setter.
                     //
 
                     DUCE.Visual3DNode.SetTransform(
-                        handle, 
-                        ((DUCE.IResource)transform).AddRefOnChannel(channel), 
+                        handle,
+                        ((DUCE.IResource)transform).AddRefOnChannel(channel),
                         channel);
                 }
                 else if (!InternalIsVisible)
                 {
                     DUCE.Visual3DNode.SetTransform(
-                        handle, 
-                        ((DUCE.IResource)_zeroScale).AddRefOnChannel(channel), 
+                        handle,
+                        ((DUCE.IResource)_zeroScale).AddRefOnChannel(channel),
                         channel);
                 }
                 else if (!isOnChannel) /* Transform == null */
                 {
                     DUCE.Visual3DNode.SetTransform(
                         handle,
-                        DUCE.ResourceHandle.Null, 
+                        DUCE.ResourceHandle.Null,
                         channel);
                 }
             }
@@ -1246,11 +1259,11 @@ namespace System.Windows.Media.Media3D
             }
 
             //
-            // Finally, reset the dirty flags for this visual (at this point, 
+            // Finally, reset the dirty flags for this visual (at this point,
             // we have handled them all).
             //
 
-            SetFlags(channel, false, c_Model3DVisualProxyFlagsDirtyMask);            
+            SetFlags(channel, false, c_Model3DVisualProxyFlagsDirtyMask);
         }
 
         /// <summary>
@@ -1285,8 +1298,8 @@ namespace System.Windows.Media.Media3D
             else if (isOnChannel) /* Model == null */
             {
                 DUCE.Visual3DNode.SetContent(
-                    ((DUCE.IResource)this).GetHandle(channel), 
-                    DUCE.ResourceHandle.Null, 
+                    ((DUCE.IResource)this).GetHandle(channel),
+                    DUCE.ResourceHandle.Null,
                     channel);
             }
         }
@@ -1294,7 +1307,7 @@ namespace System.Windows.Media.Media3D
         /// <summary>
         /// Returns true if the specified ancestor is really the ancestor of the
         /// given descendant.
-        /// </summary>       
+        /// </summary>
         public bool IsAncestorOf(DependencyObject descendant)
         {
             Visual visual;
@@ -1303,11 +1316,11 @@ namespace System.Windows.Media.Media3D
             VisualTreeUtils.AsNonNullVisual(descendant, out visual, out visual3D);
 
             // x86 branch prediction skips the branch on first encounter.  We favor 3D.
-            if(visual != null) 
+            if(visual != null)
             {
                 return visual.IsDescendantOf(this);
             }
-            
+
             return visual3D.IsDescendantOf(this);
         }
 
@@ -1326,27 +1339,27 @@ namespace System.Windows.Media.Media3D
             // Walk up the parent chain of the descendant untill we run out
             // of 3D parents or we find the ancestor.
             Visual3D current = this;
-            
+
             while (current != null && current != ancestor)
             {
                 // If our 3D parent is null then continue walk in 2D
                 if (current._3DParent == null)
                 {
                     DependencyObject parent2D = current.InternalVisualParent;
-                    
+
                     if (parent2D != null)
                     {
                         // The type has to be Visual because of the above if condition
                         return ((Visual)parent2D).IsDescendantOf(ancestor);
                     }
                 }
-            
+
                 current = current._3DParent;
             }
 
-            return current == ancestor;            
+            return current == ancestor;
         }
-        
+
         /// <summary>
         ///     Walks up the Visual tree setting or clearing the given flags.  Unlike
         ///     PropagateFlags this does not terminate when it reaches node with
@@ -1431,7 +1444,7 @@ namespace System.Windows.Media.Media3D
             // Now see if the other Visual's parent chain crosses our parent chain.
             return FindFirstAncestorWithFlagsAnd(VisualFlags.FindCommonAncestor);
         }
-        
+
         /// <summary>
         /// Override this function in derived classes to release unmanaged resources during Dispose
         /// and during removal of a subtree.
@@ -1470,7 +1483,7 @@ namespace System.Windows.Media.Media3D
         {
             ReleaseOnChannelCore(channel);
         }
-        
+
         internal void ReleaseOnChannelCore(DUCE.Channel channel)
         {
             if (!IsOnChannel(channel))
@@ -1497,15 +1510,15 @@ namespace System.Windows.Media.Media3D
             VisualProxyFlags correspondingFlag,
             DUCE.IResource attachedResource)
         {
-            // 
+            //
             // Iterate over the channels this visual is being marshaled to
             //
 
-            for (int i = 0; i < _proxy.Count; i++) 
+            for (int i = 0; i < _proxy.Count; i++)
             {
                 VisualProxyFlags flags = _proxy.GetFlags(i);
 
-                if ((flags & correspondingFlag) == 0) 
+                if ((flags & correspondingFlag) == 0)
                 {
                     DUCE.Channel channel = _proxy.GetChannel(i);
 
@@ -1531,14 +1544,14 @@ namespace System.Windows.Media.Media3D
         internal override DependencyObject InheritanceContext
         {
             get
-            { 
+            {
                 DependencyObject value = _inheritanceContext.GetValue(this);
 
                 if (value == UseParentAsContext)
                 {
                     return InternalVisualParent;
                 }
-                
+
                 return value;
             }
         }
@@ -1577,11 +1590,11 @@ namespace System.Windows.Media.Media3D
                 OnInheritanceContextChanged(EventArgs.Empty);
             }
         }
-        
+
         internal override bool HasMultipleInheritanceContexts
         {
             get { return base.HasMultipleInheritanceContexts; }
-        }        
+        }
 
         internal override void OnInheritanceContextChangedCore(EventArgs args) // ancestor changed
         {
@@ -1593,7 +1606,7 @@ namespace System.Windows.Media.Media3D
 
                 Debug.Assert(child.InheritanceContext == this,
                     "How did a child get inserted without propagating our inheritance context?");
-                
+
                 child.OnInheritanceContextChanged(args);
             }
         }
@@ -1654,7 +1667,7 @@ namespace System.Windows.Media.Media3D
             VerifyAPIReadOnly(descendant);
 
             return descendant.InternalTransformToAncestor(this, true);
-        }       
+        }
 
         /// <summary>
         /// Returns the transform or the inverse transform between this visual and the specified ancestor.
@@ -1663,15 +1676,15 @@ namespace System.Windows.Media.Media3D
         /// <param name="ancestor">Ancestor visual.</param>
         /// <param name="inverse">Returns inverse if this argument is true.</param>
         private GeneralTransform3D InternalTransformToAncestor(Visual3D ancestor, bool inverse)
-        {            
+        {
             Debug.Assert(ancestor != null);
 
             // used to track if all the collected transforms on the way to the ancestor were valid
             bool success = true;
-            
+
             DependencyObject g = this;
             Visual3D lastVisual3D = null;
-            
+
             Matrix3D m = Matrix3D.Identity;
             GeneralTransform3DGroup group = null;
 
@@ -1700,7 +1713,7 @@ namespace System.Windows.Media.Media3D
 
                     lastVisual3D = gAsVisual3D;
                     g = VisualTreeHelper.GetParent(gAsVisual3D);
-                }                
+                }
                 else
                 {
                     if (group == null)
@@ -1712,7 +1725,7 @@ namespace System.Windows.Media.Media3D
                     m = Matrix3D.Identity;
 
                     // construct the 3D to 2D to 3D transform
-                    Visual gAsVisual = g as Visual;                    
+                    Visual gAsVisual = g as Visual;
                     GeneralTransform3DTo2D transform3DTo2D = lastVisual3D.TransformToAncestor(gAsVisual);
 
                     // now find the 3D parent of the 2D object
@@ -1720,7 +1733,7 @@ namespace System.Windows.Media.Media3D
 
                     // if containing3DParent is null, then the ancestor parameter is not really an ancestor
                     // break out of the loop to allow it to fail
-                    if (containing3DParent == null) 
+                    if (containing3DParent == null)
                     {
                         break;
                     }
@@ -1738,7 +1751,7 @@ namespace System.Windows.Media.Media3D
                     else
                     {
                         group.Children.Add(new GeneralTransform3DTo2DTo3D(transform3DTo2D, transform2DTo3D));
-                    }                    
+                    }
 
                     // the last visual3D found is where we continue the search
                     g = containing3DParent;
@@ -1749,9 +1762,9 @@ namespace System.Windows.Media.Media3D
             {
                 throw new System.InvalidOperationException(SR.Get(inverse ? SRID.Visual_NotADescendant : SRID.Visual_NotAnAncestor));
             }
-            
+
             // construct the generaltransform3d to return and invert it if necessary
-            GeneralTransform3D finalTransform = null;            
+            GeneralTransform3D finalTransform = null;
 
             // if we successfully found a transform then we can create it here, otherwise finalTransform stays null
             if (success)
@@ -1764,9 +1777,9 @@ namespace System.Windows.Media.Media3D
                 {
                     finalTransform = new MatrixTransform3D(m);
                 }
-                
+
                 if (inverse)
-                {          
+                {
                     finalTransform = finalTransform.Inverse;
                 }
             }
@@ -1777,7 +1790,7 @@ namespace System.Windows.Media.Media3D
             }
 
             return finalTransform;
-        }     
+        }
 
         /// <summary>
         /// Returns a transform that can be used to transform coordinate from this
@@ -1818,9 +1831,9 @@ namespace System.Windows.Media.Media3D
             Debug.Assert(ancestor != null);
 
             // get the transform out of 3D and in to 2D
-            Viewport3DVisual containingViewport;            
+            Viewport3DVisual containingViewport;
             Matrix3D projectionTransform;
-            
+
             if (!M3DUtil.TryTransformToViewport3DVisual(this, out containingViewport, out projectionTransform))
             {
                 return null;
@@ -1830,11 +1843,11 @@ namespace System.Windows.Media.Media3D
             GeneralTransform transformIn2D = containingViewport.TransformToAncestor(ancestor);
 
             // package the two up in the transformTo2D
-            GeneralTransform3DTo2D result = new GeneralTransform3DTo2D(projectionTransform, transformIn2D); 
+            GeneralTransform3DTo2D result = new GeneralTransform3DTo2D(projectionTransform, transformIn2D);
             result.Freeze();
-            
-            return result;            
-        }  
+
+            return result;
+        }
 
         #endregion Visual-to-Visual Transforms
 
@@ -1843,9 +1856,9 @@ namespace System.Windows.Media.Media3D
         //  Internal Properties
         //
         //------------------------------------------------------
-        
+
         #region Internal Properties
-        
+
         internal DependencyObject InternalVisualParent
         {
             get
@@ -1854,7 +1867,7 @@ namespace System.Windows.Media.Media3D
                 {
                     Debug.Assert(_2DParent.GetValue(this) == null,
                         "Only one parent pointer should be set at a time.");
-                        
+
                     return _3DParent;
                 }
 
@@ -1871,7 +1884,7 @@ namespace System.Windows.Media.Media3D
         {
             get { return _parentIndex; }
             set { _parentIndex = value; }
-        }        
+        }
 
         // Are we in the process of iterating the visual children.
         // This flag is set during a descendents walk, for property invalidation.
@@ -1887,20 +1900,20 @@ namespace System.Windows.Media.Media3D
         #endregion Internal Properties
 
         // --------------------------------------------------------------------
-        // 
+        //
         //   Visual flags manipulation
-        // 
+        //
         // --------------------------------------------------------------------
 
         #region Visual flags manipulation
 
         /// <summary>
-        /// SetFlagsOnAllChannels is used to set or unset one 
-        /// or multiple flags on all channels this visual is 
+        /// SetFlagsOnAllChannels is used to set or unset one
+        /// or multiple flags on all channels this visual is
         /// marshaled to.
         /// </summary>
         internal void SetFlagsOnAllChannels(
-            bool value, 
+            bool value,
             VisualProxyFlags flagsToChange)
         {
             _proxy.SetFlagsOnAllChannels(
@@ -1912,13 +1925,13 @@ namespace System.Windows.Media.Media3D
         /// SetFlags is used to set or unset one or multiple flags on a given channel.
         /// </summary>
         internal void SetFlags(
-            DUCE.Channel channel, 
-            bool value, 
+            DUCE.Channel channel,
+            bool value,
             VisualProxyFlags flagsToChange)
         {
             _proxy.SetFlags(
-                channel, 
-                value, 
+                channel,
+                value,
                 flagsToChange);
         }
 
@@ -1932,11 +1945,11 @@ namespace System.Windows.Media.Media3D
 
         /// <summary>
         /// CheckFlagsOnAllChannels returns true if all flags in
-        /// the bitmask flags are set on all channels this visual is 
+        /// the bitmask flags are set on all channels this visual is
         /// marshaled to.
         /// </summary>
         /// <remarks>
-        /// If there aren't any bits set on the specified flags 
+        /// If there aren't any bits set on the specified flags
         /// the method returns true.
         /// </remarks>
         internal bool CheckFlagsOnAllChannels(VisualProxyFlags flagsToCheck)
@@ -1945,15 +1958,15 @@ namespace System.Windows.Media.Media3D
         }
 
         /// <summary>
-        /// CheckFlagsAnd returns true if all flags in the bitmask flags 
+        /// CheckFlagsAnd returns true if all flags in the bitmask flags
         /// are set on a given channel.
         /// </summary>
         /// <remarks>
-        /// If there aren't any bits set on the specified flags 
+        /// If there aren't any bits set on the specified flags
         /// the method returns true.
         /// </remarks>
         internal bool CheckFlagsAnd(
-            DUCE.Channel channel, 
+            DUCE.Channel channel,
             VisualProxyFlags flagsToCheck)
         {
             return (_proxy.GetFlags(channel) & flagsToCheck) == flagsToCheck;
@@ -2002,11 +2015,11 @@ namespace System.Windows.Media.Media3D
         /// Checks if any of the specified flags is set on a given channel.
         /// </summary>
         /// <remarks>
-        /// If there aren't any bits set on the specified flags 
+        /// If there aren't any bits set on the specified flags
         /// the method returns true.
         /// </remarks>
         internal bool CheckFlagsOr(
-            DUCE.Channel channel, 
+            DUCE.Channel channel,
             VisualProxyFlags flagsToCheck)
         {
             return (_proxy.GetFlags(channel) & flagsToCheck) != VisualProxyFlags.None;
@@ -2033,11 +2046,11 @@ namespace System.Windows.Media.Media3D
             for (int i = 0; i < count; i++)
             {
                 DependencyObject child = pe.InternalGet2DOr3DVisualChild(i);
-                                
+
                 Visual v = null;
                 Visual3D v3D = null;
                 VisualTreeUtils.AsNonNullVisual(child, out v, out v3D);
-                
+
                 if (v != null && v.CheckFlagsAnd(flag))
                 {
                     return true;
@@ -2058,11 +2071,11 @@ namespace System.Windows.Media.Media3D
         /// The walk stops on a node with all of the required flags set.
         /// </remarks>
         internal static void PropagateFlags(
-            Visual3D e, 
+            Visual3D e,
             VisualFlags flags,
             VisualProxyFlags proxyFlags)
         {
-            while ((e != null) && 
+            while ((e != null) &&
                    (!e.CheckFlagsAnd(flags) || !e.CheckFlagsOnAllChannels(proxyFlags)))
             {
                 // These asserts are mostly for documentation when diffing the 2D/3D
@@ -2083,7 +2096,7 @@ namespace System.Windows.Media.Media3D
 
                     Debug.Assert((viewport == null) == (e.InternalVisualParent == null),
                         "Viewport3DVisual is the only supported 2D parent of a 3D visual.");
-                    
+
                     if(viewport != null)
                     {
                         // We must notify the 2D visual that its contents have changed.
@@ -2094,7 +2107,7 @@ namespace System.Windows.Media.Media3D
                         // continue propagating flags up the 2D world
                         Visual.PropagateFlags(viewport, flags, proxyFlags);
                     }
-                        
+
                     // Stop propagating.  We are at the root of the 3D subtree.
                     return;
                 }
@@ -2110,9 +2123,9 @@ namespace System.Windows.Media.Media3D
         //  Private Methods
         //
         //------------------------------------------------------
-        
+
         #region Private Methods
-        
+
         private void SetInheritanceContext(DependencyObject newInheritanceContext)
         {
             if (newInheritanceContext == InternalVisualParent)
@@ -2127,7 +2140,7 @@ namespace System.Windows.Media.Media3D
                 _inheritanceContext.SetValue(this, newInheritanceContext);
             }
         }
-        
+
         #endregion Private Methods
 
         //------------------------------------------------------
@@ -2135,7 +2148,7 @@ namespace System.Windows.Media.Media3D
         //  Internal Fields
         //
         //------------------------------------------------------
-        
+
         #region Internal Fields
 
         internal VisualProxy _proxy;
@@ -2147,7 +2160,7 @@ namespace System.Windows.Media.Media3D
         //  Private Fields
         //
         //------------------------------------------------------
-        
+
         #region Private Fields
 
         // If the parent of the Visual3D is another Visual3D we store the parent in the _3DParent field.
@@ -2169,10 +2182,10 @@ namespace System.Windows.Media.Media3D
         private static readonly UncommonField<Visual.AncestorChangedEventHandler> AncestorChangedEventField
             = new UncommonField<Visual.AncestorChangedEventHandler>();
 
-        private Visual3D _3DParent;        
+        private Visual3D _3DParent;
         private int _parentIndex = -1;
 
-        private VisualFlags _flags;  
+        private VisualFlags _flags;
 
         // Untransformed *cached* content bounds. Do not access it directly -- instead
         // use GetContentBounds()
@@ -2195,7 +2208,7 @@ namespace System.Windows.Media.Media3D
         //  Protected Fields
         //
         //------------------------------------------------------
-        
+
         #region Protected Fields
 
         #endregion Protected Fields

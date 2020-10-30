@@ -165,7 +165,6 @@ namespace System.Drawing {
             return new Region(region);
         }
 
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         private void SetNativeRegion(IntPtr nativeRegion) {
             if (nativeRegion == IntPtr.Zero)
                 throw new ArgumentNullException("nativeRegion");

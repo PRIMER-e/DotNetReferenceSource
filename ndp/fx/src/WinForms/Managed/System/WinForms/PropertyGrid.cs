@@ -190,7 +190,7 @@ namespace System.Windows.Forms {
                 }
                 isScalingInitialized = true;
             }
-           
+
             try
             {
                 gridView = CreateGridView(null);
@@ -1205,7 +1205,7 @@ namespace System.Windows.Forms {
                         if (gridView != null) {
                             // TypeResolutionService is needed to access the HelpKeyword. However,
                             // TypeResolutionService might be disposed when project is closing. We
-                            // need ---- the exception in this case.
+                            // need swallow the exception in this case.
                             try {
                                 gridView.RemoveSelectedEntryHelpAttributes();
                             }
@@ -1288,7 +1288,7 @@ namespace System.Windows.Forms {
    
                     /*
        
-                    [....], hopefully this won't be a big perf problem, but it looks like we
+                    Microsoft, hopefully this won't be a big perf problem, but it looks like we
                            need to refresh even if we didn't change the selected objects.
        
                     if (propertiesChanged) {*/
@@ -1583,7 +1583,8 @@ namespace System.Windows.Forms {
         private int AddImage(Bitmap image) {
             
             image.MakeTransparent();
-            if (DpiHelper.IsScalingRequired) {
+            // Resize bitmap only if resizing is needed in order to avoid image distortion.
+            if (DpiHelper.IsScalingRequired && (image.Size.Width != normalButtonSize.Width || image.Size.Height != normalButtonSize.Height)) {
                 image = DpiHelper.CreateResizedBitmap(image, normalButtonSize);
             }
             int result = imageList[NORMAL_BUTTONS].Images.Count;
@@ -2359,7 +2360,7 @@ namespace System.Windows.Forms {
 
                     for (int i = 0; i < images.Count; i++) {
                         if (images[i] is Bitmap) {
-                            this.imageList[LARGE_BUTTONS].Images.Add(new Bitmap((Bitmap)images[i], DEFAULT_NORMAL_BUTTON_SIZE.Width, DEFAULT_NORMAL_BUTTON_SIZE.Height));
+                            this.imageList[LARGE_BUTTONS].Images.Add(new Bitmap((Bitmap)images[i], largeButtonSize.Width, largeButtonSize.Height));
                         }
                     }
                 }
@@ -2737,8 +2738,8 @@ namespace System.Windows.Forms {
                         object[] newObjects = new object[currentObjects.Length - 1];
                         Array.Copy(currentObjects, 0, newObjects, 0, i);
                         if (i < newObjects.Length) {
-                            // Dev10 Bug 462203: Array.Copy throws Argument Exception when deleting
-                            //                   multiple controls with PropertyTabs in designer.
+                            // Dev10 
+
                             Array.Copy(currentObjects, i + 1, newObjects, i, newObjects.Length - i);
                         }
 

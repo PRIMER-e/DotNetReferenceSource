@@ -6,8 +6,8 @@
 //      All #includes and #defines needed to use ATL in our projects.
 //
 //  History:
-//     2007/06/14   [....]     Created (moved from host\proxy)
-//     2007/09/20   [....]     Ported Windows->DevDiv. See SourcesHistory.txt.
+//     2007/06/14   Microsoft     Created (moved from host\proxy)
+//     2007/09/20   Microsoft     Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
 

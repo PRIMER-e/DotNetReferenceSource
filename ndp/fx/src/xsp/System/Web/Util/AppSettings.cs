@@ -56,6 +56,11 @@ namespace System.Web.Util {
                             if (settings == null || !Boolean.TryParse(settings["aspnet:UseLegacyEventValidationCompatibility"], out _useLegacyEventValidationCompatibility))
                                 _useLegacyEventValidationCompatibility = false;
 
+                            _allowInsecureDeserialization = GetNullableBooleanValue(settings, "aspnet:AllowInsecureDeserialization");
+
+                            if (settings == null || !Boolean.TryParse(settings["aspnet:AlwaysIgnoreViewStateValidationErrors"], out _alwaysIgnoreViewStateValidationErrors))
+                                _alwaysIgnoreViewStateValidationErrors = false;
+
                             if (settings == null || !Boolean.TryParse(settings["aspnet:AllowRelaxedHttpUserName"], out _allowRelaxedHttpUserName))
                                 _allowRelaxedHttpUserName = false;
 
@@ -95,17 +100,14 @@ namespace System.Web.Util {
                             if (settings == null || !Boolean.TryParse(settings["aspnet:AllowRelaxedUnicodeDecoding"], out _allowRelaxedUnicodeDecoding))
                                 _allowRelaxedUnicodeDecoding = false;
 
+                            if (settings == null || !Boolean.TryParse(settings["aspnet:DontUsePercentUUrlEncoding"], out _dontUsePercentUUrlEncoding))
+                                _dontUsePercentUUrlEncoding = BinaryCompatibility.Current.TargetsAtLeastFramework452; // default value is keyed off of <httpRuntime targetFramework="4.5.2" />
+
                             if (settings == null || !int.TryParse(settings["aspnet:UpdatePanelMaxScriptLength"], out _updatePanelMaxScriptLength) || _updatePanelMaxScriptLength < 0)
                                 _updatePanelMaxScriptLength = 0;
                             
                             // AppSettings override allows users to build against 4.5 but run against 4.0 or 4.5
-                            if (settings == null || !int.TryParse(settings["aspnet:MaxConcurrentCompilations"], out _maxConcurrentCompilations) || _maxConcurrentCompilations < 0) {
-                                CompilationSection config = MTConfigUtil.GetCompilationAppConfig();
-                                _maxConcurrentCompilations = config.MaxConcurrentCompilations;
-                            }
-                            if (_maxConcurrentCompilations <= 0) {
-                                _maxConcurrentCompilations = Environment.ProcessorCount;
-                            }
+                            _maxConcurrentCompilations = GetNullableIntegerValue(settings, "aspnet:MaxConcurrentCompilations");
 
                             if (settings == null || !int.TryParse(settings["aspnet:MaxAcceptLanguageFallbackCount"], out _maxAcceptLanguageFallbackCount) || _maxAcceptLanguageFallbackCount <= 0)
                                 _maxAcceptLanguageFallbackCount = DefaultMaxAcceptLanguageFallbackCount;
@@ -118,6 +120,15 @@ namespace System.Web.Util {
 
                             if (settings == null || string.IsNullOrWhiteSpace(_portableCompilationOutputSnapshotTypeOptions = settings["aspnet:PortableCompilationOutputSnapshotTypeOptions"]))
                                 _portableCompilationOutputSnapshotTypeOptions = null;
+
+                            if (settings == null || !Boolean.TryParse(settings["aspnet:EnsureSessionStateLockedOnFlush"], out _ensureSessionStateLockedOnFlush))
+                                _ensureSessionStateLockedOnFlush = false;
+
+                            if (settings == null || !Boolean.TryParse(settings["aspnet:UseRandomizedStringHashAlgorithm"], out _useRandomizedStringHashAlgorithm))
+                                _useRandomizedStringHashAlgorithm = false;
+
+                            if (settings == null || !Boolean.TryParse(settings["aspnet:EnableAsyncModelBinding"], out _enableAsyncModelBinding))
+                                _enableAsyncModelBinding = BinaryCompatibility.Current.TargetsAtLeastFramework46;
 
                             _settingsInitialized = true;
                         }
@@ -142,6 +153,18 @@ namespace System.Web.Util {
 
             // nothing found
             return null;
+        }
+
+        // helper function to read a tri-state boolean from config
+        private static bool? GetNullableBooleanValue(NameValueCollection settings, string key) {
+            bool value;
+            return (settings != null && Boolean.TryParse(settings[key], out value)) ? value : (bool?)null;
+        }
+
+        // helper function to read a nullable int from config
+        private static int? GetNullableIntegerValue(NameValueCollection settings, string key) {
+            int value;
+            return (settings != null && int.TryParse(settings[key], out value)) ? value : (int?)null;
         }
 
         private static  bool _useHostHeaderForRequestUrl;
@@ -208,6 +231,28 @@ namespace System.Web.Util {
             get {
                 EnsureSettingsLoaded();
                 return _useLegacyEventValidationCompatibility;
+            }
+        }
+
+        // false to always enforce EnableViewStateMac=false
+        // true to allow the developer to specify EnableViewStateMac=false (dangerous, leads to RCE!)
+        // null [default] to make the decision based on a registry key
+        // more info: DevDiv #461378 (http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/461378)
+        private static bool? _allowInsecureDeserialization;
+        internal static bool? AllowInsecureDeserialization {
+            get {
+                EnsureSettingsLoaded();
+                return _allowInsecureDeserialization;
+            }
+        }
+
+        // false [default] to use the default heuristic for determining when to suppress __VIEWSTATE MAC validation errors and when to display a YSOD
+        // true to always ---- errors and never show a YSOD
+        private static bool _alwaysIgnoreViewStateValidationErrors;
+        internal static bool AlwaysIgnoreViewStateValidationErrors {
+            get {
+                EnsureSettingsLoaded();
+                return _alwaysIgnoreViewStateValidationErrors;
             }
         }
 
@@ -344,6 +389,18 @@ namespace System.Web.Util {
             }
         }
 
+        // false - use UrlEncodeUnicode for some URL generation within ASP.NET, which can produce non-compliant results
+        // true - use UTF8 encoding for things like <form action>, which works with modern browsers
+        // defaults to true when targeting >= 4.5.2, otherwise false
+        // See DevDiv #762975 for more information.
+        private static bool _dontUsePercentUUrlEncoding;
+        internal static bool DontUsePercentUUrlEncoding {
+            get {
+                EnsureSettingsLoaded();
+                return _dontUsePercentUUrlEncoding;
+            }
+        }
+
         // maximum length for UpdatePanel script block
         private static int _updatePanelMaxScriptLength;
         internal static int UpdatePanelMaxScriptLength {
@@ -354,8 +411,8 @@ namespace System.Web.Util {
         }
 
        // maximum number of concurrent compilations
-       private static int _maxConcurrentCompilations;
-       internal static int MaxConcurrentCompilations {
+       private static int? _maxConcurrentCompilations;
+       internal static int? MaxConcurrentCompilations {
            get {
                EnsureSettingsLoaded();
                return _maxConcurrentCompilations;
@@ -402,6 +459,37 @@ namespace System.Web.Util {
            get {
                EnsureSettingsLoaded();
                return _portableCompilationOutputSnapshotTypeOptions;
+           }
+       }
+
+       // false [default] - allow delayed store of session state item (possibly concurrent access on new session)
+       // true - ensure the session state item is stored before another request is allowed to proceed with the same session
+       private static bool _ensureSessionStateLockedOnFlush;
+       internal static bool EnsureSessionStateLockedOnFlush {
+           get {
+               EnsureSettingsLoaded();
+               return _ensureSessionStateLockedOnFlush;
+           }
+       }
+
+       // false [default] - don't force randomized hash code algorithm. Exisiting behavior
+       // true - use randomized hash code algorithm
+       private static bool _useRandomizedStringHashAlgorithm;
+       internal static bool UseRandomizedStringHashAlgorithm {
+           get {
+               EnsureSettingsLoaded();
+               return _useRandomizedStringHashAlgorithm;
+           }
+       }
+
+       // false - disable async model binding
+       // true - enable async model binding
+       // defaults to true when targeting >= 4.6, otherwise false
+       private static bool _enableAsyncModelBinding;
+       internal static bool EnableAsyncModelBinding {
+           get {
+               EnsureSettingsLoaded();
+               return _enableAsyncModelBinding;
            }
        }
     }

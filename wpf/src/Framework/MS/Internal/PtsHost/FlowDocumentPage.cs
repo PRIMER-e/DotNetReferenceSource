@@ -6,7 +6,7 @@
 //              a PTS host (FlowDocument).
 //
 // History:
-//  09/27/2004 : [....] - created.
+//  09/27/2004 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 using System;
@@ -822,7 +822,7 @@ namespace MS.Internal.PtsHost
         ///     d) Your object is callable during Finalization.
         ///     e) Your Finalizer could be called multiple times.
         ///     f) Your Finalizer runs in a delicate security context.
-        /// See: http://blogs.msdn.com/[....]/archive/2004/02/20/77460.aspx
+        /// See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
         /// </remarks>
         private void Dispose(bool disposing)
         {

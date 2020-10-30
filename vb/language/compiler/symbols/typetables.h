@@ -12,7 +12,7 @@
 // of types. So it calls VSASSERT(TypeHelpers::IsKnownType(t), "unknown type") to make sure
 // that its arguments are in this list. If you add new types to the language, you'll have to
 // make sure they're handled properly; see comments about this in IsKnownType.
-// If you have doubts, please talk with [....] (31/May/2008)
+// If you have doubts, please talk with Microsoft (31/May/2008)
 // 
 // A complete list of types:
 //

@@ -41,6 +41,7 @@ extern "C" {
 #define _WConst_return _CONST_RETURN
 
 /* Function prototypes */
+#ifndef RC_INVOKED
 #ifndef _CRT_MEMORY_DEFINED
 #define _CRT_MEMORY_DEFINED
 _CRTIMP void *  __cdecl _memccpy( _Out_writes_bytes_opt_(_MaxCount) void * _Dst, _In_ const void * _Src, _In_ int _Val, _In_ size_t _MaxCount);
@@ -99,6 +100,7 @@ _Check_return_ _CRT_NONSTDC_DEPRECATE(_memicmp) _CRTIMP int __cdecl memicmp(_In_
 #endif  /* !__STDC__ */
 
 #endif  /* _CRT_MEMORY_DEFINED */
+#endif  /* RC_INVOKED */
 
 _Check_return_wat_ _CRTIMP_ALTERNATIVE errno_t __cdecl _strset_s(_Inout_updates_z_(_DstSize) char * _Dst, _In_ size_t _DstSize, _In_ int _Value);
 __DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(errno_t, _strset_s, _Prepost_z_ char, _Dest, _In_ int, _Value)

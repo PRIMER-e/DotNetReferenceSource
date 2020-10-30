@@ -30,7 +30,6 @@ namespace Microsoft.Internal
         // Constants to prevent hardcoding in InternalsVisibleTo attribute
         internal const string PresentationCore = "PresentationCore, PublicKey="+ WCP_PUBLIC_KEY_STRING;
         internal const string PresentationCFFRasterizer = "PresentationCFFRasterizer, PublicKey="+ WCP_PUBLIC_KEY_STRING;
-        internal const string PresentationFontCache = "PresentationFontCache, PublicKey="+ WCP_PUBLIC_KEY_STRING;
         internal const string PresentationFramework = "PresentationFramework, PublicKey="+ WCP_PUBLIC_KEY_STRING;
         internal const string PresentationUI = "PresentationUI, PublicKey="+ WCP_PUBLIC_KEY_STRING;
         internal const string PresentationFrameworkLuna = "PresentationFramework.Luna, PublicKey="+ WCP_PUBLIC_KEY_STRING;
@@ -53,11 +52,6 @@ namespace Microsoft.Internal
         // we hard code the key here because the 3.5 dll is built in the devdiv depot using the CLR key.
         internal const string SystemWindowsPresentation = "System.Windows.Presentation, PublicKey=" + DEVDIV_PUBLIC_KEY_STRING;
         internal const string SystemWindowsControlsRibbon = "System.Windows.Controls.Ribbon, PublicKey=" + DEVDIV_PUBLIC_KEY_STRING;
-
-        // Constants to prevent the need to update AsmMeta files with WCP version changes.
-        private const string OLD_WCP_VERSION = "3.0.0.0";
-        internal const string FontCachePortName = @"\BaseNamedObjects\FontCachePort" + OLD_WCP_VERSION;
-        internal const string FontCacheServiceName = @"FontCache" + OLD_WCP_VERSION;
     }
 
     internal static class DllImport

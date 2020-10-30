@@ -673,7 +673,7 @@ namespace MS.Internal.TextFormatting
                 // encounter the first codepoint of the sequence, we need to make sure
                 // we have enough codepoints to determine the correct whole sequence.
                 // In an uncommon event, we may be forced to look ahead by fetching more
-                // runs. [wchao, PS bug 910308]
+                // runs. [wchao, PS 
 
                 int newlineLength = 1;  // most sequences take one cp
 
@@ -2370,19 +2370,19 @@ namespace MS.Internal.TextFormatting
                     widthLeft = rightMargin - _formatWidth;
                 }
 
-                metrics = textObject.Format(_settings.Formatter.IdealToReal(widthLeft));
+                metrics = textObject.Format(_settings.Formatter.IdealToReal(widthLeft, _settings.TextSource.PixelsPerDip));
 
                 if (Double.IsPositiveInfinity(metrics.Width))
                 {
                     // If the inline object has Width to be positive infinity, trim the width to
                     // the maximum value that LS can handle.
                     metrics = new TextEmbeddedObjectMetrics(
-                        _settings.Formatter.IdealToReal((Constants.IdealInfiniteWidth - currentPosition)),
+                        _settings.Formatter.IdealToReal((Constants.IdealInfiniteWidth - currentPosition), _settings.TextSource.PixelsPerDip),
                         metrics.Height,
                         metrics.Baseline
                         );
                 }
-                else if (metrics.Width > _settings.Formatter.IdealToReal((Constants.IdealInfiniteWidth - currentPosition)))
+                else if (metrics.Width > _settings.Formatter.IdealToReal((Constants.IdealInfiniteWidth - currentPosition), _settings.TextSource.PixelsPerDip))
                 {
                     // LS cannot compute value greater than its maximum computable value
                     throw new ArgumentException(SR.Get(SRID.TextObjectMetrics_WidthOutOfRange));

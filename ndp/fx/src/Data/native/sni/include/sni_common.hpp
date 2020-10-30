@@ -40,11 +40,7 @@
 
 #ifdef SNIX
 
-//
-// SNIX assume UNICODE and _UNICODE is not defined
-// In another word, SNIX is ascii exclusively. 
-//
-C_ASSERT ( sizeof (TCHAR) == sizeof (char));
+C_ASSERT ( sizeof (TCHAR) == sizeof (WCHAR));
 
 #define SNIMemObj void
 #define ISOSHost void
@@ -82,14 +78,8 @@ C_ASSERT ( sizeof (TCHAR) == sizeof (char));
 #define getaddrinfo_l(a,b,c,d,e) getaddrinfo(a,b,c,d)
 #define getnameinfo_l(a,b,c,d,e,f,g,h) getnameinfo(a,b,c,d,e,f,g)
 
-// SNIX is ASCII only
-#ifdef _UNICODE
-C_ASSERT ( 0 );
-#endif
-
-#ifdef UNICODE
-C_ASSERT ( 0 );
-#endif
+#define GetAddrInfoW_l(a,b,c,d,e) GetAddrInfoW(a,b,c,d)
+#define GetNameInfoW_l(a,b,c,d,e,f,g,h) GetNameInfoW(a,b,c,d,e,f,g)
 
 _locale_t __stdcall GetDefaultLocale();
 
@@ -278,13 +268,21 @@ extern "C"  inline SNI_Packet *SNIPacketAllocateEx( __in SNI_Conn * pConn,
 								   	SOS_IOCompRoutine pfunComp);
 
 
-extern "C" LPSTR StrChrA_SYS(__in_bcount(cbCount1) LPCSTR lpstring1, int cbCount1/* total byte count*/, char character);
 extern "C" LPSTR StrStrA_SYS(DWORD dwCmpFlags, LPCSTR lpstring1,int cchCount1, LPCSTR lpstring2, int cchCount2);
-extern "C" DWORD StrTrimBoth_Sys( __inout_bcount(cbOrigin) LPSTR  pszOrigin /* input string */,
-						size_t cbOrigin	/* total byte count */, 
-						__out size_t *cbReturnCount /* total byte count after removal */,
-						__in_bcount(cbTargets) LPCSTR pszTargets /* chars for removal */,
-						int cbTargets);
+extern "C" LPSTR StrChrA_SYS(__in_ecount(cchCount1) LPCSTR lpstring1, int cchCount1/* total char count*/, char character);
+extern "C" LPWSTR StrChrW_SYS(__in_ecount(cchCount1) LPCWSTR lpwstring1, int cchCount1/* total char count*/, WCHAR character);
+extern "C" LPWSTR StrStrW_SYS(DWORD dwCmpFlags, LPCWSTR lpwstring1,int cchCount1, LPCWSTR lpwstring2, int cchCount2);
+extern "C" DWORD StrTrimBothW_Sys( __inout_ecount(cchOrigin) LPWSTR  pwszOrigin /* input string */,
+						size_t cchOrigin	/* total char count */, 
+						__out size_t *cchReturnCount /* total char count after removal */,
+						__in_ecount(cchTargets) LPCWSTR pwszTargets /* chars for removal */,
+						int cchTargets);
+extern "C" DWORD StrTrimBoth_Sys( __inout_ecount(cchOrigin) LPSTR  pszOrigin /* input string */,
+				size_t cchOrigin	/* total char count */, 
+				__out size_t *cchReturnCount /* total char count after removal */,
+				__in_ecount(cchTargets) LPCSTR pszTargets /* chars for removal */,
+				int cchTargets);
+
 extern "C" void StrTrimLeftW_Sys(__inout LPWSTR wszConnect);
 extern "C" DWORD SNICreateWaitThread(WaitThreadRoutine pfnAsyncWait, PVOID pParam);
 extern "C" inline DWORD SNIRegisterWithIOCP(HANDLE hNwk);
@@ -825,7 +823,7 @@ private:
 	SNI_Conn();
 	~SNI_Conn();
 
-	DWORD AllocAndSetName(__out WCHAR **pwszTarget, __in __nullterminated char *szSource, bool fFailEmptySource);
+	DWORD AllocAndSetName(__out WCHAR **pwszTarget, __in __nullterminated WCHAR *wszSource, bool fFailEmptySource);
 public:
 
 	// 
@@ -865,7 +863,7 @@ public:
 	inline LONG AddRef(SNI_REF refType);
 	inline LONG Release(SNI_REF refType);	
 
-	DWORD SetServerName( __in __nullterminated char *szServer, __in __nullterminated char *szOriginalServerName);
+	DWORD SetServerName( __in __nullterminated WCHAR *wszServer, __in __nullterminated WCHAR *wszOriginalServerName);
 
 	GUID GetConnId() const { return m_Uci.Id; }
 	

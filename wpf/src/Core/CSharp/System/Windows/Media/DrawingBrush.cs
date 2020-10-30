@@ -9,8 +9,8 @@
 //              by use of a Drawing.
 //
 // History:
-//  2003/07/17 : [....] - Created it.
-//  2003/07/28 : [....] - Renamed it and hooked it up to the unmanaged code.
+//  2003/07/17 : Microsoft - Created it.
+//  2003/07/28 : Microsoft - Renamed it and hooked it up to the unmanaged code.
 //
 //---------------------------------------------------------------------------
 

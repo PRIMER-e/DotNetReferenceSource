@@ -3,13 +3,13 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 //
 // DataObject.cs
 //
-// 21 [....] 2000
+// 21 Microsoft 2000
 // 
 
 namespace System.Security.Cryptography.Xml

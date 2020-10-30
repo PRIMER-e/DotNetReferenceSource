@@ -299,7 +299,7 @@ DWORD SNI_Sec::CheckServiceBindings(SNIAuthErrStates *pSSPIFailureState)
 		if( NULL == clientTargetSPN.sTargetName )
 		{
 			*pSSPIFailureState = SNIAUTH_ERRST_SSPIHANDSHAKE_SERVICEBINDINGS_QUERYCONTEXTATTRIBUTES2;
-			// This pointer should always be valid, so this would indicate an SSPI bug. We validate it for our own peace of mind.
+			// This pointer should always be valid, so this would indicate an SSPI 
 			Assert(0 && "QueryContextAttributes for SECPKG_ATTR_CLIENT_SPECIFIED_TARGET returned SEC_E_OK and a NULL sTargetName.");
 			BidTrace0(ERROR_TAG _T("QueryContextAttributes for SECPKG_ATTR_CLIENT_SPECIFIED_TARGET returned SEC_E_OK and a NULL sTargetName.\n"));
 			dwRet = ERROR_OUTOFMEMORY; // the only reason one can imagine for this to fail...
@@ -467,7 +467,7 @@ DWORD SNISecInitPackageEx(__out DWORD * pcbMaxToken, BOOL fInitializeSPN, BOOL f
 
 	INIT_SECURITY_INTERFACE pfInitSecurityInterface;
 
-	pfInitSecurityInterface = (INIT_SECURITY_INTERFACE) GetProcAddress( g_hSspiLib, SECURITY_ENTRYPOINT );
+	pfInitSecurityInterface = (INIT_SECURITY_INTERFACE) GetProcAddress( g_hSspiLib, "InitSecurityInterfaceW" );
 
 	if( pfInitSecurityInterface == NULL )
 	{
@@ -842,7 +842,7 @@ DWORD SNISecGenServerContext( __in SNI_Conn * pConn,
 	// Note: I removed the old check for invalid token. We should never get
 	// a Kerberos token unless we have registered an Spn and in that case an invalid
 	// token is an error. 
-	// Code taken out after Bug 233729.
+	// Code taken out after 
 	if( !SEC_SUCCESS (ss) )
 	{
 		*pSSPIFailureState = SNIAUTH_ERRST_SSPIHANDSHAKE_ACCEPTSECURITYCONTEXT;
@@ -886,9 +886,9 @@ DWORD SNISecGenServerContext( __in SNI_Conn * pConn,
 				{
 					case ExtendedProtectionPolicy_OFF:
 						// This should be impossible, and should indicate either a mistaken assumption during coding 
-						// or a Windows bug. Expectation is that Negotiate only returns SEC_E_BAD_BINDINGS due 
-						// to Channel Bindings mismatch, and with OFF we don't specify CBs. 
-						// Assert the unexpected error case and leave the failure state as ASC failure.
+						// or a Windows 
+
+
 						Assert(0 && "Unexpected return value from AcceptSecurityContext.");
 						break;
 					case ExtendedProtectionPolicy_ALLOWED:
@@ -991,8 +991,8 @@ DWORD SNISecGenClientContext (__in SNI_Conn * pConn,
 									BYTE	*pOut,
 									__in DWORD	*pcbOut,
 									BOOL	*pfDone,
-									__in __nullterminated const CHAR	*szServerInfo, 
-									DWORD	cbServerInfo,  //Note: szServerInfo is assumed to be null-terminated and this param is not in use anymore!
+									__in __nullterminated const WCHAR	*wszServerInfo, 
+									DWORD	cbServerInfo,  //Note: wszServerInfo is assumed to be null-terminated and this param is not in use anymore!
 									LPCWSTR pwszUserName,
 									LPCWSTR pwszPassword)
 {
@@ -1009,7 +1009,7 @@ DWORD SNISecGenClientContext (__in SNI_Conn * pConn,
 							  _T("pOut: %p{BYTE*}, ")
 							  _T("pfDone: %p{BOOL*}, ")
 							  _T("cbServerInfo: %d, ")
-							  _T("szServerInfo: %p{PCSTR}, ")
+							  _T("wszServerInfo: %p{PCWSTR}, ")
 							  _T("pwszUserName: %p{LPCWSTR}\n"), 
 							  pConn->GetBidId(),
 							  pConn, 
@@ -1018,7 +1018,7 @@ DWORD SNISecGenClientContext (__in SNI_Conn * pConn,
 							  pOut, 
 							  pfDone, 
 							  cbServerInfo, 
-							  szServerInfo, 
+							  wszServerInfo, 
 							  pwszUserName);
 	
 	DWORD dwRet;
@@ -1039,9 +1039,9 @@ DWORD SNISecGenClientContext (__in SNI_Conn * pConn,
 		// Empty target name is allowed only on XP
 		if ((g_osviSNI.dwMajorVersion == 5) && (g_osviSNI.dwMinorVersion == 1))
 		{
-			Assert(NULL != szServerInfo);
+			Assert(NULL != wszServerInfo);
 			
-			if ( 0 == szServerInfo[0])
+			if ( 0 == wszServerInfo[0])
 			{
 				// If SPN  is blank, attempt to use NTLM.
 				// Select NTLM SSPI security package if the package is available.
@@ -1050,7 +1050,7 @@ DWORD SNISecGenClientContext (__in SNI_Conn * pConn,
 					pszPackage	  = g_rgszSSP[NTLM_SSPI_PACKAGE];
 					pszTargetName = NULL;
 	
-					BidTraceU2( SNI_BID_TRACE_ON, SNI_TAG _T( "SSP Package name:'%hs', SPN:'%hs'\n" ), pszPackage, pszBlankSpn);
+					BidTraceU2( SNI_BID_TRACE_ON, SNI_TAG _T( "SSP Package name:'%s', SPN:'%s'\n" ), pszPackage, pszBlankSpn);
 				}
 				else
 				{
@@ -1064,61 +1064,29 @@ DWORD SNISecGenClientContext (__in SNI_Conn * pConn,
 			}
 			else
 			{
-				pszTargetName = (TCHAR*) szServerInfo;
+				pszTargetName = (TCHAR*) wszServerInfo;
 	
-				BidTraceU2( SNI_BID_TRACE_ON, SNI_TAG _T( "SSP Package name:'%hs', SPN:'%hs'\n" ), pszPackage, szServerInfo);
+				BidTraceU2( SNI_BID_TRACE_ON, SNI_TAG _T( "SSP Package name:'%s', SPN:'%s'\n" ), pszPackage, wszServerInfo);
 			}
 		}
 		else
 		{
-			Assert( szServerInfo && szServerInfo[0]);
+			Assert( wszServerInfo && wszServerInfo[0]);
 	
-			pszTargetName = (TCHAR*) szServerInfo;
+			pszTargetName = (TCHAR*) wszServerInfo;
 	
-			BidTraceU2( SNI_BID_TRACE_ON, SNI_TAG _T( "SSP Package name:'%hs', SPN:'%hs'\n" ), pszPackage, szServerInfo);
+			BidTraceU2( SNI_BID_TRACE_ON, SNI_TAG _T( "SSP Package name:'%s', SPN:'%s'\n" ), pszPackage, wszServerInfo);
 		}
 	
 #else	// In case this is not SNIX
 
-	Assert( szServerInfo && szServerInfo[0]);
+	Assert( wszServerInfo && wszServerInfo[0]);
 	
-	BidTraceU2( SNI_BID_TRACE_ON, SNI_TAG _T( "SSP Package name:'%hs', SPN:'%hs'\n" ), pszPackage, szServerInfo);
-
-#ifdef SNI_BASED_CLIENT
-
-	pszTargetName = (TCHAR*) szServerInfo;
-
-#else	// In case this is not SNI_BASED_CLIENT
-
-	WCHAR			wszSPN[SNI_MAX_COMPOSED_SPN]=L"";
-
-	int cchWideChar=MultiByteToWideChar(
-							CP_ACP,         // code page
-							0,         // character-type options
-							szServerInfo, // string to map
-							strlen(szServerInfo)+1,       // number of bytes in string
-						  	wszSPN,  // wide-character buffer
-						  	ARRAYSIZE(wszSPN) -1 // size of buffer
-						  	);
-
-	if( 0 >= cchWideChar || (ARRAYSIZE(wszSPN)-1) < cchWideChar)
-	{
-		dwRet = ERROR_INVALID_PARAMETER;
-
-		SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_10, dwRet );
-
-		BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), dwRet);
-			
-		return dwRet;
-	}
-
-	wszSPN[cchWideChar] = L'\0';
-
-	pszTargetName = (TCHAR*) wszSPN; 
-
-	#endif //SNI_BASED_CLIENT or not
+	BidTraceU2( SNI_BID_TRACE_ON, SNI_TAG _T( "SSP Package name:'%s', SPN:'%s'\n" ), pszPackage, wszServerInfo);
 
 #endif	// SNIX or not	
+
+	pszTargetName = (TCHAR *) wszServerInfo;
 	
 	// If username is provided, it is Digest
 	// If this is the first time, create a new Digest object
@@ -1225,29 +1193,7 @@ Retry:
 		//
 		if (NULL != pszTargetName && pszTargetName != pszBlankSpn)
 		{
-			CPL_ASSERT( sizeof(TCHAR) == sizeof(CHAR) ); 
-
-			CHAR szServer[MAX_PATH+1] = "";
-
-			if( 0 == WideCharToMultiByte(
-					CP_ACP,
-					0,
-					pConn->m_pwszServer,
-					-1,
-					szServer,
-					MAX_PATH,
-					NULL,
-					NULL
-					))
-			{
-				szServer[0] = '\0';
-			}
-			else
-			{
-				szServer[MAX_PATH]='\0';
-			}
-		
-			if( szServerInfo[0] && szServer[0] && Tcp::FIsLoopBack(szServer) )
+			if( wszServerInfo[0] && Tcp::FIsLoopBack(pConn->m_pwszServer) )
 			{
 				BidTraceU1( SNI_BID_TRACE_ON, ERROR_TAG _T("InitializeSecurityContext failed with %d{WINERR}, SPN is non-blank and connecting to loopback, calling InitializeSecurityContext again with blank SPN.\n" ), ss );		
 				pszTargetName = pszBlankSpn;
@@ -1563,19 +1509,11 @@ DWORD IsIpAllEnabled (SS_NODE_HANDLE hRoot, BOOL *pfEnabled)
 // called at server start up and shutdown respectively.
 //
 
-DWORD SNISecAddSpn(const char * szInstanceName, BOOL fIsSystemInst)
+DWORD SNISecAddSpn(const WCHAR * wszInstanceName, BOOL fIsSystemInst)
 {
-	Assert ( NULL != szInstanceName  && szInstanceName[0]);
-
-#ifndef SNI_BASED_CLIENT
-	CPL_ASSERT( sizeof(TCHAR) == sizeof(WCHAR) ); 
-	CPL_ASSERT( sizeof(_T('\0')) == sizeof(L'\0') ); 
-#else
-	CPL_ASSERT( sizeof(TCHAR) == sizeof(CHAR) ); 
-	CPL_ASSERT( sizeof(_T('\0')) == sizeof('\0') ); 
-#endif
+	Assert ( NULL != wszInstanceName  && wszInstanceName[0]);
 	
-	BidxScopeAutoSNI2( SNIAPI_TAG _T("szInstancename:%hs, fIsSystemInst: %d{BOOL}\n"), szInstanceName, fIsSystemInst);
+	BidxScopeAutoSNI2( SNIAPI_TAG _T("wszInstancename:%s, fIsSystemInst: %d{BOOL}\n"), wszInstanceName, fIsSystemInst);
 	DWORD dwRet = ERROR_SUCCESS;
 	DWORD dwFailState = x_earsSuccess;
 	TCHAR szFQDNBuf[NI_MAXHOST]=_T("");
@@ -1594,7 +1532,7 @@ DWORD SNISecAddSpn(const char * szInstanceName, BOOL fIsSystemInst)
 			SS_NODE_HANDLE hRoot = NULL; 
 			BOOL fEnabled = FALSE;
 
-			dwRet = static_cast<DWORD>(SSgetRootHandleEx(const_cast<char*>(szInstanceName), &hRoot, fIsSystemInst )); 
+			dwRet = static_cast<DWORD>(SSgetRootHandleEx(const_cast<WCHAR*>(wszInstanceName), &hRoot, fIsSystemInst )); 
 			if ( ERROR_SUCCESS == dwRet )
 			{
 				if( fIsSystemInst )
@@ -1642,44 +1580,23 @@ DWORD SNISecAddSpn(const char * szInstanceName, BOOL fIsSystemInst)
 		// Best effort and trace out any error.
 		//
 		// Get the Dns FQDN of the local computer
-#ifndef SNI_BASED_CLIENT
 		if( GetComputerNameExW( ComputerNameDnsFullyQualified, szFQDNBuf, &dwSize ) )
-#else
-		if( GetComputerNameExA( ComputerNameDnsFullyQualified, szFQDNBuf, &dwSize ) )
-#endif
 		{
 			// Format of the SPN for default instance is "MSSQLSvc/FQDN".
 			//
-			if(!_stricmp_l(szInstanceName, "MSSQLSERVER", GetDefaultLocale()))
+			if(!_wcsicmp_l(wszInstanceName, L"MSSQLSERVER", GetDefaultLocale()))
 			{
-				szInstance[0] = _T('\0');
+				szInstance[0] = L'\0';
 			}
 			// Format of the SPN for named instance is "MSSQLSvc/FQDN:InstanceName".
 			//
 			else
 			{
-#ifndef SNI_BASED_CLIENT
-				cRet = MultiByteToWideChar(CP_ACP, 
-									0, 
-									szInstanceName,
-									static_cast<int>(strlen(szInstanceName))+1, 
-									szInstance,   
-									MAX_INSTANCENAME_LENGTH
-									);
-				if( cRet != 0 )
-				{
-					szInstance[MAX_INSTANCENAME_LENGTH] = _T('\0');
-				}
-				else
-				{
-					dwRet = ERROR_INVALID_PARAMETER;
-					BidTraceU1( SNI_BID_TRACE_ON, SNI_TAG _T("MultiByteToWideChar Failed: %d{WINERR}\n"), ERROR_INVALID_PARAMETER);
-				}
-#else
-				dwRet = strcpy_s(szInstance, MAX_INSTANCENAME_LENGTH, szInstanceName);
+
+				dwRet = wcscpy_s((WCHAR *)szInstance, MAX_INSTANCENAME_LENGTH, wszInstanceName);
 				if (ERROR_SUCCESS == dwRet)
 				{
-					size_t cLen = strlen(szInstanceName);
+					size_t cLen = wcslen(wszInstanceName);
 					if (cLen > MAX_INSTANCENAME_LENGTH)
 					{
 						dwRet = ERROR_INVALID_PARAMETER;
@@ -1687,14 +1604,13 @@ DWORD SNISecAddSpn(const char * szInstanceName, BOOL fIsSystemInst)
 					}
 					else
 					{
-						szInstance[cLen] = '\0';
+						szInstance[cLen] = _T('\0');
 					}
 				}
 				else
 				{
 					BidTrace1( ERROR_TAG _T("strcpy_s failed: %d{WINERR}\n"), dwRet);
 				}
-#endif
 			}
 
 			//	Compose "FQDN:InstanceName"

@@ -332,7 +332,7 @@ namespace System.Windows.Forms {
                     // Pre-whidbey we used to use ImageIndex rather than ImageIndexer.ActualIndex.
                     // ImageIndex clamps to the length of the image list.  We need to replicate
                     // this logic here for backwards compatibility.  (VSWhidbey #95780)
-                    // Per [....] we do not bake this into ImageIndexer because different controls
+                    // Per Microsoft we do not bake this into ImageIndexer because different controls
                     // treat this scenario differently.
                     if(actualIndex >= imageList.Images.Count) {
                         actualIndex = imageList.Images.Count - 1;

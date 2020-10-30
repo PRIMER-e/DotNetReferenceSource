@@ -148,7 +148,7 @@ namespace MS.Internal.IO.Packaging
             // case later. 
             uint origianlBufferSize = bufCharacterCount;
 
-            // Normalize the buffer size, for a very large size could be due to a bug or an attempted attack.
+            // Normalize the buffer size, for a very large size could be due to a 
             if (bufCharacterCount > _maxTextBufferSizeInCharacters)
             {
                 bufCharacterCount = _maxTextBufferSizeInCharacters;

@@ -53,7 +53,7 @@ namespace System.Transactions.Oletx
             int localCompleted = Interlocked.CompareExchange( ref this.completed, 1, 0 );
             if ( 1 == localCompleted )
             {
-                throw TransactionException.CreateTransactionCompletedException( SR.GetString( SR.TraceSourceOletx ) );
+                throw TransactionException.CreateTransactionCompletedException( SR.GetString( SR.TraceSourceOletx ), this.DistributedTxId);
             }
 
             if ( DiagnosticTrace.Information )

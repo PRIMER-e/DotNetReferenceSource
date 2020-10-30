@@ -234,12 +234,12 @@ Bindable::FindAllPossibleTypeComponentsInHash
             //        (!Type->IsBindingDone() &&
             //        Type->GetBindableInstance()->GetStatusOfResolvePartialTypes() == TaskTriState::NotStarted),
             //                "How can this type/namespace already have been through partial type resolution ?")
-            // Temporary fix for Bug VSWhidbey 253211
-            //
-            // The actual problem is due to a editclassify issue that has existed since everett. The fix for this
-            // problem is risky at this point of time for beta1, so instead this temporary solution for beta1.
-            // Permanent fix will be address by fix for Beta2 Bug VSWhidbey 282466.
-            //
+            // Temporary fix for 
+
+
+
+
+
             if (Type != CurrentContainer() &&
                 (Type->IsBindingDone() ||
                     Type->GetBindableInstance()->GetStatusOfResolvePartialTypes() != NotStarted))
@@ -1237,7 +1237,7 @@ Bindable::RemoveDuplicateSyntheticMethods
     }
     else
     {
-        // Bug VSWhidbey 494456.
+        // 
         if (SyntheticMethods.Count() > 0 &&
             MainType->IsClass() &&
             MainType->PClass()->IsMustInherit() &&

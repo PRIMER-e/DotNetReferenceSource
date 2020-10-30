@@ -906,7 +906,7 @@ unsigned long _fastcall StringPool::ComputeStringHashValue(
         {
             // Simulate the null termination in the case it's not there.
 
-            //[....] - DevDivBugs #
+            //Microsoft - DevDivBugs #
             l = SleazyLowerCasePair((*(unsigned short *)pl) | 0x00200000);
 
             hash = _lrotl(hash, 2) + ((l >> 9) + l) * 0x10004001;     // 966, 2, 10, 0

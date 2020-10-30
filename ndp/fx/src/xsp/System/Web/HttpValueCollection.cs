@@ -350,9 +350,16 @@ namespace System.Web {
         // do so for back-compat. The result of ToString is not used to make a security decision, so this
         // code path is "safe".
         internal static string UrlEncodeForToString(string input) {
+            if (AppSettings.DontUsePercentUUrlEncoding) {
+                // DevDiv #762975: <form action> and other similar URLs are mangled since we use non-standard %uXXXX encoding.
+                // We need to use standard UTF8 encoding for modern browsers to understand the URLs.
+                return HttpUtility.UrlEncode(input);
+            }
+            else {
 #pragma warning disable 618 // [Obsolete]
-            return HttpUtility.UrlEncodeUnicode(input);
+                return HttpUtility.UrlEncodeUnicode(input);
 #pragma warning restore 618
+            }
         }
 
     }

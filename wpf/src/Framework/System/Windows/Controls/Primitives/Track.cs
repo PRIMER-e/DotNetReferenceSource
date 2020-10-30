@@ -794,7 +794,7 @@ namespace System.Windows.Controls.Primitives
             //
             //
             //  Finger based event flow
-            //      StylusDown --> Generates a Mouse Move (to [....] the cursor) --> enqueues HitTestInvalidatedAsync --> Followed by TouchDown --> Followed by MouseDown
+            //      StylusDown --> Generates a Mouse Move (to sync the cursor) --> enqueues HitTestInvalidatedAsync --> Followed by TouchDown --> Followed by MouseDown
             //          |
             //          V
             //      HitTestInvalidatedAsync (an input priority dispactcher operation)

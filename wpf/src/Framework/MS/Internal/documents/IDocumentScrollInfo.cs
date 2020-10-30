@@ -209,7 +209,7 @@ namespace MS.Internal.Documents
         /// DocumentViewerOwner is the DocumentViewer Control and UI that hosts the IDocumentScrollInfo object.  
         /// This control is dependent on this IDSI’s properties, so implementers of IDSI should call 
         /// InvalidateDocumentScrollInfo() on this object when related properties change so that 
-        /// DocumentViewer’s UI will be kept in [....].  This property is analogous to IScrollInfo’s ScrollOwner 
+        /// DocumentViewer’s UI will be kept in sync.  This property is analogous to IScrollInfo’s ScrollOwner 
         /// property.
         /// </summary>
         /// <value></value>

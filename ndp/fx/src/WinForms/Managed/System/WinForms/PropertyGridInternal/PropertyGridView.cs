@@ -59,24 +59,30 @@ namespace System.Windows.Forms.PropertyGridInternal {
         private const int LEFTDOT_SIZE = 4;
 #endif
         // constants
-        protected const int     EDIT_INDENT = 0;
-        protected const int     OUTLINE_INDENT = 10;
-        private const int       OUTLINE_SIZE_ORIGINAL = 9;
-        private const int       OUTLINE_SIZE_EXPLORER_TREE_STYLE_ORIGINAL = 16;
-        protected static int    OUTLINE_SIZE = OUTLINE_SIZE_ORIGINAL;
-        protected static int    OUTLINE_SIZE_EXPLORER_TREE_STYLE = OUTLINE_SIZE_EXPLORER_TREE_STYLE_ORIGINAL;
+        private const int       EDIT_INDENT = 0;
+        private const int       OUTLINE_INDENT = 10;
+        private const int       OUTLINE_SIZE = 9;
+        private const int       OUTLINE_SIZE_EXPLORER_TREE_STYLE = 16;
+        private static int      outlineSize = OUTLINE_SIZE;
+        private static int      outlineSizeExplorerTreeStyle = OUTLINE_SIZE_EXPLORER_TREE_STYLE;
         private static bool     isScalingInitialized = false;
-        protected const int     PAINT_WIDTH = 20;
-        protected const int     PAINT_INDENT = 26;
-        protected const int     ROWLABEL = 1;
-        protected const int     ROWVALUE = 2;
-        protected const int     MAX_LISTBOX_HEIGHT = 200;
-
-        protected const short    ERROR_NONE = 0;
-        protected const short    ERROR_THROWN = 1;
-        protected const short    ERROR_MSGBOX_UP = 2;
+        private const int       PAINT_WIDTH = 20;
+        private static int      paintWidth = PAINT_WIDTH;
+        private const int       PAINT_INDENT = 26;
+        private static int      paintIndent = PAINT_INDENT;
+        private const int       ROWLABEL = 1;
+        private const int       ROWVALUE = 2;
+        private const int       MAX_LISTBOX_HEIGHT = 200;
+        private static int      maxListBoxHeight = MAX_LISTBOX_HEIGHT;
+        
+        private const short    ERROR_NONE = 0;
+        private const short    ERROR_THROWN = 1;
+        private const short    ERROR_MSGBOX_UP = 2;
         internal  const short    GDIPLUS_SPACE = 2;
         internal  const int      MaxRecurseExpand = 10;
+
+        private const int DOTDOTDOT_ICONWIDTH = 7;
+        private const int DOTDOTDOT_ICONHEIGHT = 8;
 
         protected static readonly Point InvalidPosition = new Point(int.MinValue, int.MinValue);
 
@@ -160,14 +166,25 @@ namespace System.Windows.Forms.PropertyGridInternal {
         private int                                 cachedRowHeight = -1;
         IntPtr baseHfont;
         IntPtr boldHfont;
-      
+
         [
             SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters") // PropertyGridView's caption is not visible.
                                                                                                         // So we don't have to localize its text.
         ]
         public PropertyGridView(IServiceProvider serviceProvider, PropertyGrid propertyGrid)
         : base() {
-            
+
+            if (!isScalingInitialized) {
+                if (DpiHelper.IsScalingRequired) {
+                    paintWidth = DpiHelper.LogicalToDeviceUnitsX(PAINT_WIDTH);
+                    paintIndent = DpiHelper.LogicalToDeviceUnitsX(PAINT_INDENT);
+                    outlineSizeExplorerTreeStyle = DpiHelper.LogicalToDeviceUnitsX(OUTLINE_SIZE_EXPLORER_TREE_STYLE);
+                    outlineSize = DpiHelper.LogicalToDeviceUnitsX(OUTLINE_SIZE);
+                    maxListBoxHeight = DpiHelper.LogicalToDeviceUnitsY(MAX_LISTBOX_HEIGHT);
+                }
+                isScalingInitialized = true;
+            }
+
             this.ehValueClick = new EventHandler(this.OnGridEntryValueClick);
             this.ehLabelClick = new EventHandler(this.OnGridEntryLabelClick);
             this.ehOutlineClick = new EventHandler(this.OnGridEntryOutlineClick);
@@ -291,17 +308,44 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     btnDialog.BackColor = SystemColors.Control;
                     btnDialog.ForeColor = SystemColors.ControlText;
                     btnDialog.TabIndex = 3;
-                    btnDialog.Image = new Bitmap(typeof(PropertyGrid), "dotdotdot.png");
+
+                    int scaledIconWidth = DOTDOTDOT_ICONWIDTH;
+                    int scaledIconHeight = DOTDOTDOT_ICONHEIGHT;
+
+                    if (DpiHelper.IsScalingRequired) {
+                        scaledIconWidth = DpiHelper.LogicalToDeviceUnitsX(DOTDOTDOT_ICONWIDTH);
+                        scaledIconHeight = DpiHelper.LogicalToDeviceUnitsY(DOTDOTDOT_ICONHEIGHT);
+                    }
+
+                    btnDialog.Image = GetBitmapFromIcon("dotdotdot.ico", scaledIconWidth, scaledIconHeight);
                     btnDialog.Click += new EventHandler(this.OnBtnClick);
                     //btnDialog.MouseUp += new MouseEventHandler(this.OnBtnMouseUp);
                     //btnDialog.MouseDown += new MouseEventHandler(this.OnBtnMouseDown);
                     btnDialog.KeyDown += new KeyEventHandler(this.OnBtnKeyDown);
                     btnDialog.LostFocus += new EventHandler(this.OnChildLostFocus);
-                    btnDialog.Size = new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);
+                    btnDialog.Size = new Size(SystemInformation.VerticalScrollBarArrowHeight, RowHeight);                    
                     CommonEditorSetup(btnDialog);
                 }
                 return btnDialog;
             }
+        }
+
+        [ResourceExposure(ResourceScope.Machine)]
+        [ResourceConsumption(ResourceScope.Machine)]
+        private static Bitmap GetBitmapFromIcon(string iconName, int iconsWidth, int iconsHeight) {
+            Size desiredSize = new Size(iconsWidth, iconsHeight);
+            Icon icon = new Icon(BitmapSelector.GetResourceStream(typeof(PropertyGrid), iconName), desiredSize);
+            Bitmap b = icon.ToBitmap();
+            icon.Dispose();
+            
+            if (DpiHelper.IsScalingRequired && (b.Size.Width != iconsWidth || b.Size.Height != iconsHeight)) {
+                Bitmap scaledBitmap = DpiHelper.CreateResizedBitmap(b, desiredSize);
+                if (scaledBitmap != null) {
+                    b.Dispose();
+                    b = scaledBitmap;
+                }
+            }
+            return b;
         }
 
         private GridViewEdit Edit {
@@ -410,6 +454,10 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
+       //   This dialog's width is defined by the summary message 
+       //   in the top pane. We don't restrict dialog width in any way. 
+       //   Use caution and check at all DPI scaling factors if adding a new message
+       //   to be displayed in the top pane.
         private GridErrorDlg ErrorDialog {
             get {
                 if (this.errorDlg == null) {
@@ -1239,7 +1287,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
         private void DrawValue(System.Drawing.Graphics g, Rectangle rect, Rectangle clipRect, GridEntry gridEntry, object value, bool drawSelected, bool checkShouldSerialize, bool fetchValue, bool paintInPlace) { 
             GridEntry.PaintValueFlags paintFlags = GridEntry.PaintValueFlags.None;
 
-            if(drawSelected) {
+            if (drawSelected) {
                 paintFlags |= GridEntry.PaintValueFlags.DrawSelected;
             }
 
@@ -1428,18 +1476,11 @@ namespace System.Windows.Forms.PropertyGridInternal {
         }
 
         public virtual int GetOutlineIconSize() {
-            if (!isScalingInitialized) {
-                if (DpiHelper.IsScalingRequired) {
-                    OUTLINE_SIZE_EXPLORER_TREE_STYLE = DpiHelper.LogicalToDeviceUnitsX(OUTLINE_SIZE_EXPLORER_TREE_STYLE_ORIGINAL);
-                    OUTLINE_SIZE = DpiHelper.LogicalToDeviceUnitsX(OUTLINE_SIZE_ORIGINAL);
-                }
-                isScalingInitialized = true;
-            }
             if (IsExplorerTreeSupported) {
-                return OUTLINE_SIZE_EXPLORER_TREE_STYLE;
+                return outlineSizeExplorerTreeStyle;
             }
             else {
-                return OUTLINE_SIZE;
+                return outlineSize;
             }
         }
 
@@ -1491,11 +1532,11 @@ namespace System.Windows.Forms.PropertyGridInternal {
         }
 
         public virtual int GetValuePaintIndent() {
-            return PAINT_INDENT;
+            return paintIndent;
         }
 
         public virtual int GetValuePaintWidth() {
-            return PAINT_WIDTH;
+            return paintWidth;
         }
 
         public virtual int GetValueStringIndent() {
@@ -2268,7 +2309,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
         // This has no effect, see VSW#470693.
         protected override void OnImeModeChanged(EventArgs e) {
             // VSW  #375530
-            // Only update edit box mode if actually out of [....] with grid's mode (to avoid re-entrancy issues)
+            // Only update edit box mode if actually out of sync with grid's mode (to avoid re-entrancy issues)
             //
             if (edit != null && edit.ImeMode != this.ImeMode) {
                 // URT  #51190
@@ -2664,7 +2705,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             Keys keyCode = ke.KeyCode;
             bool fallingThorugh = false;
 
-            // [....], we have to do this here because if we are
+            // Microsoft, we have to do this here because if we are
             // hosted in a non-windows forms dialog, we never get a chance to
             // peek at the messages, we just get called,
             // so we have to do this here...
@@ -2859,7 +2900,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 return;
             }
 
-            /* [....], VS30371 -- Due to conflicts with other VS commands,
+            /* Microsoft, VS30371 -- Due to conflicts with other VS commands,
                we are removing this functionality.
 
                // Ctrl + Shift + 'X' selects the property that starts with 'X'
@@ -3639,12 +3680,12 @@ namespace System.Windows.Forms.PropertyGridInternal {
                         UnsafeNativeMethods.ReleaseDC(new HandleRef(DropDownListBox, DropDownListBox.Handle), new HandleRef(DropDownListBox, hdc));
                     }
                     
-                    // [....], 4/25/1998 - must check for -1 and not call the set...
+                    // Microsoft, 4/25/1998 - must check for -1 and not call the set...
                     if (iSel != -1) {
                         DropDownListBox.SelectedIndex = iSel;
                     }
                     SetFlag(FlagDropDownCommit, false);
-                    DropDownListBox.Height = Math.Max(tm.tmHeight + 2, Math.Min(MAX_LISTBOX_HEIGHT, DropDownListBox.PreferredHeight));
+                    DropDownListBox.Height = Math.Max(tm.tmHeight + 2, Math.Min(maxListBoxHeight, DropDownListBox.PreferredHeight));
                     DropDownListBox.Width = Math.Max(maxWidth, GetRectangle(row,ROWVALUE).Width);
                     try {
                         bool resizable = DropDownListBox.Items.Count > (DropDownListBox.Height / DropDownListBox.ItemHeight);
@@ -4187,8 +4228,8 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
             // if we're painting the value, size the rect between the button and the painted value
             if (fPaint) {
-                rect.X += PAINT_INDENT + 1;
-                rect.Width -= PAINT_INDENT + 1;
+                rect.X += paintIndent + 1;
+                rect.Width -= paintIndent + 1;
             }
             else {
                 rect.X += EDIT_INDENT + 1; // +1 to compensate for where GDI+ draws it's string relative to the rect.
@@ -4783,7 +4824,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             }
         }
 
-        private void ShowInvalidMessage(string propName, object value, Exception ex) {
+        internal void ShowInvalidMessage(string propName, object value, Exception ex) {
 
             if (value == null) {
                 value = "(null)";
@@ -5066,7 +5107,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
                     Invalidate();
                     break;
 
-                    // [....] -- if we get focus in the error
+                    // Microsoft -- if we get focus in the error
                     // state, make sure we push it back to the
                     // Edit or bad bad things can happen with
                     // our state...

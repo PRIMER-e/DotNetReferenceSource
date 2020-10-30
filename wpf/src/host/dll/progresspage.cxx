@@ -6,7 +6,7 @@
 //      Deployment progress page. See .hxx.
 //
 //  History:
-//      2007/12/xx   [....]     Created
+//      2007/12/xx   Microsoft     Created
 //
 //------------------------------------------------------------------------
 
@@ -123,7 +123,7 @@ HRESULT CProgressPage::Show()
     CKHR(CreateURLMoniker(NULL, progressPageURL, &spMoniker));
     }
     CKHR(CreateBindCtx(0, &spBindCtx));
-    CKHR(CComQIPtr<IPersistMoniker>(m_spHtmlDocument)->Load(true/*try [....]*/, spMoniker, spBindCtx, 0));
+    CKHR(CComQIPtr<IPersistMoniker>(m_spHtmlDocument)->Load(true/*try sync*/, spMoniker, spBindCtx, 0));
 
     CKHR(CComQIPtr<IHTMLDocument>(m_spHtmlDocument)->get_Script(&m_spDocumentScript));
     CKHR(m_spControlHost->SetExternalDispatch(static_cast<IDispatch*>(this)));

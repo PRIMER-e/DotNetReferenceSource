@@ -10,7 +10,7 @@
 //      to the WinInet cookie functions and delegates them to the browser. See host\DLL\CookieShim.hxx.
 //
 //  History:
-//     2007/04/11   [....]     Created
+//     2007/04/11   Microsoft     Created
 //
 //------------------------------------------------------------------------
 

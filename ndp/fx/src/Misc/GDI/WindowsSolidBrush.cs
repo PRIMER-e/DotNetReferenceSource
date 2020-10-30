@@ -4,7 +4,7 @@
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -21,7 +21,7 @@ namespace System.Experimental.Gdi
     using System.Globalization;
     using System.Runtime.Versioning;
 
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal

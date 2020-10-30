@@ -11,7 +11,7 @@
 //  06/28/01: mwatt:       Created
 //  06/04/03: kusumav:     Moved over to WCP dir
 //  ...
-//  08/03/08: [....]:     Got rid of XamlViewer.xbap. Now loose XAML is hosted directly
+//  08/03/08: Microsoft:     Got rid of XamlViewer.xbap. Now loose XAML is hosted directly
 //                         (still in a sandboxed AppDomain).
 //
 //---------------------------------------------------------------------------
@@ -348,7 +348,7 @@ namespace System.Windows.Interop
                 {
                     if (mime == MimeType.Document || mime == MimeType.Markup)
                     {
-                        //[[....], 7/27/07]
+                        //[Microsoft, 7/27/07]
                         // Unfortunately, XPSViewer relies on the unhandled exception page to report bad XAML.
                         // Ideally, only exceptions from the XamlReader should be caught and shown this way,
                         // in order not to hide platform bugs. But it's more than one place where XAML is
@@ -359,12 +359,12 @@ namespace System.Windows.Interop
                         EnableErrorPage();
                     }
 
-                    //[[....], 01/06/08]
+                    //[Microsoft, 01/06/08]
                     // This mitigates TFS Dev10 451830 by showing an actionable message instead of crashing
                     // deep inside the Input code where MSCTF gets loaded and fails to do so. More info on the
-                    // conditions leading to this bug and how we detect those can be found in the method used
-                    // for the check below and in the TFS bug database.
-                    // See KB article http://support.microsoft.com/kb/954494 (linked in the displayed message).
+                    // conditions leading to this 
+
+
                     if (IsAffectedByCtfIssue())
                     {
                         exitCode = -1;
@@ -410,9 +410,9 @@ namespace System.Windows.Interop
         }
 
         /// <summary>
-        /// Checks for the conditions in which bug 451830 affects browser-hosted applications.
-        /// </summary>
-        /// <returns>true if the configuration is affected; false if not.</returns>
+        /// Checks for the conditions in which 
+
+
         private bool IsAffectedByCtfIssue()
         {
             // There's an issue in MSCTF.dll (Language Bar supporting DLL) that affects Windows XP users

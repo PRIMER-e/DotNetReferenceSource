@@ -12,7 +12,7 @@
 //              See New spec at : (need link)
 // 
 // History:  
-//      01/26/2005 : [....] - Created
+//      01/26/2005 : Microsoft - Created
 //---------------------------------------------------------------------------
 
 using System;

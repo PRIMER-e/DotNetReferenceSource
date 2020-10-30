@@ -454,7 +454,7 @@ ClassifyCLRReferenceConversion
 //   (3) knowing which types satisfy neither -- see comments at top of TypeTables.h
 //
 // If you make changes to either of these things, then ClassifyPredefinedCLRConversion
-// will likely have to change as well. If you have doubts, please talk with [....] (31/May/2008)
+// will likely have to change as well. If you have doubts, please talk with Microsoft (31/May/2008)
 //
 // ==============================================================================================================================
 //
@@ -2288,22 +2288,22 @@ ClassifyCLRConversionForArrayElementTypes
     if (result==ConversionError && HASFLAG(ConversionSemantics, ConversionSemantics::AllowArrayIntegralConversions))
     {
 
-        // Bug Dev10#463550
-        // In doing this check for integral conversions, also consider the case where SourceElementType
-        // is a generic parameter constrained to be something integral-like. You can't write these directly.
-        // But you can through a sneaky trick involving inheritance...
-        //    Enum E : a : End Enum 
-        //    Interface IConstraintInjector(Of C) : Sub f(Of T As C)() : End Interface
-        //    Class HasConstraint : Implements IConstraintInjector(Of E)
-        //        Private Sub fe(Of T As E)() Implements IConstraintInjector(Of E).f
-        //          Dim xx As T() = {}
-        //          Dim yy As Integer() = xx ' uses T()->Integer()
-        // NB. Notionally, if we discovered any ConstraintType->TargetElementType conversion that
-        // was an identity, we should rewrite it as Widening since the extra step
-        // T->ConstraintType->TargetElementType would make it a widening. But on the other hand, putting on
-        // our wizard hats, we can see that any T satisfying ConstraintType here must be identical to
-        // ConstraintType, so maybe it should be left as Identity!
-        // In any case, the point is irrelevant, since none of the conversions here count as identity.
+        // 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         Type *EffectiveSourceElementType = SourceElementType;
         if (TypeHelpers::IsGenericParameter(SourceElementType))
         {
@@ -2437,7 +2437,7 @@ ClassifyCLRConversionForArrayElementTypes
     // For the moment we keep both of them in place.
     // Once we're more confident that the new implementation gives the same results as the old, then we'll
     // remove the old.
-    // The old one should be removed prior to shipping Dev10. I think that's enough time. ([....], 31/May/2008)
+    // The old one should be removed prior to shipping Dev10. I think that's enough time. (Microsoft, 31/May/2008)
     //
     // The old implementation doesn't implement the OverestimateNarrowingConversions flag.
     // Also, it only works when AllowArrayIntegralConversions==AllowIntegralConversions.
@@ -2488,9 +2488,9 @@ ClassifyCLRConversionForArrayElementTypes
                 );
     }
 
-    // Bug VSWhidbey 369131.
-    // Array co-variance and back-casting special case for generic parameters.
-    //
+    // 
+
+
     else if (TypeHelpers::IsGenericParameter(SourceElementType) &&
              TypeHelpers::IsGenericParameter(TargetElementType))
     {
@@ -2542,7 +2542,7 @@ ClassifyCLRConversionForArrayElementTypes
         HASFLAG(ConversionSemantics, ConversionSemantics::AllowIntegralConversions) == HASFLAG(ConversionSemantics, ConversionSemantics::AllowArrayIntegralConversions) &&
         !TypeHelpers::IsGenericParameter(SourceElementType) && !TypeHelpers::IsGenericParameter(TargetElementType))
     {
-        VSASSERT(oldresult == result, "[....]'s conversion reimplementation (2008.June.28) disagree with the old ForArrayElementConversion");
+        VSASSERT(oldresult == result, "Microsoft's conversion reimplementation (2008.June.28) disagree with the old ForArrayElementConversion");
     }
 #endif
 
@@ -3093,7 +3093,7 @@ Semantics::ClassifyMethodConversion
                     TargetTypeIsByReference = true;
                 }
 
-                // Devdiv Bug[22903]
+                // Devdiv 
                 if (TargetMethodIsDllDeclare &&
                     !TargetParam->GetPWellKnownAttrVals()->GetMarshalAsData() &&
                     TargetType->GetVtype() == t_string)
@@ -3207,7 +3207,7 @@ Semantics::ClassifyReturnTypeForMethodConversion
     if ( (TypeHelpers::IsRootObjectType(DelegateRetType) && TypeHelpers::IsVoidType(TargetRetType)) ||
          (TypeHelpers::IsRootObjectType(TargetRetType) && TypeHelpers::IsVoidType(DelegateRetType)))
     {
-        // Bug: 44858: object to void and vice versa are not error, but by default widening/narrowing. We need error to have func/sub logic.
+        // 
         Conversion = ConversionError;
     }
     else
@@ -3238,10 +3238,10 @@ Semantics::ClassifyReturnTypeForMethodConversion
     {
         ConversionClass ClrConversion = ClassifyPredefinedCLRConversion(DelegateRetType, TargetRetType, ConversionSemantics::Default);
 
-        // Bug 73604. Generic Reference type needs to be treated specially.
+        // 
         if (ClrConversion == ConversionWidening &&
-            // Bug 114543: The CLR will not relax on value types, only reference types
-            // so treat these as relaxations that needs a stub. For Arguments it works fine.
+            // 
+
             TypeHelpers::IsReferenceType(TargetRetType) &&
             TypeHelpers::IsReferenceType(DelegateRetType))
         {
@@ -3345,7 +3345,7 @@ Semantics::ClassifyArgumentForMethodConversion
     }
     else if (Conversion == ConversionWidening)
     {
-        // Bug 73604. Generic Reference type needs to be treated specially.
+        // 
         ConversionClass ClrConversion = ClassifyPredefinedCLRConversion(TargetType, DelegateType, ConversionSemantics::Default);
 
         if (ClrConversion == ConversionWidening &&
@@ -4717,7 +4717,7 @@ Semantics::TypeInferenceCollection::CheckHintSatisfaction
 
     VSASSERT(ConversionRequired::Count==8, "If you've updated the type argument inference restrictions, then please also update CheckHintSatisfaction()");
 
-    // [....] 2008.June.27: in Orcas we kept a separate flag "ByRef" that could be used in conjunction with the
+    // Microsoft 2008.June.27: in Orcas we kept a separate flag "ByRef" that could be used in conjunction with the
     // other ConversionRequiredEnum. What Orcas required was that hint->Restriction be
     // satisfied when seeing if the argument could be copied into the parameter, and candidate->Restriction
     // to see if the parameter could be copied back into the argument. It was clearly wrong because
@@ -5263,7 +5263,7 @@ Semantics::TypeInferenceCollection::FindDominantType
     // The only other possibility is that there were multiple strict candidates (and no widest ones).
     // So we'll return them all and say "ambiguous"
 
-    VSFAIL("unexpected: how can there be multiple strict candidates and no widest ones??? please tell [....] if you find such a case.");
+    VSFAIL("unexpected: how can there be multiple strict candidates and no widest ones??? please tell Microsoft if you find such a case.");
     // Actually, I believe this case to be impossible, but I can't figure out how to prove it.
     // So I'll leave the code in for now.
 

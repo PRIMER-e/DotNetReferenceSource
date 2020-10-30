@@ -1348,7 +1348,7 @@ namespace System.Windows.Controls
             // Update all value
             UpdateSNCWithAnnotation(SNCAnnotation.AllValues);
 
-            // The internal data is just [....]'ed to the store. So, reset the dirty to false.
+            // The internal data is just sync'ed to the store. So, reset the dirty to false.
             IsDirty = false;
 
             //now check if the SN must be seen

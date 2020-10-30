@@ -6,7 +6,7 @@
 //      Provides a class used to wrap XmlReader instances.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client.Xml

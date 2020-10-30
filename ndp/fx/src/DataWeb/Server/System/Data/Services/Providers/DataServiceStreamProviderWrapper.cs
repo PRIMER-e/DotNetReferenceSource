@@ -7,7 +7,7 @@
 //      instance and validates responses from it.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

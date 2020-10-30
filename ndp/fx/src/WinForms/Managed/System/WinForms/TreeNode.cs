@@ -274,13 +274,14 @@ namespace System.Windows.Forms {
         [Browsable(false)]
         public Rectangle Bounds {
             get {
-                if (TreeView == null) {
+                TreeView tv = this.TreeView;
+                if (tv == null || tv.IsDisposed) {
                     return Rectangle.Empty;
                 }
                 NativeMethods.RECT rc = new NativeMethods.RECT();
                 unsafe { *((IntPtr *) &rc.left) = Handle; }
                 // wparam: 1=include only text, 0=include entire line
-                if ((int)UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_GETITEMRECT, 1, ref rc) == 0) {
+                if ((int)UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_GETITEMRECT, 1, ref rc) == 0) {
                     // This means the node is not visible
                     //
                     return Rectangle.Empty;
@@ -296,13 +297,14 @@ namespace System.Windows.Forms {
         /// </devdoc>
         internal Rectangle RowBounds {
             get {
+                TreeView tv = this.TreeView;
                 NativeMethods.RECT rc = new NativeMethods.RECT();
                 unsafe { *((IntPtr *) &rc.left) = Handle; }
                 // wparam: 1=include only text, 0=include entire line
-                if (TreeView == null) {
+                if (tv == null || tv.IsDisposed) {
                     return Rectangle.Empty;
                 }
-                if ((int)UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_GETITEMRECT, 0, ref rc) == 0) {
+                if ((int)UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_GETITEMRECT, 0, ref rc) == 0) {
                     // This means the node is not visible
                     //
                     return Rectangle.Empty;
@@ -331,8 +333,8 @@ namespace System.Windows.Forms {
                 if (handle == IntPtr.Zero)
                     return;
 
-                TreeView tv = TreeView;
-                if (tv == null || !tv.IsHandleCreated)
+                TreeView tv = this.TreeView;
+                if (tv == null || !tv.IsHandleCreated || tv.IsDisposed)
                     return;
 
                 NativeMethods.TV_ITEM item = new NativeMethods.TV_ITEM();
@@ -624,7 +626,11 @@ namespace System.Windows.Forms {
         public bool IsVisible {
             get {
                 if (handle == IntPtr.Zero) return false;
-                TreeView tv = TreeView;
+                TreeView tv = this.TreeView;
+                if (tv.IsDisposed) {
+                    return false;
+                }
+
                 NativeMethods.RECT rc = new NativeMethods.RECT();
                 unsafe { *((IntPtr *) &rc.left) = Handle; }
 
@@ -695,17 +701,18 @@ namespace System.Windows.Forms {
                 // TVGN_NEXTVISIBLE can only be sent if the specified node is visible.
                 // So before sending, we check if this node is visible. If not, we find the first visible parent.
                 //
-                if (TreeView == null) {
+                TreeView tv = this.TreeView;
+                if (tv == null || tv.IsDisposed) {
                     return null;
                 }
 
                 TreeNode node = FirstVisibleParent;
                 
                 if (node != null) {
-                    IntPtr next = UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle),
+                    IntPtr next = UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle),
                                                NativeMethods.TVM_GETNEXTITEM, NativeMethods.TVGN_NEXTVISIBLE, node.Handle);
                     if (next != IntPtr.Zero) {
-                        return TreeView.NodeFromHandle(next);
+                        return tv.NodeFromHandle(next);
                     }
                 }
                 
@@ -824,16 +831,17 @@ namespace System.Windows.Forms {
                 // So before sending, we check if this node is visible. If not, we find the first visible parent.
                 //
                 TreeNode node = FirstVisibleParent;
+                TreeView tv = this.TreeView;
                 
                 if (node != null) {
-                    if (TreeView == null) {
+                    if (tv == null || tv.IsDisposed) {
                         return null;
                     }
-                    IntPtr prev = UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle),
+                    IntPtr prev = UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle),
                                                NativeMethods.TVM_GETNEXTITEM,
                                                NativeMethods.TVGN_PREVIOUSVISIBLE, node.Handle);
                     if (prev != IntPtr.Zero) {
-                        return TreeView.NodeFromHandle(prev);
+                        return tv.NodeFromHandle(prev);
                     }
                 }
                 
@@ -900,14 +908,16 @@ namespace System.Windows.Forms {
             get {
                 if (handle == IntPtr.Zero)
                     return 0;
-                if (TreeView == null) {
+
+                TreeView tv = this.TreeView;
+                if (tv == null || tv.IsDisposed) {
                     return 0;
                 }
                 NativeMethods.TV_ITEM item = new NativeMethods.TV_ITEM();
                 item.hItem = Handle;
                 item.mask = NativeMethods.TVIF_HANDLE | NativeMethods.TVIF_STATE;
                 item.stateMask = NativeMethods.TVIS_SELECTED | NativeMethods.TVIS_EXPANDED;
-                UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_GETITEM, 0, ref item);
+                UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_GETITEM, 0, ref item);
                 return item.state;
             }
         }
@@ -1257,8 +1267,8 @@ namespace System.Windows.Forms {
                 node = new TreeNode(text, ImageIndexer.Index, SelectedImageIndexer.Index);
             }
             else {
-                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
-                //
+                // SECREVIEW : Late-binding does not represent a security thread, see 
+
                 node = (TreeNode)Activator.CreateInstance(clonedType);
             }
             
@@ -1476,10 +1486,11 @@ namespace System.Windows.Forms {
         ///     Terminate the editing of any tree view item's label.
         /// </devdoc>
         public void EndEdit(bool cancel) {
-            if (TreeView == null) {
+            TreeView tv = this.TreeView;
+            if (tv == null || tv.IsDisposed) {
                 return;
             }
-            UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_ENDEDITLABELNOW, cancel?1:0, 0);
+            UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_ENDEDITLABELNOW, cancel?1:0, 0);
         }
 
         /// <include file='doc\TreeNode.uex' path='docs/doc[@for="TreeNode.EnsureCapacity"]/*' />
@@ -1536,10 +1547,11 @@ namespace System.Windows.Forms {
         ///     TreeView control as necessary.
         /// </devdoc>
         public void EnsureVisible() {
-            if (TreeView == null) {
+            TreeView tv = this.TreeView;
+            if (tv == null || tv.IsDisposed) {
                 return;
             }
-            UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_ENSUREVISIBLE, 0, Handle);
+            UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_ENSUREVISIBLE, 0, Handle);
         }
 
         /// <include file='doc\TreeNode.uex' path='docs/doc[@for="TreeNode.Expand"]/*' />
@@ -1645,11 +1657,11 @@ namespace System.Windows.Forms {
         /// <internalonly/>
         internal void Realize(bool insertFirst) {
             // Debug.assert(handle == 0, "Node already realized");
-            TreeView tv = TreeView;
-            if (tv == null || !tv.IsHandleCreated)
+            TreeView tv = this.TreeView;
+            if (tv == null || !tv.IsHandleCreated || tv.IsDisposed)
                 return;
 
-                if (parent != null) { // Never realize the virtual root
+            if (parent != null) { // Never realize the virtual root
 
                 if (tv.InvokeRequired) {
                     throw new InvalidOperationException(SR.GetString(SR.InvalidCrossThreadControlCall));
@@ -1696,15 +1708,15 @@ namespace System.Windows.Forms {
                 // to get the expected behavior.
                 //
                 bool editing = false;
-                IntPtr editHandle = UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_GETEDITCONTROL, 0, 0);
+                IntPtr editHandle = UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_GETEDITCONTROL, 0, 0);
                 if (editHandle != IntPtr.Zero) {
                     // currently editing...
                     //
                     editing = true;
-                    UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_ENDEDITLABELNOW, 0 /* fCancel==FALSE */, 0);
+                    UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_ENDEDITLABELNOW, 0 /* fCancel==FALSE */, 0);
                 }
 
-                handle = UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_INSERTITEM, 0, ref tvis);
+                handle = UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_INSERTITEM, 0, ref tvis);
                 tv.nodeTable[handle] = this;
 
                 // Lets update the Lparam to the Handle ....
@@ -1713,7 +1725,7 @@ namespace System.Windows.Forms {
                 Marshal.FreeHGlobal(tvis.item_pszText);
 
                 if (editing) {
-                    UnsafeNativeMethods.PostMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_EDITLABEL, IntPtr.Zero, handle);
+                    UnsafeNativeMethods.PostMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_EDITLABEL, IntPtr.Zero, handle);
                 }
 
                 SafeNativeMethods.InvalidateRect(new HandleRef(tv, tv.Handle), null, false);
@@ -1724,7 +1736,7 @@ namespace System.Windows.Forms {
                     // and this is the FIRST NODE to get added..
                     // This is Comctl quirk where it just doesn't draw
                     // the first node after a Clear( ) if Scrollable == false.
-                    UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.WM_SETREDRAW, 1, 0);
+                    UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.WM_SETREDRAW, 1, 0);
                     nodesCleared = false;
                 }
 
@@ -1774,8 +1786,8 @@ namespace System.Windows.Forms {
                     (parent.children[i] = parent.children[i+1]).index = i;
                 }
 
-                // Fix Dev10 Bug 473773 - TreeViewNodeCollection.AddRange adds nodes in incorrect order
-                // should always release the last node
+                // Fix Dev10 
+
                 parent.children[parent.childCount - 1] = null;
                 parent.childCount--;
                 parent = null;
@@ -1784,13 +1796,14 @@ namespace System.Windows.Forms {
             expandOnRealization = expanded;
 
             // unrealize ourself
-            if (TreeView == null) {
+            TreeView tv = this.TreeView;
+            if (tv == null || tv.IsDisposed) {
                 return;
             }
 
             if (handle != IntPtr.Zero) {
-                if (notify && TreeView.IsHandleCreated)
-                    UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_DELETEITEM, 0, handle);
+                if (notify && tv.IsHandleCreated)
+                    UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_DELETEITEM, 0, handle);
                 treeView.nodeTable.Remove(handle);
                 handle = IntPtr.Zero;
             }
@@ -1938,12 +1951,17 @@ namespace System.Windows.Forms {
 
         internal void UpdateImage ()
         {
+            TreeView tv = this.TreeView;
+            if (tv.IsDisposed) {
+                return;
+            }
+
             NativeMethods.TV_ITEM item = new NativeMethods.TV_ITEM();
 
             item.mask = NativeMethods.TVIF_HANDLE | NativeMethods.TVIF_IMAGE;
             item.hItem = Handle;
-            item.iImage = Math.Max(0, ((ImageIndexer.ActualIndex >= TreeView.ImageList.Images.Count) ? TreeView.ImageList.Images.Count - 1 : ImageIndexer.ActualIndex));
-            UnsafeNativeMethods.SendMessage(new HandleRef(TreeView, TreeView.Handle), NativeMethods.TVM_SETITEM, 0, ref item);
+            item.iImage = Math.Max(0, ((ImageIndexer.ActualIndex >= tv.ImageList.Images.Count) ? tv.ImageList.Images.Count - 1 : ImageIndexer.ActualIndex));
+            UnsafeNativeMethods.SendMessage(new HandleRef(tv, tv.Handle), NativeMethods.TVM_SETITEM, 0, ref item);
         }
 
         /// <include file='doc\TreeNode.uex' path='docs/doc[@for="TreeNode.ISerializable.GetObjectData"]/*' />

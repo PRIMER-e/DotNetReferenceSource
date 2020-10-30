@@ -5,15 +5,13 @@
 //------------------------------------------------------------------------------
 
 namespace System.Drawing.Printing {
-
-    using Microsoft.Win32;
     using System;
+    using System.Configuration;
     using System.Diagnostics;
     using System.Drawing;
     using System.Runtime.InteropServices;
-    using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.Versioning;
+    using System.Security;
 
     /// <include file='doc\PrintController.uex' path='docs/doc[@for="PrintController"]/*' />
     /// <devdoc>
@@ -140,9 +138,14 @@ namespace System.Drawing.Printing {
             }
 
             bool canceled = true;
-
+            
             try {
-                canceled = PrintLoop(document);
+                // To enable optimization of the preview dialog, add the following to the config file:
+                // <runtime >
+                //     <!-- AppContextSwitchOverrides values are in the form of 'key1=true|false;key2=true|false  -->
+                //     <AppContextSwitchOverrides value = "Switch.System.Drawing.Printing.OptimizePrintPreview=true" />
+                // </runtime >
+                canceled = LocalAppContextSwitches.OptimizePrintPreview ? PrintLoopOptimized(document) : PrintLoop(document);
             }
             finally {
                 try {
@@ -183,9 +186,63 @@ namespace System.Drawing.Printing {
                 try {
                     document._OnPrintPage(pageEvent);
                     OnEndPage(document, pageEvent);
-                }
+                } 
                 finally {
                     pageEvent.Dispose();
+                }
+
+                if (pageEvent.Cancel) {
+                    return true;
+                } 
+                else if (!pageEvent.HasMorePages) {
+                    return false;
+                } 
+                else {
+                    // loop
+                }
+            }
+        }
+
+        private bool PrintLoopOptimized(PrintDocument document) {
+            PrintPageEventArgs pageEvent = null;
+            PageSettings documentPageSettings = (PageSettings) document.DefaultPageSettings.Clone();
+            QueryPageSettingsEventArgs queryEvent = new QueryPageSettingsEventArgs(documentPageSettings);
+            for (;;) {
+                queryEvent.PageSettingsChanged = false;
+                document._OnQueryPageSettings(queryEvent);
+                if (queryEvent.Cancel) {
+                    return true;
+                }
+
+                if (!queryEvent.PageSettingsChanged) {
+                    // QueryPageSettings event handler did not change the page settings,
+                    // thus we use default page settings from the document object.
+                    if (pageEvent == null) {
+                        pageEvent = CreatePrintPageEvent(queryEvent.PageSettings);
+                    }
+                    else {
+                        // This is not the first page and the settings had not changed since the previous page, 
+                        // thus don't re-apply them.
+                        pageEvent.CopySettingsToDevMode = false;
+                    }
+
+                    Graphics graphics = OnStartPage(document, pageEvent);
+                    pageEvent.SetGraphics(graphics);
+                }
+                else {
+                    // Page settings were customized, so use the customized ones in the start page event.
+                    pageEvent = CreatePrintPageEvent(queryEvent.PageSettings);
+                    Graphics graphics = OnStartPage(document, pageEvent);
+                    pageEvent.SetGraphics(graphics);
+                }
+
+                try {
+                    document._OnPrintPage(pageEvent);
+                    OnEndPage(document, pageEvent);
+                }
+                finally {
+                    pageEvent.Graphics.Dispose();
+                    pageEvent.SetGraphics(null);
                 }
 
                 if (pageEvent.Cancel) {
@@ -193,9 +250,6 @@ namespace System.Drawing.Printing {
                 }
                 else if (!pageEvent.HasMorePages) {
                     return false;
-                }
-                else {
-                    // loop
                 }
             }
         }

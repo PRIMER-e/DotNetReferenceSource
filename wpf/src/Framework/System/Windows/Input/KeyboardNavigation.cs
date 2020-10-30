@@ -917,8 +917,8 @@ namespace System.Windows.Input
 
                     Style fvs = fe.FocusVisualStyle;
 
-                    // WORKAROUND: (Bug 1016350) If FocusVisualStyle is the "default" value
-                    // then we load the default FocusVisualStyle from ResourceDictionary.
+                    // WORKAROUND: (
+
                     if (fvs == FrameworkElement.DefaultFocusVisualStyle)
                     {
                         fvs = SystemResources.FindResourceInternal(SystemParameters.FocusVisualStyleKey) as Style;
@@ -944,8 +944,8 @@ namespace System.Windows.Input
                             {
                                 Style fvs = fce.FocusVisualStyle;
 
-                                // WORKAROUND: (Bug 1016350) If FocusVisualStyle is the "default" value
-                                // then we load the default FocusVisualStyle from ResourceDictionary.
+                                // WORKAROUND: (
+
                                 if (fvs == FrameworkElement.DefaultFocusVisualStyle)
                                 {
                                     fvs = SystemResources.FindResourceInternal(SystemParameters.FocusVisualStyleKey) as Style;
@@ -1427,9 +1427,7 @@ namespace System.Windows.Input
 
             if (result != null)
             {
-                // If the element is focusable and IsTabStop is true
-                if (IsTabStop(result) ||
-                    (treeViewNavigation && IsFocusableInternal(result)))
+                if (IsElementEligible(result, treeViewNavigation))
                 {
                     return result;
                 }
@@ -2011,6 +2009,30 @@ namespace System.Windows.Input
             return false;
         }
 
+        private bool IsElementEligible(DependencyObject element, bool treeViewNavigation)
+        {
+            if (treeViewNavigation)
+            {
+                return (element is TreeViewItem) && IsFocusableInternal(element);
+            }
+            else
+            {
+                return IsTabStop(element);
+            }
+        }
+
+        private bool IsGroupElementEligible(DependencyObject element, bool treeViewNavigation)
+        {
+            if (treeViewNavigation)
+            {
+                return (element is TreeViewItem) && IsFocusableInternal(element);
+            }
+            else
+            {
+                return IsTabStopOrGroup(element);
+            }
+        }
+
         private KeyboardNavigationMode GetKeyNavigationMode(DependencyObject e)
         {
             return (KeyboardNavigationMode)e.GetValue(_navigationProperty);
@@ -2500,6 +2522,79 @@ namespace System.Windows.Input
             return Rect.Empty;
         }
 
+        // return the rectangle representing the given element.  Usually this is
+        // just GetRectangle(element).  But a TreeViewItem surrounds its children,
+        // which produces wrong results.  Instead use a rectangle that excludes
+        // the children in the vertical direction, and extends as much as the
+        // TreeViewItem in the horizontal direction.
+        private Rect GetRepresentativeRectangle(DependencyObject element)
+        {
+            Rect rect = GetRectangle(element);
+            TreeViewItem tvi = element as TreeViewItem;
+            if (tvi != null)
+            {
+                Panel itemsHost = tvi.ItemsHost;
+                if (itemsHost != null && itemsHost.IsVisible)
+                {
+                    Rect itemsHostRect = GetRectangle(itemsHost);
+                    if (itemsHostRect != Rect.Empty)
+                    {
+                        bool? placeBeforeChildren = null;
+
+                        // if there's a header, put the representative Rect on
+                        // the same side of the children as the header.
+                        FrameworkElement header = tvi.TryGetHeaderElement();
+                        if (header != null && header != tvi && header.IsVisible)
+                        {
+                            Rect headerRect = GetRectangle(header);
+                            if (!headerRect.IsEmpty)
+                            {
+                                if (DoubleUtil.LessThan(headerRect.Top, itemsHostRect.Top))
+                                {
+                                    // header starts before children - put rect before
+                                    // (this is the most common case, used by the default layout)
+                                    placeBeforeChildren = true;
+                                }
+                                else if (DoubleUtil.GreaterThan(headerRect.Bottom, itemsHostRect.Bottom))
+                                {
+                                    // header ends after children - put rect after
+                                    placeBeforeChildren = false;
+                                }
+                            }
+                        }
+
+                        double before = itemsHostRect.Top - rect.Top;
+                        double after = rect.Bottom - itemsHostRect.Bottom;
+
+                        // If there is no header, or if the header doesn't extend
+                        // past the children, put the representative Rect on
+                        // whichever side of the children has more room.
+                        // This handles the case where the TVI's template has
+                        // content that's not explicitly marked as "header".
+                        if (placeBeforeChildren == null)
+                        {
+                            placeBeforeChildren = DoubleUtil.GreaterThanOrClose(before, after);
+                        }
+
+                        // adjust the rect according to the placement computed above.
+                        // Ensure that its height is non-negative, but no taller than the TVI.
+                        if (placeBeforeChildren == true)
+                        {
+                            rect.Height = Math.Min(Math.Max(before, 0.0d), rect.Height);
+                        }
+                        else
+                        {
+                            double height = Math.Min(Math.Max(after, 0.0d), rect.Height);
+                            rect.Y = rect.Bottom - height;
+                            rect.Height = height;
+                        }
+                    }
+                }
+            }
+
+            return rect;
+        }
+
         // distance between two points
         private double GetDistance(Point p1, Point p2)
         {
@@ -2822,15 +2917,9 @@ namespace System.Windows.Input
             while ((currElement = GetNextInTree(currElement, container)) != null)
             {
                 if (currElement != sourceElement &&
-                    (IsTabStopOrGroup(currElement) ||
-                    (treeViewNavigation && IsFocusableInternal(currElement))))
+                    IsGroupElementEligible(currElement, treeViewNavigation))
                 {
-                    DependencyObject currentRectElement = currElement;
-                    if (treeViewNavigation)
-                    {
-                        currentRectElement = ItemsControl.TryGetTreeViewItemHeader(currElement);
-                    }
-                    Rect currentRect = GetRectangle(currentRectElement);
+                    Rect currentRect = GetRepresentativeRectangle(currElement);
 
                     // Consider the current element as a result candidate only if its layout is valid.
                     if (currentRect != Rect.Empty)
@@ -2898,9 +2987,8 @@ namespace System.Windows.Input
             if (mode == KeyboardNavigationMode.None && searchInsideContainer)
                 return null;
 
-            Rect sourceRect = GetRectangle(searchInsideContainer ? container
-                                            : treeViewNavigation ? ItemsControl.TryGetTreeViewItemHeader(sourceElement)
-                                            : sourceElement);
+            Rect sourceRect = searchInsideContainer ? GetRectangle(container)
+                                : GetRepresentativeRectangle(sourceElement);
             bool horizontalDirection = direction == FocusNavigationDirection.Right || direction == FocusNavigationDirection.Left;
 
             // Reset the baseline when we change the direction
@@ -2935,9 +3023,7 @@ namespace System.Windows.Input
                 }
             }
 
-            // If the element is focusable and IsTabStop is true
-            if (IsTabStop(result) ||
-                (treeViewNavigation && IsFocusableInternal(result)))
+            if (IsElementEligible(result, treeViewNavigation))
                 return result;
 
             // Using ActiveElement if set
@@ -2960,8 +3046,7 @@ namespace System.Windows.Input
             DependencyObject activeElement = element;
             while ((activeElement = GetActiveElement(activeElement)) != null)
             {
-                if (IsTabStop(activeElement) ||
-                    (treeViewNavigation && IsFocusableInternal(activeElement)))
+                if (IsElementEligible(activeElement, treeViewNavigation))
                     validActiveElement = activeElement;
             }
 
@@ -3005,8 +3090,7 @@ namespace System.Windows.Input
             DependencyObject currElement = container;
             while ((currElement = GetNextInTree(currElement, container)) != null)
             {
-                if (IsTabStopOrGroup(currElement) ||
-                    (treeViewNavigation && IsFocusableInternal(currElement)))
+                if (IsGroupElementEligible(currElement, treeViewNavigation))
                 {
                     DependencyObject currentRectElement = currElement;
                     if (treeViewNavigation)
@@ -3269,10 +3353,10 @@ namespace System.Windows.Input
                     return false;
                 }
 
-                // Bug 940610: no way to get PresentationSource of event in PostProcessInput
-                // WORKAROUND: For now I will try to get the source of the event with
-                //             PresentationSource.FromVisual.  If that fails, try to get the
-                //             source of the active window.
+                // 
+
+
+
                 PresentationSource source = null;
 
                 if (eventSource != null)
@@ -3365,31 +3449,31 @@ namespace System.Windows.Input
         // List of WeakReferences to delegates to be invoked when EnterMenuMode happens
         private WeakReferenceList _weakEnterMenuModeHandlers;
 
-        // Fix for bug 936302: (JevanSa)
-        //     The DefaultWindowProcWorker (windows/core/ntuser/kernel/dwp.c)
-        //     listens for ALT down followed by ALT up with nothing in between.
-        //     When ALT goes down they set QF_FMENUSTATUS.  When ALT up happens,
-        //     if QF_FMENUSTATUS is still set, they open the system menu (or
-        //     menu for the window if there is one).  If any keystrokes happen
-        //     in between, they clear QF_FMENUSTATUS.
-        //
-        //     Consider the following sequence:
-        //       1) KeyDown(Alt) - neither Win32 nor Avalon respond
-        //       2) KeyUp(Alt) - Avalon handles the event, Win32 is skipped
-        //       3) KeyDown(Alt) - Avalon handles the event, Win32 is skipped
-        //       4) KeyUp(Alt) - Avalon does not respond, Win32 handles the message
-        //                       (and enters "Invisible" MenuMode)
-        //
-        //     Here, from the point of view of the DWP, there was just ALT down
-        //     followed by ALT up.  We must fool the DWP somehow so that they
-        //     clear clear the QF_FMENUSTATUS bit before #4.
-        //
-        //     Currently the best way [....] and I have come up with is to
-        //     mark the event has handled in case #4 so that the DWP
-        //     never sees the ALT up in #4.  We set this bit when #2 happens.
-        //     If we see an unhandled ALT-up and this bit is set, we mark the
-        //     event as handled.  If we see any unhandled key down or mouse up/down
-        //     we can clear this bit.
+        // Fix for 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         private bool _win32MenuModeWorkAround;
 
         #endregion

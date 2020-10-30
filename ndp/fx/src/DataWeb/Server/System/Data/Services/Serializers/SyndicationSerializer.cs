@@ -7,7 +7,7 @@
 //      then formatts them.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

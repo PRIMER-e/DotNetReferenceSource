@@ -6,7 +6,7 @@
 //      Respresents a navigation to a singleton property.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 namespace System.Data.Services.Client
 {

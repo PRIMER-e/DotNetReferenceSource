@@ -7,7 +7,7 @@
 //  File:       PipeStream.cs
 //
 //  Summary:    Stream used for reading from a named pipe
-//  Author:     [....]@microsoft.com
+//  Author:     Microsoft@microsoft.com
 //==========================================================================
 
 using System;

@@ -25,7 +25,10 @@ namespace System.Windows.Documents
     using System.Windows.Navigation;
 
     // Spell checking component for the TextEditor.
-    internal class Speller
+    // Class is marked as partial to allow for definition of TextMapOffsetLogger in a separate
+    // source file. When TextMapOffsetLogger is removed, the partial declaration can 
+    // be removed. See doc comments in TextMapOffsetErrorLogger for more details.
+    internal partial class Speller
     {
         //------------------------------------------------------
         //
@@ -199,12 +202,12 @@ namespace System.Windows.Documents
             // IMPORTANT!!
             //
             // This logic here must match ScanRange, or else we might not
-            // calculate the exact same error.  Keep the two methods in [....]!
+            // calculate the exact same error.  Keep the two methods in sync!
             //
 
             XmlLanguage language;
             CultureInfo culture = GetCurrentCultureAndLanguage(error.Start, out language);
-            if (culture == null || !CanSpellCheck(culture))
+            if (culture == null || !_spellerInterop.CanSpellCheck(culture))
             {
                 // Return an empty list.
             }
@@ -217,11 +220,10 @@ namespace System.Windows.Documents
 
                 SetCulture(culture);
 
-                _spellerInterop.SetContextOption("IsSpellChecking", true);
-                _spellerInterop.SetContextOption("IsSpellVerifyOnly", false);
+                _spellerInterop.Mode = SpellerInteropBase.SpellerMode.SpellingErrorsWithSuggestions;
 
                 _spellerInterop.EnumTextSegments(textMap.Text, textMap.TextLength, null,
-                    new SpellerInterop.EnumTextSegmentsCallback(ScanErrorTextSegment), new TextMapCallbackData(textMap, suggestions));
+                    new SpellerInteropBase.EnumTextSegmentsCallback(ScanErrorTextSegment), new TextMapCallbackData(textMap, suggestions));
             }
 
             return suggestions;
@@ -368,7 +370,7 @@ namespace System.Windows.Documents
             if (!uri.IsAbsoluteUri || uri.IsFile)
             {
                 pathUri = ResolvePathUri(uri);
-                SpellerInterop.ILexicon lexicon = _spellerInterop.LoadDictionary(pathUri.LocalPath);
+                object lexicon = _spellerInterop.LoadDictionary(pathUri.LocalPath);
                 UriMap.Add(uri, new DictionaryInfo(pathUri, lexicon));
             }
             else
@@ -512,18 +514,9 @@ namespace System.Windows.Documents
             Invariant.Assert(_highlightLayer == null);
             Invariant.Assert(_statusTable == null);
 
-            try
-            {
-                _spellerInterop = new SpellerInterop();
-            }
-            catch (DllNotFoundException)
-            {
-                _failedToInit = true;
-            }
-            catch (EntryPointNotFoundException)
-            {
-                _failedToInit = true;
-            }
+            _spellerInterop = SpellerInteropBase.CreateInstance();
+
+            _failedToInit = (_spellerInterop == null);
 
             if (_failedToInit)
                 return false;
@@ -533,11 +526,6 @@ namespace System.Windows.Documents
             _statusTable = new SpellerStatusTable(_textEditor.TextContainer.Start, _highlightLayer);
 
             _textEditor.TextContainer.Highlights.AddLayer(_highlightLayer);
-
-            // 
-
-
-            _spellerInterop.SetContextOption("IsSpellSuggestingMWEs", false);
 
             _spellingReform = (SpellingReform)_textEditor.UiScope.GetValue(SpellCheck.SpellingReformProperty);
 
@@ -784,7 +772,7 @@ namespace System.Windows.Documents
             // Disable spell checking functionality since we're only
             // interested in word breaks here.  This greatly cuts down
             // the engine's workload.
-            _spellerInterop.SetContextOption("IsSpellChecking", false);
+            _spellerInterop.Mode = SpellerInteropBase.SpellerMode.WordBreaking;
 
             XmlLanguage language = GetCurrentLanguage(caretPosition);
             wordBreakLeft = SearchForWordBreaks(caretPosition, LogicalDirection.Backward, language, 1, false /* stopOnError */);
@@ -793,7 +781,7 @@ namespace System.Windows.Documents
             textMap = new TextMap(wordBreakLeft, wordBreakRight, caretPosition, caretPosition);
             segments = new ArrayList(2);
             _spellerInterop.EnumTextSegments(textMap.Text, textMap.TextLength, null,
-                new SpellerInterop.EnumTextSegmentsCallback(ExpandToWordBreakCallback), segments);
+                new SpellerInteropBase.EnumTextSegmentsCallback(ExpandToWordBreakCallback), segments);
 
             // We will have no segments when position is surrounded by
             // nothing but white space.
@@ -855,7 +843,7 @@ namespace System.Windows.Documents
 
             //
             // IMPORTANT: the scan logic here (word break expansion, TextMap creation, etc.)
-            // must match GetSuggestionForError exactly.  Keep the methods in [....]!
+            // must match GetSuggestionForError exactly.  Keep the methods in sync!
             //
 
             //
@@ -896,10 +884,10 @@ namespace System.Windows.Documents
                 //
 
                 // Check for a compatible language.
-                if (CanSpellCheck(culture))
+                if (_spellerInterop.CanSpellCheck(culture))
                 {
-                    _spellerInterop.SetContextOption("IsSpellChecking", true);
-                    _spellerInterop.SetContextOption("IsSpellVerifyOnly", true);
+                    // Find spelling errors, but we don't need suggestions
+                    _spellerInterop.Mode = SpellerInteropBase.SpellerMode.SpellingErrors;
 
                     textMap = new TextMap(contextStart, contextEnd, contentStart, contentEnd);
 
@@ -907,8 +895,8 @@ namespace System.Windows.Documents
                     // Iterate over sentences and segments.
                     //
 
-                    _spellerInterop.EnumTextSegments(textMap.Text, textMap.TextLength, new SpellerInterop.EnumSentencesCallback(ScanRangeCheckTimeLimitCallback),
-                        new SpellerInterop.EnumTextSegmentsCallback(ScanTextSegment), new TextMapCallbackData(textMap, status));
+                    _spellerInterop.EnumTextSegments(textMap.Text, textMap.TextLength, new SpellerInteropBase.EnumSentencesCallback(ScanRangeCheckTimeLimitCallback),
+                        new SpellerInteropBase.EnumTextSegmentsCallback(ScanTextSegment), new TextMapCallbackData(textMap, status));
 
                     if (status.TimeoutPosition != null)
                     {
@@ -921,7 +909,7 @@ namespace System.Windows.Documents
                             // otherwise we'll never finish checking the document.
                             if (status.TimeoutPosition.CompareTo(start) <= 0)
                             {
-                                // Diagnostic info for bug 1577085.
+                                // Diagnostic info for 
                                 string debugMessage = "Speller is not advancing! \n" +
                                                       "Culture = " + culture + "\n" +
                                                       "Start offset = " + start.Offset + " parent = " + start.ParentType.Name + "\n" +
@@ -959,10 +947,10 @@ namespace System.Windows.Documents
 
         // Callback for the error segment scanned during error lookup.
         // Returns a list of correction suggestions.
-        private bool ScanErrorTextSegment(object textSegment, object o)
+        private bool ScanErrorTextSegment(SpellerInteropBase.ISpellerSegment textSegment, object o)
         {
             TextMapCallbackData data = (TextMapCallbackData)o;
-            SpellerInterop.STextRange sTextRange = SpellerInterop.GetSegmentRange(textSegment);
+            SpellerInteropBase.ITextRange sTextRange = textSegment.TextRange;
 
             // Check if this segment falls outside the content range.
             // The region before/after the content is only for context --
@@ -973,7 +961,30 @@ namespace System.Windows.Documents
                 return true;
             }
 
-            SpellerInterop.GetSuggestions(textSegment, (ArrayList)data.Data);
+            if (sTextRange.Start >= data.TextMap.ContentEndOffset)
+            {
+                // Following context, skip this segment and stop iterating any remainder.
+                return false; 
+            }
+
+            if (sTextRange.Length > 1) // Ignore single letter errors
+            {
+                if (textSegment.SubSegments.Count == 0)
+                {
+                    ArrayList suggestions = (ArrayList)data.Data;
+                    if(textSegment.Suggestions.Count > 0)
+                    {
+                        foreach(string suggestion in textSegment.Suggestions)
+                        {
+                            suggestions.Add(suggestion);
+                        }
+                    }
+                }
+                else
+                {
+                    textSegment.EnumSubSegments(new SpellerInteropBase.EnumTextSegmentsCallback(ScanErrorTextSegment), data);
+                }
+            }
 
             // We only expect one error segment for this callback, so skip any
             // following context segments.
@@ -984,13 +995,11 @@ namespace System.Windows.Documents
         // Called indirectly by ScanRange.
         // Returns true to continue the segment enumeration, false to
         // break out of the iteration.
-        private bool ScanTextSegment(object textSegment, object o)
+        private bool ScanTextSegment(SpellerInteropBase.ISpellerSegment textSegment, object o)
         {
             TextMapCallbackData data = (TextMapCallbackData)o;
-            SpellerInterop.STextRange sTextRange;
+            SpellerInteropBase.ITextRange sTextRange = textSegment.TextRange;
             char[] word;
-
-            sTextRange = SpellerInterop.GetSegmentRange(textSegment);
 
             // Check if this segment falls outside the content range.
             // The region before/after the content is only for context --
@@ -1014,11 +1023,9 @@ namespace System.Windows.Documents
 
                 if (!IsIgnoredWord(word))
                 {
-                    SpellerInterop.RangeRole role = SpellerInterop.GetSegmentRole(textSegment);
-
-                    if (role == SpellerInterop.RangeRole.ecrrIncorrect)
+                    if(!textSegment.IsClean)
                     {
-                        if (SpellerInterop.GetSegmentCount(textSegment) == 0)
+                        if (textSegment.SubSegments.Count == 0)
                         {
                             // We have an error.
                             MarkErrorRange(data.TextMap, sTextRange);
@@ -1026,8 +1033,7 @@ namespace System.Windows.Documents
                         else
                         {
                             // We have a subsegment with an error.
-                            SpellerInterop.EnumSubsegments(textSegment,
-                                new SpellerInterop.EnumTextSegmentsCallback(ScanTextSegment), data);
+                            textSegment.EnumSubSegments(new SpellerInteropBase.EnumTextSegmentsCallback(ScanTextSegment), data);
                         }
                     }
                 }
@@ -1045,12 +1051,10 @@ namespace System.Windows.Documents
         // of actually walking the segments once calculated is ignorable, but halting the scan
         // after looking at a single segment would mean repeating the overhead on all segments
         // in the sentence.
-        private bool ScanRangeCheckTimeLimitCallback(object sentence, object o)
+        private bool ScanRangeCheckTimeLimitCallback(SpellerInteropBase.ISpellerSentence sentence, object o)
         {
             TextMapCallbackData data = (TextMapCallbackData)o;
-            ScanStatus status;
-
-            status = (ScanStatus)data.Data;
+            ScanStatus status = (ScanStatus)data.Data;
 
             // Stop iterating if we exceed our time budget.
             // In which case, take note of where we left off.
@@ -1058,7 +1062,7 @@ namespace System.Windows.Documents
             {
                 Invariant.Assert(status.TimeoutPosition == null); // We should only set this once....
 
-                int sentenceEndOffset = SpellerInterop.GetSentenceEndOffset(sentence);
+                int sentenceEndOffset = sentence.EndOffset;
 
                 if (sentenceEndOffset >= 0)
                 {
@@ -1093,7 +1097,7 @@ namespace System.Windows.Documents
         // to re-analyze the run instead of marking it:
         // - when the caret is within the error text.
         // - when an IME composition covers the text.
-        private void MarkErrorRange(TextMap textMap, SpellerInterop.STextRange sTextRange)
+        private void MarkErrorRange(TextMap textMap, SpellerInteropBase.ITextRange sTextRange)
         {
             ITextPointer errorStart;
             ITextPointer errorEnd;
@@ -1153,7 +1157,7 @@ namespace System.Windows.Documents
             ITextPointer inwardPosition;
             TextMap textMap;
             ArrayList segments;
-            SpellerInterop.STextRange sTextRange;
+            SpellerInteropBase.ITextRange sTextRange;
             LogicalDirection inwardDirection;
             int i;
 
@@ -1169,7 +1173,7 @@ namespace System.Windows.Documents
             // Disable spell checking functionality since we're only
             // interested in word breaks here.  This greatly cuts down
             // the engine's workload.
-            _spellerInterop.SetContextOption("IsSpellChecking", false);
+            _spellerInterop.Mode = SpellerInteropBase.SpellerMode.WordBreaking;
 
             //
             // Build an array of wordbreak offsets surrounding the position.
@@ -1199,7 +1203,7 @@ namespace System.Windows.Documents
             textMap = new TextMap(start, end, position, position);
             segments = new ArrayList(MinWordBreaksForContext + 1);
             _spellerInterop.EnumTextSegments(textMap.Text, textMap.TextLength, null,
-                new SpellerInterop.EnumTextSegmentsCallback(ExpandToWordBreakCallback), segments);
+                new SpellerInteropBase.EnumTextSegmentsCallback(ExpandToWordBreakCallback), segments);
 
             //
             // Use our table of word breaks to calculate context and content positions.
@@ -1229,13 +1233,19 @@ namespace System.Windows.Documents
                 {
                     contentOffset = textMap.ContentStartOffset == leftWordBreak ? leftWordBreak : rightWordBreak;
                 }
+
+                // See <summary> section in the doc comments of TextMapOffsetErrorLogger for details on 
+                // what is being logged and why. 
+                var errorLogger = new TextMapOffsetErrorLogger(direction, textMap, segments, i, leftWordBreak, rightWordBreak, contentOffset);
+                errorLogger.LogDebugInfo();
+
                 contentPosition = textMap.MapOffsetToPosition(contentOffset);
 
                 // contextPosition should be MinWordBreaksForContext - 1 words away.
                 if (direction == LogicalDirection.Backward)
                 {
                     i -= (MinWordBreaksForContext - 1);
-                    sTextRange = (SpellerInterop.STextRange)segments[Math.Max(i, 0)];
+                    sTextRange = (SpellerInteropBase.ITextRange)segments[Math.Max(i, 0)];
                     // We might actually follow contentOffset if we're at the document edge.
                     // Don't let that happen.
                     contextOffset = Math.Min(sTextRange.Start, contentOffset);
@@ -1243,11 +1253,15 @@ namespace System.Windows.Documents
                 else
                 {
                     i += MinWordBreaksForContext;
-                    sTextRange = (SpellerInterop.STextRange)segments[Math.Min(i, segments.Count-1)];
+                    sTextRange = (SpellerInteropBase.ITextRange)segments[Math.Min(i, segments.Count-1)];
                     // We might actually preceed contentOffset if we're at the document edge.
                     // Don't let that happen.
                     contextOffset = Math.Max(sTextRange.Start + sTextRange.Length, contentOffset);
                 }
+
+                errorLogger.ContextOffset = contextOffset;
+                errorLogger.LogDebugInfo();
+
                 contextPosition = textMap.MapOffsetToPosition(contextOffset);
             }
 
@@ -1287,7 +1301,7 @@ namespace System.Windows.Documents
         private int FindPositionInSegmentList(TextMap textMap, LogicalDirection direction, ArrayList segments,
             out int leftWordBreak, out int rightWordBreak)
         {
-            SpellerInterop.STextRange sTextRange;
+            SpellerInteropBase.ITextRange sTextRange;
             int index;
 
             // Make the compiler happy by initializing the out's to bogus values.
@@ -1296,7 +1310,7 @@ namespace System.Windows.Documents
 
             // Check before the first segment, which start at the first
             // non-whitespace char.
-            sTextRange = (SpellerInterop.STextRange)segments[0];
+            sTextRange = (SpellerInteropBase.ITextRange)segments[0];
             if (textMap.ContentStartOffset < sTextRange.Start)
             {
                 leftWordBreak = 0;
@@ -1306,7 +1320,7 @@ namespace System.Windows.Documents
             else
             {
                 // Check after the last segment, which does not include final whitespace.
-                sTextRange = (SpellerInterop.STextRange)segments[segments.Count-1];
+                sTextRange = (SpellerInteropBase.ITextRange)segments[segments.Count - 1];
                 if (textMap.ContentStartOffset > sTextRange.Start + sTextRange.Length)
                 {
                     leftWordBreak = sTextRange.Start + sTextRange.Length;
@@ -1318,7 +1332,7 @@ namespace System.Windows.Documents
                     // Walk the segment list, checking each segment and space in between.
                     for (index = 0; index < segments.Count; index++)
                     {
-                        sTextRange = (SpellerInterop.STextRange)segments[index];
+                        sTextRange = (SpellerInteropBase.ITextRange)segments[index];
 
                         leftWordBreak = sTextRange.Start;
                         rightWordBreak = sTextRange.Start + sTextRange.Length;
@@ -1334,7 +1348,7 @@ namespace System.Windows.Documents
                         if (index < segments.Count - 1 &&
                             rightWordBreak < textMap.ContentStartOffset)
                         {
-                            sTextRange = (SpellerInterop.STextRange)segments[index + 1];
+                            sTextRange = (SpellerInteropBase.ITextRange)segments[index + 1];
                             leftWordBreak = rightWordBreak;
                             rightWordBreak = sTextRange.Start;
 
@@ -1466,12 +1480,11 @@ namespace System.Windows.Documents
 
         // Called indirectly by ExpandToWordBreakAndContext while iterating segments.
         // Builds up an array of segment offsets while iterating.
-        private bool ExpandToWordBreakCallback(object textSegment, object o)
+        private bool ExpandToWordBreakCallback(SpellerInteropBase.ISpellerSegment textSegment, object o)
         {
             ArrayList segments = (ArrayList)o;
-            SpellerInterop.STextRange sTextRange = SpellerInterop.GetSegmentRange(textSegment);
 
-            segments.Add(sTextRange);
+            segments.Add(textSegment.TextRange);
 
             return true;
         }
@@ -1524,55 +1537,13 @@ namespace System.Windows.Documents
             // Set the language.
             //
 
-            _spellerInterop.SetLocale(culture.LCID);
+            _spellerInterop.SetLocale(culture);
 
             //
             // Set spelling reform, if necessary.
             //
 
-            string option;
-
-            // The engine only accepts values for german and french.
-            switch (culture.TwoLetterISOLanguageName)
-            {
-                case "de":
-                    option = "GermanReform";
-                    break;
-
-                case "fr":
-                    option = "FrenchReform";
-                    break;
-
-                default:
-                    option = null;
-                    break;
-            }
-
-            if (option != null)
-            {
-                switch (_spellingReform)
-                {
-                    case SpellingReform.Prereform:
-                        _spellerInterop.SetContextOption(option, SpellerInterop.SpellingReform.Prereform);
-                        break;
-
-                    case SpellingReform.Postreform:
-                        _spellerInterop.SetContextOption(option, SpellerInterop.SpellingReform.Postreform);
-                        break;
-
-                    case SpellingReform.PreAndPostreform:
-                        if (option == "GermanReform")
-                        {
-                            // BothPreAndPost is disallowed for german -- the engine has undefined results.
-                            _spellerInterop.SetContextOption(option, SpellerInterop.SpellingReform.Postreform);
-                        }
-                        else
-                        {
-                            _spellerInterop.SetContextOption(option, SpellerInterop.SpellingReform.BothPreAndPost);
-                        }
-                        break;
-                }
-            }
+            _spellerInterop.SetReformMode(culture, _spellingReform);
         }
 
         // Scans the word containing a specified character.
@@ -1671,7 +1642,9 @@ namespace System.Windows.Documents
         /// </summary>
         /// <param name="item"></param>
         /// <SecurityNote>
-        /// critical - asserts EnvironmentPermission permission.
+        /// critical:
+        ///    asserts EnvironmentPermission permission.
+        ///    works with critical member _spellerInterop
         /// </SecurityNote>
         [SecurityCritical]
         private void LoadDictionaryFromPackUri(Uri item)
@@ -1691,51 +1664,48 @@ namespace System.Windows.Documents
                 EnvironmentPermission.RevertAssert();
             }
 
-            SpellerInterop.ILexicon lexicon = LoadDictionaryInTempFile(tempFolder, tempLocationUri);
-            UriMap.Add(item, new DictionaryInfo(tempLocationUri, lexicon));
-        }
-
-        /// <summary>
-        /// Loads dictionary from a temp. file
-        /// </summary>
-        /// <param name="tempFolder"></param>
-        /// <param name="tempLocationUri"></param>
-        /// <returns></returns>
-        /// <SecurityNote>
-        /// critical - 
-        /// 1. Works with critical member _spellerInterop.
-        /// 2. Asserts FileIOPermission permission.
-        /// </SecurityNote>
-        [SecurityCritical]
-        private SpellerInterop.ILexicon LoadDictionaryInTempFile(string tempFolder, Uri tempLocationUri)
-        {
             try
             {
-                return _spellerInterop.LoadDictionary(tempLocationUri, tempFolder);
+                object lexicon = _spellerInterop.LoadDictionary(tempLocationUri, tempFolder);
+                UriMap.Add(item, new DictionaryInfo(tempLocationUri, lexicon));
             }
             finally
             {
-                // make sure all temp files are cleaned up.
-                if (tempLocationUri != null)
+                CleanupDictionaryTempFile(tempLocationUri);
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <SecurityNote>
+        /// critical --
+        ///    asserts FileIOPermission
+        /// </SecurityNote>
+        /// <param name="tempLocationUri"></param>
+        [SecurityCritical]
+        private void CleanupDictionaryTempFile(Uri tempLocationUri)
+        {
+            if (tempLocationUri != null)
+            {
+                new FileIOPermission(PermissionState.Unrestricted).Assert();
+                try
                 {
-                    new FileIOPermission(PermissionState.Unrestricted).Assert();
-                    try
+                    System.IO.File.Delete(tempLocationUri.LocalPath);
+                }
+                catch (Exception e)
+                {
+                    // we're catching exception only to dump debug data, then rethrow.
+                    if (SecurityHelper.CheckUnmanagedCodePermission())//we're in full trust
                     {
-                        System.IO.File.Delete(tempLocationUri.LocalPath);
+                        System.Diagnostics.Trace.Write(string.Format(CultureInfo.InvariantCulture, "Failure to delete temporary file with custom dictionary data. file Uri:{0},exception:{1}", tempLocationUri.ToString(), e.ToString()));
                     }
-                    catch (Exception e)
-                    {
-                        // we're catching exception only to dump debug data, then rethrow.
-                        if(SecurityHelper.CheckUnmanagedCodePermission())//we're in full trust
-                        {
-                            System.Diagnostics.Trace.Write(string.Format(CultureInfo.InvariantCulture, "Failure to delete temporary file with custom dictionary data. file Uri:{0},exception:{1}", tempLocationUri.ToString(), e.ToString()));
-                        }
-                        throw;
-                    }
-                    finally
-                    {
-                        FileIOPermission.RevertAssert();
-                    }
+                    throw;
+                }
+                finally
+                {
+                    FileIOPermission.RevertAssert();
                 }
             }
         }
@@ -2099,7 +2069,7 @@ namespace System.Windows.Documents
             /// critical - accesses file members holdign critical fields: file path and COM interface wrapper.
             /// </SecurityNote>
             [SecurityCritical]
-            internal DictionaryInfo(Uri pathUri, SpellerInterop.ILexicon lexicon)
+            internal DictionaryInfo(Uri pathUri, object lexicon)
             {
                 _pathUri = pathUri;
                 _lexicon = lexicon;
@@ -2120,7 +2090,7 @@ namespace System.Windows.Documents
             /// <SecurityNote>
             /// critical - returns wrapper to COM interface.
             /// </SecurityNote>
-            internal SpellerInterop.ILexicon Lexicon
+            internal object Lexicon
             {
                 [SecurityCritical]
                 get
@@ -2135,7 +2105,7 @@ namespace System.Windows.Documents
             /// </SecurityNote>
             /// </summary>
             [SecurityCritical]
-            private readonly SpellerInterop.ILexicon _lexicon;
+            private readonly object _lexicon;
 
             /// <summary>
             /// File location where custom dictionary is loaded from . 
@@ -2207,7 +2177,7 @@ namespace System.Windows.Documents
         ///     Critical: This object could expose a COM object which can run code under elevation
         /// </SecurityNote>
         [SecurityCritical]
-        private SpellerInterop _spellerInterop;
+        private SpellerInteropBase _spellerInterop;
 
         // Current spelling reform setting.
         private SpellingReform _spellingReform;

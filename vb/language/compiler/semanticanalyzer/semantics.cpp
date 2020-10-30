@@ -705,8 +705,8 @@ Semantics::InitializeFields
         // Indidate that this statement is an initialization statement in an
         // instance constructor so that it is generated outside the try block
         // generated for the on error statement.
-        // Bug VSWhidbey 204996
-        //
+        // 
+
         SetFlag32(InitStmt, SLF_INIT_ME);
     }
 
@@ -823,7 +823,7 @@ Semantics::InitializeFields
         if (FileContainingMember &&
             FileContainingMember != m_SourceFile)
         {
-            // Bug VSWhidbey 564823.
+            // 
             m_SourceFile = FileContainingMember;
 
             m_UnnamedNamespaceForNameLookupInImports = FileContainingMember->GetUnnamedNamespace();
@@ -844,7 +844,7 @@ Semantics::InitializeFields
             }
         }
 
-        // Note ([....]): Since decimal/date constants cannot be expressed in metadata, we have to
+        // Note (Microsoft): Since decimal/date constants cannot be expressed in metadata, we have to
         // emit them as shared readonly fields that have initializers. Rather than try to express
         // this duality throughout semantics, we're going to simulate it for a moment right here,
         // munging the symbol and then munging it back. Consider: a semantic implementation for this.
@@ -963,7 +963,7 @@ Semantics::InitializeFields
         // interpret the initializers in the context of the class rather the ctor context.
         // if the initializers are interpreted in the context of the ctor then the argument
         // names can hide the names of other fields in the class. The initializer will bind to
-        // argument names instead. bug(b156175)
+        // argument names instead. 
         Scope *savedLookup = m_Lookup;
         m_Lookup = ViewAsScope(ContainingClass());
         if (Member->IsNew())
@@ -1375,7 +1375,7 @@ Semantics::InterpretMyBaseHandler
 
     ParseTree::Expression * EventQualifier = NULL;
 
-    // [....]:
+    // Microsoft:
     // As part of fixing dev10 #426874, we should not generate instance.SharedEvent.
     // Rather, if the event is shared, always generate a type.
 
@@ -1386,7 +1386,7 @@ Semantics::InterpretMyBaseHandler
         // generate parseTree for
         //      Global.FullyQualifiedMyBaseClassName.EventName
         //
-        // [....]: In addition, if just the event is shared, we want to use a type to reference
+        // Microsoft: In addition, if just the event is shared, we want to use a type to reference
         // it, rather then an instance.
         ClassOrRecordType *CurrentClassContext = ContainingClass();
 
@@ -2220,7 +2220,7 @@ Semantics::InterpretMethodBody
         // But if there were field initializers, then they'll have been injected into all class constructors,
         // and we need to do flow-analysis on them. (although not on constructors of anonymous delegates)
         // Note: if there were multiple constructors then each field initializer will end up
-        // being analyzed multiple times; see bug Dev10#498116
+        // being analyzed multiple times; see 
         CheckFlow(BoundBody,false);
     }
 
@@ -2372,7 +2372,7 @@ Semantics::InterpretExpressionAndLower
 
         // During processing in the iterator, all SX_DEFERRED_TEMPs should be removed.
         // If the method still has deferred temps then they were created during iterate.
-        // This is a bug in the iterate code. 
+        // This is a 
         ThrowIfTrue(m_methodDeferredTempCount != 0);
     }
 
@@ -2621,7 +2621,7 @@ Semantics::InterpretConstantExpression
         (m_EvaluatingConditionalCompilationConstants &&
         TypeHelpers::IsArrayType(ExpressionResult->ResultType)))
     {
-        // DevDiv Bug #162847: things like #Date1#-#Date2# will yield a TimeSpan, which isn't a constant, so we report an error
+        // DevDiv 
 
         if (!IsBad(ExpressionResult))
         {
@@ -3038,7 +3038,7 @@ bool Semantics::DoesReceiverMatchInstance(Type * InstanceType, Type * ReceiverTy
     }
 
     // IsUnconstrainedTypeParameterInheritingFromObject ?
-    // [....] - Dev Div Bugs # 26379
+    // Microsoft - Dev Div Bugs # 26379
     // For some reason IsOrInheritsFromOrImplements does not return true
     // when InstanceType is an unconstrained type parameter and ReceiverType is object.
     // To compensate for this, I introduce a check for this exact case here:
@@ -3153,7 +3153,7 @@ bool Semantics::DoesReceiverMatchInstance(Type * InstanceType, Type * ReceiverTy
     VPASSERT(Matches == 
         (   ::ClassifyPredefinedCLRConversion(ReceiverType,InstanceType,m_SymbolCreator,m_CompilerHost,ConversionSemantics::ForExtensionMethods,0,false,NULL,NULL,NULL)==ConversionIdentity
          || ::ClassifyPredefinedCLRConversion(ReceiverType,InstanceType,m_SymbolCreator,m_CompilerHost,ConversionSemantics::ForExtensionMethods,0,false,NULL,NULL,NULL)==ConversionWidening),
-             "DoesReceiverMatchInstance/ClassifyPredefinedCLRConversion mismatch; please tell [....]");
+             "DoesReceiverMatchInstance/ClassifyPredefinedCLRConversion mismatch; please tell Microsoft");
 
     return Matches;
 }
@@ -4738,7 +4738,7 @@ InferTypeArgumentsFromArgumentDirectly
                     DigThroughToBasesAndImplements,
                     CombineConversionRequirements(
                         InferenceRestrictions,
-                        ConversionRequired::ArrayElement), // [....]: ??? what do array elements have to do with nullables?
+                        ConversionRequired::ArrayElement), // Microsoft: ??? what do array elements have to do with nullables?
                     pFixedParameterBitVector
                 );
         }
@@ -5185,16 +5185,16 @@ Semantics::InferTypeArgumentsFromLambdaArgument
         if(Argument->bilop == SX_UNBOUND_LAMBDA)
         {
             // Port SP1 CL 2943055 to VS10
-            // Bug #165844 - DevDiv Bugs        
-            // It turns out that InterpretUnboundLambdaBinding() is destructive to the UnboundLambdaExpression node.
-            // In particular parameter's type may be modified. Also, below we modify some fields in this structure.
-            // So, let's clone the node here and operate on the copy instead. The xCopyBilTreeForScratch will clone 
-            // parameters too. Instead, we could do a shallow copy here and clone parameters inside 
-            // InterpretUnboundLambdaBinding. However, it seems like an overkill to clone parameters every time 
-            // InterpretUnboundLambdaBinding is called because, usually, when we don't want the tree to be mutated,
-            // InterpretUnboundLambdaBinding is operating on a copy already created by Overload Resolution. 
-            // The interesting thing about type inference is that it may be called twice from MatchArguments (the second
-            // time is to report errors) and the second call is going to operate on mutated Lambdas, unless we prevent mutation.
+            // 
+
+
+
+
+
+
+
+
+
             ILTree::UnboundLambdaExpression* UnboundLambda = &m_TreeAllocator.xCopyBilTreeForScratch(Argument)->AsUnboundLambdaExpression();
 
             // Don't allow relaxation semantics, we want the pure type of the body.
@@ -5292,7 +5292,7 @@ Semantics::InferTypeArgumentsFromLambdaArgument
             InferTypeArgumentsFromArgument(
                 &Argument->Loc,
                 pInferenceLambdaReturnType,
-                false, // not ArgumentTypeByAssumption ??? [....]: but maybe it should...
+                false, // not ArgumentTypeByAssumption ??? Microsoft: but maybe it should...
                 pInferenceParameterReturnType,
                 Param,
                 TypeInference,
@@ -5538,8 +5538,8 @@ Semantics::InferTypeArguments
                 if (TypeArguments[TypeArgumentIndex] == NULL)
                 {
                     InferenceOK = false;
-                    // Bug 122092: AddressOf doesn't want detailed info on which parameters could not be
-                    // inferred, just report the general type inference failed message in this case.
+                    // 
+
                     if (HasFlag(OvrldFlags, OvrldReportErrorsForAddressOf))
                     {
                         SomeInferenceFailed = true;
@@ -7855,7 +7855,7 @@ Semantics::TransformDeferredTemps()
 
         // During processing in the iterator, all SX_DEFERRED_TEMPs should be removed.
         // If the method still has deferred temps then they were created during iterate.
-        // This is a bug in the iterate code. 
+        // This is a 
 
         ThrowIfTrue(m_methodDeferredTempCount != 0);
     }
@@ -8045,8 +8045,8 @@ Semantics::LowerBoundTreesForMethod(ILTree::ProcedureBlock *BoundBody, Transient
         // late during interpretation and not as soon as the anonymous delegate is created
         // in order to ensure that only the anonymous delegates that are used in the final
         // bound tree are emitted into the assembly.
-        // For an exmaple, see bug Devdiv 78381.
-        //
+        // For an exmaple, see 
+
         RegisterRequiredAnonymousDelegates(BoundBody);
 
         CLinkRangeIter<TransientSymbol> iter(m_SymbolsCreatedDuringInterpretation->MethodSymbolIterator());
@@ -8982,8 +8982,8 @@ Semantics::LowerCType(
 // late during interpretation and not as soon as the anonymous delegate is created
 // in order to ensure that only the anonymous delegates that are used in the final
 // bound tree are emitted into the assembly.
-// For an exmaple, see bug Devdiv 78381.
-//
+// For an exmaple, see 
+
 void Semantics::RegisterRequiredAnonymousDelegates
 (
     ILTree::ProcedureBlock *OuterMostProcedureBoundTree
@@ -9101,7 +9101,7 @@ Semantics::CreateMergedHashTable
     }
     else
     {
-        // [....] note: memory footprint consideration...
+        // Microsoft note: memory footprint consideration...
         //
         // Should we cap the number of 'TotalNoOfBucketsNeeded' to some bound? It depends on
         // how total number of symbols as seen by the compiler is related to those that are visible under some namespaces.
@@ -9247,11 +9247,11 @@ Semantics::IterateNamespaceRingForEM
         {
             // Dev10 #570673 Below is a comment copied from Semantics::LookupInModulesInNamespace(), 
             // we are hitting the same issue here.
-            // Bug 437737. With the new compilation order for diamond references,
-            // modules in metadata files that are not referenced by this project
-            // either directly or indirectly cannot be loaded when binding this
-            // project.
-            //
+            // 
+
+
+
+
             if (!(pNamespace->GetCompilerFile() &&
                   pNamespace->GetCompilerFile()->IsMetaDataFile() &&
                   pNamespace->GetCompilerFile()->GetCompState() < CS_Bound))

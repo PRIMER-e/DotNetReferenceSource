@@ -107,7 +107,7 @@ namespace MS.Internal.PtsHost
                 dvr = 0;
             else
             {
-                MbpInfo mbp = MbpInfo.FromElement(Table);
+                MbpInfo mbp = MbpInfo.FromElement(Table, StructuralCache.TextFormatterHost.PixelsPerDip);
                 MarginCollapsingState mcsOut = null;
                 MarginCollapsingState.CollapseTopMargin(PtsContext, mbp, mcs, out mcsOut, out dvr);
 
@@ -187,7 +187,7 @@ namespace MS.Internal.PtsHost
             out IntPtr ppmcsclientOut)
         {
             ppmcsclientOut = IntPtr.Zero;
-            MbpInfo mbp = MbpInfo.FromElement(Table);
+            MbpInfo mbp = MbpInfo.FromElement(Table, StructuralCache.TextFormatterHost.PixelsPerDip);
             MarginCollapsingState mcs = null;
             
             if (pmcsclientIn != IntPtr.Zero)

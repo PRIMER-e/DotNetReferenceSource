@@ -77,14 +77,14 @@ namespace System.Windows.Media
                     System.Windows.Media.MediaSystem.ServiceChannel,
                     false,      // not out of band
                     System.Windows.Media.MediaSystem.Connection,
-                    false // [....] transport
+                    false // sync transport
                     );
 
                 _asyncOutOfBandChannel = new DUCE.Channel(
                     System.Windows.Media.MediaSystem.ServiceChannel,
                     true,       // out of band
                     System.Windows.Media.MediaSystem.Connection,
-                    false // [....] transport
+                    false // sync transport
                     );
             }
 
@@ -93,7 +93,7 @@ namespace System.Windows.Media
             /// </summary>
             /// <securitynote>
             /// Critical - Closes channels.
-            /// TreatAsSafe - It is safe for the media context to [....] channels channel.
+            /// TreatAsSafe - It is safe for the media context to sync channels channel.
             /// </securitynote>
             [SecurityCritical, SecurityTreatAsSafe]
             internal void RemoveSyncChannels()
@@ -175,7 +175,7 @@ namespace System.Windows.Media
                 if (_freeSyncChannels == null)
                 {
                     //
-                    // Ensure the free [....] channels queue...
+                    // Ensure the free sync channels queue...
                     //
 
                     _freeSyncChannels = new Queue<DUCE.Channel>(3);
@@ -184,7 +184,7 @@ namespace System.Windows.Media
                 if (_freeSyncChannels.Count > 0) 
                 {
                     //
-                    // If there is a free [....] channel in the queue, we're done:
+                    // If there is a free sync channel in the queue, we're done:
                     //
                     
                     return _freeSyncChannels.Dequeue();
@@ -219,7 +219,7 @@ namespace System.Windows.Media
             }
 
             /// <summary>
-            /// Returns a [....] channel back to the pool.
+            /// Returns a sync channel back to the pool.
             /// </summary>
             /// <securitynote>
             /// Critical - Creates and returns a synchronous channel.

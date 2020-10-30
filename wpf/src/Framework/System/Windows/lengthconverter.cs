@@ -216,12 +216,12 @@ namespace System.Windows
 
             //  important to substring original non-lowered string 
             //  this allows case sensitive ToDouble below handle "NaN" and "Infinity" correctly. 
-            //  this addresses windows bug 1177408
+            //  this addresses windows 
             valueString = valueString.Substring(0, strLen - strLenUnit);
 
             // FormatException errors thrown by Convert.ToDouble are pretty uninformative.
             // Throw a more meaningful error in this case that tells that we were attempting
-            // to create a Length instance from a string.  This addresses windows bug 968884
+            // to create a Length instance from a string.  This addresses windows 
             try
             {
                 double result = Convert.ToDouble(valueString, cultureInfo) * unitFactor;

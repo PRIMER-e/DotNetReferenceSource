@@ -6,16 +6,16 @@
 //
 // Created: 10/27/01 by mihaii
 // Modified:
-//  10/19/04    [....]      Renamed from XamlContainer to NavigationService
-//   7/25/05    [....]     Added CustomContentState journaling; journaling refactoring, especially around
+//  10/19/04    Microsoft      Renamed from XamlContainer to NavigationService
+//   7/25/05    Microsoft     Added CustomContentState journaling; journaling refactoring, especially around
 //                          fragment navigation
-//   9/02/05    [....]     Introduced JournalEntryGroupState. Refactoring and bug-fixing around PageFunctions
-//  11/14/05    [....]     "Island Frame" implementation. Now NavigationService talks to a
-//                          JournalNavigationScope instead of NavigationWindow and NavigationWindow.Journal.
-//
-// Copyright (C) 2001 by Microsoft Corporation.  All rights reserved.
-//
-//---------------------------------------------------------------------------
+//   9/02/05    Microsoft     Introduced JournalEntryGroupState. Refactoring and 
+
+
+
+
+
+
 
 using System;
 using System.Timers;
@@ -981,9 +981,9 @@ namespace System.Windows.Navigation
                 currentPF.FinishHandler = null;
             }
             //
-            // Dispose the old tree here. TEMP until Bug 864908 is fixed
-            // if the root is a PageFunction whose KeepAlive is set to TRUE, or a page
-            // with JournalMode=KeepAlive, we should not dispose the old tree.
+            // Dispose the old tree here. TEMP until 
+
+
             bool canDispose = true;
 
             if (IsContentKeepAlive())
@@ -1102,7 +1102,7 @@ namespace System.Windows.Navigation
                 // Note: setting NavigationService has a non-obvious side effect -
                 // if dobj has any data-bound properties that use ElementName binding,
                 // the name will be resolved in the "inner scope", not the "outer
-                // scope".  (Bug 1765041)
+                // scope".  (
                 dobj.SetValue(NavigationServiceProperty, this);
 
                 // Set BaseUriHelper.BaseUriProperty.
@@ -1155,12 +1155,12 @@ namespace System.Windows.Navigation
 
             Debug.Assert(_navigateQueueItem == null);
 
-            // Workaround for the reentrance problem from browser (bug 128689).
-            // Call into browser before we update journal. If there is another navigation waiting, e.g,
-            // user starts a new navigation using the browser back/forward button, it will
-            // re-enter with this call. We can detect whether a new navigation has started by checking
-            // _navigateQueueItem. The goal is to check for reentrance before we update journal. It should
-            // be safe to cancel the current navigation at this point (before any journal changes).
+            // Workaround for the reentrance problem from browser (
+
+
+
+
+
             if (HasTravelLogIntegration)
             {
                 DispatchPendingCallFromBrowser();
@@ -1253,7 +1253,7 @@ namespace System.Windows.Navigation
                     // Note: setting NavigationService has a non-obvious side effect -
                     // if v has any data-bound properties that use ElementName binding,
                     // the name will be resolved in the "inner scope", not the "outer
-                    // scope".  (Bug 1765041)
+                    // scope".  (
                     v.SetValue(NavigationServiceProperty, this);
                 }
 
@@ -1869,7 +1869,7 @@ namespace System.Windows.Navigation
                     _journalEntryGroupState = navigateInfo.JournalEntry.JEGroupState;
                     _contentId = _journalEntryGroupState.ContentId;
 
-                    // The JournalEntryStacks need to be invalidated after changing _contentId. (Bug 1613984)
+                    // The JournalEntryStacks need to be invalidated after changing _contentId. (
                     _journalScope.Journal.UpdateView();
                 }
 
@@ -1993,7 +1993,7 @@ namespace System.Windows.Navigation
                 _webResponse = null;
             }
             // If _asyncObjectConverter is null, it means we called XamlReader.LoadBaml,
-            // which we cannot stop. It is [....] operation. We get here when StopLoading is called or a
+            // which we cannot stop. It is sync operation. We get here when StopLoading is called or a
             // new navigation is started in NavigationProgress event handler. Parser still holds on to the stream.
             // We will have to wait for parsing to finish. In GetObjectFromResponse when the baml loading
             // call returns we will check whether the navigation has been cancelled. If it has, we will
@@ -2856,7 +2856,7 @@ namespace System.Windows.Navigation
                 return;
 
             // Get or BeginGet WebResponse
-            // Special handling PackWebRequest, because it only support [....] right now.
+            // Special handling PackWebRequest, because it only support sync right now.
             // D2's plan is to support async in V2. Refer to PS #18958 and #17386.
             // We should switch to async after those tasks are done.
             WebResponse response = null;
@@ -3276,8 +3276,8 @@ namespace System.Windows.Navigation
             // When this file is renavigated to from IE, IE does NOT try to
             // redownload the file if the cache entry has not expired nor will
             // it try to complete the previous download.
-            // Opened tracking bug 895912 in Windows Data base. VSWhidbey bug
-            // is linked to it
+            // Opened tracking 
+
 
 
             // Check CachePolicy here because we plan to expose WebRequest & WebResponse
@@ -4098,8 +4098,8 @@ namespace System.Windows.Navigation
                 // When the Return event handler is invoked on the parent element, the parent is not in the tree.
                 // But developers need to access the NavigationService from the Return event handler (to be able to
                 // start new navigation). To make this scenario straightforward, set the NavigationService property
-                // before raising the Return event and clear it afterwards. See details of the scenario in Dev10 bug 451875.
-                // Similar issue with Window.GetWindow()...
+                // before raising the Return event and clear it afterwards. See details of the scenario in Dev10 
+
                 Window window = null;
                 DependencyObject dobj = parentElem as DependencyObject;
                 if ((dobj != null) && (!dobj.IsSealed))
@@ -4329,12 +4329,12 @@ namespace System.Windows.Navigation
                             _isNavInitiator = true;
                         }
                     }
-                    // We'd like to fix the IsNavInitiator property for island frame, more details in Dev10 bug 451917.
-                    // However, it is a breaking change. In the Dev10 time frame, the breaking change bar is high.
-                    // So instead of fixing it with the right logic, we limit the scope of the change to those that matter
-                    // most - the scenario is navigation of the island Frame; the timing is after starting up.
-                    // This change does not affect startup or other initial tree construction scenarios except when the
-                    // Frame is explicitly marked to be island frame.
+                    // We'd like to fix the IsNavInitiator property for island frame, more details in Dev10 
+
+
+
+
+
                     else if (IsJournalLevelContainer)
                     {
                         _isNavInitiator = true;

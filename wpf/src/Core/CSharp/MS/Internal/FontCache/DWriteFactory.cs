@@ -6,7 +6,7 @@
 //              object.
 //
 // History:
-//  08/08/2008 : [....] - Integrating with DWrite.
+//  08/08/2008 : Microsoft - Integrating with DWrite.
 //
 //---------------------------------------------------------------------------
 

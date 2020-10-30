@@ -8,7 +8,7 @@
 // Description: Undo unit for TextContainer.DeleteContent calls.
 //
 // History:  
-//  03/03/2004 : [....] - Created
+//  03/03/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 
@@ -385,7 +385,7 @@ namespace System.Windows.Documents
 
                 // Get the object to be inserted.
                 // If xml is null which we set it not to call SaveAsXml in the partial trust envirnment,
-                // create the dummy Grid object to be inserted so that we can [....] TextContainer
+                // create the dummy Grid object to be inserted so that we can sync TextContainer
                 // count with the undo unit.
                 if (_xml != null)
                 {

@@ -850,7 +850,7 @@ mdToken Builder::GetToken(BCSYM_NamedRoot * pNamed, bool remap)
             tk = (mdToken)pNamed->GetToken();
         }
 
-        // see if this is a remapped token Bug #84987 - DevDiv Bugs
+        // see if this is a remapped token 
         if(!IsNilToken(tk) && IsProcedure(pNamed) && remap)
         {
             CompilerFile * fl = pNamed->GetContainingCompilerFile();
@@ -1268,12 +1268,12 @@ void Builder::WriteBlockScopes
 
                 CurrentMember->ConstantInfo->Value.VariantFromConstant(VariantValue);
 
-                // This can fail with E_INVALIDARG for very long string constants. Bug
-                // VSWhidbey 219279
-                //
-                // Okay to ignore failures because this is not catastrophic for compilation
-                // or debugging. Worse case is that when debugging, these long local constants
-                // will not be shown in watch windows, etc.
+                // This can fail with E_INVALIDARG for very long string constants. 
+
+
+
+
+
 
                 // For constants, we use a signature per constant.
 
@@ -1645,11 +1645,11 @@ bool PEBuilder::Compile
             }
 
             // VSW#545896
-            // The lowest risk way to fix this bug is to ensure that ProcessAllXMLDocCommentNodes runs after
-            // Text::Init, so that xml doc errors are not misdetected by Text::Init as previously existing
-            // 'file load' errors.
-            //
-            // As the first step of compiling, process all the XML doccomments so they would be up-to-date.
+            // The lowest risk way to fix this 
+
+
+
+
 #if IDE
             XMLParseTreeCache cache;
             if (pContainer)
@@ -2361,7 +2361,7 @@ void PEBuilder::LoadMetaData()
     //
     IfFailThrow(m_pCompilerProject->GetCompilerHost()->GetDispenser(&pMetaDataDispenser));
 
-        // [....] Set the metadataRuntimeVersion of the output binary to be the
+        // Microsoft Set the metadataRuntimeVersion of the output binary to be the
         // same as the value retrieved from mscorlib. This enables the user to configure
         // the runtime they want to target by changing the mscorlib they supply.
         CompilerProject *pComPlusProject = m_pCompilerProject->GetCompilerHost()->GetComPlusProject();
@@ -3514,7 +3514,7 @@ void PEBuilder::EmitAttributesAttachedToSymbol
 
             // The following code shows how vb interprets <NonSerialized> attribute on event.
             // The attribute is moved to the backing field of an event.
-            // This is Bug 674331
+            // This is 
             if (psym->IsEventDecl() && 
                 psymApplAttr->GetAttrIndex() != NULL &&
                 psymApplAttr->GetAttrIndex()->Attributes[0].m_attrkind == attrkindNonSerialized_Void)
@@ -3643,7 +3643,7 @@ void PEBuilder::EmitPiaTypeAttributes(BCSYM_Container *psym, mdToken tokenForSym
         if (throwOnUnmappableChar)
         {
             // If the BestFitMappingAttribute included a non-default value for its ThrowOnUnmappableChar property,
-            // we must emit a special field initializer value. This fixes Dev10 bug #535429.
+            // we must emit a special field initializer value. This fixes Dev10 
             pMetaemitHelper->DefineBestFitMappingAttribute(tokenForSymbol, bestFitMapping, throwOnUnmappableChar);
         }
         else
@@ -4320,15 +4320,15 @@ void PEBuilder::DefineMembersOfContainer
 Each symbol may have an associated token. The compiler expects that the symbol 
 will either be imported, in which case its associated token represents the 
 metadata import value, or that the symbol has been generated from code, in 
-which case its associated token represents the metaemit export value. Bug 
-#530836 occurred because MetaEmit was not expecting to emit imported symbols, 
-and would overwrite the original token values. The bug is now fixed and this
-method exists to protect against recurrences. Its job is to record all of the
-current token values for each symbol we might reach while emitting local types.
-We expect that DefinePiaTypes will invoke this once for each type to be 
-emitted. After emitting types, we can use the save list to ensure that the
-symbols' tokens have not changed.
-******************************************************************************/
+which case its associated token represents the metaemit export value. 
+
+
+
+
+
+
+
+*/
 static void RecordLocalTypeTokens
 (
  BCSYM *pSym,
@@ -4569,12 +4569,12 @@ void PEBuilder::DefinePiaTypes
     // We should have encountered all the items on the token list, with none left over.
     AssertIfFalse(0 == tokenSaveList.Count());
 #endif
-    // Bug #540163 occurred because we were not comprehensively capturing pia types referenced
-    // in member signatures. A symptom of this problem was that we would end up with more type
-    // references in the cache after emitting members than we had when we started. This should 
-    // never happen: we expect that the pia type ref and member ref caches will not change during 
-    // local type generation. This assert helps detect that condition, should some future work
-    // happen to introduce a similar bug into MetaEmit. (See MetaEmit::CaptureMemberPiaTypeRefs.)
+    // 
+
+
+
+
+
     unsigned int cCacheAfter = m_pCompilerProject->CountPiaCacheEntries();
     if (cCacheBefore != cCacheAfter)
     {
@@ -4656,9 +4656,9 @@ void PEBuilder::DefineMembersOfPiaType
     DefineableMembersInAContainer methodIter(m_pCompiler, pContainer);
     while (BCSYM *Symbol = methodIter.Next())
     {
-        // MQ Bug 808082
-        // The condition (Symbol->IsSyntheticMethod() && Symbol->PProc()->IsEventAccessor()) is added
-        //  to capture event accessors, for example addon.
+        // MQ 
+
+
 
         if ((Symbol->IsMethodDecl() && !Symbol->IsEventDecl()) ||
             (Symbol->IsSyntheticMethod() && Symbol->PProc()->IsEventAccessor()))
@@ -5172,7 +5172,7 @@ ILTree::ILNode *PEBuilder::GenerateBoundTreeForProc
 
 #ifdef DEBUG
 
-            // [....]:
+            // Microsoft:
             // We've had a few bugs where errors don't get generated in when interpreting
             // the method body, but we neglect to generate errors.
             // For now, just put a debug check. We should make this a real error in VS10
@@ -5716,7 +5716,7 @@ void PEBuilder::EmitAttributesOnProcAndParams
             // Handle its parameters
             for (pparam = pproc->GetFirstParam(); pparam; pparam = pparam->GetNext())
             {
-                //[....] - VSWhidbey #270648
+                //Microsoft - VSWhidbey #270648
                 //We need to propigate MarshalAs attributes
                 //from the return type of a property defined in an interface
                 //to the "Value" parameter on its setter.
@@ -5845,7 +5845,7 @@ bool PEBuilder::EmitAttributes
                     {
                         VSASSERT(pMetaemitHelper->IsPrivateMembersEmpty(), "MetaEmit helper contains old data.");
 
-                        //[....] Some platforms don't define this attribute. Treat this attribute as optional.
+                        //Microsoft Some platforms don't define this attribute. Treat this attribute as optional.
                         mdMemberRef staCtorTok = pMetaemitHelper->DefineRTMemberRef(STAThreadAttributeCtor);
 
                         if (!IsNilToken(staCtorTok))
@@ -6198,8 +6198,8 @@ void PEBuilder::WritePE
 
             // Emit the security attributes on all the symbols in this project. This
             // process needs to be delayed till after emitting the project's manifest
-            // because of Bug VSWhidbey 320892.
-            //
+            // because of 
+
             pMetaemitHelper->EmitAllSecurityAttributes();
 
             // Create the assembly's Win32 resources.
@@ -6391,8 +6391,8 @@ void PEBuilder::WritePE
         WritePDB(pInfo, &spWriter);
 
         // make sure Symbol writer gets notifications about token remapping
-        // Bug #103475 - DevDiv Bugs: in IDE case we need to be notified about token remappings
-        // even in no-PDB case.
+        // 
+
         m_spTokenMappingTable = RefCountedPtr<TokenMappingTable>(new TokenMappingTable(&m_nra));
         IfFailThrow(pFileGen->AddNotificationHandler(hCeeFile,new (zeromemory) CSymMapToken(m_spTokenMappingTable)));
 
@@ -6912,9 +6912,9 @@ void PEBuilder::WritePDB2
 Error:
 
 #if !IDE
-    // Dev10 bug 866530
-    // Don't close/Release pSymWriter since the caller will do this work and
-    // the IDE crashes when calling Close() a second time.
+    // Dev10 
+
+
     if (pSymWriter)
     {
         // We're done with the PDB, flush it.

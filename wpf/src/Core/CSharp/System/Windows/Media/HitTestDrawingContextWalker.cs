@@ -8,7 +8,7 @@
 //              This DrawingContextWalker is used to perform hit tests on renderdata.
 //
 // History:
-//  04/10/2004 : [....] - Created it.
+//  04/10/2004 : Microsoft - Created it.
 //
 //---------------------------------------------------------------------------
 

@@ -6,8 +6,8 @@
 //      Fault reporting helpers. See .hxx.
 //
 //  History:
-//      2007/07/26   [....]     Created
-//      2007/09/20   [....]     Ported Windows->DevDiv. See SourcesHistory.txt.
+//      2007/07/26   Microsoft     Created
+//      2007/09/20   Microsoft     Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ __declspec(noreturn)
 void ReportFaultAndTerminate(HRESULT hr, int exceptionCode)
 {
     ASSERT(FAILED(hr));
-    // If we are handling a remote call from the browser, the RPC layer is going to ---- the exception.
+    // If we are handling a remote call from the browser, the RPC layer is going to swallow the exception.
     // To prevent this, call ReportFault() directly. 
     __try
     {

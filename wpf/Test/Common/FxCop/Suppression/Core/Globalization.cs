@@ -15,8 +15,8 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope="member", Target="System.Windows.Media.DrawingContext.DrawText(System.Windows.Media.FormattedText,System.Windows.Point):System.Void", MessageId="MS.Internal.MediaTrace.Trace(System.String)")]
 [module: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope="member", Target="System.Windows.Media.DrawingDrawingContext.DrawDrawing(System.Windows.Media.Drawing):System.Void", MessageId="MS.Internal.MediaTrace.Trace(System.String)")]
@@ -57,7 +57,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1038724
-// Developer: chaiwatp ([....])
+// Developer: chaiwatp (adsmith)
 // Reason: The code in question appears to be  
 //	  return new COMException("", hr);
 //               Yes, this could be String.Empty instead of "", but otherwise this appears to be fine.
@@ -66,7 +66,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1038756
-// Developer: ChaiwatP ([....])
+// Developer: ChaiwatP (dwaynen)
 // Reason: The System.Windows.Input.KeyboardDevice.Validate_Key method is reporting an ArgumentException,
 //                and passing the name of the argument.  This is not a localizable string, as it just refers to the name of the argument in code
 //                - which will be part of our public documentation.

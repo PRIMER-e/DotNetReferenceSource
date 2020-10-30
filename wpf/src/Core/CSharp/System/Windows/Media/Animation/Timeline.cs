@@ -508,8 +508,8 @@ namespace System.Windows.Media.Animation
         /// The Name of this Timeline.
         /// </value>
         /// <remarks>
-        /// This property can be used to set up [....]-arcs between sibling
-        /// Timeline objects. A [....]-arc is established when the
+        /// This property can be used to set up sync-arcs between sibling
+        /// Timeline objects. A sync-arc is established when the
         /// <see ref="TimeSyncValue.SyncTimeline"/> property of one Timeline
         /// corresponds to the Name of another Timeline.
         /// </remarks>

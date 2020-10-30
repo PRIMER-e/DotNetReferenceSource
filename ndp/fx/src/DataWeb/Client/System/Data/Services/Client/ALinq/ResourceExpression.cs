@@ -6,7 +6,7 @@
 //      Base class for expressions representing resources
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

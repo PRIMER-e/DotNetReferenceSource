@@ -64,7 +64,7 @@ namespace System.Windows.Media
         // resource. When this flag is set, IsSubtreeDirtyForRender is propagated.
         IsEdgeModeDirty                     = 0x200,
 
-        //
+        //TODO: missing comment
         IsContentConnected                  = 0x400,
 
         // Specifies whether this visual has child visual resource with content connected

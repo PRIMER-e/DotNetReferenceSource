@@ -74,11 +74,11 @@ namespace MS.Win32
         internal const int MEM_FREE = 0x10000;
 
         [DllImport(ExternDll.Kernel32, SetLastError = true)]
-        internal static extern bool ReadProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr Source, IntPtr Dest, IntPtr /*SIZE_T*/ size, out int bytesRead);
+        internal static extern bool ReadProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr Source, IntPtr Dest, IntPtr /*SIZE_T*/ size, out IntPtr /*SIZE_T*/ bytesRead);
         [DllImport(ExternDll.Kernel32, SetLastError = true)]
-        internal static extern bool ReadProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr Source, MS.Internal.AutomationProxies.SafeCoTaskMem destAddress, IntPtr /*SIZE_T*/ size, out int bytesRead);
+        internal static extern bool ReadProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr Source, MS.Internal.AutomationProxies.SafeCoTaskMem destAddress, IntPtr /*SIZE_T*/ size, out IntPtr /*SIZE_T*/ bytesRead);
         [DllImport(ExternDll.Kernel32, SetLastError = true)]
-        internal static extern bool WriteProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr Dest, IntPtr sourceAddress, IntPtr /*SIZE_T*/ size, out int bytesWritten);
+        internal static extern bool WriteProcessMemory(MS.Internal.AutomationProxies.SafeProcessHandle hProcess, IntPtr Dest, IntPtr sourceAddress, IntPtr /*SIZE_T*/ size, out IntPtr /*SIZE_T*/ bytesWritten);
 
         [DllImport("oleacc.dll")]
         internal static extern int AccessibleChildren(Accessibility.IAccessible paccContainer, int iChildStart, int cChildren, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), In, Out] object[] rgvarChildren, out int pcObtained);

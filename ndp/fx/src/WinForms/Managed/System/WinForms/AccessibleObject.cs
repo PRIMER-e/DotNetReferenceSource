@@ -1376,7 +1376,7 @@ namespace System.Windows.Forms {
         
         /// <include file='doc\AccessibleObject.uex' path='docs/doc[@for="AccessibleObject.UnsafeNativeMethods.IOleWindow.GetWindow"]/*' />
         /// <devdoc>
-        ///     [[....] - Apr04]
+        ///     [Microsoft - Apr04]
         ///
         ///     Now that AccessibleObject is used to wrap all system-provided (OLEACC.DLL) accessible
         ///     objects, it needs to implement IOleWindow and pass this down to the inner object. This is

@@ -2241,17 +2241,17 @@ bool XMLDocNode::VerifyXMLDocRootChildren(IXMLDOMElement *pXMLRootElement, bool 
             // Notice how the ?abc? part is not inside any XML tags, so the XML parser generates a ?#text? tag for it.
             // We don?t want to get hung on these tags because there may be more than one of them around.
             //
-            // [....]
+            // Microsoft
             // 12/12/2005
-            // see VSWhidbey bug # 566346
-            // we need to relax this error for <exception> tags, because it is legal to have multiple exception
-            // tags with the same attributes.
-            //
-            //
-            // [....]
-            // see Dev Div Bugs # 4389
-            // we need to relax the error further, because we allow custom tags to be present, so we now
-            // only generate this error for "well known unique" xml comment tags.
+            // see VSWhidbey 
+
+
+
+
+
+
+
+
 
             if (TagMatchesCase(FirstText, SecondText) &&  IsUniqueTag(SecondText))
             {
@@ -2462,7 +2462,7 @@ bool XMLDocNode::VerifyException(IXMLDOMNode *pParameterNode, long NodeIndex, bo
 
     CComPtr<IXMLDOMNode> spParamNameNode;         // First, try to find the "name" attribute
 
-    // [....] 11/18/01:  IXMLRootElement's use of BSTR is incorrect -- although the interface
+    // Microsoft 11/18/01:  IXMLRootElement's use of BSTR is incorrect -- although the interface
     // requires a BSTR, they are actually expecting a WCHAR*.  To keep PREFast from choking
     // on this, we'll add the cast, which programmatically does nothing.
     if (FAILED(pParameterNode->selectSingleNode((BSTR)L"@cref", &spParamNameNode)))
@@ -2534,7 +2534,7 @@ bool XMLDocNode::VerifyGenericParameter(IXMLDOMNode *pParameterNode, long NodeIn
 
     CComPtr<IXMLDOMNode> spParamNameNode;         // First, try to find the "name" attribute
 
-    // [....] 11/18/01:  IXMLRootElement's use of BSTR is incorrect -- although the interface
+    // Microsoft 11/18/01:  IXMLRootElement's use of BSTR is incorrect -- although the interface
     // requires a BSTR, they are actually expecting a WCHAR*.  To keep PREFast from choking
     // on this, we'll add the cast, which programmatically does nothing.
     if (FAILED(pParameterNode->selectSingleNode((BSTR)L"@name", &spParamNameNode)))
@@ -2633,7 +2633,7 @@ bool XMLDocNode::VerifyParameter(IXMLDOMNode *pParameterNode, long NodeIndex, bo
 
     CComPtr<IXMLDOMNode> spParamNameNode;         // First, try to find the "name" attribute
 
-    // [....] 11/18/01:  IXMLRootElement's use of BSTR is incorrect -- although the interface
+    // Microsoft 11/18/01:  IXMLRootElement's use of BSTR is incorrect -- although the interface
     // requires a BSTR, they are actually expecting a WCHAR*.  To keep PREFast from choking
     // on this, we'll add the cast, which programmatically does nothing.
     if (FAILED(pParameterNode->selectSingleNode((BSTR)L"@name", &spParamNameNode)))

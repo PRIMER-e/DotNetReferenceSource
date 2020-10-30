@@ -6,8 +6,8 @@
 //              interface which Drawing's must implement.  
 //
 // History:  
-//  2003/07/16 : [....] - Created it.
-//  2003/07/28 : [....] - Renamed it and hooked it up to the unmanaged code.
+//  2003/07/16 : Microsoft - Created it.
+//  2003/07/28 : Microsoft - Renamed it and hooked it up to the unmanaged code.
 //  2004/11/17 : timothyc - Repurposed Drawing from being a Changeable
 //               implementation that contains render data into the base 
 //               class for the enumerable & modifiable Drawing subclasses.

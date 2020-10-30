@@ -660,7 +660,7 @@ namespace MS.Internal.Data
                 _host.NewValueAvailable(_dependencySourcesChanged, initialLevel < 0, isASubPropertyChange);
             }
 
-            GC.KeepAlive(target);   // keep target alive during changes (bug 956831)
+            GC.KeepAlive(target);   // keep target alive during changes (
         }
 
         // replace the item at level k with the given item, or with an item obtained from the given parent
@@ -681,7 +681,7 @@ namespace MS.Internal.Data
                 DynamicObjectAccessor oldDOA;
                 PropertyPath.DowncastAccessor(_arySVS[k].info, out oldDP, out oldPI, out oldPD, out oldDOA);
 
-                if (newO == BindingExpression.StaticSource)
+                if (oldO == BindingExpression.StaticSource)
                 {
                     Type declaringType = (oldPI != null) ? oldPI.DeclaringType
                                         : (oldPD != null) ? oldPD.ComponentType
@@ -1390,7 +1390,7 @@ namespace MS.Internal.Data
                             // the conversion didn't work (often because the converter
                             // reverts to the default behavior - returning null).  So
                             // we treat null as an "error", and keep trying for something
-                            // better.  (See bug 861966)
+                            // better.  (See 
                         }
                     }
 
@@ -1439,8 +1439,8 @@ namespace MS.Internal.Data
             // argument, use the property instead.  (E.g. convert [foo] to .foo)
             // This works around a problem in ADO - they raise PropertyChanged for
             // property "foo", but they don't raise PropertyChanged for "Item[]".
-            // See bug 1180454.
-            // Likewise when the indexer arg is an integer - convert to the corresponding named property.
+            // See 
+
             if (SystemDataHelper.IsDataRowView(item))
             {
                 PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(item);

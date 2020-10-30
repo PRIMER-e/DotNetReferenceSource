@@ -43,7 +43,7 @@ namespace System.Windows.Forms
         // menu behavior will be a bit different (for instance Copy option is enabled when PasswordChar is set).
         // To provide Undo functionality and make the context menu behave like the Edit control, we would have
         // to implement our own.  See http://msdn.microsoft.com/msdnmag/issues/1100/c/default.aspx for more info
-        // about how to do this. See postponed bug VSWhidbey#218402.
+        // about how to do this. See postponed 
 
         private const bool   forward         = true;
         private const bool   backward        = false;
@@ -2142,28 +2142,28 @@ namespace System.Windows.Forms
                     //
                     // Handle special case when using Korean IME and ending a composition.
                     //
-                    /*  This code is no longer needed after fixing bug#517013 - Left here for reference DON'T DELETE.
-                    if ((ImeModeConversion.InputLanguageTable == ImeModeConversion.KoreanTable) && this.flagState[IME_ENDING_COMPOSITION])
-                    {
-                        // Korean IME & Edit control weirdness in action: 
-                        // When pressing Del/Esc/Enter/BckSpc during a composition, the character is converted and a
-                        // corresponding WM_IME_CHAR in placed in the app queue.
+                    /*  This code is no longer needed after fixing 
 
-                        if(keyCode == Keys.Back && selectionLen == 0)
-                        {
-                            // After the WM_IME_CHAR message is processed, a WM_CHAR message is queued for the backspace; the 
-                            // edit control processes the message deleting the previous character.  Since we don't pass this 
-                            // message to the edit control we need to do it ourselves (move position one ahead because it is 
-                            // set at the composition window which is inserted in the test string.
-                            startPosition++;
 
-                            // Note: If the converted character is invalid and there is a character already placed in the previous
-                            // position, it will be deleted.  THIS IS BY DESIGN: It is exactly like the user performing the convertion 
-                            // and then pressing backspace, there's no way to differenciate these two scenarios. 
-                            // See VSWhidbey#200690 for the sequence of messages generated.
-                        }
-                    }
-                    */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
                     
                     Delete(keyCode, startPosition, selectionLen);
                     e.SuppressKeyPress = true;

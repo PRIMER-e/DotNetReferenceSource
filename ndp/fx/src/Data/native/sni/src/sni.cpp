@@ -62,7 +62,7 @@ _locale_t __stdcall GetDefaultLocale()	{ return NULL; }
 #include "nlregs.h"
 
 CLUSTER_API gClusApi;
-char 		gszAsciiClusterName[SS_MAX_CLUSTER_NAME];
+WCHAR 		gwszClusterName[SS_MAX_CLUSTER_NAME];
 #endif
 
 BID_METATEXT( _T("<ApiGroupRange|SNI> 0x0003F000"));
@@ -103,7 +103,7 @@ volatile BOOL g_fInitDone = FALSE;
 
 #endif	// #ifdef SNI_BASED_CLIENT
 
-char            gszComputerName[MAX_NAME_SIZE+1];
+WCHAR            gwszComputerName[MAX_NAME_SIZE+1];
 BOOL gfIsWin9x = FALSE;		// Flag for when client is running on Win9x
 BOOL gfIsWin2KPlatform = TRUE;	// Flag for when client is running Win2K or later
 LONG gnConns;				// keeps a global count of connections
@@ -250,8 +250,8 @@ DWORD LoadClusterResourceLibraryIfNeeded( CLUSTER_API* pClusterApi, BOOL *pfClus
 
 	dwRet = static_cast<DWORD>(SSgetClusterSettings( hRoot, 
 													 pfCluster, 
-													 gszAsciiClusterName, 
-													 sizeof(gszAsciiClusterName) )); 
+													 gwszClusterName, 
+													 ARRAYSIZE(gwszClusterName) )); 
 
 	if ( ERROR_SUCCESS != dwRet)
 	{
@@ -259,7 +259,7 @@ DWORD LoadClusterResourceLibraryIfNeeded( CLUSTER_API* pClusterApi, BOOL *pfClus
 		goto ErrorExit; 
 	}
 	
-	Assert (strlen( gszAsciiClusterName ) < sizeof( gszAsciiClusterName ));
+	Assert (wcslen( gwszClusterName ) < ARRAYSIZE( gwszClusterName ));
 
 	if( *pfCluster )
 	{
@@ -649,19 +649,19 @@ void SNI_Conn::ReleaseChannelBindings()
 	}
 }
 
-DWORD SNI_Conn::SetServerName( __in __nullterminated char *szServer, __in __nullterminated char *szOriginalServerName)
+DWORD SNI_Conn::SetServerName( __in __nullterminated WCHAR *wszServer, __in __nullterminated WCHAR *wszOriginalServerName)
 {
-	BidxScopeAutoSNI2( SNIAPI_TAG _T( "szServer: \"%hs\", szOriginalServerName: \"%hs\"\n"), szServer, szOriginalServerName);
+	BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszServer: \"%s\", wszOriginalServerName: \"%s\"\n"), wszServer, wszOriginalServerName);
 	
 	Assert( m_fClient );
 
-	DWORD dwError = AllocAndSetName(&m_pwszServer, szServer, true);
+	DWORD dwError = AllocAndSetName(&m_pwszServer, wszServer, true);
 	if( ERROR_SUCCESS != dwError )
 	{
 		goto ErrorExit;
 	}
 
-	dwError = AllocAndSetName(&m_pwszOriginalServer, szOriginalServerName, false);
+	dwError = AllocAndSetName(&m_pwszOriginalServer, wszOriginalServerName, false);
 	if( ERROR_SUCCESS != dwError )
 	{
 		goto ErrorExit;
@@ -687,30 +687,30 @@ Exit:
 	return dwError;
 }
 
-DWORD SNI_Conn::AllocAndSetName(__out WCHAR **pwszTarget, __in __nullterminated char *szSource, bool fFailEmptySource)
+DWORD SNI_Conn::AllocAndSetName(__out WCHAR **pwszTarget, __in __nullterminated WCHAR *wszSource, bool fFailEmptySource)
 {
 	BidxScopeAutoSNI3( SNIAPI_TAG _T( "pwszTarget: %p{WCHAR**}, ")
-					_T("szSource: \"%hs\", ")
+					_T("wszSource: \"%s\", ")
 					_T("fFailEmptySource: %d{bool}\n"),
 					pwszTarget, 
-					szSource,
+					wszSource,
 					fFailEmptySource);
 	DWORD dwError;
-	
-	size_t cbMultiByte;
-	int cchWideChar;
 
-	if( ! *szSource && fFailEmptySource )
+	int cchWideChar;
+	size_t cchSourceLen;
+
+	if( ! *wszSource && fFailEmptySource )
 	{
 		//this assertion is ued to catch unexpected coding errors.
-		Assert( 0 && "szSource : empty string encounted\n" );
-		BidTrace0( ERROR_TAG _T("szSource : empty string encounted\n") );
+		Assert( 0 && "wszSource : empty string encounted\n" );
+		BidTrace0( ERROR_TAG _T("wszSource : empty string encounted\n") );
 		dwError = ERROR_INVALID_PARAMETER;
 		SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_SYSTEM, dwError );
 		goto ErrorExit;
 	}
 
-	if (FAILED (StringCchLengthA(szSource, MAX_NAME_SIZE, &cbMultiByte)))
+	if (FAILED (StringCchLengthW(wszSource, MAX_NAME_SIZE, &cchSourceLen)))
 	{
 		dwError = ERROR_INVALID_PARAMETER;
 
@@ -718,28 +718,11 @@ DWORD SNI_Conn::AllocAndSetName(__out WCHAR **pwszTarget, __in __nullterminated 
 
 		goto ErrorExit;
 	}
-		
-	cchWideChar = MultiByteToWideChar(
-		CP_ACP,         	// code page
-		MB_ERR_INVALID_CHARS,
-		szSource, 			// string to map
-		static_cast<DWORD>(cbMultiByte + 1),    // number of bytes in string
-	  	NULL,  				// wide-character buffer
-	  	0         			// size of buffer
-	);
 
-	if( 0 == cchWideChar )
-	{
-		dwError = GetLastError();
-
-		SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_10, dwError );
-
-		goto ErrorExit;
-	}
-
-	// cchWideChar includes null terminator
-	//
-	Assert (cchWideChar <= MAX_NAME_SIZE + 1);
+	// account for the null terminator at the end
+	cchSourceLen++;
+	cchWideChar = (int) cchSourceLen;
+	Assert (cchSourceLen <= MAX_NAME_SIZE + 1);
 	Assert( NULL == *pwszTarget );
 	*pwszTarget = NewNoX(gpmo) WCHAR[cchWideChar];
 	if( NULL == *pwszTarget )
@@ -751,14 +734,7 @@ DWORD SNI_Conn::AllocAndSetName(__out WCHAR **pwszTarget, __in __nullterminated 
 		goto ErrorExit;
 	}
 	
-	if( 0 == MultiByteToWideChar(
-				CP_ACP,         // code page
-				MB_ERR_INVALID_CHARS,
-				szSource, 		// string to map
-				static_cast<DWORD>(cbMultiByte + 1),// number of bytes in string
-			  	*pwszTarget,  	// wide-character buffer
-			  	cchWideChar 	// size of buffer
-				))
+	if (S_OK != StringCchCopyW(*pwszTarget, cchWideChar, wszSource))
 	{
 		dwError = GetLastError();
 
@@ -1289,7 +1265,7 @@ DWORD SNIInitializeEx(void * pmo,
 	// Get the computer name
 	DWORD cgszComputerName = MAX_NAME_SIZE;
 	
-	if( !GetComputerName(gszComputerName, &cgszComputerName) )
+	if( !GetComputerName(gwszComputerName, &cgszComputerName) )
 	{
 		dwError = GetLastError();
 
@@ -1372,8 +1348,8 @@ DWORD SNIInitializeEx(void * pmo,
 
 	if( fCluster )
 	{
-		//gszAsciiClusterName was set by LoadClusterResourceLibraryIfNeeded, so we can now set it for SNI_ServiceBindings
-		dwError = SNI_ServiceBindings::SetClusterNames(gszAsciiClusterName);
+		//gwszClusterName was set by LoadClusterResourceLibraryIfNeeded, so we can now set it for SNI_ServiceBindings
+		dwError = SNI_ServiceBindings::SetClusterNames(gwszClusterName);
 		if( ERROR_SUCCESS != dwError )
 		{
 			SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_10, dwError );
@@ -1512,7 +1488,7 @@ DWORD SNITerminate()
 	// client: 1/6 miniutes
 	// managed code: 1/40 minutes
 #ifdef SNI_BASED_CLIENT		
-	// Per [....], an AppDomain unload is interrupted
+	// Per Microsoft, an AppDomain unload is interrupted
 	// after ~2 seconds, so putting a shorter wait 
 	// for SNIX.  
 #ifdef SNIX
@@ -2353,20 +2329,20 @@ void SNIAcceptDoneRouter( __inout LPVOID pVoid )
 }
 
 DWORD SNIOpenSync( __in SNI_CONSUMER_INFO * pConsumerInfo,
-				   __inout_opt LPSTR               szConnect,
+				   __inout_opt LPWSTR               wszConnect,
 				   __in LPVOID              pOpenInfo,
 				   __out SNI_Conn         ** ppConn,
 				   BOOL	               fSync,
 				   int				   timeout)
 {
 	BidxScopeAutoSNI6( SNIAPI_TAG _T( "pConsumerInfo: %p{SNI_CONSUMER_INFO*}, ")
-								_T("szConnect: %p{LPSTR}, ")
+								_T("wszConnect: %p{LPWSTR}, ")
 								_T("pOpenInfo: %p, ")
 								_T("ppConn: %p{SNI_Conn**}, ")
 								_T("fSync: %d{BOOL}, ")
 								_T("timeout: %d\n"), 
 								pConsumerInfo,  
-								szConnect, 
+								wszConnect, 
 								pOpenInfo, 
 								ppConn, 
 								fSync,
@@ -2393,16 +2369,16 @@ DWORD SNIOpenSync( __in SNI_CONSUMER_INFO * pConsumerInfo,
 
 	ProviderNum    ProvNum;
 
-	if( NULL != szConnect )
+	if( NULL != wszConnect )
 	{
-		if ( ERROR_SUCCESS != (dwError = StrTrimBoth_Sys( szConnect, strlen(szConnect) + 1, NULL, " \t", 3)))
+		if ( ERROR_SUCCESS != (dwError = StrTrimBothW_Sys( wszConnect, wcslen(wszConnect) + 1, NULL, L" \t", ARRAYSIZE(L" \t"))))
 		{
 			SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_SYSTEM, dwError );
 			goto ErrorExit;			
 		}
 	}	
 
-	if( !szConnect )
+	if( !wszConnect )
 	{
 		if( !pOpenInfo )
 		{
@@ -2418,13 +2394,13 @@ DWORD SNIOpenSync( __in SNI_CONSUMER_INFO * pConsumerInfo,
 
 		ProvNum = pProtElem->GetProviderNum();
 	}
-	else if( !strcmp( "session:", szConnect))
+	else if( !wcscmp( L"session:", wszConnect))
 	{
 		ProvNum = SESSION_PROV;
 	}
 	else if( !pOpenInfo )
 	{
-		dwError = ProtElem::MakeProtElem( szConnect, &pProtElem);
+		dwError = ProtElem::MakeProtElem( wszConnect, &pProtElem);
 
 		if( ERROR_SUCCESS != dwError )
 		{
@@ -2476,7 +2452,7 @@ DWORD SNIOpenSync( __in SNI_CONSUMER_INFO * pConsumerInfo,
 	{
 		Assert( ProvNum==TCP_PROV || ProvNum==NP_PROV || ProvNum==SM_PROV || ProvNum==VIA_PROV);
 
-		dwError = pConn->SetServerName(pProtElem->m_szServerName, pProtElem->m_szOriginalServerName);
+		dwError = pConn->SetServerName(pProtElem->m_wszServerName, pProtElem->m_wszOriginalServerName);
 
 		if( ERROR_SUCCESS != dwError )
 		{
@@ -2672,12 +2648,12 @@ ErrorExit:
 }
 
 DWORD SNIOpen( __in SNI_CONSUMER_INFO * pConsumerInfo,
-			   __inout_opt LPSTR               szConnect,
+			   __inout_opt LPWSTR               wszConnect,
 			   __in LPVOID              pOpenInfo,
 			   __out SNI_Conn         ** ppConn,
 			   BOOL	               fSync )			   
 {
-	return SNIOpenSync(pConsumerInfo, szConnect, pOpenInfo, ppConn, fSync, SNIOPEN_TIMEOUT_VALUE);
+	return SNIOpenSync(pConsumerInfo, wszConnect, pOpenInfo, ppConn, fSync, SNIOPEN_TIMEOUT_VALUE);
 }
 
 void SNIReadDone(LPVOID pVoid)
@@ -3216,6 +3192,13 @@ DWORD SNIQueryInfo(  UINT QType, __out VOID * pbQInfo)
 			}	
 			break;
 #endif
+#ifdef SNI_BASED_CLIENT
+
+		case SNI_QUERY_TCP_SKIP_IO_COMPLETION_ON_SUCCESS:
+
+			*(BOOL *)pbQInfo = Tcp::s_fSkipCompletionPort;
+			break;
+#endif
 
 		default:
 			//this assertion is used to catch unexpected coding errors.
@@ -3461,27 +3444,27 @@ DWORD SNIGetInfo( __in SNI_Conn * pConn, UINT QType, __out VOID * pbQInfo)
 				// Sm
 				else if( pProv->m_Prot == SM_PROV )
 				{
-					const char x_szStr_LocalMachine[] = "<local machine>";
-					C_ASSERT(sizeof(x_szStr_LocalMachine) <= sizeof(pPeerAddrInfo->PeerAddr));
+					const WCHAR x_wszStr_LocalMachine[] = L"<local machine>";
+					C_ASSERT(sizeof(x_wszStr_LocalMachine) <= sizeof(pPeerAddrInfo->PeerAddr));
 
 					// This copy includes the null in the constant string but the length doesn't
 					//
-					memcpy (pPeerAddrInfo->PeerAddr, x_szStr_LocalMachine, sizeof(x_szStr_LocalMachine));
-					pPeerAddrInfo->PeerAddrLen = sizeof(x_szStr_LocalMachine)-sizeof(char);
+					memcpy (pPeerAddrInfo->PeerAddr, x_wszStr_LocalMachine, sizeof(x_wszStr_LocalMachine));
+					pPeerAddrInfo->PeerAddrLen = ARRAYSIZE(x_wszStr_LocalMachine);
 					break;
 				}
 
 				// Np
 				else if( pProv->m_Prot == NP_PROV )
 				{
-					const char x_szStr_NamedPipe[] = "<named pipe>";
-					C_ASSERT((sizeof(x_szStr_NamedPipe)) <= sizeof(pPeerAddrInfo->PeerAddr));
+					const WCHAR x_wszStr_NamedPipe[] = L"<named pipe>";
+					C_ASSERT((sizeof(x_wszStr_NamedPipe)) <= sizeof(pPeerAddrInfo->PeerAddr));
 
 					// This copy includes the null in the constant string but the length doesn't
 					//
-					memcpy (pPeerAddrInfo->PeerAddr, x_szStr_NamedPipe, 
-						sizeof(x_szStr_NamedPipe));
-					pPeerAddrInfo->PeerAddrLen = sizeof(x_szStr_NamedPipe)-sizeof(char);
+					memcpy (pPeerAddrInfo->PeerAddr, x_wszStr_NamedPipe, 
+						sizeof(x_wszStr_NamedPipe));
+					pPeerAddrInfo->PeerAddrLen = ARRAYSIZE(x_wszStr_NamedPipe);
 					break;
 				}
 			}
@@ -3642,7 +3625,7 @@ DWORD SNIGetInfo( __in SNI_Conn * pConn, UINT QType, __out VOID * pbQInfo)
 
 			break;
 			
-		case SNI_QUERY_CONN_SUPPORTS_[....]_OVER_ASYNC:
+		case SNI_QUERY_CONN_SUPPORTS_SYNC_OVER_ASYNC:
 			{
 				dwError = ERROR_SUCCESS;
 				*(BOOL *) pbQInfo = FALSE;
@@ -3768,6 +3751,13 @@ DWORD SNISetInfo( __out SNI_Conn * pConn, UINT QType, __in VOID * pbQInfo)
 			}
 			
 			break;
+
+#ifdef SNI_BASED_CLIENT
+		case SNI_QUERY_TCP_SKIP_IO_COMPLETION_ON_SUCCESS:
+			
+			Tcp::s_fSkipCompletionPort = *(BOOL *)pbQInfo;
+			break;
+#endif
 
 		default :
 			//This assertion is used to catch unexpected coding errors.
@@ -3967,7 +3957,15 @@ DWORD SNIRemoveProvider(__inout SNI_Conn * pConn, ProviderNum ProvNum)
 			// transistions from active to inactive state.
 			if ( (fProviderInitialActiveState) && (!pProv->m_fActive) )
 			{
-				DecrementConnBufSize(pConn, &rgProvInfo[ProvNum]);
+				// SSL providers support defered buffers adjustment
+				if (SSL_PROV == ProvNum)
+				{
+					static_cast<Ssl*>(pProv)->DecConnBufSize();
+				}
+				else
+				{
+					DecrementConnBufSize(pConn, &rgProvInfo[ProvNum]);
+				}
 			}
 		
 			BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_SUCCESS);
@@ -3997,7 +3995,15 @@ DWORD SNIRemoveProvider(__inout SNI_Conn * pConn, ProviderNum ProvNum)
 					// transistions from active to inactive state.
 					if ( (fProviderInitialActiveState) && (!pProv->m_pNext->m_fActive) )
 					{
-						DecrementConnBufSize(pConn, &rgProvInfo[ProvNum]);
+						// SSL providers support defered buffers adjustment
+						if (SSL_PROV == ProvNum)
+						{
+							static_cast<Ssl*>(pProv)->DecConnBufSize();
+						}
+						else
+						{
+							DecrementConnBufSize(pConn, &rgProvInfo[ProvNum]);
+						}
 					}
 				
 					BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_SUCCESS);
@@ -4027,7 +4033,15 @@ DWORD SNIRemoveProvider(__inout SNI_Conn * pConn, ProviderNum ProvNum)
 	// transistions from active to inactive state.
 	if ( (fProviderInitialActiveState) && (!pProv->m_fActive) )
 	{
-		DecrementConnBufSize(pConn, &rgProvInfo[ProvNum]);
+		// SSL providers support defered buffers adjustment
+		if (SSL_PROV == ProvNum)
+		{
+			static_cast<Ssl*>(pProv)->DecConnBufSize();
+		}
+		else
+		{
+			DecrementConnBufSize(pConn, &rgProvInfo[ProvNum]);
+		}
 	}
 	
 	switch( pProv->m_Prot)
@@ -4191,13 +4205,13 @@ DWORD SNIPostQCS(OVERLAPPED * pOvl, DWORD dwBytes)
 int SNIExceptionFilter(LPEXCEPTION_POINTERS pExc)
 {
 #ifdef DEBUG
-	char szError[512];
+	WCHAR wszError[512];
 
-	(void) StringCchPrintfA(szError, CCH_ANSI_STRING(szError), "Exception. code=%x at address %p\n",
+	(void) StringCchPrintfW(wszError, ARRAYSIZE(wszError), L"Exception. code=%x at address %p\n",
 		pExc->ExceptionRecord->ExceptionCode,
 		pExc->ExceptionRecord->ExceptionAddress);
 	
-	BidTraceU1( SNI_BID_TRACE_ON, CATCH_ERR_TAG _T("%hs\n"), szError ); 
+	BidTraceU1( SNI_BID_TRACE_ON, CATCH_ERR_TAG _T("%s\n"), wszError ); 
 	return EXCEPTION_CONTINUE_SEARCH;
 #else
 	//---- this up only in retail bits
@@ -4407,16 +4421,71 @@ PVOID WINAPI SNIAcceptDoneWrapper(__in LPVOID pVoid)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//StrChrW_SYS
+//
+//This function searches for first character matching in searched string according default system 
+//locale using system code page. 
+//
+//	Inputs:
+//		[in] LPCWSTR lpwString: 
+//			The point to the search string.
+//		[in] int cchCount: 		
+//			The string buf size in characters, not including null terminator.
+//		[in] WCHAR character: 
+//			The search character. Only single character is supported.
+//			multi character search sould consider to use StrStrW_SYS
+//			instead
+//
+//	Returns:
+//	if the call succeeds, the  pointer to the occurence of seach character in the search string;
+//	else, null pointer is return. The caller should check the return pointer.
+//
+
+LPWSTR StrChrW_SYS(__in_ecount(cchCount) LPCWSTR lpwString, 
+					int cchCount	/* total char count*/, 
+					WCHAR character)
+{
+	Assert( lpwString != NULL );
+	Assert( cchCount >= 0 );
+	Assert( character != 0 );
+	
+	LPCWSTR lpwBuf = lpwString;
+	int i = 0;
+	while( i < cchCount&& *lpwBuf!= 0 )
+	{
+		if( *lpwBuf == character )
+		{
+			return const_cast<LPWSTR> (lpwBuf);						//Exit successfully
+		}
+		lpwBuf = CharNextW(lpwBuf);
+		if( lpwBuf == NULL )
+		{
+			break;
+		}
+		if( (int)(lpwBuf - lpwString )> i )
+		{
+			i = (int)(lpwBuf - lpwString);
+		}
+		else
+		{
+			break;
+		}
+	}
+	
+	return NULL;
+} 
+
+////////////////////////////////////////////////////////////////////////////////
 //StrChrA_SYS
 //
 //This function searches for first character matching in searched string according default system 
-//locale using system code page. The function is not compatible with UNICODE string. 
+//locale using system code page. The function is not compatible with UNICODE string.
 //
 //	Inputs:
 //		[in] LPCSTR lpString: 
 //			The point to the search string.
 //		[in] int cbCount: 		
-//			The string buf size in byte, not including null terminator.
+//			The string buf size in chars, not including null terminator.
 //		[in] char character: 
 //			The search character. Only single byte character is supported.
 //			multiple byte character search should consider to use StrStrA_SYS
@@ -4427,17 +4496,17 @@ PVOID WINAPI SNIAcceptDoneWrapper(__in LPVOID pVoid)
 //	else, null pointer is return. The caller should check the return pointer.
 //
 
-LPSTR StrChrA_SYS(__in_bcount(cbCount) LPCSTR lpString, 
-					int cbCount	/* total byte count*/, 
+LPSTR StrChrA_SYS(__in_ecount(cchCount) LPCSTR lpString, 
+					int cchCount	/* total char count*/, 
 					char character)
 {
 	Assert( lpString != NULL );
-	Assert( cbCount >= 0 );
+	Assert( cchCount >= 0 );
 	Assert( character != 0 );
 	
 	LPCSTR lpBuf = lpString;
 	int i = 0;
-	while( i < cbCount&& *lpBuf!= 0 )
+	while( i < cchCount&& *lpBuf!= 0 )
 	{
 		if( *lpBuf == character )
 		{
@@ -4473,12 +4542,12 @@ LPSTR StrChrA_SYS(__in_bcount(cbCount) LPCSTR lpString,
 //		[in] LPCSTR lpString1: 
 //			The point to a null-terminated search string. 
 //		[in] int cchCount1: 		
-//			The string bytes length, not including null terminator. if the negative value 
+//			The string char length, not including null terminator. if the negative value 
 //			is used, the cchcount calculated automaticly.
 //		[in] LPCSTR lpString2: 
 //			The point to a null-terminated search pattern string. 
 //		[in] int cchCount2: 		
-//			The string bytes length, not including null terminator.if the negative value is 
+//			The string char length, not including null terminator.if the negative value is 
 //			used, the cchcount 	calculated automaticly.
 //
 //	Returns:
@@ -4488,9 +4557,9 @@ LPSTR StrChrA_SYS(__in_bcount(cbCount) LPCSTR lpString,
 
 LPSTR StrStrA_SYS(DWORD dwCmpFlags, 
 					LPCSTR lpString1,
-					int cchCount1,	/* total byte count */
+					int cchCount1,	/* total char count */
 					LPCSTR lpString2, 
-					int cchCount2	/* total byte count */
+					int cchCount2	/* total char count */
 					)
 {
 	Assert( lpString1 != NULL && lpString2 != NULL );
@@ -4521,7 +4590,7 @@ OACR_WARNING_POP
 				break;
 			}
 
-			lpBuf = CharNextExA(CP_ACP, lpBuf, 0);
+			lpBuf = CharNextA(lpBuf);
 			if( lpBuf == NULL )
 			{
 				break;
@@ -4533,133 +4602,201 @@ OACR_WARNING_POP
 	return NULL;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//StrStrW_SYS
+//
+//This function search for first substring matching according to default system locale using 
+//system code page.The function is not compatible with ASCII string. 
+//
+//	Inputs:
+//		[in] DWORd dwCmpFlags: 
+//			The same flag used for CompareString. Refer to CompareString in MSDN.
+//		[in] LPCWSTR lpwString1: 
+//			The point to a null-terminated search string. 
+//		[in] int cchCount1: 		
+//			The string char length, not including null terminator. if the negative value 
+//			is used, the cchcount calculated automaticly.
+//		[in] LPCWSTR lpwString2: 
+//			The point to a null-terminated search pattern string. 
+//		[in] int cchCount2: 		
+//			The string char length, not including null terminator.if the negative value is 
+//			used, the cchcount 	calculated automaticly.
+//
+//	Returns:
+//		if the call succeeds, the  pointer to the occurence of substring in the search string;
+//		else, null pointer is return. The caller should check the return pointer.
+//
 
-// Remove all trailing occurrences of any of the characters in string 'pszTargets'
-DWORD StrTrimRight_Sys( __inout_bcount(cbOrigin) LPSTR  pszOrigin /* input string */,
-					size_t cbOrigin	/* total byte count */, 
-					__out size_t *cbReturnCount /* total byte count after removal */,
-					__in_bcount(cbTargets) LPCSTR pszTargets /* chars for removal */,
-					int cbTargets)
+LPWSTR StrStrW_SYS(DWORD dwCmpFlags, 
+					LPCWSTR lpwString1,
+					int cchCount1,	/* total char count */
+					LPCWSTR lpwString2, 
+					int cchCount2	/* total char count */
+					)
 {
-	LPSTR psz = pszOrigin;
-	LPSTR pszLast = NULL;
+	Assert( lpwString1 != NULL && lpwString2 != NULL );
+
+	LPCWSTR lpBuf = lpwString1;
+	int ret = 0; 
+
+	Assert (0 <= cchCount1 );
+	Assert (1 < cchCount2 );
+
+	if (( 1 < cchCount1 ) && ( cchCount1 >= cchCount2 ))
+	{ 
+		int remain = cchCount1;
+		while ( *lpBuf != 0 && remain >= cchCount2 )
+		{
+OACR_WARNING_PUSH
+OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
+			if(CSTR_EQUAL ==(ret =  CompareStringW(LOCALE_SYSTEM_DEFAULT,
+							 dwCmpFlags,
+							 lpBuf, cchCount2,
+							 (WCHAR*)lpwString2, cchCount2)))
+OACR_WARNING_POP
+			{
+				return const_cast<LPWSTR> (lpBuf);						//Exit successfully
+			}
+			else if( ret == 0 )
+			{
+				break;
+			}
+
+			lpBuf = CharNextW(lpBuf);
+			if( lpBuf == NULL )
+			{
+				break;
+			}
+			remain = cchCount1 - (int)(lpBuf - lpwString1);
+		}
+	}
+
+	return NULL;
+}
+
+// Remove all leading occurrences of any of the characters in string 'pwszTargets'
+DWORD StrTrimLeftW_Sys( __inout_ecount(cchOrigin) LPWSTR  pwszOrigin /* input string */,
+				size_t cchOrigin	/* total char count */, 
+				__out size_t *cchReturnCount /* total char count after removal */,
+				__in_ecount(cchTargets) LPCWSTR pwszTargets /* chars for removal */,
+				int cchTargets)
+{
+	LPWSTR pwsz = pwszOrigin;
+	// if we're not trimming anything, we're not doing any work
+	if( *pwszOrigin == 0 )
+	{
+		if( cchReturnCount ) 	 *cchReturnCount = 1;
+		return ERROR_SUCCESS;
+	}
+	
+	if ( 0 != * ( pwszOrigin + cchOrigin -1 ))
+	{		
+		return ERROR_INVALID_PARAMETER;
+	}
+
+	while( (*pwsz != 0) && (StrChrW_SYS(pwszTargets, cchTargets, *pwsz ) != NULL) )
+	{
+		pwsz = CharNextW(pwsz);
+	}
+
+	size_t iFirst = 0, cchDataLength = 0;
+	if( pwsz != pwszOrigin )
+	{			
+		iFirst =  pwsz - pwszOrigin ;
+		if ( iFirst >= cchOrigin )
+		{
+			return ERROR_BUFFER_OVERFLOW;
+		}
+
+		cchDataLength =  cchOrigin - iFirst;
+		wmemmove_s( pwszOrigin, cchOrigin, pwsz, cchDataLength );			
+
+		*(pwszOrigin + cchDataLength) = L'\0';
+		if( cchReturnCount ) 	 * cchReturnCount = cchDataLength;
+	}
+	else
+	{
+		if( cchReturnCount ) 	 * cchReturnCount = cchOrigin;
+	}
+		
+	return ERROR_SUCCESS;
+}
+
+// Remove all trailing occurrences of any of the characters in string 'pwszTargets'
+DWORD StrTrimRightW_Sys( __inout_ecount(cchOrigin) LPWSTR  pwszOrigin /* input string */,
+					size_t cchOrigin	/* total char count */, 
+					__out size_t *cchReturnCount /* total char count after removal */,
+					__in_ecount(cchTargets) LPCWSTR pwszTargets /* chars for removal */,
+					int cchTargets)
+{
+	LPWSTR pwsz = pwszOrigin;
+	LPWSTR pwszLast = NULL;
 	
 	// if we're not trimming anything, we're not doing any work
-	if( *pszOrigin == 0 )
+	if( *pwszOrigin == 0 )
 	{
-		if( cbReturnCount ) 	*cbReturnCount = 1;
+		if( cchReturnCount ) 	*cchReturnCount = 1;
 		return ERROR_SUCCESS;
 	}
 
-	if ( 0 != * ( pszOrigin + cbOrigin -1 ))
+	if ( 0 != * ( pwszOrigin + cchOrigin -1 ))
 	{
 		return ERROR_INVALID_PARAMETER;
 	}
 	// find beginning of trailing matches
 	// by starting at beginning (DBCS aware)
-	while( *psz != 0 )
+	while( *pwsz != 0 )
 	{
-		if( StrChrA_SYS(pszTargets, cbTargets, *psz ) != NULL )
+		if( StrChrW_SYS(pwszTargets, cchTargets, *pwsz ) != NULL )
 		{
-			if( pszLast == NULL )
+			if( pwszLast == NULL )
 			{
-				pszLast = psz;
+				pwszLast = pwsz;
 			}
 		}
 		else
 		{
-			pszLast = NULL;
+			pwszLast = NULL;
 		}
-		psz = CharNextExA(CP_ACP, psz, 0);			
+		pwsz = CharNextW(pwsz);			
 	}
 
-	if( pszLast != NULL )
+	if( pwszLast != NULL )
 	{
 		// truncate at left-most matching character  			
-		if ( (size_t)( pszLast- pszOrigin + 1) >= cbOrigin )
+		if ( (size_t)( pwszLast- pwszOrigin + 1) >= cchOrigin )
 		{
 			return ERROR_BUFFER_OVERFLOW;
 		}
-		*pszLast = '\0';
-		if( cbReturnCount ) 	*cbReturnCount = pszLast- pszOrigin + 1 ;
+		*pwszLast = L'\0';
+		if( cchReturnCount ) 	*cchReturnCount = pwszLast- pwszOrigin + 1 ;
 	}
 	else
 	{
-		if( cbReturnCount ) 	*cbReturnCount = cbOrigin;
+		if( cchReturnCount ) 	*cchReturnCount = cchOrigin;
 	}
 		
 	return ERROR_SUCCESS;
 }
-
-
-
-// Remove all leading occurrences of any of the characters in string 'pszTargets'
-DWORD StrTrimLeft_Sys( __inout_bcount(cbOrigin) LPSTR  pszOrigin /* input string */,
-				size_t cbOrigin	/* total byte count */, 
-				__out size_t *cbReturnCount /* total byte count after removal */,
-				__in_bcount(cbTargets) LPCSTR pszTargets /* chars for removal */,
-				int cbTargets)
-{
-	LPSTR psz = pszOrigin;
-	// if we're not trimming anything, we're not doing any work
-	if( *pszOrigin == 0 )
-	{
-		if( cbReturnCount ) 	 *cbReturnCount = 1;
-		return ERROR_SUCCESS;
-	}
-	
-	if ( 0 != * ( pszOrigin + cbOrigin -1 ))
-	{		
-		return ERROR_INVALID_PARAMETER;
-	}
-
-	while( (*psz != 0) && (StrChrA_SYS(pszTargets, cbTargets, *psz ) != NULL) )
-	{
-		psz = CharNextExA(CP_ACP, psz, 0);
-	}
-
-	size_t iFirst = 0, cbDataLength = 0;
-	if( psz != pszOrigin )
-	{			
-		iFirst =  psz - pszOrigin ;
-		if ( iFirst >= cbOrigin )
-		{
-			return ERROR_BUFFER_OVERFLOW;
-		}
-
-		cbDataLength =  cbOrigin - iFirst;
-		memmove_s( pszOrigin, cbOrigin, psz, cbDataLength );			
-
-		*(pszOrigin + cbDataLength) = '\0';
-		if( cbReturnCount ) 	 * cbReturnCount = cbDataLength;
-	}
-	else
-	{
-		if( cbReturnCount ) 	 * cbReturnCount = cbOrigin;
-	}
-		
-	return ERROR_SUCCESS;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
-//StrTrimBoth_Sys
+//StrTrimBothW_Sys
 //
 // This function removes leading and trailing occurences of characters in a character set from a string in place according 
-// default system locale, i.e. system code page. The function is not compatible with UNICODE string. 
+// default system locale, i.e. system code page. The function is not compatible with ASCII string. 
 //
 //	Inputs:
-//		[inout] LPSTR pszOrigin: 
+//		[inout] LPWSTR pwszOrigin: 
 //			The point to the input string.
-//		[in] size_t cbOrigin: 		
-//			The string buf size in byte, including null terminator. Max 1024.
-//		[out] size_t *cbReturnCount
-//			The string buf size in byte, including null terminator.
-//		[in] LPCSTR pszTargets: 
+//		[in] size_t cchOrigin: 		
+//			The string buf size in chars, including null terminator. Max 1024.
+//		[out] size_t *cchReturnCount
+//			The string buf size in chars, including null terminator.
+//		[in] LPCWSTR pwszTargets: 
 //			The search character. Only single byte character is supported.
-//			multiple byte character search should consider to use StrStrA_SYS
+//			multiple byte character search should consider to use StrStrW_SYS
 //			instead.
-//		[in] int cbTargets:
+//		[in] int cchTargets:
 //			number of characters in the character set.
 //
 //	Returns:
@@ -4682,48 +4819,247 @@ DWORD StrTrimLeft_Sys( __inout_bcount(cbOrigin) LPSTR  pszOrigin /* input string
 
 
 // Remove all leading and trailing occurrences of any of the characters in string 'pszTargets'
-DWORD StrTrimBoth_Sys( __inout_bcount(cbOrigin) LPSTR  pszOrigin /* input string */,
-				size_t cbOrigin	/* total byte count */, 
-				__out size_t *cbReturnCount /* total byte count after removal */,
-				__in_bcount(cbTargets) LPCSTR pszTargets /* chars for removal */,
-				int cbTargets)
+DWORD StrTrimBothW_Sys( __inout_ecount(cchOrigin) LPWSTR  pwszOrigin /* input string */,
+				size_t cchOrigin	/* total char count */, 
+				__out size_t *cchReturnCount /* total char count after removal */,
+				__in_ecount(cchTargets) LPCWSTR pwszTargets /* chars for removal */,
+				int cchTargets)
+{
+	DWORD ret = ERROR_SUCCESS;
+	
+	// if we're not trimming anything, we're not doing any work
+	if( *pwszOrigin == 0 )
+	{
+		if( cchReturnCount ) 	 *cchReturnCount = 1;
+		return ERROR_SUCCESS;
+	}
+
+	if ( 0 != * ( pwszOrigin + cchOrigin -1 ))
+	{		
+		return ERROR_INVALID_PARAMETER;
+	}
+
+
+	size_t cchSize;
+
+	if( ERROR_SUCCESS != (ret = StrTrimRightW_Sys(pwszOrigin, 
+							cchOrigin,
+							&cchSize, 
+							pwszTargets, 
+							cchTargets)))
+	{
+		return ret;
+	};
+
+	if( ERROR_SUCCESS != (ret = StrTrimLeftW_Sys(pwszOrigin, 
+							cchSize,
+							&cchSize, 
+							pwszTargets,
+							cchTargets)))
+	{
+		return ret;
+	};
+
+	if( cchReturnCount ) 	 *cchReturnCount = cchSize;
+	
+	return ret;
+}
+
+
+
+
+
+
+// Remove all trailing occurrences of any of the characters in string 'pszTargets'
+DWORD StrTrimRight_Sys( __inout_ecount(cchOrigin) LPSTR  pszOrigin /* input string */,
+					size_t cchOrigin	/* total char count */, 
+					__out size_t *cchReturnCount /* total char count after removal */,
+					__in_ecount(cchTargets) LPCSTR pszTargets /* chars for removal */,
+					int cchTargets)
+{
+	LPSTR psz = pszOrigin;
+	LPSTR pszLast = NULL;
+	
+	// if we're not trimming anything, we're not doing any work
+	if( *pszOrigin == 0 )
+	{
+		if( cchReturnCount ) 	*cchReturnCount = 1;
+		return ERROR_SUCCESS;
+	}
+
+	if ( 0 != * ( pszOrigin + cchOrigin -1 ))
+	{
+		return ERROR_INVALID_PARAMETER;
+	}
+	// find beginning of trailing matches
+	// by starting at beginning (DBCS aware)
+	while( *psz != 0 )
+	{
+		if( StrChrA_SYS(pszTargets, cchTargets, *psz ) != NULL )
+		{
+			if( pszLast == NULL )
+			{
+				pszLast = psz;
+			}
+		}
+		else
+		{
+			pszLast = NULL;
+		}
+		psz = CharNextExA(CP_ACP, psz, 0);			
+	}
+
+	if( pszLast != NULL )
+	{
+		// truncate at left-most matching character  			
+		if ( (size_t)( pszLast- pszOrigin + 1) >= cchOrigin )
+		{
+			return ERROR_BUFFER_OVERFLOW;
+		}
+		*pszLast = '\0';
+		if( cchReturnCount ) 	*cchReturnCount = pszLast- pszOrigin + 1 ;
+	}
+	else
+	{
+		if( cchReturnCount ) 	*cchReturnCount = cchOrigin;
+	}
+		
+	return ERROR_SUCCESS;
+}
+
+
+
+// Remove all leading occurrences of any of the characters in string 'pszTargets'
+DWORD StrTrimLeft_Sys( __inout_ecount(cchOrigin) LPSTR  pszOrigin /* input string */,
+				size_t cchOrigin	/* total char count */, 
+				__out size_t *cchReturnCount /* total char count after removal */,
+				__in_ecount(cchTargets) LPCSTR pszTargets /* chars for removal */,
+				int cchTargets)
+{
+	LPSTR psz = pszOrigin;
+	// if we're not trimming anything, we're not doing any work
+	if( *pszOrigin == 0 )
+	{
+		if( cchReturnCount ) 	 *cchReturnCount = 1;
+		return ERROR_SUCCESS;
+	}
+	
+	if ( 0 != * ( pszOrigin + cchOrigin -1 ))
+	{		
+		return ERROR_INVALID_PARAMETER;
+	}
+
+	while( (*psz != 0) && (StrChrA_SYS(pszTargets, cchTargets, *psz ) != NULL) )
+	{
+		psz = CharNextExA(CP_ACP, psz, 0);
+	}
+
+	size_t iFirst = 0, cchDataLength = 0;
+	if( psz != pszOrigin )
+	{			
+		iFirst =  psz - pszOrigin ;
+		if ( iFirst >= cchOrigin )
+		{
+			return ERROR_BUFFER_OVERFLOW;
+		}
+
+		cchDataLength =  cchOrigin - iFirst;
+		memmove_s( pszOrigin, cchOrigin, psz, cchDataLength );			
+
+		*(pszOrigin + cchDataLength) = '\0';
+		if( cchReturnCount ) 	 * cchReturnCount = cchDataLength;
+	}
+	else
+	{
+		if( cchReturnCount ) 	 * cchReturnCount = cchOrigin;
+	}
+		
+	return ERROR_SUCCESS;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//StrTrimBoth_Sys
+//
+// This function removes leading and trailing occurences of characters in a character set from a string in place according 
+// default system locale, i.e. system code page. The function is not compatible with UNICODE string. 
+//
+//	Inputs:
+//		[inout] LPSTR pszOrigin: 
+//			The point to the input string.
+//		[in] size_t cchOrigin: 		
+//			The string buf size in chars, including null terminator. Max 1024.
+//		[out] size_t *cchReturnCount
+//			The string buf size in chars, including null terminator.
+//		[in] LPCSTR pszTargets: 
+//			The search character. Only single byte character is supported.
+//			multiple byte character search should consider to use StrStrA_SYS
+//			instead.
+//		[in] int cchTargets:
+//			number of characters in the character set.
+//
+//	Returns:
+//	In success, returns ERROR_SUCCESS, otherwise a error code is returned.
+//	Note:
+//		This function does in-place replacement. If ERROR_BUFFER_OVERFLOW, data   
+// 	in the in buffer might be corrupted during this function.
+//	Example:
+//		char base[]="   YukonSp1 \t";
+//		unsigned char cs[]=" \t";
+//		size_t cbout;
+//		printf("base=\"%s\"[%d]\n", base, sizeof(base));
+//		StrChrRemoveA_SYS(base, sizeof(base), &cbout, cs, sizeof(cs));
+//		printf("base=\"%s\"[%d]\n", base, cbout);		
+//		
+// 	result:
+//		base="   YukonSp1  "[14]
+//		base_compact="YukonSp1"[9]
+//
+
+
+// Remove all leading and trailing occurrences of any of the characters in string 'pszTargets'
+DWORD StrTrimBoth_Sys( __inout_ecount(cchOrigin) LPSTR  pszOrigin /* input string */,
+				size_t cchOrigin	/* total char count */, 
+				__out size_t *cchReturnCount /* total char count after removal */,
+				__in_ecount(cchTargets) LPCSTR pszTargets /* chars for removal */,
+				int cchTargets)
 {
 	DWORD ret = ERROR_SUCCESS;
 	
 	// if we're not trimming anything, we're not doing any work
 	if( *pszOrigin == 0 )
 	{
-		if( cbReturnCount ) 	 *cbReturnCount = 1;
+		if( cchReturnCount ) 	 *cchReturnCount = 1;
 		return ERROR_SUCCESS;
 	}
 
-	if ( 0 != * ( pszOrigin + cbOrigin -1 ))
+	if ( 0 != * ( pszOrigin + cchOrigin -1 ))
 	{		
 		return ERROR_INVALID_PARAMETER;
 	}
 
 
-	size_t cbSize;
+	size_t cchSize;
 
 	if( ERROR_SUCCESS != (ret = StrTrimRight_Sys(pszOrigin, 
-							cbOrigin,
-							&cbSize, 
+							cchOrigin,
+							&cchSize, 
 							pszTargets, 
-							cbTargets)))
+							cchTargets)))
 	{
 		return ret;
 	};
 
 	if( ERROR_SUCCESS != (ret = StrTrimLeft_Sys(pszOrigin, 
-							cbSize,
-							&cbSize, 
+							cchSize,
+							&cchSize, 
 							pszTargets,
-							cbTargets)))
+							cchTargets)))
 	{
 		return ret;
 	};
 
-	if( cbReturnCount ) 	 *cbReturnCount = cbSize;
+	if( cchReturnCount ) 	 *cchReturnCount = cchSize;
 	
 	return ret;
 }
@@ -4935,34 +5271,34 @@ BID_EXTENSION(ProtElem)
 
 	BidWrite3A( "m_ProviderNum: %d{ProviderNum}\n"
 				"m_ProviderToReport: %d{ProviderNum}\n"
-				"m_szServerName: %hs\n", 
+				"m_wszServerName: %s\n", 
 				pProtElem->GetProviderNum(), 
 				pProtElem->m_ProviderToReport, 
-				pProtElem->m_szServerName ); 
+				pProtElem->m_wszServerName ); 
 	
 	switch( pProtElem->GetProviderNum() )
 	{
 		case TCP_PROV:
-			BidWrite2A( "szPort: %hs\n"
+			BidWrite2A( "wszPort: %s\n"
 						"fParallel: %d\n", 
-						pProtElem->Tcp.szPort, 
+						pProtElem->Tcp.wszPort, 
 						pProtElem->Tcp.fParallel ); 
 			break;
 
 		case NP_PROV:
-			BidWrite1A( "Pipe: %hs\n", 
+			BidWrite1A( "Pipe: %s\n", 
 						pProtElem->Np.Pipe ); 
 			break;
 
 		case SM_PROV:
-			BidWrite1A( "Alias: %hs\n", 
+			BidWrite1A( "Alias: %s\n", 
 						pProtElem->Sm.Alias ); 
 			break;
 
 		case VIA_PROV:
 			BidWrite3A( "Port: %d\n"
-						"Host: %hs\n"
-						"Param: %hs\n", 
+						"Host: %s\n"
+						"Param: %s\n", 
 						pProtElem->Via.Port, 
 						pProtElem->Via.Host, 
 						pProtElem->Via.Param ); 

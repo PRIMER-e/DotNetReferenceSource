@@ -146,7 +146,7 @@ namespace MS.Internal.PtsHost
 
             // Clip MBP values to structural cache's current format context size. Also use current format context's page height to
             // clip cell spacing
-            MbpInfo mbpInfo = MbpInfo.FromElement(Table);
+            MbpInfo mbpInfo = MbpInfo.FromElement(Table, StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if (Row.Index == 0 && Table.IsFirstNonEmptyRowGroup(Row.RowGroup.Index))
             {
@@ -243,7 +243,7 @@ namespace MS.Internal.PtsHost
             // cells than were allocated.  So we check against the cell count we have -
             // Row.FormatCellCount.  But that's calculated elsewhere.  What if it's stale?
             // There aren't any direct values available to compare against at the start of
-            // this function, so we need two separate asserts.  Bug 1149633.
+            // this function, so we need two separate asserts.  
             Invariant.Assert(cCells >= Row.Cells.Count); // Protect against buffer overflow
 
 

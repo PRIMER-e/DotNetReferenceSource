@@ -780,8 +780,8 @@ namespace System.Windows.Documents
                     // TextStore.SetText will reject the insert with E_FAIL and
                     // we end up here.  In this case, we want to silently eat the exception
                     // since it derives from user action and our code.
-                    // Bug 107395 is tracking a fundamental fix to the problem, rather
-                    // than this workaround.
+                    // 
+
                 }
 
                 // always passes in false for userInitiated. This won't call command manager.

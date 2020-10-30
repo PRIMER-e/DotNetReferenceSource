@@ -168,8 +168,8 @@ HRESULT __stdcall Phase0Shim::Phase0Done(
     if ( voteYes )
     {
         hr = this->pPhase0EnlistmentAsync->Phase0Done();
-        // Deal with the proxy bug where we get a Phase0Request( false ) on a
-        // TMDown and the proxy object state is not changed.
+        // Deal with the proxy 
+
         if ( XACT_E_PROTOCOL == hr )
         {
             hr = S_OK;

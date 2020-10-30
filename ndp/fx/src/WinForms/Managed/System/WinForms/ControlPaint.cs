@@ -1563,7 +1563,7 @@ namespace System.Windows.Forms {
                 // Grays become lighter and washed out looking
                 // Black becomes a shade of gray as well.
                 //
-                // btw, if you do come up with something better let me know - [....]
+                // btw, if you do come up with something better let me know - Microsoft
                 
                 float[][] array = new float[5][];
                     array[0] = new float[5] {0.2125f, 0.2125f, 0.2125f, 0, 0};
@@ -2024,7 +2024,7 @@ namespace System.Windows.Forms {
                 changed = true;
             }
 
-            // [....], Review: this always seems to come back as
+            // Microsoft, Review: this always seems to come back as
             // the point size * 10000 (HIMETRIC?), regardless
             // or ratio or mapping mode, and despite what
             // the documentation says...

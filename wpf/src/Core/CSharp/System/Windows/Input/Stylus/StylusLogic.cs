@@ -102,9 +102,28 @@ namespace System.Windows.Input
             // NOTE: __penContextsMap will be cleaned up by HwndSource Dispose() so we don't worry about that.
         }
 
+        /// <summary>
+        /// Fit to control panel controlled curve. 0 matches min, 50 - default, 100 - max
+        /// (the curve is 2 straight line segments connecting  the 3 points)
+        /// </summary>
+        private static int FitToCplCurve(double vMin, double vMid, double vMax, int value)
+        {
+            if (value < 0)
+            {
+                return (int)vMin;
+            }
+            if (value > 100)
+            {
+                return (int)vMax;
+            }
+            double f = (double)value / 100.0;
+            double v = Math.Round(f <= 0.5 ? vMin + 2.0 * f * (vMid - vMin) : vMid + 2.0 * (f - 0.5) * (vMax - vMid));
+
+            return (int)v;
+        }
 
         /// <summary>
-        /// Grab the defualts from the registry for the tap and mouse fequency/resolution
+        /// Grab the defualts from the registry for the double tap thresholds.
         /// </summary>
         ///<SecurityNote>
         /// Critical - Asserts read registry permission...
@@ -115,38 +134,54 @@ namespace System.Windows.Input
         private void ReadSystemConfig()
         {
             object obj;
-            RegistryKey key = null; // This object has finalizer to close the key.
+            RegistryKey stylusKey = null; // This object has finalizer to close the key.
+            RegistryKey touchKey = null; // This object has finalizer to close the key.
 
             // Acquire permissions to read the one key we care about from the registry
             new RegistryPermission(RegistryPermissionAccess.Read,
-                "HKEY_CURRENT_USER\\Software\\Microsoft\\Wisp\\Pen\\SysEventParameters").Assert(); // BlessedAssert
+                "HKEY_CURRENT_USER\\Software\\Microsoft\\Wisp").Assert(); // BlessedAssert
+
             try
             {
-                key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Wisp\\Pen\\SysEventParameters");
+                stylusKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Wisp\\Pen\\SysEventParameters");
 
-                if ( key != null )
+                if ( stylusKey != null )
                 {
-                    obj = key.GetValue("DblDist");
-                    _doubleTapDelta = (obj == null) ? _doubleTapDelta : (Int32)obj;      // The default double tap distance is 15 pixels (value is given in pixels)
+                    obj = stylusKey.GetValue("DblDist");
+                    _stylusDoubleTapDelta = (obj == null) ? _stylusDoubleTapDelta : (Int32)obj;      // The default double tap distance is 15 pixels (value is given in pixels)
 
-                    obj = key.GetValue("DblTime");
-                    _doubleTapDeltaTime = (obj == null) ? _doubleTapDeltaTime : (Int32)obj;      // The default double tap timeout is 800ms
+                    obj = stylusKey.GetValue("DblTime");
+                    _stylusDoubleTapDeltaTime = (obj == null) ? _stylusDoubleTapDeltaTime : (Int32)obj;      // The default double tap timeout is 800ms
 
-                    obj = key.GetValue("Cancel");
+                    obj = stylusKey.GetValue("Cancel");
                     _cancelDelta = (obj == null) ? _cancelDelta : (Int32)obj;      // The default move delta is 40 (4mm)
+                }
+
+                touchKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Wisp\\Touch");
+
+                if (touchKey != null)
+                {
+                    obj = touchKey.GetValue("TouchModeN_DtapDist");
+                    // min = 70%; max = 130%, these values are taken from //depot/winblue_gdr/drivers/tablet/platform/pen/inteng/core/TapsParameterizer.cpp
+                    _touchDoubleTapDelta = (obj == null) ? _touchDoubleTapDelta : FitToCplCurve(_touchDoubleTapDelta * DoubleTapMinFactor, _touchDoubleTapDelta, _touchDoubleTapDelta * DoubleTapMaxFactor, (Int32)obj);
+
+                    obj = touchKey.GetValue("TouchModeN_DtapTime");
+                    _touchDoubleTapDeltaTime = (obj == null) ? _touchDoubleTapDeltaTime : FitToCplCurve(_touchDoubleTapDeltaTime * DoubleTapMinFactor, _touchDoubleTapDeltaTime, _touchDoubleTapDeltaTime * DoubleTapMaxFactor, (Int32)obj);
                 }
             }
             finally
             {
                 RegistryPermission.RevertAssert();
-            }
-
-            if ( key != null )
-            {
-                key.Close();
+                if ( stylusKey != null )
+                {
+                    stylusKey.Close();
+                }
+                if ( touchKey != null )
+                {
+                    touchKey.Close();
+                }
             }
         }
-
 
         /////////////////////////////////////////////////////////////////////
         /// <SecurityNote>
@@ -231,8 +266,9 @@ namespace System.Windows.Input
 
         /////////////////////////////////////////////////////////////////////
         /// <SecurityNote>
-        /// Critical - Calls security critical routine (InvokeStylusPluginCollection)
-        ///           - Access SecurityCritical data (_queueStylusEvents, RawStylusInputReport.PenContexts).
+        /// Critical  - Calls security critical routine (InvokeStylusPluginCollection)
+        ///           - Calls security critical routine (QueueStylusEvent)
+        ///           - Access SecurityCritical data (RawStylusInputReport.PenContexts).
         ///           - PenThreadWorker.ThreadProc() is TAS boundry
         /// </SecurityNote>
         [SecurityCritical]
@@ -248,13 +284,119 @@ namespace System.Windows.Input
                 InvokeStylusPluginCollection(inputReport);
             }
 
+            // DevDiv:652804
+            // Previously the pen thread would blindly shove any move from Wisp onto the stylus
+            // queue.  This is a problem if the main thread stalls but the pen thread does not.
+            // Wisp will coalesce data, but only if the pen thread fails to pick up the event.
+            // Otherwise, we need to re-implement coalescing of move events here so that we
+            // make move data available via GetIntermediateTouchPoints but do not flood the
+            // stylus queue with old moves, creating lag in user interaction.  To do that we 
+            // detect stalls in the main thread by checking if the last move has processed.
+            // If not, we coalesce moves together until we can queue up the coalesced events.
+
+            RawStylusInputReport lastMoveReport = null;
+            _lastMovesQueued.TryGetValue(inputReport.StylusDevice, out lastMoveReport);
+
+            RawStylusInputReport coalescedMove = null;
+            _coalescedMoves.TryGetValue(inputReport.StylusDevice, out coalescedMove);
+
+            // All moves now go through a coalesce to simplify logic
+            if (inputReport.Actions == RawStylusActions.Move)
+            {
+                // Start a new coalescing report if none exists
+                if (coalescedMove == null)
+                {
+                    _coalescedMoves[inputReport.StylusDevice] = inputReport;
+                    coalescedMove = inputReport;
+                }
+                // Add new move to coalesced
+                else
+                {
+                    // GetRawPacketData creates copies, so only call them once
+                    int[] oldData = coalescedMove.GetRawPacketData();
+                    int[] newData = inputReport.GetRawPacketData();
+                    int[] mergedData = new int[oldData.Length + newData.Length];
+
+                    oldData.CopyTo(mergedData, 0);
+                    newData.CopyTo(mergedData, oldData.Length);
+
+                    coalescedMove = new RawStylusInputReport(
+                            coalescedMove.Mode,
+                            coalescedMove.Timestamp,
+                            coalescedMove.InputSource,
+                            coalescedMove.PenContext,
+                            coalescedMove.Actions,
+                            coalescedMove.TabletDeviceId,
+                            coalescedMove.StylusDeviceId,
+                            mergedData
+                            );
+
+                    coalescedMove.StylusDevice = inputReport.StylusDevice;
+
+                    _coalescedMoves[inputReport.StylusDevice] = coalescedMove;
+                }
+
+                // We can't queue any move if one is still waiting for processing
+                if (lastMoveReport != null
+                    && lastMoveReport.IsQueued)
+                {
+                    return;
+                }
+            }
+
+            // If we get this far, we are queuing a coalesced move if it exists
+            if (coalescedMove != null)
+            {
+                QueueStylusEvent(coalescedMove);
+
+                // Set last move and cleanup coalescing tracking
+                _lastMovesQueued[inputReport.StylusDevice] = coalescedMove;
+                _coalescedMoves.Remove(inputReport.StylusDevice);
+            }
+
+            // Move always queues via coalescing, so only queue here if not a move
+            // This has to be done post-coalesced move to maintain order of touch
+            // operations
+            if (inputReport.Actions != RawStylusActions.Move)
+            {
+                QueueStylusEvent(inputReport);
+
+                // Once we see a non-move, we should get no more input for this particular chain
+                // so we can remove the stored prior moves (if they exist).
+                _lastMovesQueued.Remove(inputReport.StylusDevice);
+            }
+        }
+
+        /// <summary>
+        /// Queues a RawStylusInputReport for later processing on the dispatcher thread
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical:  Accesses critical field _queueStylusEvents
+        /// </SecurityNote>
+        /// <param name="report"></param>
+        [SecurityCritical]
+        private void QueueStylusEvent(RawStylusInputReport report)
+        {
             // ETW event indicating that a stylus input report was queued.
-            EventTrace.EasyTraceEvent(EventTrace.Keyword.KeywordInput | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, EventTrace.Event.StylusEventQueued, inputReport.StylusDeviceId);
+            EventTrace.EasyTraceEvent(EventTrace.Keyword.KeywordInput | EventTrace.Keyword.KeywordPerf, 
+                EventTrace.Level.Info, EventTrace.Event.StylusEventQueued, report.StylusDeviceId);
+
+            report.IsQueued = true;
 
             // Queue up new event.
-            lock(_stylusEventQueueLock)
+            lock (_stylusEventQueueLock)
             {
-                _queueStylusEvents.Enqueue(inputReport);
+                if (report.StylusDevice != null)
+                 {
+                     TabletDevice tablet = report.StylusDevice.TabletDevice;
+
+                     if (tablet != null)
+                     {
+                         tablet.QueuedEventCount++;
+                     }
+                 }
+
+                _queueStylusEvents.Enqueue(report);
             }
 
             // post the args into dispatcher queue
@@ -280,14 +422,32 @@ namespace System.Windows.Input
                 if (_queueStylusEvents.Count > 0)
                 {
                     rawStylusInputReport = _queueStylusEvents.Dequeue();
+
+                    if (rawStylusInputReport.StylusDevice != null)
+                    {
+                        TabletDevice tablet = rawStylusInputReport.StylusDevice.TabletDevice;
+
+                        if (tablet != null)
+                        {
+                            tablet.QueuedEventCount--;
+                        }
+                    }
                 }
             }
 
-            if (rawStylusInputReport != null)
+            // 
+
+
+            if (rawStylusInputReport != null
+                && rawStylusInputReport.StylusDevice != null
+                && rawStylusInputReport.StylusDevice.IsValid)
             {
-                PenContext penContext = rawStylusInputReport.PenContext;
-                if (penContext.UpdateScreenMeasurementsPending &&
-                    rawStylusInputReport.StylusDevice != null)
+                rawStylusInputReport.IsQueued = false;
+
+
+               PenContext penContext = rawStylusInputReport.PenContext;
+              
+                if (penContext.UpdateScreenMeasurementsPending)
                 {
                     TabletDevice tabletDevice = rawStylusInputReport.StylusDevice.TabletDevice;
                     bool areSizeDeltasValid = tabletDevice.AreSizeDeltasValid();
@@ -296,19 +456,22 @@ namespace System.Windows.Input
                     penContext.UpdateScreenMeasurementsPending = false;
                     tabletDevice.UpdateScreenMeasurements();
 
-                    if (areSizeDeltasValid)
+
+                   if (areSizeDeltasValid)
                     {
                         // Update TabletDevice.DoubleTapDelta and TabletDevice.CancelDelta if needed.
                         tabletDevice.UpdateSizeDeltas(penContext.StylusPointDescription, this);
                     }
                 }
-
+ 
                 // build InputReportEventArgs
                 InputReportEventArgs input = new InputReportEventArgs(null, rawStylusInputReport);
                 input.RoutedEvent=InputManager.PreviewInputReportEvent;
+
                 // Set flag to prevent reentrancy due to wisptis mouse event getting triggered
                 // while processing this stylus event.
                 _processingQueuedEvent = true;
+
                 try
                 {
                     InputManagerProcessInputEventArgs(input);
@@ -448,12 +611,13 @@ namespace System.Windows.Input
                         {
                             _inDragDrop = _inputManager.Value.InDragDrop;
 
-                            // If we are going out of DragDrop then we need to re [....] the mouse state
-                            // if we have a stylus device in range (otherwise we [....] on the next
+                            // If we are going out of DragDrop then we need to re sync the mouse state
+                            // if we have a stylus device in range (otherwise we sync on the next
                             // stylus coming in range).
                             if (!_inDragDrop && _stylusDeviceInRange)
                             {
                                 UpdateMouseState();
+                                _leavingDragDrop = true;
                             }
                         }
 
@@ -971,7 +1135,8 @@ namespace System.Windows.Input
                     RawStylusInputReport rawStylusInputReport = (RawStylusInputReport) inputReportEventArgs.Report;
                     StylusDevice stylusDevice = rawStylusInputReport.StylusDevice;
 
-                    if (stylusDevice != null)
+                    // 
+                    if (stylusDevice != null && stylusDevice.IsValid)
                     {
                         // update stylus device state (unless this is exclusively system gesture or
                         // in-range/out-of-range event - which don't carry much info)
@@ -991,7 +1156,6 @@ namespace System.Windows.Input
                                 stylusDevice.UpdateInRange(true, rawStylusInputReport.PenContext);
                                 stylusDevice.UpdateState(rawStylusInputReport);
                                 UpdateIsStylusInRange(true);
-                                _lastRawMouseAction = RawMouseActions.None; // make sure we promote a mouse move on next event.
                                 break;
                             default: // InAirMove, Down, Move, Up go through here.
                                 stylusDevice.UpdateState(rawStylusInputReport);
@@ -1012,8 +1176,8 @@ namespace System.Windows.Input
                         }
 
                         // If this is a stylus down and we don't have a valid target then the stylus went down
-                        // on the wrong window (a transparent window handling bug in wisptis).  In this case
-                        // we want to ignore all stylus input until after the next stylus up.
+                        // on the wrong window (a transparent window handling 
+
                         if (rawStylusInputReport.Actions == RawStylusActions.Down && stylusDevice.Target == null)
                         {
                             stylusDevice.IgnoreStroke = true;
@@ -1037,7 +1201,8 @@ namespace System.Windows.Input
 
                 StylusDevice stylusDevice = stylusDownEventArgs.StylusDevice;
 
-                if (stylusDevice != null)
+                // 
+                if (stylusDevice != null && stylusDevice.IsValid)
                 {
                     Point ptClient = stylusDevice.GetRawPosition(null);
 
@@ -1070,7 +1235,7 @@ namespace System.Windows.Input
                                         (Math.Abs(pPixelPoint.Y - pLastPixelPoint.Y) < doubleTapSize.Height);
 
                     // Now check everything to see if this is a multi-click.
-                    if (timeSpan < _doubleTapDeltaTime
+                    if (timeSpan < DoubleTapDeltaTime
                         && isSameSpot
                         && (bBarrelPressed == stylusDevice.LastTapBarrelDown) )
                     {
@@ -1086,8 +1251,27 @@ namespace System.Windows.Input
                         stylusDevice.LastTapBarrelDown = bBarrelPressed;
                     }
 
+                    // DevDiv:1135009
+                    // When the touch stack is enabled, it eats all promoted Win32/Wisp mouse input 
+                    // in favor of its own input (and generated mouse events).  This does not stop
+                    // Windows messages from arriving into the mouse stack.  In the case where Windows
+                    // promotes a touch down into a mouse move/click, the mouse stack will record a
+                    // last location for the mouse.  The touch down will also record the same location
+                    // and use that to replay a mouse move into the mouse input stack.  If the mouse
+                    // was previously outside of the WPF window and the window was not activated, the
+                    // mouse will have a null mouseover object.  When WPF replays this move, there will
+                    // be no hit test as the mouse stack will compare the previous hardware point with
+                    // the point sent in by the simulated move and see no change has occured.  Therefore,
+                    // the generated click message from the touch stack will not forward to any object 
+                    // and no capture will be enabled for the mouse.  This means that if the mouse/stylus
+                    // has been used to touch outside of a WPF window (and deactivate the window), there
+                    // will be no click raised if the next touch down occurs on a button in the deactivated
+                    // WPF window.  To fix this issue, we force a synchronization (and therefore a global 
+                    // hit test) on the preview touch down in order to make sure the mouseover has been 
+                    // properly updated by the time a move/click message has been generated by the touch stack.
+                    
                     // Make sure to update the mouse location on stylus down.
-                    ProcessMouseMove(stylusDevice, stylusDownEventArgs.Timestamp, false);
+                    ProcessMouseMove(stylusDevice, stylusDownEventArgs.Timestamp, true);
                 }
             }
         }
@@ -1098,18 +1282,19 @@ namespace System.Windows.Input
         ///     Critical - calls a critical method (PromoteRawToPreview, MouseDevice.CriticalActiveSource,
         ///                 InputReport.InputSource, PromotePreviewToMain, UpdateButtonStates,
         ///                 PromoteMainToMouse and GenerateGesture)
+        ///              - calls critical method RefreshTablets()
         ///              - accesses e.StagingItem.Input, _inputManager.Value and TabletDevices.
         ///              It can also be used for Input spoofing.
         ///</SecurityNote>
         [SecurityCritical ]
         private void PostProcessInput(object sender, ProcessInputEventArgs e)
         {
-            //only [....] with mouse capture if we're enabled, or else there are no tablet devices
+            //only sync with mouse capture if we're enabled, or else there are no tablet devices
             //hence no input.  We have to work around this because getting the
             //Tablet.TabletDevices will load Penimc.dll.
             if (_inputEnabled)
             {
-                // Watch the LostMouseCapture and GotMouseCapture events to keep stylus capture in [....].
+                // Watch the LostMouseCapture and GotMouseCapture events to keep stylus capture in sync.
                 if(e.StagingItem.Input.RoutedEvent == Mouse.LostMouseCaptureEvent ||
                     e.StagingItem.Input.RoutedEvent == Mouse.GotMouseCaptureEvent)
                 {
@@ -1138,34 +1323,63 @@ namespace System.Windows.Input
                 }
             }
 
-            if(e.StagingItem.Input.RoutedEvent == InputManager.InputReportEvent && !_inDragDrop)
+            if(e.StagingItem.Input.RoutedEvent == InputManager.InputReportEvent)
             {
                 InputReportEventArgs input = e.StagingItem.Input as InputReportEventArgs;
                 if(!input.Handled && input.Report.Type == InputType.Stylus)
                 {
                     RawStylusInputReport report = (RawStylusInputReport) input.Report;
-                    // Only promote if the window is enabled!
-                    if (!report.PenContext.Contexts.IsWindowDisabled)
-                    {
-                        PromoteRawToPreview(report, e);
 
-                        // Need to reset this flag at the end of StylusUp processing.
-                        if (report.Actions == RawStylusActions.Up)
+                    if (!_inDragDrop)
+                    {
+                        // Only promote if the window is enabled!
+                        if (!report.PenContext.Contexts.IsWindowDisabled)
                         {
-                            report.StylusDevice.IgnoreStroke = false;
+                            PromoteRawToPreview(report, e);
+
+                            // Need to reset this flag at the end of StylusUp processing.
+                            if (report.Actions == RawStylusActions.Up)
+                            {
+                                report.StylusDevice.IgnoreStroke = false;
+                            }
+                        }
+                        else
+                        {
+                            // We don't want to send input messages to a disabled window, but if this
+                            // is a StylusUp action then we need to make sure that the device knows it
+                            // is no longer active.  If we don't do this, we will incorrectly think this
+                            // device is still active, and so therefore no other touch input will be
+                            // considered "primary" input, causing it to be ignored for most actions
+                            // (like button clicks).  (DevDiv2 520639)
+                            if ((report.Actions & RawStylusActions.Up) != 0 && report.StylusDevice != null)
+                            {
+                                StylusTouchDevice touchDevice = report.StylusDevice.TouchDevice;
+                                // Don't try to deactivate if the device isn't active.  This can happen if
+                                // the window was disabled for the touch-down as well, in which case we
+                                // never activated the device and therefore don't need to deactivate it.
+                                if (touchDevice.IsActive)
+                                {
+                                    touchDevice.OnDeactivate();
+                                }
+                            }
                         }
                     }
                     else
                     {
-                        // We don't want to send input messages to a disabled window, but if this
-                        // is a StylusUp action then we need to make sure that the device knows it
-                        // is no longer active.  If we don't do this, we will incorrectly think this
-                        // device is still active, and so therefore no other touch input will be
-                        // considered "primary" input, causing it to be ignored for most actions
-                        // (like button clicks).  (DevDiv2 520639)
-                        if ((report.Actions & RawStylusActions.Up) != 0 && report.StylusDevice != null)
+                        // DDVSO:185548
+                        // Previously, lifting a StylusDevice that was not the CurrentMousePromotionStylusDevice
+                        // during a multi-touch down drag/drop would ignore the Up for that device.  This was
+                        // resulting in an invalid active devices count in StylusTouchDevice, causing subsequent
+                        // touch interactions to never mouse promote and leaving the stack in an invalid state.
+                        // To fix this, deactivate for stylus device up received during a drag/drop as long as they
+                        // do not originate with the CurrentMousePromotionStylusDevice (which is the device for the
+                        // drag/drop operation).
+                        if (report.StylusDevice != null
+                            && report.StylusDevice != CurrentMousePromotionStylusDevice
+                            && ((report.Actions & RawStylusActions.Up) != 0))
                         {
                             StylusTouchDevice touchDevice = report.StylusDevice.TouchDevice;
+
                             // Don't try to deactivate if the device isn't active.  This can happen if
                             // the window was disabled for the touch-down as well, in which case we
                             // never activated the device and therefore don't need to deactivate it.
@@ -1188,12 +1402,6 @@ namespace System.Windows.Input
                 RawMouseInputReport mouseDeactivateInputReport = _mouseDeactivateInputReport;
                 _mouseDeactivateInputReport = null;
                 StylusEventArgs eventArgsOutOfRange = (StylusEventArgs)e.StagingItem.Input;
-
-                // If we have deferred mouse moves then make sure we process last one now.
-                if (_lastRawMouseAction == RawMouseActions.AbsoluteMove && _waitingForDelegate)
-                {
-                    ProcessMouseMove(eventArgsOutOfRange.StylusDevice, eventArgsOutOfRange.Timestamp, false);
-                }
 
                 // See if we need to set the Mouse Activate flag.
                 PresentationSource mouseSource = _inputManager.Value.PrimaryMouseDevice.CriticalActiveSource;
@@ -1267,6 +1475,34 @@ namespace System.Windows.Input
                 if (stylusSystemGesture.SystemGesture == SystemGesture.Flick)
                 {
                     HandleFlick(stylusSystemGesture.ButtonState, stylusSystemGesture.StylusDevice.DirectlyOver);
+                }
+            }
+
+            // DevDiv:1078901
+            // As per discussions with the Wisp dev team on 1/14/15 (aliases mikkid, xiaotu, kmenon) we confirmed 
+            // that an out of range should be the last event for any given set of stylus device input and therefore
+            // the last event for any given tablet device (if this is the last stylus point for the device).  When 
+            // we see the last out of range for the stylus device (and there is no more pending input), we can be
+            // sure the input stack no longer needs a tablet and can dispose it immediately if previously deferred.
+            //
+            // Due to stylus events being fed from a different pen thread, it is possible that another stylus event
+            // will enter the queue between the disposal check and the actual dispose.  This is not an issue as the
+            // input loop is guarded against disposed tablets and the guard and this dispose are synchronous.  The
+            // act of missing a set of messages is also acceptable as we will discard whole in-range to out of range
+            // sets and it will be as if that entire input set had not occured.  This is fine in our disconnect 
+            // scenario as the user experience will be consistent.
+            if (e.StagingItem.Input.RoutedEvent == Stylus.StylusOutOfRangeEvent)
+            {
+                var stylusArgs = e.StagingItem.Input as StylusEventArgs;
+
+                if (stylusArgs != null
+                    && stylusArgs.StylusDevice != null
+                    && stylusArgs.StylusDevice.TabletDevice != null
+                    && stylusArgs.StylusDevice.TabletDevice.IsDisposalPending
+                    && stylusArgs.StylusDevice.TabletDevice.CanDispose)
+                {
+                    // Update all tablets to sweep for tablets that can now be disposed
+                    RefreshTablets();
                 }
             }
         }
@@ -1458,7 +1694,7 @@ namespace System.Windows.Input
 
         private static bool IsTouchStylusDevice(StylusDevice stylusDevice)
         {
-            return (stylusDevice.TabletDevice != null &&
+            return (stylusDevice != null && stylusDevice.TabletDevice != null &&
                 stylusDevice.TabletDevice.Type == TabletDeviceType.Touch);
         }
 
@@ -1576,9 +1812,12 @@ namespace System.Windows.Input
                 // Promote Up to Mouse if mouse left/right button is
                 // pressed, even if TouchUp event is handled. This is such
                 // that we dont leave mouse in an inconsistent pressed state.
+                // Also promote if this is the first Up after leaving drag/drop,
+                // to reset the state of tracking Moves (Dev11 968604)
                 if (shouldPromoteToMouse && promotingToOther &&
                     (_mouseLeftButtonState == MouseButtonState.Pressed ||
-                    _mouseRightButtonState == MouseButtonState.Pressed))
+                    _mouseRightButtonState == MouseButtonState.Pressed ||
+                    _leavingDragDrop))
                 {
                     PromoteMainToMouse(stagingItem);
                 }
@@ -1587,6 +1826,8 @@ namespace System.Windows.Input
             {
                 PromoteMainToMouse(stagingItem);
             }
+
+            _leavingDragDrop = false;
         }
 
         /// <SecurityNote>
@@ -1694,41 +1935,18 @@ namespace System.Windows.Input
                             {
                                 Point pt = PointUtil.ScreenToClient(stylusDevice.LastMouseScreenPoint, mouseInputSource);
 
-                                //
-                                // use the dispatcher as a way of coalescing mouse *move* messages
-                                // BUT don't flood the dispatcher with delegates if we're already
-                                // waiting for a callback
-                                //
-                                if ((actions & RawMouseActions.AbsoluteMove) != 0)
-                                {
-                                    if (actions == _lastRawMouseAction && _waitingForDelegate)
-                                    {
-                                        return; // We don't need to process this one.
-                                    }
-                                    else
-                                    {
-                                        //set the waiting bit so we won't enter here again
-                                        //until we get the callback
-                                        _waitingForDelegate = true;
-
-                                        Dispatcher.BeginInvoke(DispatcherPriority.Input,
-                                        (DispatcherOperationCallback)delegate(object unused)
-                                        {
-                                            //reset our flags here in the callback.
-                                            _waitingForDelegate = false;
-                                            return null;
-                                        },
-                                        null);
-                                    }
-                                }
+                                // DevDivVSO:153798
+                                // Mouse move coalescing code has been removed from this function.  This used to be needed
+                                // since all touch moves were added to the stylus queue.  Now that touch moves are themselves
+                                // coalesced, this was wrongly cutting down all touch move to mouse move promotions by a third 
+                                // or so.  This results in a poor experience for anyone relying on mouse move promotions instead
+                                // of straight touch events.
 
                                 // See if we need to set the Mouse Activate flag.
                                 if (_inputManager.Value.PrimaryMouseDevice.CriticalActiveSource != mouseInputSource)
                                 {
                                     actions |= RawMouseActions.Activate;
                                 }
-
-                                _lastRawMouseAction = actions;
 
                                 RawMouseInputReport mouseInputReport = new RawMouseInputReport(
                                                                             InputMode.Foreground, stylusArgs.Timestamp, mouseInputSource,
@@ -2750,7 +2968,7 @@ namespace System.Windows.Input
                     break;
 
                 case WindowMessage.WM_TABLET_DELETED:
-                    OnTabletRemoved((uint)NativeMethods.IntPtrToInt32(wParam));
+                    OnTabletRemovedImpl((uint)NativeMethods.IntPtrToInt32(wParam), isInternalCall:true);
                     break;
             }
         }
@@ -2939,20 +3157,30 @@ namespace System.Windows.Input
 
         /////////////////////////////////////////////////////////////////////
 
-
         internal int DoubleTapDelta
         {
-            get {return _doubleTapDelta;}
+            get
+            {
+                bool isFingerTouch = StylusLogic.IsTouchStylusDevice(_currentStylusDevice);
+                return isFingerTouch ? _touchDoubleTapDelta : _stylusDoubleTapDelta;
+            }
         }
 
         internal int DoubleTapDeltaTime
         {
-            get {return _doubleTapDeltaTime;}
+            get
+            {
+                bool isFingerTouch = StylusLogic.IsTouchStylusDevice(_currentStylusDevice);
+                return isFingerTouch ? _touchDoubleTapDeltaTime : _stylusDoubleTapDeltaTime;
+            }
         }
 
         internal int CancelDelta
         {
-            get {return _cancelDelta;}
+            get
+            {
+                return _cancelDelta;
+            }
         }
 
         /// <SecurityNote>
@@ -3032,8 +3260,6 @@ namespace System.Windows.Input
                 {
                     mouseInputReport._isSynchronize = true;
                 }
-
-                _lastRawMouseAction = actions;
 
                 InputReportEventArgs inputReportArgs = new InputReportEventArgs(stylusDevice, mouseInputReport);
                 inputReportArgs.RoutedEvent = InputManager.PreviewInputReportEvent;
@@ -3357,6 +3583,9 @@ namespace System.Windows.Input
                     if (!initializedTablets && tablets.Count > 0)
                     {
                         tablets.UpdateTablets();
+
+                        // Update the last known device count.
+                        _lastKnownDeviceCount = GetDeviceCount();
                     }
                 }
 
@@ -3513,6 +3742,9 @@ namespace System.Windows.Input
 
                 // Enable stylus input on all hwnds if we have not yet done so.
                 EnableCore();
+
+                // Update the last known device count.
+                _lastKnownDeviceCount = GetDeviceCount();
             }
         }
 
@@ -3537,8 +3769,14 @@ namespace System.Windows.Input
                     tabletDeviceCollection.UpdateTablets(); // Create the tablet device collection!
                     EnableCore(); // Go and enable input now.
 
+                    // Update the last known device count.
+                    _lastKnownDeviceCount = GetDeviceCount();
+
                     return; // We are done here.
                 }
+
+                // Update the last known device count.
+                _lastKnownDeviceCount = GetDeviceCount();
 
                 uint tabletIndex = UInt32.MaxValue;
                 // HandleTabletAdded returns true if we need to update contexts due to a change in tablet devices.
@@ -3554,32 +3792,51 @@ namespace System.Windows.Input
                     }
                     else
                     {
-                        // rebuild all contexts and tablet collection if duplicate found.
-                        foreach ( PenContexts contexts in __penContextsMap.Values )
-                        {
-                            contexts.Disable(false /*shutdownWorkerThread*/);
-                        }
-
-                        tabletDeviceCollection.UpdateTablets();
-
-                        foreach ( PenContexts contexts in __penContextsMap.Values )
-                        {
-                            contexts.Enable();
-                        }
+                        // DevDiv:1078091
+                        // Changed to use refactored code
+                        RefreshTablets();
                     }
                 }
             }
         }
 
+        // Published documentation
+        //      http://msdn.microsoft.com/en-us/library/vstudio/dd901337(v=vs.90).aspx
+        //      http://msdn.microsoft.com/en-us/library/vstudio/ee230087(v=vs.100).aspx
+        //      http://msdn.microsoft.com/en-us/library/vstudio/ee230087.aspx
+        // suggests calling this method via reflection in order to disable the real-time
+        // stylus.  The original fix for Dev11 659672 broke this scenario by rebuilding
+        // the tablet collection if this method detects an inconsistent call -
+        // which is just what the MSDN suggestion does. To fix 659672 and still support
+        // the MSDN suggestion, we see if the caller is internal.  If so (the
+        // normal case), we rebuild the tablet collection if necessary.  If not
+        // (the MSDN reflection case), we simply remove the tablet without checking.
+        // Also, mark this method "no-inline", so that it remains visible to apps
+        // via reflection.
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         /// <SecurityNote>
         ///     Critical: This code calls SecurityCritical code (PenContexts.RemoveContext and
         ///              TabletDeviceCollection.HandleTabletRemoved) and accesses SecurityCritical data
         ///              __penContextsMap.
-        ///             Called by StylusLogic.HandleMessage.
+        ///             Called by app code via reflection (see above).
         ///             TreatAsSafe boundry is HwndWrapperHook class (called via HwndSource.InputFilterMessage).
         /// </SecurityNote>
         [SecurityCritical]
         private void OnTabletRemoved(uint wisptisIndex)
+        {
+            OnTabletRemovedImpl(wisptisIndex, isInternalCall:false);
+        }
+
+
+        /// <SecurityNote>
+        ///     Critical: This code calls SecurityCritical code (PenContexts.RemoveContext and
+        ///              TabletDeviceCollection.HandleTabletRemoved) and accesses SecurityCritical data
+        ///              __penContextsMap.
+        ///             Called by StylusLogic.HandleMessage, and by OnTabletRemoved.
+        ///             TreatAsSafe boundry is HwndWrapperHook class (called via HwndSource.InputFilterMessage).
+        /// </SecurityNote>
+        [SecurityCritical]
+        private void OnTabletRemovedImpl(uint wisptisIndex, bool isInternalCall)
         {
             // Nothing to do if the Stylus hasn't been enabled yet.
             if ( _inputEnabled )
@@ -3588,18 +3845,120 @@ namespace System.Windows.Input
                 {
                     if (_tabletDeviceCollection != null)
                     {
-                        uint tabletIndex = _tabletDeviceCollection.HandleTabletRemoved(wisptisIndex);
-
-                        if (tabletIndex != UInt32.MaxValue)
+                        // Dev11 #659672:  Tablet notifications can arrive in the wrong
+                        // order.  If so, using wisptisIndex can remove the wrong
+                        // tablet device and disable touch input.  To avoid this,
+                        // we rebuild TabletDevices from scratch if the notification
+                        // appears suspicious.  "Suspicious" means (a) this is a
+                        // real notification (not a call via reflection, as decribed
+                        // in the previous method), and (b) the device count hasn't
+                        // decreased by 1 (or we can't tell).
+                        int currentDeviceCount = GetDeviceCount();
+                        if (isInternalCall &&
+                            (_lastKnownDeviceCount < 0 ||
+                             currentDeviceCount != _lastKnownDeviceCount - 1))
                         {
-                            foreach (PenContexts contexts in __penContextsMap.Values)
+                            // DevDiv:1078091
+                            // Changed to use refactored code
+                            RefreshTablets();
+
+                            if (!_inputEnabled)
                             {
-                                contexts.RemoveContext(tabletIndex);
+                                // This call can never be executed (_inputEnabed never
+                                // changes from true to false).  Its purpose is
+                                // to keep OnTabletRemoved from being marked as
+                                // unreachable and optimized out of existence.
+                                // That would break the MSDN reflection scenario.
+                                // Just to be safe, pass in a parameter that results
+                                // in a no-op;  even if it is called, nothing happens.
+                                OnTabletRemoved(UInt32.MaxValue);
                             }
                         }
+                        else
+                        {
+                            int numDeferredTablets = _tabletDeviceCollection.DeferredTablets.Count;
+
+                            // remove the affected device
+                            uint tabletIndex = _tabletDeviceCollection.HandleTabletRemoved(wisptisIndex);
+                            
+                            // DevDiv:1078091
+                            // Only shut the context down if this tablet has not been placed on 
+                            // the deferred list.  Otherwise, we still need to receive new messages.
+                            if (tabletIndex != UInt32.MaxValue
+                                && _tabletDeviceCollection.DeferredTablets.Count == numDeferredTablets)
+                            {
+                                foreach (PenContexts contexts in __penContextsMap.Values)
+                                {
+                                    contexts.RemoveContext(tabletIndex);
+                                }
+                            }
+                        }
+
+                        _lastKnownDeviceCount = currentDeviceCount;
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Refreshes all tablets and syncs them to what is being track in Wisp.
+        /// This shuts down all contexts and will bring them back up for any
+        /// tablet that is not immediately disposed of.
+        ///
+        /// DevDiv:1078091
+        /// Refactoring this out of the previous function (OnTabletRemovedImpl)
+        /// so this can be called independently of a wisp index.
+        /// </summary>
+        /// <SecurityNote>
+        ///     Critical: Calls PenContexts.Disable/Enable
+        ///               Calls TabletCollection.UpdateTablets
+        /// </SecurityNote>
+        [SecurityCritical]
+        private void RefreshTablets()
+        {
+            // rebuild all contexts and tablet collection
+            foreach (PenContexts contexts in __penContextsMap.Values)
+            {
+                contexts.Disable(shutdownWorkerThread: false);
+            }
+
+            TabletDevices.UpdateTablets();
+
+            foreach (PenContexts contexts in __penContextsMap.Values)
+            {
+                contexts.Enable();
+            }
+        }
+
+        /// <SecurityNote>
+        ///     Critical: This code calls SecurityCritical code (PenThread.WorkerGetTabletsInfo)
+        //                and accesses SecurityCritical data via TabletDevices.
+        ///               Called by StylusLogic.OnTabletAdded, StylusLogic.OnTabletRemovedImpl.
+        /// </SecurityNote>
+        [SecurityCritical]
+        private int GetDeviceCount()
+        {
+            PenThread penThread = null;
+
+            // Get a PenThread by mimicking a subset of the code in TabletDeviceCollection.UpdateTablets().
+            TabletDeviceCollection tabletDeviceCollection = TabletDevices;
+            if (tabletDeviceCollection != null && tabletDeviceCollection.Count > 0)
+            {
+                penThread = tabletDeviceCollection[0].PenThread;
+            }
+
+            if (penThread != null)
+            {
+                // Use the PenThread to get the full, unfiltered tablets info to see how many there are.
+                TabletDeviceInfo [] tabletdevices = penThread.WorkerGetTabletsInfo();
+                return tabletdevices.Length;
+            }
+            else
+            {
+                // if there's no PenThread yet, return "unknown"
+                return -1;
+            }
+
         }
 
 
@@ -3707,10 +4066,10 @@ namespace System.Windows.Input
 
         internal Matrix GetTabletToViewTransform(TabletDevice tabletDevice)
         {
-            // NTRAID#Tablet_PC_Bug 26555-2004/11/3-xiaotu: Inking is offset under 120 DPI
-            // Changet the TabletToViewTransform matrix to take DPI into account. The default
-            // value is 96 DPI in Avalon. The device DPI value is cached after the first call
-            // to this function.
+            // NTRAID#Tablet_PC_
+
+
+
 
             Matrix matrix = _transformToDevice;
             matrix.Invert();
@@ -3740,14 +4099,6 @@ namespace System.Windows.Input
             Matrix matrix = _transformToDevice;
             matrix.Invert();
             return measurePoint * matrix;
-        }
-
-
-        // This is used to determine whether we postpone promoting mouse move events
-        // from stylus events.
-        internal void SetLastRawMouseActions(RawMouseActions actions)
-        {
-            _lastRawMouseAction = actions;
         }
 
 #if !MULTICAPTURE
@@ -3823,12 +4174,15 @@ namespace System.Windows.Input
 
         // Information used to distinguish double-taps (actually, multi taps) from
         // multiple independent taps.
-        private int _doubleTapDeltaTime = 800;  // this is in milli-seconds
-        private int _doubleTapDelta = 15;  // The default double tap distance is .1 mm values (default is 1.5mm)
+        private int _stylusDoubleTapDeltaTime = 800;  // this is in milli-seconds for stylus touch
+        private int _stylusDoubleTapDelta = 15;  // The default double tap distance is .1 mm values (default is 1.5mm)
         private int _cancelDelta = 10;        // The move distance is 1.0mm default (value in .1 mm)
 
-        private RawMouseActions _lastRawMouseAction = RawMouseActions.None;
-        private bool _waitingForDelegate = false;
+        private int _touchDoubleTapDeltaTime = 300; // this is in milli seconds for finger touch
+        private int _touchDoubleTapDelta = 45; // The default double tap distance for finger touch (4.5mm)
+
+        private const double DoubleTapMinFactor = 0.7; // 70% of the default threshold.
+        private const double DoubleTapMaxFactor = 1.3; // 130% of the default threshold.
 
         private MouseButtonState _mouseLeftButtonState = MouseButtonState.Released;
         private MouseButtonState _mouseRightButtonState = MouseButtonState.Released;
@@ -3877,11 +4231,32 @@ namespace System.Windows.Input
         Dictionary<int, StylusDevice>     __stylusDeviceMap = new Dictionary<int, StylusDevice>(2);
 
         bool                              _inDragDrop;
+        bool                              _leavingDragDrop;
         bool                              _processingQueuedEvent;
 
         bool                              _stylusDeviceInRange;
 
         bool                     _seenRealMouseActivate;
+
+        // Dev11 #659672:  The wParam index to WM_TABLET_ADDED/DELETED may be invalid, since Windows
+        // sometimes sends these messages out of order.  As a result, we can't trust that these values
+        // are correct.  To help determine when they are invalid, we keep track of the number of tablets
+        // and simply do a full reset any time we get a DELETED notification without a proper change in count.
+        // We only need to check for this issue in DELETED because ADDED already has a check for duplicate
+        // or invalid index values.
+        // The value -1 means "unknown".  We only compute this number when we actually
+        // have tablet devices in play, so as to avoid starting a pen thread unecessarily.
+        // Doing so causes problems, as reported in Dev11 946388, 984115, 993269.
+        private int _lastKnownDeviceCount = -1;
+
+        // DevDiv: 652804
+        // Stores the last move report that was added to the stylus event queue per device
+        Dictionary<StylusDevice, RawStylusInputReport> _lastMovesQueued = new Dictionary<StylusDevice, RawStylusInputReport>();
+
+        // DevDiv: 652804
+        // Stores the move report that is currently being used to coalesce subsequent moves
+        Dictionary<StylusDevice, RawStylusInputReport> _coalescedMoves = new Dictionary<StylusDevice, RawStylusInputReport>();
+
 
 #if !MULTICAPTURE
         IInputElement _stylusCapture;

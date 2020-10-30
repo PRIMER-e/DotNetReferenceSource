@@ -16,7 +16,6 @@ using System.Windows.Markup;
 [assembly:CLSCompliant(true)]
 
 [assembly:InternalsVisibleTo(BuildInfo.PresentationFramework)]
-[assembly:InternalsVisibleTo(BuildInfo.PresentationFontCache)]
 [assembly:InternalsVisibleTo(BuildInfo.ReachFramework)]
 [assembly:InternalsVisibleTo(BuildInfo.SystemPrinting)]
 [assembly:InternalsVisibleTo(BuildInfo.PresentationUI)]

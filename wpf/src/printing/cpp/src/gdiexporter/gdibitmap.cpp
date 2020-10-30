@@ -804,13 +804,13 @@ public:
         DrawingContext ^ ctx = RenderOpen();
 
         //
-        // Fix bug 1487589: By this point no transparency should remain, and if brush content
-        // doesn't completely fill the bitmap, the remaining transparent areas should be
-        // clipped away.
-        //
-        // Any visible transparent areas are bugs and will show up as black, thus we fill
-        // the bitmap with white to lessen the impact of those bugs.
-        //
+        // Fix 
+
+
+
+
+
+
         ctx->DrawRectangle(Brushes::White, nullptr, Rect(0, 0, bitmapWidth, bitmapHeight));
 
         ctx->PushTransform(transform);

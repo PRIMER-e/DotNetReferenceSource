@@ -463,7 +463,6 @@ namespace System.Drawing {
         }
 
         // for use with CreateFromGDIplus
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         private Bitmap() {
         }
 

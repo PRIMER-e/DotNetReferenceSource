@@ -18,7 +18,7 @@
 #include "snipch.hpp"
 #include "sm_shiloh.hpp"
 
-typedef BOOL      (__cdecl * CONNECTIONVALIDSHAREDMEMORY_FN)( char * szServerName );
+typedef BOOL      (__cdecl * CONNECTIONVALIDSHAREDMEMORY_FN)( WCHAR * wszServerName );
 
 static SNICritSec *      DllCritSec = NULL;
 static HMODULE               hNetlib = NULL;
@@ -32,7 +32,7 @@ DWORD Sm_Shiloh::LoadDll(__out NLFunctionTable * pFuncs)
 
 	DWORD dwError;
 
-	// Function Names for Wrapper Netlib Dlls - keep in [....] with enum in .hpp
+	// Function Names for Wrapper Netlib Dlls - keep in sync with enum in .hpp
 	CHAR * rgFnName[CLNT_NETFUNCS] =
 	{
 	    "ConnectionObjectSize",
@@ -193,14 +193,14 @@ DWORD Sm_Shiloh::Open( 	SNI_Conn 		* pConn,
 	// Check if Shared Memory is valid
 	{
 		// Get the instance
-		LPSTR szInstance = NULL;
+		LPWSTR wszInstance = NULL;
 
-		szInstance = StrChrA_SYS(pProtElem->Sm.Alias,(int) strlen(pProtElem->Sm.Alias), '\\' );
+		wszInstance = StrChrW_SYS(pProtElem->Sm.Alias,(int) wcslen(pProtElem->Sm.Alias), L'\\' );
 
-		if( szInstance )
-			szInstance += 1;
+		if( wszInstance )
+			wszInstance += 1;
 		else
-			szInstance = "MSSQLSERVER";
+			wszInstance = L"MSSQLSERVER";
 	
 		CONNECTIONVALIDSHAREDMEMORY_FN ConnectionValidSharedMemory;
 
@@ -209,7 +209,7 @@ DWORD Sm_Shiloh::Open( 	SNI_Conn 		* pConn,
 		ConnectionValidSharedMemory 
 		= (CONNECTIONVALIDSHAREDMEMORY_FN)GetProcAddress( hNetlib, "ConnectionValidSharedMemory" );
 
-		if( !ConnectionValidSharedMemory ||  !ConnectionValidSharedMemory(szInstance) )
+		if( !ConnectionValidSharedMemory ||  !ConnectionValidSharedMemory(wszInstance) )
 		{
 			dwRet = ERROR_INVALID_PARAMETER;
 			SNI_SET_LAST_ERROR( SM_PROV, SNIE_39, dwRet );

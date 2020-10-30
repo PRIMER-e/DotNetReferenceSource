@@ -890,17 +890,18 @@ namespace System.Deployment.Internal.CodeSigning {
 
         private static void AuthenticodeSignLicenseDom (XmlDocument licenseDom, CmiManifestSigner signer, string timeStampUrl) {
             // Make sure it is RSA, as this is the only one Fusion will support.
-            if (signer.Certificate.PublicKey.Key.GetType() != typeof(RSACryptoServiceProvider)) {
+            RSA rsaPublicKey = CngLightup.GetRSAPublicKey(signer.Certificate);
+            if (rsaPublicKey == null) {
                 throw new NotSupportedException();
             }
 
             // Setup up XMLDSIG engine.
             ManifestSignedXml signedXml = new ManifestSignedXml(licenseDom);
-            signedXml.SigningKey = signer.Certificate.PrivateKey;
+            signedXml.SigningKey = CngLightup.GetRSAPrivateKey(signer.Certificate);
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
 
             // Add the key information.
-            signedXml.KeyInfo.AddClause(new RSAKeyValue(signer.Certificate.PublicKey.Key as RSA));
+            signedXml.KeyInfo.AddClause(new RSAKeyValue(rsaPublicKey));
             signedXml.KeyInfo.AddClause(new KeyInfoX509Data(signer.Certificate, signer.IncludeOption));
 
             // Add the enveloped reference.

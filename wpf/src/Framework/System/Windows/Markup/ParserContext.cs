@@ -332,7 +332,7 @@ namespace System.Windows.Markup
             }
             set
             {
-                // The BamlMapTable must always be kept in [....] with the XamlTypeMapper.  If
+                // The BamlMapTable must always be kept in sync with the XamlTypeMapper.  If
                 // the XamlTypeMapper changes, then the map table must also be reset.
                 if (_xamlTypeMapper != value)
                 {
@@ -561,7 +561,7 @@ namespace System.Windows.Markup
 #if !PBTCOMPILER
             set
             {
-                // The XamlTypeMapper and the map table must always be kept in [....].  If the
+                // The XamlTypeMapper and the map table must always be kept in sync.  If the
                 // map table changes, update the XamlTypeMapper also
                 if (_mapTable != value)
                 {

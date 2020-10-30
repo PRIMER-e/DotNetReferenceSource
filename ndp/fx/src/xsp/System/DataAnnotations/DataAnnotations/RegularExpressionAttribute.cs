@@ -15,6 +15,23 @@ namespace System.ComponentModel.DataAnnotations {
         /// </summary>
         public string Pattern { get; private set; }
 
+        /// <summary>
+        ///     Gets or sets the timeout to use when matching the regular expression pattern (in milliseconds)
+        ///     (-1 means never timeout).
+        /// </summary>
+        public int MatchTimeoutInMilliseconds { 
+            get {
+                return _matchTimeoutInMilliseconds;
+            }
+            set {               
+                _matchTimeoutInMilliseconds = value; 
+                _matchTimeoutSet = true;
+            }
+        }
+
+        private int _matchTimeoutInMilliseconds;
+        private bool _matchTimeoutSet;
+
         private Regex Regex { get; set; }
 
         /// <summary>
@@ -77,13 +94,35 @@ namespace System.ComponentModel.DataAnnotations {
         /// </summary>
         /// <exception cref="ArgumentException"> is thrown if the current <see cref="Pattern"/> cannot be parsed</exception>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> thrown if <see cref="MatchTimeoutInMilliseconds" /> is negative (except -1),
+        /// zero or greater than approximately 24 days </exception>
         private void SetupRegex() {
             if (this.Regex == null) {
                 if (string.IsNullOrEmpty(this.Pattern)) {
                     throw new InvalidOperationException(DataAnnotationsResources.RegularExpressionAttribute_Empty_Pattern);
                 }
-                this.Regex = new Regex(this.Pattern);
+
+                if (!_matchTimeoutSet) { 
+                    MatchTimeoutInMilliseconds = GetDefaultTimeout();
+                }
+
+                Regex = MatchTimeoutInMilliseconds == -1
+                    ? new Regex(Pattern)
+                    : Regex = new Regex(Pattern, default(RegexOptions), TimeSpan.FromMilliseconds((double)MatchTimeoutInMilliseconds));
             }
+        }
+
+        /// <summary>
+        /// Returns the default MatchTimeout based on UseLegacyRegExTimeout switch.
+        /// </summary>
+        private static int GetDefaultTimeout() {
+            if (LocalAppContextSwitches.UseLegacyRegExTimeout) {
+                return -1;
+            }
+            else {
+                return 2000;
+            }
+
         }
     }
 }

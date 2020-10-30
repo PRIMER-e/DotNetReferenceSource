@@ -9,7 +9,7 @@
 //
 //  Spec:      http://team/sites/Avalon/Specs/Fonts.htm
 //
-//  Created:   11-11-2003 Tarek Mahmoud Sayed ([....])
+//  Created:   11-11-2003 Tarek Mahmoud Sayed (Microsoft)
 //
 //------------------------------------------------------------------------
 

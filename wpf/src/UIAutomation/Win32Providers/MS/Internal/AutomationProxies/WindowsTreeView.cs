@@ -79,11 +79,11 @@ namespace MS.Internal.AutomationProxies
                         WindowsTreeView wtv = new WindowsTreeView (hwnd, null, -1);
 
                         // Selection or Expand/Collapse
-                        if (idChild != 0 && (eventId == NativeMethods.EventObjectSelection || 
-                                             eventId == NativeMethods.EventObjectSelectionRemove || 
-                                             eventId == NativeMethods.EventObjectSelectionAdd || 
-                                             eventId == NativeMethods.EventObjectStateChange || 
-                                             eventId == NativeMethods.EventObjectDestroy || 
+                        if (idChild != 0 && (eventId == NativeMethods.EventObjectSelection ||
+                                             eventId == NativeMethods.EventObjectSelectionRemove ||
+                                             eventId == NativeMethods.EventObjectSelectionAdd ||
+                                             eventId == NativeMethods.EventObjectStateChange ||
+                                             eventId == NativeMethods.EventObjectDestroy ||
                                              eventId == NativeMethods.EventObjectCreate ||
                                              eventId == NativeMethods.EventObjectNameChange))
                         {
@@ -372,14 +372,14 @@ namespace MS.Internal.AutomationProxies
 
             return base.EventToWinEvent (idEvent, out cEvent);
         }
-        
+
         #endregion
 
         // ------------------------------------------------------
         //
         // Private Methods
         //
-        // ------------------------------------------------------        
+        // ------------------------------------------------------
 
         #region Private Methods
 
@@ -561,7 +561,7 @@ namespace MS.Internal.AutomationProxies
             NativeMethods.Win32Rect rc = NativeMethods.Win32Rect.Empty;
 
             // This strange line of code is here to make the TVM_GETITEMRECT work on 64 bit platform
-            // This message expcects an IntPtr on input and a Rect for output.  On a 64 bit platform we 
+            // This message expcects an IntPtr on input and a Rect for output.  On a 64 bit platform we
             // will just overwrite the first 2 members of the rect structure with the IntPtr.
             *((IntPtr *)&(rc.left)) = treeItem;
 
@@ -573,7 +573,7 @@ namespace MS.Internal.AutomationProxies
                 return NativeMethods.Win32Rect.Empty;
             }
 
-            // Temporarily allow the possibility of returning a bounding rect for scrolled off items.  
+            // Temporarily allow the possibility of returning a bounding rect for scrolled off items.
             // Will need to revisit this when there is a method that can scroll items into view.
             //if (Misc.IsItemVisible(hwnd, ref rc))
 
@@ -606,7 +606,7 @@ namespace MS.Internal.AutomationProxies
         {
             // TVM_SETITEMW with TVIF_TEXT will not work here.  It does not notify parent of the change.
 
-            // Begins in-place editing of the specified item's text, replacing the text of the item with a single-line 
+            // Begins in-place editing of the specified item's text, replacing the text of the item with a single-line
             // edit control containing the text. This message implicitly selects and focuses the specified item.
             IntPtr hwndEdit = Misc.ProxySendMessage(hwnd, NativeMethods.TVM_EDITLABELW, IntPtr.Zero, item);
 
@@ -637,7 +637,7 @@ namespace MS.Internal.AutomationProxies
             for(int i=0; i < 10; i++)
             {
                 System.Threading.Thread.Sleep(1);
-                
+
                 // Now see if the treeviewitem really got set.
                 if (text.Equals(WindowsTreeView.GetItemText(hwnd, item)))
                 {
@@ -662,11 +662,11 @@ namespace MS.Internal.AutomationProxies
             {
                 return hItem;
             }
-            
+
             // We may have received a NULL hitem because the idChild was bad.
             // If this control supports the mapping message (version >= 6) then
-            // don't assume its old and fallback to previous behavior.  
-            // If this SendMessage fails or this control is old go ahead and just cast it to an HTREEITEM 
+            // don't assume its old and fallback to previous behavior.
+            // If this SendMessage fails or this control is old go ahead and just cast it to an HTREEITEM
             int lCommonControlVersion = Misc.ProxySendMessageInt(hwnd, NativeMethods.CCM_GETVERSION, IntPtr.Zero, IntPtr.Zero);
             if (lCommonControlVersion >= 6)
             {
@@ -730,7 +730,7 @@ namespace MS.Internal.AutomationProxies
 
             #region Constructors
 
-            internal TreeViewItem (IntPtr hwnd, ProxyFragment parent, IntPtr hItem, int depth) 
+            internal TreeViewItem (IntPtr hwnd, ProxyFragment parent, IntPtr hItem, int depth)
                 : base(hwnd, parent, depth)
             {
                 // windows handle to this substree
@@ -820,7 +820,7 @@ namespace MS.Internal.AutomationProxies
                 }
                 //Special case handling for vista windows explorer's tree view implementation.
                 //Reason: Selecting the node does not refresh the folder items in the right pane
-                //So, implement the Invoke pattern and let the client call invoke to get behavior 
+                //So, implement the Invoke pattern and let the client call invoke to get behavior
                 //similar to windows explorer of windows XP
                 else if (iid == InvokePattern.Pattern)
                 {
@@ -1153,7 +1153,7 @@ namespace MS.Internal.AutomationProxies
             #endregion ExpandCollapse Pattern
 
             #region Value Pattern
-        
+
             void IValueProvider.SetValue (string val)
             {
                 // Make sure that the control is enabled
@@ -1248,7 +1248,7 @@ namespace MS.Internal.AutomationProxies
 
             #region Invoke Pattern
             //Special case handling for vista windows explorer's tree view implementation.
-            //when the client calls Invoke method, call DoDefaultAction on its native 
+            //when the client calls Invoke method, call DoDefaultAction on its native
             //IAccessible (this should have been set when GetPatternProviders
             //is called earlier). Vista Explorer's treeview has its own implementation of DoDefaultAction
             //to display the subfolders and files of the selected folder on the right pane.
@@ -1266,7 +1266,7 @@ namespace MS.Internal.AutomationProxies
             //
             // Internal Methods
             //
-            // ------------------------------------------------------        
+            // ------------------------------------------------------
 
             #region Internal Methods
 
@@ -1305,7 +1305,7 @@ namespace MS.Internal.AutomationProxies
             //
             // Private Methods
             //
-            // ------------------------------------------------------        
+            // ------------------------------------------------------
 
             #region Private Methods
 
@@ -1572,7 +1572,7 @@ namespace MS.Internal.AutomationProxies
 
                 return false;
             }
-            
+
 
             private bool GetStateImageMapEnt(int image, ref uint state, ref uint role)
             {
@@ -1606,7 +1606,7 @@ namespace MS.Internal.AutomationProxies
 
                     MSAASTATEIMAGEMAPENT ent = new MSAASTATEIMAGEMAPENT();
                     int readSize = Marshal.SizeOf(ent.GetType());
-                    int count;
+                    IntPtr count;
 
                     // Adjust to image into array...
                     IntPtr pAddress = new IntPtr((long)address + (image * readSize));
@@ -1684,7 +1684,7 @@ namespace MS.Internal.AutomationProxies
                 internal int state;
             }
 
-            //native IAccessible interface for TreeViewItem for special handling in 
+            //native IAccessible interface for TreeViewItem for special handling in
             //Vista Windows Explorer
             private Accessible _nativeAcc;
 

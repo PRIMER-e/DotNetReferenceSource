@@ -7,7 +7,7 @@
 // Description: DefaultvalueFactory for ObservableCollection
 //
 // History:
-//  2009/24/07 : [....] - Created.
+//  2009/24/07 : Microsoft - Created.
 //
 //---------------------------------------------------------------------------
 

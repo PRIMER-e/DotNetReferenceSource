@@ -626,7 +626,7 @@ namespace System.Windows.Forms {
                 SetDisplayRectangleSize(maxX, maxY);
             }
 
-            // [....] up the scrollbars
+            // Sync up the scrollbars
             //
             SyncScrollbars(true);
 
@@ -670,7 +670,7 @@ namespace System.Windows.Forms {
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         protected override void OnLayout(LayoutEventArgs levent) {
 
-            // V#33515 - [....], 3/18/1998
+            // V#33515 - Microsoft, 3/18/1998
             // We get into a problem when you change the docking of a control
             // with autosizing on. Since the control (affectedControl) has
             // already had the dock property changed, adjustFormScrollbars
@@ -1217,7 +1217,7 @@ namespace System.Windows.Forms {
 
         /// <devdoc>
         ///     Updates the value of the autoscroll scrollbars based on the current form
-        ///     state. This is a one-way [....], updating the scrollbars only.
+        ///     state. This is a one-way sync, updating the scrollbars only.
         /// </devdoc>
         /// <internalonly/>
         private void SyncScrollbars(bool autoScroll) {

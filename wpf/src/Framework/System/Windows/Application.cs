@@ -19,13 +19,13 @@
 //  04/27/01: rogerg    Added stub for creating the default form.
 //  05/06/03: marka     Moved over to WCP dir. Made match spec, updated comments.
 //  07/11/03: lgolding  Removed code for UseDefaultApp and ContainerNoCode.
-//  08/12/03: [....]    Changed ShutDown to Shutdown (bug 856983)
-//  08/10/04: kusumav   Moved NavigationApplication and other navigation classes to separate files in Navigation dir.
-//  02/04/05: hamidm    Made certain Application APIs thread safe
-//  06/16/05: weibz     Remove RegisterDefaultResourceManager
-//  01/31/06: brucemac  Change PreloadedPackages.AddPackage() to pass a boolean indicating that ResourceContainer is thread-safe
-//
-//---------------------------------------------------------------------------
+//  08/12/03: Microsoft    Changed ShutDown to Shutdown (
+
+
+
+
+
+
 
 //In order to avoid generating warnings about unknown message numbers and unknown pragmas
 //when compiling your C# source code with the actual C# compiler, you need to disable
@@ -33,6 +33,7 @@
 #pragma warning disable 1634, 1691
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -62,12 +63,12 @@ using MS.Internal.AppModel;
 using MS.Internal.IO.Packaging;
 using MS.Internal.Interop;
 using MS.Internal.Navigation;
+using MS.Internal.Telemetry;
 using MS.Internal.Utility;
 using MS.Internal.Resources;
 using MS.Utility;
 using MS.Win32;
 using Microsoft.Win32;
-using System.Collections.Generic;
 
 namespace System.Windows
 {
@@ -107,6 +108,8 @@ namespace System.Windows
         static Application()
         {
             ApplicationInit();
+
+            NetFxVersionTraceLogger.LogVersionDetails();
         }
 
         /// <summary>
@@ -147,7 +150,7 @@ namespace System.Windows
                 }
             }
 
-            // NOTE: [....] 12/19/05
+            // NOTE: Microsoft 12/19/05
             // WOSB 1398365
             // Post a work item to start the Dispatcher (if we are browser hosted) so that the Dispatcher
             // will be running before OnStartup is fired. We can't check to see if we are browser-hosted
@@ -158,17 +161,17 @@ namespace System.Windows
 
             //
             // NOTE: hamidm 08/06/04
-            // PS Windows OS Bug # 994269 (Application not shutting down when calling
-            // Application.Current.Shutdown())
-            //
-            // post item to do startup work
-            // posting it here so that this is the first item in the queue. Devs
-            // could post items before calling run and then those will be serviced
-            // before if we don't post this one here.
-            //
-            // Also, doing startup (firing OnStartup etc.) once our dispatcher
-            // is run ensures that we run before any external code is run in the
-            // application's Dispatcher.
+            // PS Windows OS 
+
+
+
+
+
+
+
+
+
+
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Send,
                 (DispatcherOperationCallback) delegate(object unused)
@@ -647,7 +650,7 @@ namespace System.Windows
 
             s_NestedBamlLoadInfo.Push(loadBamlSyncInfo);
             try
-            {    
+            {
                 // LoadBaml will close the stream.
                 rootElement = XamlReader.LoadBaml(stream, pc, null, true);
             }
@@ -794,7 +797,11 @@ namespace System.Windows
             //
             SiteOfOriginContainer sooContainer = (SiteOfOriginContainer)GetResourcePackage(packageUri);
 
-            sooPart = sooContainer.GetPart(partUri) as SiteOfOriginPart;
+            // the SiteOfOriginContainer is shared across threads;  synchronize access to it
+            lock (_packageLock)
+            {
+                sooPart = sooContainer.GetPart(partUri) as SiteOfOriginPart;
+            }
 
             //
             // Verify if the sooPart is for a valid remote file.
@@ -1638,7 +1645,7 @@ namespace System.Windows
                 // ArrowHead Optimization for StartupUri:
                 // When loading app resources (pack://application, we do not need to go through the navigation logic.
                 // We can load the stream through ResourceContainer directly. This way we avoid loading the navigation
-                // and webrequest code. It is also [....], instead of async if going through navigation code pass.
+                // and webrequest code. It is also sync, instead of async if going through navigation code pass.
                 // This optimization saves about 3-4% cold startup time for a simple application.
                 // However, we need to maintain back compact in the following areas until we can do breaking change.
                 // 1. Continue to support other uri and content types (the else statement).
@@ -1778,18 +1785,18 @@ namespace System.Windows
 
             //
             // NOTE: hamidm 08/06/04
-            // PS Windows OS Bug # 901085 (Can't create app and do run/shutdown followed
-            // by run/shutdown)
-            //
-            // Devs could write the following code
-            //
-            // Application app = new Application();
-            // app.Run();
-            // app.Run();
-            //
-            // In this case, we should throw an exception when Run is called for the second time.
-            // When app is shutdown, _appIsShutdown is set to true.  If it is true here, then we
-            // throw an exception
+            // PS Windows OS 
+
+
+
+
+
+
+
+
+
+
+
             if (_appIsShutdown == true)
             {
                 throw new InvalidOperationException(SR.Get(SRID.CannotCallRunMultipleTimes, this.GetType().FullName));
@@ -2261,7 +2268,14 @@ namespace System.Windows
             //
             ResourceContainer resContainer = (ResourceContainer)GetResourcePackage(packageUri);
 
-            return resContainer.GetPart(partUri);
+            // the ResourceContainer is shared across threads;  synchronize access to it
+            PackagePart part = null;
+            lock (_packageLock)
+            {
+                part = resContainer.GetPart(partUri);
+            }
+
+            return part;
         }
 
         /// <summary> Helper for getting the pack://application or pack://siteoforigin resource package. </summary>
@@ -2524,8 +2538,8 @@ namespace System.Windows
                 //Since we cancel PreBPReady event here, the other navigation events won't fire twice.
                 appWin.Navigate(root, new NavigateInfo(uri));
 
-                // To avoid flash and re-layout, call Window.Show() asynchronously, at Normal priority, which 
-                // will happen right after navigation to the content completes. 
+                // To avoid flash and re-layout, call Window.Show() asynchronously, at Normal priority, which
+                // will happen right after navigation to the content completes.
                 Dispatcher.BeginInvoke(DispatcherPriority.Normal,
                     new SendOrPostCallback((window) =>
                     {
@@ -2539,7 +2553,7 @@ namespace System.Windows
             {
                 // if Visibility has not been set, we set it to true
                 // Also check whether the window is already closed when we get here - applications could close the window
-                // in its constructor. See Window SE bug # 253703 (or DevDiv Dev10 bug #574222) for more details.
+                // in its constructor. See Window SE 
                 if (!w.IsVisibilitySet && !w.IsDisposed)
                 {
                     w.Visibility = Visibility.Visible;
@@ -2607,7 +2621,7 @@ namespace System.Windows
                 }
             }
             // When the value of the register key is empty, the IndexOutofRangeException is thrown.
-            // Please see Dev10 bug 586158 for more details.
+            // Please see Dev10 
             catch (System.IndexOutOfRangeException)
             {
             }
@@ -2711,13 +2725,13 @@ namespace System.Windows
             {
                 BrowserInteropHelper.InitializeHostFilterInput();
 
-                // This seemingly meaningless try-catch-throw is a workaround for a CLR deficiency/bug in
-                // exception handling. (WOSB 1936603) When an unhandled exception on the main thread crosses
-                // the AppDomain boundary, the p/invoke layer catches it and throws another exception. Thus,
-                // the original exception is lost before the debugger is notified. The result is no managed
-                // callstack whatsoever. The workaround is based on a debugger/CLR feature that notifies of
-                // exceptions unhandled in 'user code'. This works only when the Just My Code feature is enabled
-                // in VS.
+                // This seemingly meaningless try-catch-throw is a workaround for a CLR deficiency/
+
+
+
+
+
+
                 try
                 {
                     RunDispatcher(null);
@@ -2759,6 +2773,7 @@ namespace System.Windows
         static private bool                             _appCreatedInThisAppDomain;
         static private Application                      _appInstance;
         static private Assembly                         _resourceAssembly;
+        static private object                           _packageLock = new Object();
 
         // Keep LoadBamlSyncInfo stack so that the Outer LoadBaml and Inner LoadBaml( ) for the same
         // Uri share the related information.

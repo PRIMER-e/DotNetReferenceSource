@@ -7,7 +7,7 @@
 //      so it can be used as a projection.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

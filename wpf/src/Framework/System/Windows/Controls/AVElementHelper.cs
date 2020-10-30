@@ -7,7 +7,7 @@
 // Description: Contains the AVElementHelper class.
 //
 // History:
-//  05/04/2004 : [....]  - Added
+//  05/04/2004 : Microsoft  - Added
 //
 //---------------------------------------------------------------------------
 

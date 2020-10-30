@@ -6,7 +6,7 @@
 //      Provides a way to hook up a WCF service as a raw HTTP handler.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

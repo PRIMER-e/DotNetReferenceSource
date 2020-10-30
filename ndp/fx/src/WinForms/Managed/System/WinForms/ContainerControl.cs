@@ -475,7 +475,14 @@ namespace System.Windows.Forms {
                 }
                 if (selected && this.activeControl != control)
                 {
-                    FocusActiveControlInternal();
+                    // 
+
+
+
+                    if (!this.activeControl.Parent.IsTopMdiWindowClosing) 
+                    {                 
+                        FocusActiveControlInternal();
+                    }
                 }
                 else
                 {
@@ -1632,7 +1639,7 @@ namespace System.Windows.Forms {
         /// </devdoc>
         //
         // -------------------------------
-        // INTERNAL NOTE FOR [....] DEVS: This version is intended for user code that wants to force validation, even
+        // INTERNAL NOTE FOR Microsoft DEVS: This version is intended for user code that wants to force validation, even
         // while auto-validation is turned off. When adding any explicit Validate() calls to our code, consider using
         // Validate(true) rather than Validate(), so that you will be sensitive to the current auto-validation setting.
         // -------------------------------
@@ -1837,7 +1844,7 @@ namespace System.Windows.Forms {
             if (!HostedInWin32DialogManager) {
                 if (ActiveControl != null) {
                     WmImeSetFocus();
-                    // [....]: Do not raise GotFocus event since the focus
+                    // Microsoft: Do not raise GotFocus event since the focus
                     //         is given to the visible ActiveControl
                     if (!ActiveControl.Visible) {
                         OnGotFocus(EventArgs.Empty);

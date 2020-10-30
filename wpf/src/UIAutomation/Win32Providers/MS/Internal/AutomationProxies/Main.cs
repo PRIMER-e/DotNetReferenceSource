@@ -57,7 +57,7 @@ namespace UIAutomationClientsideProviders
             new ClientSideProviderDescription(new ClientSideProviderFactoryCallback(MS.Internal.AutomationProxies.WindowsRichEdit.Create), "RichEdit20A"), 
             new ClientSideProviderDescription(new ClientSideProviderFactoryCallback(MS.Internal.AutomationProxies.WindowsRichEdit.Create), "RichEdit20W"), 
             new ClientSideProviderDescription(new ClientSideProviderFactoryCallback(MS.Internal.AutomationProxies.WindowsRichEdit.Create), "RichEdit50W"),
-            // The [....] control WindowForms10.RichEdit20W.app11c7a8c does not get the a match
+            // The Microsoft control WindowForms10.RichEdit20W.app11c7a8c does not get the a match
             // for richedit so assume the follow patial match will get it
             new ClientSideProviderDescription(new ClientSideProviderFactoryCallback(MS.Internal.AutomationProxies.WindowsRichEdit.Create), ".RichEdit20", null, ClientSideProviderMatchIndicator.AllowSubstringMatch), 
             new ClientSideProviderDescription(new ClientSideProviderFactoryCallback(MS.Internal.AutomationProxies.WindowsEditBox.Create), "Edit"), 

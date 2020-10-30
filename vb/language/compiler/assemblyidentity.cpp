@@ -54,7 +54,7 @@ void AssemblyIdentity::SetAssemblyIdentity
 {
     if (m_AssemblyName)
     {
-        VSFAIL("Why are we setting the Assembly Identity twice? Please contact [....]");
+        VSFAIL("Why are we setting the Assembly Identity twice? Please contact Microsoft");
         ResetAssemblyIdentity(m_pCompiler, m_pCompilerHost, m_pCompilerProject);
     }
 
@@ -88,7 +88,7 @@ WCHAR *AssemblyIdentity::GetPublicKeyTokenString(ULONG *pPKStringLength)
     *pPKStringLength = 0;
 
     if (GetPublicKeySize() > 0 &&
-        // [....] 9/18/2004:  Added overflow checks
+        // Microsoft 9/18/2004:  Added overflow checks
         VBMath::TryAdd(GetPublicKeySize(), 1) &&
          VBMath::TryMultiply((GetPublicKeySize() + 1), sizeof(WCHAR)))
     {
@@ -137,7 +137,7 @@ STRING *AssemblyIdentity::GetAssemblyInfoString()
         WCHAR *wszPublicKeyTokenName = GetPublicKeyTokenString(&PKStringLength);
 
         // Alloc more mem than we could possibly need to store the string
-        // [....] 9/18/2004:  Don't need to perform overflow checks; assembly names are already constrained to be certain lengths.
+        // Microsoft 9/18/2004:  Don't need to perform overflow checks; assembly names are already constrained to be certain lengths.
         size_t cchNeeded = StringPool::StringLength(m_AssemblyName) +   // Name
             4 * 6 +  // Version (four 16-bit numbers, max 65536) + DOT
             (m_Locale ? StringPool::StringLength(m_Locale) : 7) + // Locale if present, "neutral" if not
@@ -288,7 +288,7 @@ STRING *AssemblyIdentity::GetAssemblyVersion()
         WCHAR *wszBuf = NULL;
         NorlsAllocator nraTemp(NORLSLOC);
 
-        // [....]:  
+        // Microsoft:  
 
 
         int cchNeeded = 4 * 6 +                     // Version (four 16-bit numbers, max 65536) + DOT
@@ -899,7 +899,7 @@ void AssemblyIdentity::ComputePKTokenFromFileOrContainer()
 
 
         // Read the public key token from the file or container.
-        // [....]: priority is given to key file.
+        // Microsoft: priority is given to key file.
 
         hr = spALink->GetPublicKeyToken(
                 pwszFileName,
@@ -1422,7 +1422,7 @@ bool MakePath
 
     // Yes, the unicode forms work, even on Win98
     // PathIsRelative doesn't seem to catch root-relative paths (like "\rootdir\subdir\file.txt" )
-    // See bug vSWhideby #64301
+    // See 
     if (PathIsURLW(lpFileName))
     {
         StringCchCopyW(lpBuffer, nBufferLength, lpFileName);

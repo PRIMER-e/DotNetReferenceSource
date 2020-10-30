@@ -6,7 +6,7 @@
 //      Provides funcletization of expression tree prior to resource binding.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 namespace System.Data.Services.Client
 {

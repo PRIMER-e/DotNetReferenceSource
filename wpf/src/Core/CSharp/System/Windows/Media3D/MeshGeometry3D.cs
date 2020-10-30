@@ -10,7 +10,7 @@
 //              See spec at http://avalon/medialayer/Specifications/Avalon3D%20API%20Spec.mht
 //
 // History:
-//  06/10/2004 : [....] - Created from Mesh3D.cs (deprecated)
+//  06/10/2004 : Microsoft - Created from Mesh3D.cs (deprecated)
 //
 //---------------------------------------------------------------------------
 

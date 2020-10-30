@@ -32,6 +32,7 @@ namespace System.Web.Configuration {
 
     using Microsoft.Build.Utilities;
     using Microsoft.CSharp;
+    using System.Diagnostics.CodeAnalysis;
 
     [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
     [PermissionSet(SecurityAction.InheritanceDemand, Unrestricted = true)]
@@ -133,7 +134,7 @@ namespace System.Web.Configuration {
                     else {
                         // If we are targeting pre-4.0, we should be using version 2.0 of the assembly
                         // ASP.BrowserCapsFactory, so we need to read the token file from the 2.0 path.
-                        // (Dev10 bug 795509)
+                        // (Dev10 
                         string subPath = @"config\browsers\" + _publicKeyTokenFileName;
                         publicKeyTokenFile = ToolLocationHelper.GetPathToDotNetFrameworkFile(subPath, TargetDotNetFrameworkVersion.Version20);
                     }
@@ -400,6 +401,7 @@ namespace System.Web.Configuration {
             return false;
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3056:UseXmlReaderForLoad", Justification = "Developer-controlled .xml files in application directory are implicitly trusted by ASP.Net.")]
         protected void ProcessBrowserFiles(bool useVirtualPath, string virtualDir) {
             _browserTree = new BrowserTree();
             _defaultTree = new BrowserTree();
@@ -507,6 +509,7 @@ namespace System.Web.Configuration {
             ProcessCustomBrowserFiles(false, String.Empty);
         }
 
+        [SuppressMessage("Microsoft.Security.Xml", "CA3056:UseXmlReaderForLoad", Justification = "Developer-controlled .xml files in application directory are implicitly trusted by ASP.Net.")]
         internal void ProcessCustomBrowserFiles(bool useVirtualPath, string virtualDir) {
             //get all custom browser files and put them in the "tree"
             DirectoryInfo browserDirInfo = null;

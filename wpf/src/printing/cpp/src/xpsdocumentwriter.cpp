@@ -78,7 +78,7 @@ using namespace MS::Internal::Security;
 XpsDocumentWriter::
 XpsDocumentWriter(
     PrintQueue^    printQueue
-    ) : 
+    ) :
     currentState(DocumentWriterState::kRegularMode),
     _currentUserState(nullptr),
     _mxdwPackage(nullptr),
@@ -118,7 +118,7 @@ XpsDocumentWriter(
 XpsDocumentWriter::
 XpsDocumentWriter(
     XpsDocument^    document
-    ) : 
+    ) :
     currentState(DocumentWriterState::kRegularMode),
     _currentUserState(nullptr),
     _mxdwPackage(nullptr),
@@ -163,7 +163,7 @@ XpsDocumentWriter::
 XpsDocumentWriter(
     PrintQueue^     printQueue,
     Object^         bogus
-    ) : 
+    ) :
     currentState(DocumentWriterState::kRegularMode),
     _currentUserState(nullptr),
     _mxdwPackage(nullptr),
@@ -308,7 +308,7 @@ Write(
             break;
         }
     }
-    
+
 }
 
 
@@ -364,11 +364,39 @@ BeginPrintFixedDocumentSequence(
     Int32&                       printJobIdentifier
     )
 {
+    BeginPrintFixedDocumentSequence(documentSequence, nullptr, printJobIdentifier);
+}
+
+/*++
+    Function Name:
+        Write
+
+    Description:
+        Uses the XPSEmitter item to serialize a DocumentSequence.
+
+    Parameters:
+        documentSequence  -   DocumentSequence we want to serialize.
+        printJobIdentifier -  job identifier (return)
+
+    Return Value
+        None
+--*/
+void
+XpsDocumentWriter::
+BeginPrintFixedDocumentSequence(
+    FixedDocumentSequence^       documentSequence,
+    PrintTicket^                 printTicket,
+    Int32&                       printJobIdentifier
+    )
+{
+    PrintTicketLevel printTicketLevel =
+        (printTicket == nullptr) ? PrintTicketLevel::None
+                                 : PrintTicketLevel::FixedDocumentSequencePrintTicket;
     if(BeginWrite(false,
                   false,
                   true,
-                  nullptr,
-                  PrintTicketLevel::None,
+                  printTicket,
+                  printTicketLevel,
                   true) == true)
     {
         _manager->SaveAsXaml(documentSequence);
@@ -380,7 +408,7 @@ BeginPrintFixedDocumentSequence(
 void
 XpsDocumentWriter::
 EndPrintFixedDocumentSequence(
-    void 
+    void
     )
 {
     EndWrite(true);
@@ -759,7 +787,7 @@ WriteAsync(
             break;
         }
     }
-    
+
 }
 
 /*++
@@ -1595,7 +1623,7 @@ ForwardWriteCompletedEvent(
     {
         destinationDocument->DisposeSerializationManager();
     }
-        
+
     if(destinationPrintQueue==nullptr)
     {
         #pragma warning ( disable:4691 )
@@ -1616,7 +1644,7 @@ ForwardWriteCompletedEvent(
         }
     }
 
-    WritingCompletedEventArgs^ forwardArgs = 
+    WritingCompletedEventArgs^ forwardArgs =
         gcnew WritingCompletedEventArgs(cancelled,
                                                            _currentUserState,
                                                            exception);
@@ -1677,13 +1705,13 @@ ForwardProgressChangedEvent(
 
 WritingProgressChangeLevel
 XpsDocumentWriter::
-TranslateProgressChangeLevel( 
+TranslateProgressChangeLevel(
 			 System::
 			 Windows::
 			 Xps::Serialization::XpsWritingProgressChangeLevel xpsChangeLevel )
 {
 	WritingProgressChangeLevel changeLevel = System::Windows::Documents::Serialization::WritingProgressChangeLevel::None;
-	
+
 	switch( xpsChangeLevel )
 
 	{
@@ -1691,18 +1719,18 @@ TranslateProgressChangeLevel(
 		case System::Windows::Documents::Serialization::WritingProgressChangeLevel::None:
 			changeLevel = System::Windows::Documents::Serialization::WritingProgressChangeLevel::None;
 			break;
-			
+
 		case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentSequenceWritingProgress:
 			changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentSequenceWritingProgress;
 			break;
-			
+
 		case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentWritingProgress:
 			changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedDocumentWritingProgress;
 			break;
-			
+
 		case System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedPageWritingProgress:
 			changeLevel =  System::Windows::Documents::Serialization::WritingProgressChangeLevel::FixedPageWritingProgress;
-			break;	
+			break;
 	}
 	return changeLevel;
 }
@@ -2013,14 +2041,14 @@ BeginWrite(
                                     XpsSerializationCompletedEventArgs^ args = gcnew XpsSerializationCompletedEventArgs(false,
                                                                                                                         nullptr,
                                                                                                                         exception);
-                                
+
                                     ForwardWriteCompletedEvent(this,args);
                                     break;
                                 }
                             }
                             else
                             {
-                                _manager = destinationPrintQueue->CreateSerializationManager(batchMode,jobIdentifierSet);
+                                _manager = destinationPrintQueue->CreateSerializationManager(batchMode,jobIdentifierSet,printTicket);
                             }
                     }
                     else
@@ -2049,7 +2077,7 @@ BeginWrite(
                                 XpsSerializationCompletedEventArgs^ args = gcnew XpsSerializationCompletedEventArgs(false,
                                                                                                                     nullptr,
                                                                                                                     exception);
-                                
+
                                 ForwardWriteCompletedEvent(this,args);
                                 break;
                             }
@@ -2212,14 +2240,14 @@ OnWritingCanceled(
 /*--------------------------------------------------------------------------------------------*/
 /*                             Private methods used for MXDW optimization                     */
 /*--------------------------------------------------------------------------------------------*/
-bool 
+bool
 XpsDocumentWriter::
 MxdwConversionRequired(
     PrintQueue^ printQueue
     )
 {
     bool conversionRequired = false;
-        
+
     if (printQueue->InPartialTrust)
     {
         (gcnew PrintingPermission(PrintingPermissionLevel::DefaultPrinting))->Assert();
@@ -2227,7 +2255,7 @@ MxdwConversionRequired(
 
     try
     {
-        conversionRequired = printQueue->QueueDriver->Name->Equals("Microsoft XPS Document Writer", 
+        conversionRequired = printQueue->QueueDriver->Name->Equals("Microsoft XPS Document Writer",
                                                                     StringComparison::OrdinalIgnoreCase);
     }
     __finally
@@ -2244,7 +2272,7 @@ MxdwConversionRequired(
         MXDWSerializationManager^ mxdwManager = gcnew MXDWSerializationManager(printQueue);
         _mxdwManager = mxdwManager;
         #pragma warning ( default:4691 )
-        
+
         if(!(conversionRequired = _mxdwManager->IsPassThruSupported))
         {
             conversionRequired = false;
@@ -2275,12 +2303,12 @@ CreateXPSDocument(
     // Create a package against the file
     //
     FileIOPermission^ permission = gcnew FileIOPermission(
-        FileIOPermissionAccess::Read | FileIOPermissionAccess::Write | FileIOPermissionAccess::PathDiscovery, 
+        FileIOPermissionAccess::Read | FileIOPermissionAccess::Write | FileIOPermissionAccess::PathDiscovery,
         documentName );
     permission->Assert();
     try
     {
-        _mxdwPackage = Package::Open(documentName, 
+        _mxdwPackage = Package::Open(documentName,
                                      FileMode::Create);
         if( app != nullptr && app->StartupUri != nullptr )
         {
@@ -2294,7 +2322,7 @@ CreateXPSDocument(
 
     //
     // Create an XPS Document
-    // 
+    //
     destinationDocument = gcnew XpsDocument(_mxdwPackage);
     destinationPrintQueue = nullptr;
 }
@@ -2892,21 +2920,21 @@ SetPrintTicketEventHandler(
 /*--------------------------------------------------------------------------------------------*/
 /*                             Private methods used for MXDW optimization                     */
 /*--------------------------------------------------------------------------------------------*/
-bool 
+bool
 VisualsToXpsDocument::
 MxdwConversionRequired(
     PrintQueue^ printQueue
     )
 {
     bool conversionRequired = false;
-        
+
     if (printQueue->InPartialTrust)
     {
         (gcnew PrintingPermission(PrintingPermissionLevel::DefaultPrinting))->Assert();
     }
     try
     {
-        conversionRequired = printQueue->QueueDriver->Name->Equals("Microsoft XPS Document Writer", 
+        conversionRequired = printQueue->QueueDriver->Name->Equals("Microsoft XPS Document Writer",
                                                                     StringComparison::OrdinalIgnoreCase);
 
     }
@@ -2917,14 +2945,14 @@ MxdwConversionRequired(
             SecurityPermission::RevertAssert();
         }
     }
-    
+
     if(conversionRequired)
     {
         #pragma warning ( disable:4691 )
         MXDWSerializationManager^ mxdwManager = gcnew MXDWSerializationManager(printQueue);
         _mxdwManager = mxdwManager;
         #pragma warning ( default:4691 )
-        
+
         if(!(conversionRequired = _mxdwManager->IsPassThruSupported))
         {
             conversionRequired = false;
@@ -2955,12 +2983,12 @@ CreateXPSDocument(
     // Create a package against the file
     //
     FileIOPermission^ permission = gcnew FileIOPermission(
-        FileIOPermissionAccess::Read | FileIOPermissionAccess::Write | FileIOPermissionAccess::PathDiscovery, 
+        FileIOPermissionAccess::Read | FileIOPermissionAccess::Write | FileIOPermissionAccess::PathDiscovery,
         documentName );
     permission->Assert();
     try
     {
-        _mxdwPackage = Package::Open(documentName, 
+        _mxdwPackage = Package::Open(documentName,
                                      FileMode::Create);
         if( app != nullptr && app->StartupUri != nullptr )
         {
@@ -2971,10 +2999,10 @@ CreateXPSDocument(
     {
         permission->RevertAssert();
     }
-    
+
     //
     // Create an XPS Document
-    // 
+    //
     destinationDocument = gcnew XpsDocument(_mxdwPackage);
     destinationPrintQueue = nullptr;
 }
@@ -3029,7 +3057,7 @@ XpsWriterException(
 {
 }
 
-void 
+void
 XpsWriterException::
 ThrowException(
     String^ id

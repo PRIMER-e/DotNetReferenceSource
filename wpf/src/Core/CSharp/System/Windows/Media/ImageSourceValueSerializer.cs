@@ -7,7 +7,7 @@
 //
 //  Contents:  Value serializer for ImageSource instances
 //
-//  Created:   06/21/2005 [....]
+//  Created:   06/21/2005 Microsoft
 //
 //------------------------------------------------------------------------
 #pragma warning disable 1634, 1691 // Allow suppression of certain presharp messages

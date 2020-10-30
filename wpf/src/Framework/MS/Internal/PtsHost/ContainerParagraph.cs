@@ -12,7 +12,7 @@
 //              and can be hosted by a section or another container paragraph.
 //
 // History:  
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 #pragma warning disable 1634, 1691  // avoid generating warnings about unknown 
@@ -98,7 +98,7 @@ namespace MS.Internal.PtsHost
 
             if (_ur != null)
             {
-                // Determine if synchronization point has been reached. (If paras are deleted outright, first para may be [....] para.
+                // Determine if synchronization point has been reached. (If paras are deleted outright, first para may be sync para.
                 int cpCurrent = TextContainerHelper.GetCPFromElement(StructuralCache.TextContainer, Element, ElementEdge.AfterStart);
 
                 if (_ur.SyncPara != null && cpCurrent == _ur.SyncPara.ParagraphStartCharacterPosition)
@@ -504,9 +504,9 @@ namespace MS.Internal.PtsHost
             // so it gets broken. PTS creates BR with delayed figure and broken para.
             // PTS will format the next page starting from delayed figure, which can produce MCS.
             // So when the next paragraph is continued from BR, it has MCS.
-            // This problem is currently investigated by PTS team: PTSLS bug 915.
-            // For now, MCS gets ignored here.
-            //ErrorHandler.Assert(pbrkrecIn == IntPtr.Zero || mcs == null, ErrorHandler.BrokenParaHasMcs);
+            // This problem is currently investigated by PTS team: PTSLS 
+
+
             if (mcs != null && pbrkrecIn != IntPtr.Zero)
             {
                 mcs = null;
@@ -524,7 +524,7 @@ namespace MS.Internal.PtsHost
             // Take into accound MBPs and modify subtrack metrics,
             // and make sure that subtrack is at least 1 unit wide (cannot measure at width <= 0)
             PTS.FSRECT fsrcToFillSubtrack = fsrcToFill;
-            MbpInfo mbp = MbpInfo.FromElement(Element);
+            MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if(fswdirSubtrack != fswdir)
             {
@@ -676,7 +676,7 @@ namespace MS.Internal.PtsHost
             int marginTop;
             MarginCollapsingState mcsContainer;
 
-            MbpInfo mbp = MbpInfo.FromElement(Element);
+            MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
             MarginCollapsingState.CollapseTopMargin(PtsContext, mbp, mcs, out mcsContainer, out marginTop);
             if (PTS.ToBoolean(fSuppressTopSpace))
             {
@@ -813,7 +813,7 @@ namespace MS.Internal.PtsHost
             int marginTop;
             MarginCollapsingState mcsContainer;
 
-            MbpInfo mbp = MbpInfo.FromElement(Element);
+            MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
             MarginCollapsingState.CollapseTopMargin(PtsContext, mbp, mcs, out mcsContainer, out marginTop);
             if (PTS.ToBoolean(fSuppressTopSpace))
             {

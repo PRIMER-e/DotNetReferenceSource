@@ -5,7 +5,7 @@
 // Description: Debug-only helper class, dumps TextContainer state to debugger.
 //
 // History:  
-//  02/18/2004 : [....] - Created
+//  02/18/2004 : benwest - Created
 //
 //---------------------------------------------------------------------------
 

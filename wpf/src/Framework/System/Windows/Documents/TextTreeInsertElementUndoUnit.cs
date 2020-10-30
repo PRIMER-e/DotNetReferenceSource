@@ -5,7 +5,7 @@
 // Description: Undo unit for TextContainer.InsertElement calls.
 //
 // History:  
-//  03/03/2004 : [....] - Created
+//  03/03/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ namespace System.Windows.Documents
 
             start = new TextPointer(this.TextContainer, this.SymbolOffset, LogicalDirection.Forward);
 
-            Invariant.Assert(start.GetPointerContext(LogicalDirection.Forward) == TextPointerContext.ElementStart, "TextTree undo unit out of [....] with TextTree.");
+            Invariant.Assert(start.GetPointerContext(LogicalDirection.Forward) == TextPointerContext.ElementStart, "TextTree undo unit out of sync with TextTree.");
 
             element = start.GetAdjacentElementFromOuterPosition(LogicalDirection.Forward);
 

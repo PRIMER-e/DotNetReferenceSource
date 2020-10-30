@@ -60,8 +60,8 @@ namespace System.Windows.Media
             // versions -- please make sure that both binaries have been properly built
             // and deployed. 
             //
-            // *** Failure here does NOT indicate a bug in MediaContext.Startup! ***
-            //
+            // *** Failure here does NOT indicate a 
+
 
             HRESULT.Check(UnsafeNativeMethods.MilVersionCheck(MS.Internal.Composition.Version.MilSdkVersion));
             

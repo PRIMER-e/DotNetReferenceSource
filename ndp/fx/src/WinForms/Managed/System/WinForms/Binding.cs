@@ -608,9 +608,9 @@ namespace System.Windows.Forms {
             }
             else {
                 value =  propInfo.GetValue(control);
-                // bug 92443: the code before was changing value to DBNull if the value
-                // was the empty string. we can't do this, because we need to format the value
-                // in the property in the control and then push it back into the control.
+                // 
+
+
                 if (value == null) {
                     value = DataSourceNullValue;
                 }
@@ -739,7 +739,7 @@ namespace System.Windows.Forms {
                 ConvertEventArgs e = new ConvertEventArgs(value, type);
                 // first try: use the OnParse event
                 OnParse(e);
-                // bug 75825: if the user choose to push a null in to the back end, then we should push it like it is.
+                // 
                 if (e.Value != null && (e.Value.GetType().IsSubclassOf(type) || e.Value.GetType() == type || e.Value is System.DBNull))
                     return e.Value;
                 // second try: use the TypeConverter
@@ -803,9 +803,9 @@ namespace System.Windows.Forms {
                 object ret = e.Value;
 
                 // Approved breaking-change behavior between RTM and Everett: Fire the Format event even if the control property is of type
-                // Object (RTM used to skip the event for properties of this type). NOTE: This change contains a bug (fixed in the new
-                // Whidbey logic above); Everett always returns the *original* object in this case, ignoring any attempt by the event handler
-                // to replace this with a different object.
+                // Object (RTM used to skip the event for properties of this type). NOTE: This change contains a 
+
+
                 if (type == typeof(object))
                     return value;
 
@@ -920,9 +920,9 @@ namespace System.Windows.Forms {
                     else {
                         object formattedObject = FormatObject(parsedValue);
 
-                        // New behavior for Whidbey (Bug#194609). Do not push the re-formatted
-                        // value into the control if it is identical to the current formatted
-                        // value unless we're forced to (thereby avoiding unnecessary property sets).
+                        // New behavior for Whidbey (
+
+
                         if (force || !FormattingEnabled || !Object.Equals(formattedObject, value)) {
                             SetPropValue(formattedObject);
                         }

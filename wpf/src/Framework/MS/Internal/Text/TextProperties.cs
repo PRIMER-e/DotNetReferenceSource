@@ -7,7 +7,7 @@
 // Description: Text run properties provider. 
 //
 // History:  
-//  04/25/2003 : [....] - moving from Avalon branch.
+//  04/25/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -113,6 +113,8 @@ namespace MS.Internal.Text
                 _numberSubstitution = FrameworkElement.DefaultNumberSubstitution;
             }
 
+            PixelsPerDip = target.GetDpi().PixelsPerDip;
+
             InitCommon(target);
             if (!isTypographyDefaultValue)
             {
@@ -126,7 +128,7 @@ namespace MS.Internal.Text
             _baselineAlignment = BaselineAlignment.Baseline;
         }
 
-        internal TextProperties(DependencyObject target, StaticTextPointer position, bool inlineObjects, bool getBackground)
+        internal TextProperties(DependencyObject target, StaticTextPointer position, bool inlineObjects, bool getBackground, double pixelsPerDip)
         {
             // if none of the number substitution properties have changed, we may be able to
             // initialize the _numberSubstitution field to a known default value
@@ -147,6 +149,7 @@ namespace MS.Internal.Text
                 }               
             }
 
+            PixelsPerDip = pixelsPerDip;
             InitCommon(target);
 
             _typographyProperties = GetTypographyProperties(target);
@@ -193,14 +196,14 @@ namespace MS.Internal.Text
             _numberSubstitution = source._numberSubstitution;
             _typographyProperties = source._typographyProperties;
             _baselineAlignment = source._baselineAlignment;
-
+            PixelsPerDip = source.PixelsPerDip;
             _textDecorations = textDecorations;
         }
 
         // assigns values to all fields except for _typographyProperties, _baselineAlignment,
         // and _background, which are set appropriately in each constructor
         private void InitCommon(DependencyObject target)
-        {           
+        {
             _typeface = DynamicPropertyReader.GetTypeface(target);
 
             _fontSize = (double)target.GetValue(TextElement.FontSizeProperty);

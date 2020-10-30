@@ -95,8 +95,8 @@ namespace System.Windows
         /// prohibited. This should not be set unless there are very strong
         /// technical reasons why a property can not be animated. In the
         /// vast majority of cases, a property that can not be properly
-        /// animated means that the property implementation contains a bug.
-        /// </summary>
+        /// animated means that the property implementation contains a 
+
         public bool IsAnimationProhibited
         {
             get

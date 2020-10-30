@@ -2,8 +2,8 @@
 // <copyright file="DataSet.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
-// <owner current="true" primary="true">[....]</owner>
-// <owner current="true" primary="false">[....]</owner>
+// <owner current="true" primary="true">Microsoft</owner>
+// <owner current="true" primary="false">Microsoft</owner>
 //------------------------------------------------------------------------------
 
 namespace System.Data {
@@ -682,7 +682,7 @@ namespace System.Data {
                             continue;
                         if ((dt.NestedParentRelations.Length == 0) ||
                             (dt.NestedParentRelations.Length == 1 && dt.NestedParentRelations[0].ChildTable == dt)) {
-                            //                            dt.SelfNestedWithOneRelation) { // this is wrong bug it was previous behavior
+                            //                            dt.SelfNestedWithOneRelation) { // this is wrong 
                             if (Tables.Contains(dt.TableName, value, false, true))
                                 throw ExceptionBuilder.DuplicateTableName2(dt.TableName, value);
                             dt.CheckCascadingNamespaceConflict(value);
@@ -1104,7 +1104,7 @@ namespace System.Data {
             try {
                 DataSet ds = (DataSet)Activator.CreateInstance(this.GetType(), true);
 
-                if (ds.Tables.Count > 0)  // [....] : To clean up all the schema in strong typed dataset.
+                if (ds.Tables.Count > 0)  // Microsoft : To clean up all the schema in strong typed dataset.
                     ds.Reset();
 
                 //copy some original dataset properties
@@ -2120,7 +2120,12 @@ namespace System.Data {
             if (stream == null)
                 return XmlReadMode.Auto;
 
-            return ReadXml(new XmlTextReader(stream), false);
+            XmlTextReader xr = new XmlTextReader(stream);
+
+            // Prevent Dtd entity in dataset 
+            xr.XmlResolver = null;
+
+            return ReadXml(xr, false);
         }
 
         /// <devdoc>
@@ -2130,7 +2135,12 @@ namespace System.Data {
             if (reader == null)
                 return XmlReadMode.Auto;
 
-            return ReadXml(new XmlTextReader(reader), false);
+            XmlTextReader xr = new XmlTextReader(reader);
+
+            // Prevent Dtd entity in dataset 
+            xr.XmlResolver = null;
+
+            return ReadXml(xr, false);
         }
 
         /// <devdoc>
@@ -2140,7 +2150,12 @@ namespace System.Data {
         public XmlReadMode ReadXml(string fileName)
         {
             XmlTextReader xr = new XmlTextReader(fileName);
-            try {
+
+            // Prevent Dtd entity in dataset 
+            xr.XmlResolver = null;
+
+            try
+            {
                 return ReadXml(xr, false);
             }
             finally {
@@ -2518,6 +2533,8 @@ namespace System.Data {
                 return XmlReadMode.Auto;
 
             XmlTextReader reader = (mode == XmlReadMode.Fragment) ? new XmlTextReader(stream, XmlNodeType.Element, null) : new XmlTextReader(stream);
+            // Prevent Dtd entity in dataset 
+            reader.XmlResolver = null;
             return ReadXml(reader, mode, false);
         }
 
@@ -2529,6 +2546,8 @@ namespace System.Data {
                 return XmlReadMode.Auto;
 
             XmlTextReader xmlreader = (mode == XmlReadMode.Fragment) ? new XmlTextReader(reader.ReadToEnd(), XmlNodeType.Element, null) : new XmlTextReader(reader);
+            // Prevent Dtd entity in dataset 
+            xmlreader.XmlResolver = null;
             return ReadXml(xmlreader, mode, false);
         }
 
@@ -2545,7 +2564,12 @@ namespace System.Data {
             }
             else
                 xr = new XmlTextReader(fileName);
-            try {
+
+            // Prevent Dtd entity in dataset             
+            xr.XmlResolver = null;
+
+            try
+            {
                 return ReadXml(xr, mode, false);
             }
             finally {
@@ -3062,7 +3086,7 @@ namespace System.Data {
             }
         }
 
-        // [....]: may be better to rewrite this as nonrecursive?
+        // Microsoft: may be better to rewrite this as nonrecursive?
         internal DataTable FindTable(DataTable baseTable, PropertyDescriptor[] props, int propStart) {
             if (props.Length < propStart + 1)
                 return baseTable;

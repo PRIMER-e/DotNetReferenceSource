@@ -1125,8 +1125,25 @@ namespace System.Web.UI.MobileControls
             String clientViewStateString = _requestValueCollection[ViewStateID];
             if (clientViewStateString != null)
             {
-                _privateViewState =
-                    StateFormatter.Deserialize(clientViewStateString) as Hashtable;
+                try {
+                    _privateViewState = StateFormatter.Deserialize(clientViewStateString) as Hashtable;
+                }
+                catch (Exception e) {
+                    if (IsViewStateException(e)) {
+                        _privateViewState = null;
+
+                        // DevDiv #461378: Suppress validation errors for cross-page postbacks.
+                        // This is a much simplified form of the check in Page.LoadPageStateFromPersistenceMedium.
+                        if (Context != null && TraceEnabled) {
+                            Trace.Write("aspx.page", "Ignoring page state", e);
+                        }
+                    }
+                    else {
+                        // we shouldn't ---- this exception; let the app error handler take care of it
+                        throw;
+                    }
+                }
+
                 if (_privateViewState != null)
                 {
                     Pair pair = _privateViewState[PageClientViewStateKey] as Pair;
@@ -1273,7 +1290,7 @@ namespace System.Web.UI.MobileControls
             }
         }
 
-        // NOTE: Make sure this stays in [....] with Page.PageRegisteredControlsThatRequirePostBackKey
+        // NOTE: Make sure this stays in sync with Page.PageRegisteredControlsThatRequirePostBackKey
         private const string PageRegisteredControlsThatRequirePostBackKey = "__ControlsRequirePostBackKey__";
         private bool CheckEmptyViewState(Object viewState)
         {
@@ -1424,7 +1441,7 @@ namespace System.Web.UI.MobileControls
 
         private byte[] GetMacKeyModifier()
         {
-            //NOTE:  duplicate of the version in objectstateformatter.cs, keep in [....]
+            //NOTE:  duplicate of the version in objectstateformatter.cs, keep in sync
 
             // Use the page's directory and class name as part of the key (ASURT 64044)
             // We need to make sure that the hash is case insensitive, since the file system
@@ -1560,6 +1577,15 @@ namespace System.Web.UI.MobileControls
         /// <include file='doc\MobilePage.uex' path='docs/doc[@for="MobilePage.RenderControl"]/*' />
         public override void RenderControl(HtmlTextWriter writer) {
             RenderControl(writer, null); // Use legacy adapter, not V2 adapter.
+        }
+
+        // Similar to the logic in ViewStateException.cs, but we can only check for
+        // ViewState exceptions in general, not MAC-specific exceptions.
+        private static bool IsViewStateException(Exception e) {
+            for (; e != null; e = e.InnerException) {
+                if (e is ViewStateException) { return true; }
+            }
+            return false;
         }
     }
 }

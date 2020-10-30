@@ -6196,7 +6196,7 @@ namespace System.Windows
                     {
                         Size frameSize = new Size(Standard.NativeMethods.GetSystemMetrics(Standard.SM.CXSIZEFRAME),
                                                   Standard.NativeMethods.GetSystemMetrics(Standard.SM.CYSIZEFRAME));
-                        Size frameSizeInDips = Standard.DpiHelper.DeviceSizeToLogical(frameSize);
+                        Size frameSizeInDips = Standard.DpiHelper.DeviceSizeToLogical(frameSize, SystemParameters.DpiX / 96.0, SystemParameters.Dpi / 96.0);
 
                         _windowResizeBorderThickness = new Thickness(frameSizeInDips.Width, frameSizeInDips.Height, frameSizeInDips.Width, frameSizeInDips.Height);
                         _cacheValid[(int)CacheSlot.WindowResizeBorderThickness] = true;
@@ -6224,9 +6224,9 @@ namespace System.Windows
                     {
                         Size frameSize = new Size(Standard.NativeMethods.GetSystemMetrics(Standard.SM.CXSIZEFRAME),
                                                   Standard.NativeMethods.GetSystemMetrics(Standard.SM.CYSIZEFRAME));
-                        Size frameSizeInDips = Standard.DpiHelper.DeviceSizeToLogical(frameSize);
+                        Size frameSizeInDips = Standard.DpiHelper.DeviceSizeToLogical(frameSize, SystemParameters.DpiX / 96.0, SystemParameters.Dpi / 96.0);
                         int captionHeight = Standard.NativeMethods.GetSystemMetrics(Standard.SM.CYCAPTION);
-                        double captionHeightInDips = Standard.DpiHelper.DevicePixelsToLogical(new Point(0, captionHeight)).Y;
+                        double captionHeightInDips = Standard.DpiHelper.DevicePixelsToLogical(new Point(0, captionHeight), SystemParameters.DpiX / 96.0, SystemParameters.Dpi / 96.0).Y;
                         _windowNonClientFrameThickness = new Thickness(frameSizeInDips.Width, frameSizeInDips.Height + captionHeightInDips, frameSizeInDips.Width, frameSizeInDips.Height);
                         _cacheValid[(int)CacheSlot.WindowNonClientFrameThickness] = true;
                     }

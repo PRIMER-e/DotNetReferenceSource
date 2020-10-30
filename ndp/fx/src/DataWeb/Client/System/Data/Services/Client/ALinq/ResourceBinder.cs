@@ -6,7 +6,7 @@
 //      Expression visitor that binds expression tree to resources
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client
@@ -826,9 +826,9 @@ namespace System.Data.Services.Client
         {
             UnaryExpression ue = e as UnaryExpression;
 
-            // Dev10 Bug# 546646: We are going to allow either of DataServiceQuery or DataServiceOrderedQuery 
-            // to be the type of ResourceExpression in the cast parameter. Although this might be considered 
-            // overly relaxed we want to avoid causing breaking changes by just having the Ordered version
+            // Dev10 
+
+
             if (ue != null &&
                 ue.NodeType == ExpressionType.Convert &&
                 ue.Type.IsGenericType && 
@@ -1691,7 +1691,7 @@ namespace System.Data.Services.Client
             /// plus the newly introduced range variable.
             /// 
             /// For additional background, see:
-            /// Transparent Identifiers - http://blogs.msdn.com/[....]/archive/2006/12/22/transparent-identifiers.aspx
+            /// Transparent Identifiers - http://blogs.msdn.com/Microsoft/archive/2006/12/22/transparent-identifiers.aspx
             /// http://msdn.microsoft.com/en-us/library/bb308966.aspx
             /// In particular:
             /// - 26.7.1.4 From, let, where, join and orderby clauses
@@ -2359,15 +2359,15 @@ namespace System.Data.Services.Client
             }
         }
 
-        // Devdiv Bug#489444: By default, C#/Vb compilers uses declaring type for property expression when
-        // we pass property name while creating the property expression. But its totally fine to use 
-        // property info reflected from any subtype while creating property expressions.
-        // The problem is when one creates the property expression from a property info reflected from one
-        // of the subtype, then we don't recognize the key properties and instead of generating a key predicate, we generate
-        // a filter predicate. This limits a bunch of scenarios, since we can't navigate further once
-        // we generate a filter predicate.
-        // To fix this issue, we use a PropertyInfoEqualityComparer, which checks for the name and DeclaringType
-        // of the property and if they are the same, then it considers them equal.
+        // Devdiv 
+
+
+
+
+
+
+
+
 
         /// <summary>
         /// Equality and comparison implementation for PropertyInfo.

@@ -5,7 +5,7 @@
 // ==--==
 //===========================================================================
 //  File:       IpcPort.cs
-//  Author:   [....]@Microsoft.Com
+//  Author:   Microsoft@Microsoft.Com
 //  Summary:    Implements an abstraction over Named pipes
 //
 //==========================================================================

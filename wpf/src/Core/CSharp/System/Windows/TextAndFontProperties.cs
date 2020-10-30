@@ -291,36 +291,36 @@ namespace System.Windows
 
 
     /// <summary>
-    /// Font typographic ---- treatment
+    /// Font typographic capital treatment
     /// </summary>
     public enum FontCapitals
     { 
         /// <summary>
-        /// ----s normal
+        /// Capitals normal
         /// </summary>
         Normal, 
         /// <summary>
-        /// ----s all small caps
+        /// Capitals all small caps
         /// </summary>
         AllSmallCaps, 
         /// <summary>
-        /// ----s small caps
+        /// Capitals small caps
         /// </summary>
         SmallCaps, 
         /// <summary>
-        /// ----s all petite caps
+        /// Capitals all petite caps
         /// </summary>
         AllPetiteCaps, 
         /// <summary>
-        /// ----s petite caps
+        /// Capitals petite caps
         /// </summary>
         PetiteCaps, 
         /// <summary>
-        /// ----s unicase
+        /// Capitals unicase
         /// </summary>
         Unicase, 
         /// <summary>
-        /// ----s titling
+        /// Capitals titling
         /// </summary>
         Titling 
     }

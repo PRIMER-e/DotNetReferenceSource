@@ -955,9 +955,9 @@ namespace System.Windows.Markup
         // Internal flags for efficient storage
         // NOTE: bits here are used by sub-classes also.
         // This BitVector32 field is shared by subclasses to save working set.  Sharing flags like this
-        // is easier in e.g. FrameworkElement, where the class hierarchy is linear, but can be bug-prone otherwise.  To make the 
-        // code less fragile, each class abstractly provides it's last section to subclasses(LastFlagsSection), which they can
-        // use in their call to CreateSection.
+        // is easier in e.g. FrameworkElement, where the class hierarchy is linear, but can be 
+
+
 
         internal BitVector32 _flags;
 
@@ -1094,7 +1094,7 @@ namespace System.Windows.Markup
             bamlBinaryWriter.Write((byte) RecordType);
 
             // Remember the file location of this baml record.  This
-            // is needed if we have to come back later to update the [....] mode.
+            // is needed if we have to come back later to update the sync mode.
             // IMPORTANT:  The RecordType is the last thing written before calling
             //             WriteRecordData.  Some records assume the record type is located
             //             directly before the current stream location and may change it, so
@@ -1157,7 +1157,7 @@ namespace System.Windows.Markup
 #region Data
 
         // Size of the RecordSize field in the baml file.  This must be in
-        // [....] the type type of _recordSize below.
+        // sync the type type of _recordSize below.
         internal const int MaxRecordSizeFieldLength = 4;
 
         Int32          _recordSize = -1;   // we use a 7 bit encoded variable size
@@ -1661,7 +1661,7 @@ namespace System.Windows.Markup
 #region Data
 
         // Size in bytes of the ValuePosition field written out to baml.  This
-        // must be in [....] with the size of _valuePosition below.
+        // must be in sync with the size of _valuePosition below.
         internal const Int32 ValuePositionSize = 4;
 
         // Relative position in the stream where the value associated with this key starts
@@ -1858,7 +1858,7 @@ namespace System.Windows.Markup
 #region Data
 
         // Size in bytes of the ValuePosition field written out to baml.  This
-        // must be in [....] with the size of _valuePosition below.
+        // must be in sync with the size of _valuePosition below.
         internal const Int32 ValuePositionSize = 4;
 
         // Relative position in the stream where the value associated with this key starts
@@ -2643,7 +2643,7 @@ namespace System.Windows.Markup
                 // If we custom serialize this particular value at this point, then see
                 // if it can convert.
                 // NOTE:  This is sensitive to changes in the BamlRecordWriter and
-                //        BamlRecordManager code and must be kept in [....] with them...
+                //        BamlRecordManager code and must be kept in sync with them...
                 converted = serializer.ConvertStringToCustomBinary(bamlBinaryWriter, Value);
             }
             else if (SerializerType == typeof(XamlPoint3DCollectionSerializer))
@@ -2653,7 +2653,7 @@ namespace System.Windows.Markup
                 // If we custom serialize this particular value at this point, then see
                 // if it can convert.
                 // NOTE:  This is sensitive to changes in the BamlRecordWriter and
-                //        BamlRecordManager code and must be kept in [....] with them...
+                //        BamlRecordManager code and must be kept in sync with them...
                 converted = serializer.ConvertStringToCustomBinary(bamlBinaryWriter, Value);
             }
             else if (SerializerType == typeof(XamlVector3DCollectionSerializer))
@@ -2663,7 +2663,7 @@ namespace System.Windows.Markup
                 // If we custom serialize this particular value at this point, then see
                 // if it can convert.
                 // NOTE:  This is sensitive to changes in the BamlRecordWriter and
-                //        BamlRecordManager code and must be kept in [....] with them...
+                //        BamlRecordManager code and must be kept in sync with them...
                 converted = serializer.ConvertStringToCustomBinary(bamlBinaryWriter, Value);
             }
             else if (SerializerType == typeof(XamlPointCollectionSerializer))
@@ -2673,7 +2673,7 @@ namespace System.Windows.Markup
                 // If we custom serialize this particular value at this point, then see
                 // if it can convert.
                 // NOTE:  This is sensitive to changes in the BamlRecordWriter and
-                //        BamlRecordManager code and must be kept in [....] with them...
+                //        BamlRecordManager code and must be kept in sync with them...
                 converted = serializer.ConvertStringToCustomBinary(bamlBinaryWriter, Value);
             }
             else if (SerializerType == typeof(XamlInt32CollectionSerializer))
@@ -2683,7 +2683,7 @@ namespace System.Windows.Markup
                 // If we custom serialize this particular value at this point, then see
                 // if it can convert.
                 // NOTE:  This is sensitive to changes in the BamlRecordWriter and
-                //        BamlRecordManager code and must be kept in [....] with them...
+                //        BamlRecordManager code and must be kept in sync with them...
                 converted = serializer.ConvertStringToCustomBinary(bamlBinaryWriter, Value);
             }
             else if (SerializerType == typeof(XamlPathDataSerializer))
@@ -2693,7 +2693,7 @@ namespace System.Windows.Markup
                 // If we custom serialize this particular value at this point, then see
                 // if it can convert.
                 // NOTE:  This is sensitive to changes in the BamlRecordWriter and
-                //        BamlRecordManager code and must be kept in [....] with them...
+                //        BamlRecordManager code and must be kept in sync with them...
                 converted = serializer.ConvertStringToCustomBinary(bamlBinaryWriter, Value);
             }
 
@@ -2807,7 +2807,7 @@ namespace System.Windows.Markup
             // ValueObject and ValueObject are not set until BamlRecordReader.ReadPropertyCustomRecord
             // because the Mapper is needed for custom DPs
 
-            // NOTE: above may no longer true, so this could be potentially changed to be in [....] with
+            // NOTE: above may no longer true, so this could be potentially changed to be in sync with
             // other record. Needs more investigation.
         }
 
@@ -3696,7 +3696,7 @@ namespace System.Windows.Markup
 #region Data
 
         // Size of the ContentSize field written out to the baml stream.  This
-        // must be kept in [....] with the size of the _contentSize field.
+        // must be kept in sync with the size of the _contentSize field.
         const Int64 ContentSizeSize = 4;
 
         // Size of the content between the end of the start record and the
@@ -4194,7 +4194,7 @@ namespace System.Windows.Markup
         internal override void Write(BinaryWriter bamlBinaryWriter)
         {
             // Remember the file location of this baml record.  This
-            // is needed if we have to come back later to update the [....] mode.
+            // is needed if we have to come back later to update the sync mode.
             if (FilePos == -1 && bamlBinaryWriter != null)
             {
                 FilePos = bamlBinaryWriter.Seek(0,SeekOrigin.Current);

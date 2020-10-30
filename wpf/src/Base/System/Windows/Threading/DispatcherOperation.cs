@@ -47,7 +47,7 @@ namespace System.Windows.Threading
             _numArgs = numArgs;
             _args = args;
 
-            _executionContext = ExecutionContext.Capture();
+            _executionContext = CulturePreservingExecutionContext.Capture();
 
             _taskSource = taskSource;
             _taskSource.Initialize(this);
@@ -312,6 +312,33 @@ namespace System.Windows.Threading
         }
 
         /// <summary>
+        ///     ID of this operation.
+        /// </summary>
+        /// <returns>
+        ///     Returns a "roaming" ID. This ID changes as the object is relocated by the GC.
+        ///     However ETW tools listening for events containing these "roaming" IDs will be
+        ///     able to account for the movements by listening for CLR's GC ETW events, and
+        ///     will therefore be able to track this identity across the lifetime of the object.
+        /// </returns>
+        internal long Id
+        {
+            [SecurityCritical]
+            get
+            {
+                long addr;
+                unsafe
+                {
+                    // we need a non-readonly field of a pointer-compatible type (using _priority)
+                    fixed (DispatcherPriority* pb = &this._priority)
+                    {
+                        addr = (long) pb;
+                    }
+                }
+                return addr;
+            }
+        }
+        
+        /// <summary>
         ///     Returns the result of the operation if it has completed.
         /// </summary>
         public object Result 
@@ -408,7 +435,7 @@ namespace System.Windows.Threading
             // current when the operation was created.
             if(_executionContext != null)
             {
-                ExecutionContext.Run(_executionContext, _invokeInSecurityContext, this);
+                CulturePreservingExecutionContext.Run(_executionContext, _invokeInSecurityContext, this);
 
                 // Release any resources held by the execution context.
                 _executionContext.Dispose();
@@ -711,7 +738,7 @@ namespace System.Windows.Threading
         ///     Obtained under an elevation.
         /// </SecurityNote>
         [SecurityCritical]
-        private ExecutionContext _executionContext;
+        private CulturePreservingExecutionContext _executionContext;
         private static readonly ContextCallback _invokeInSecurityContext;
         
         private readonly Dispatcher _dispatcher;

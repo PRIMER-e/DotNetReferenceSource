@@ -6,7 +6,7 @@
 //      An interface for objects that can write exceptions.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

@@ -8,7 +8,7 @@
 //              which can be used in unmanaged world. 
 //
 // History:  
-//  05/02/2003 : [....] - moving from Avalon branch.
+//  05/02/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 

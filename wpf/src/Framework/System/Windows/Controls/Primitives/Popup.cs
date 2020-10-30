@@ -241,7 +241,7 @@ namespace System.Windows.Controls.Primitives
                     // This causes Popup and its descedents to miss some change notifications.
                     // Thus a Popup that isnt connected to the tree in any way should be
                     // designated standalone and thus IsSelfInheritanceParent = true. Please
-                    // see Dev11 bug# 246558 for manifestation of these missing invalidations.
+                    // see Dev11 
                     if (!this.IsSelfInheritanceParent)
                     {
                         this.SetIsSelfInheritanceParent();
@@ -1091,8 +1091,8 @@ namespace System.Windows.Controls.Primitives
             // Try to accomplish "subcapture" -- allowing elements within our
             // subtree to take mouse capture and reclaim it when they lose capture.
             // This is a workaround until we can get real subcapture:
-            //   * Bug 940198: Need real solution for subcapture
-            //
+            //   * 
+
             if (!popup.StaysOpen)
             {
                 PopupRoot root = popup._popupRoot.Value;
@@ -1147,7 +1147,7 @@ namespace System.Windows.Controls.Primitives
                 // A drag drop operation steals capture from the Popup because
                 // there is an intermediate hwnd created internally by OleDragDrop
                 // which holds capture temporarily.  So upon completion of the
-                // operation we re-establish capture. See Dev11 bug#290233.
+                // operation we re-establish capture. See Dev11 
                 popup.EstablishPopupCapture();
             }
         }

@@ -28,7 +28,10 @@ namespace System.Windows.Forms.PropertyGridInternal {
     /// <include file='doc\GridErrorDlg.uex' path='docs/doc[@for="GridErrorDlg"]/*' />
     /// <devdoc>
     ///     Implements a dialog that is displayed when an unhandled exception occurs in
-    ///     a thread.
+    ///     a thread. This dialog's width is defined by the summary message
+    ///     in the top pane. We don't restrict dialog width in any way.  
+    ///     Use caution and check at all DPI scaling factors if adding a new message
+    ///     to be displayed in the top pane.
     /// </devdoc>
     internal class GridErrorDlg : Form {
         private TableLayoutPanel overarchingTableLayoutPanel;
@@ -67,8 +70,14 @@ namespace System.Windows.Forms.PropertyGridInternal {
             ownerGrid = owner;
             expandImage = new Bitmap(typeof(ThreadExceptionDialog), "down.bmp");
             expandImage.MakeTransparent();
+            if (DpiHelper.IsScalingRequired) {
+                DpiHelper.ScaleBitmapLogicalToDevice(ref expandImage);
+            }
             collapseImage = new Bitmap(typeof(ThreadExceptionDialog), "up.bmp");
             collapseImage.MakeTransparent();
+            if (DpiHelper.IsScalingRequired) {
+                DpiHelper.ScaleBitmapLogicalToDevice(ref collapseImage);
+            }
 
             InitializeComponent();
 
@@ -140,6 +149,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             // 
             // lblMessage
             // 
+            this.lblMessage.AutoSize = true;
             this.lblMessage.Location = new System.Drawing.Point(73, 30);
             this.lblMessage.Margin = new System.Windows.Forms.Padding(3, 30, 3, 0);
             this.lblMessage.Name = "lblMessage";
@@ -154,6 +164,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             this.pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.pictureBox.TabIndex = 5;
             this.pictureBox.TabStop = false;
+            this.pictureBox.AutoSize = true;
             // 
             // detailsBtn
             // 
@@ -226,6 +237,8 @@ namespace System.Windows.Forms.PropertyGridInternal {
             // 
             // pictureLabelTableLayoutPanel
             // 
+            this.pictureLabelTableLayoutPanel.AutoSize = true;
+            this.pictureLabelTableLayoutPanel.AutoSizeMode = Forms.AutoSizeMode.GrowOnly;
             this.pictureLabelTableLayoutPanel.ColumnCount = 2;
             this.pictureLabelTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.pictureLabelTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
@@ -235,7 +248,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             this.pictureLabelTableLayoutPanel.Location = new System.Drawing.Point(3, 3);
             this.pictureLabelTableLayoutPanel.Name = "pictureLabelTableLayoutPanel";
             this.pictureLabelTableLayoutPanel.RowCount = 1;
-            this.pictureLabelTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 70F));
+            this.pictureLabelTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.pictureLabelTableLayoutPanel.Size = new System.Drawing.Size(284, 73);
             this.pictureLabelTableLayoutPanel.TabIndex = 4;
             // 
@@ -255,6 +268,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
             // 
             this.AcceptButton = this.okBtn;
             this.AutoSize = true;
+            this.AutoScaleMode = Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.CancelButton = this.cancelBtn;
             this.ClientSize = new System.Drawing.Size(299, 113);

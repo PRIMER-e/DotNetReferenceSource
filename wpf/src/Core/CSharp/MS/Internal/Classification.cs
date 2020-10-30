@@ -7,7 +7,7 @@
 //
 //  Contents:  Unicode classification entry point
 //
-//  Created:   7-14-2002 Tarek Mahmoud Sayed ([....])
+//  Created:   7-14-2002 Tarek Mahmoud Sayed (Microsoft)
 //
 //------------------------------------------------------------------------
 

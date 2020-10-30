@@ -126,7 +126,7 @@ namespace System.Windows.Documents
         #region Internal Methods
 
         /// <summary>
-        /// Updates TextProperty when it is no longer in [....] with the backing store. Called by 
+        /// Updates TextProperty when it is no longer in sync with the backing store. Called by 
         /// TextContainer when a change affects the text contained by this Run.
         /// </summary>
         /// <remarks>

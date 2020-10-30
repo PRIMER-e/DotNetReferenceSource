@@ -505,8 +505,8 @@ void CodeGenerator::LeaveCodeBuffer
     TRY_BLOCK *ptry = m_tryListPending.GetFirst();
 
     // ptry can be null here when a 'for each' statement do not enclose it's block in a try.
-    // see bug DevDiv109887. Consider optimize this leave into a branch opcode.
-    // AssertIfNull(ptry);
+    // see 
+
 
     if (ExitsCatch)
     {
@@ -516,7 +516,7 @@ void CodeGenerator::LeaveCodeBuffer
 
         if (!g_CompilingTheVBRuntime)
         {
-            GenerateCallToRuntimeHelper(ClearErrorMember, Symbols::GetVoidType(), errorLocation, errorLocation ? Error : Ignore); // Bug #178026 - DevDiv Bugs: log an error if we have location
+            GenerateCallToRuntimeHelper(ClearErrorMember, Symbols::GetVoidType(), errorLocation, errorLocation ? Error : Ignore); // 
         }
     }
 
@@ -533,7 +533,7 @@ void CodeGenerator::LeaveCodeBuffer
         {
             // The "nop" when exiting each "try" and "Catch" is mapped to the "Finally" statement.
             // This enables a better ENC experience without disabling any normal debugging scenarios.
-            // Bug VSWhidbey 500839.
+            // 
 
             UpdateLineTable(ptry->FinallyLocation);
             InsertNOP();
@@ -767,8 +767,8 @@ void CodeGenerator::UpdateLineTable
     }
 
     // Remove hidden sequence points between sequence points that are equal.
-    // Bug VSWhidbey 293903.
-    //
+    // 
+
     for(LINETBL *pltblCurrent = m_pltblCurrent - 1;
         pltblCurrent >= m_pltblLineTbl;
         pltblCurrent = pltblCurrent - 1)
@@ -790,13 +790,13 @@ void CodeGenerator::UpdateLineTable
     // Need to check for space only when adding a new entry.
     if (m_pltblCurrent >= m_pltblEnd)
     {
-        // [....] 9/14/2004:  Added some checks to validate values (and assuming later that 10*sizeof(LINETBL) is OK.)
+        // Microsoft 9/14/2004:  Added some checks to validate values (and assuming later that 10*sizeof(LINETBL) is OK.)
         if (!VBMath::TryMultiply((m_pltblEnd - m_pltblLineTbl), sizeof(LINETBL)))
         {
             VbThrow(HrMake(ERRID_CodegenError));
         }
         unsigned long size = (unsigned long)(m_pltblEnd - m_pltblLineTbl)*sizeof(LINETBL);
-        if (size + 10*sizeof(LINETBL) < size)
+        if (size + 10*static_cast<unsigned long>(sizeof(LINETBL)) < size)
         {
             VbThrow(HrMake(ERRID_CodegenError));
         }
@@ -902,7 +902,7 @@ CodeGenerator::AllocateResumeEntry
         // we make entires I+1 and J branch to T.  For each index K where I+1 < K < J, we make the
         // entry branch to a code block which throws an internal error exception.  In theory, the
         // ResumeTarget state variable should never hold the value K.  But who knows?  ENC may have
-        // a bug.  It's better to throw than to execute code incorrectly.
+        // a 
 
         int GapCount = ResumeIndex - (m_cadrResumeList.NumberOfEntries() - 1) - 1;
 
@@ -1961,7 +1961,7 @@ void CodeGenerator::EmitDebugInformation
                 // Check for duplicate offsets, must be done here.
                 for(LINETBL *pltblDup = pltbl + 1; pltblDup < m_pltblCurrent; pltblDup++)
                 {
-                    // Bug VSWhidbey 137946
+                    // 
                     if (m_Project->GenerateOptimalIL() && !pltblDup->codeaddr.pcblk->fLive)
                     {
                         ptblNext = pltblDup + 1;
@@ -2158,7 +2158,7 @@ BYTE *pbImage
 // Allocates space for the line table. The size of the line numbers and
 // offsets is assumed to be 4 bytes (unsigned long).
 //============================================================================
-
+#pragma optimize( "", off)
 MethodDebugInfo *CodeGenerator::CreateLineTable
 (
     CSingleList<MethodDebugInfo> *pMethodDebugInfoList,
@@ -2200,6 +2200,7 @@ MethodDebugInfo *CodeGenerator::CreateLineTable
 
     return pMethodDebugInfo;
 }
+#pragma optimize( "", on)
 
 //============================================================================
 // Adds a new (line#, offset) pair to the line table.

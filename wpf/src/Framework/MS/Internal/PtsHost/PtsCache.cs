@@ -834,6 +834,7 @@ namespace MS.Internal.PtsHost
             tableobjInit.tablecbkfetchword.pfnFStopBeforeTableRowLr   = IntPtr.Zero;
             tableobjInit.tablecbkfetchword.pfnFIgnoreCollisionForTableRow = IntPtr.Zero;
             tableobjInit.tablecbkfetchword.pfnChangeRowHeightRestriction = IntPtr.Zero;
+            */
         }
 
         #endregion Private Methods

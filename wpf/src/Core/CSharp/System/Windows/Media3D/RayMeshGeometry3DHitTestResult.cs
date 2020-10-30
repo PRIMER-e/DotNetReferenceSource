@@ -6,7 +6,7 @@
 //
 //
 // History:
-//  06/22/2005 : [....] - Integrated from RayHitTestResult.
+//  06/22/2005 : Microsoft - Integrated from RayHitTestResult.
 //
 //---------------------------------------------------------------------------
 

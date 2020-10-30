@@ -6,8 +6,8 @@
 //      [See .h]
 //
 //  History:
-//     2007/03/30   [....]     Created
-//     2007/09/20   [....]     Ported Windows->DevDiv. See SourcesHistory.txt.
+//     2007/03/30   Microsoft     Created
+//     2007/09/20   Microsoft     Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
 
@@ -88,9 +88,9 @@ Cleanup:
 
 void CCookieShim::Uninit()
 {
-    // Undetouring on shutdown is needed specifically to avoid DevDiv bug 161831: WMNetMgr.dll (part of the
-    // Windows Media control) somehow manages to make an (asynchronous) call to InternetGetCookieEx() after 
-    // PHDLL is unloaded.
+    // Undetouring on shutdown is needed specifically to avoid DevDiv 
+
+
     if(s_pfInternetSetCookieEx != InternetSetCookieEx) // detoured?
     {
         if(DetourTransactionBegin() == NOERROR &&

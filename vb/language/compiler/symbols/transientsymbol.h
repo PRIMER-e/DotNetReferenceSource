@@ -259,8 +259,8 @@ private:
     // Note that an anonymous delegate might be in the m_pAnonymousDelegateHash,
     // but may not have been inserted into m_SymbolList in order to prevent
     // the delegate from being emitted to the final assembly.
-    //      See Bug Devdiv 78381 for an example of such a scenario.
-    //
+    //      See 
+
     AnonymousDelegateHashTable *m_pAnonymousDelegateHash;
 
 
@@ -272,8 +272,8 @@ private:
     // but may not have been inserted into m_SymbolList in order to prevent
     // the delegate from being emitted to the final assembly. In this case,
     // this map returns NULL for the transient symbol.
-    //      See Bug Devdiv 78381 for an example of such a scenario.
-    //
+    //      See 
+
     AnonDelegateToTransientSymbolMap *m_pAnonDelegateToTransientSymbolMap;
 
 

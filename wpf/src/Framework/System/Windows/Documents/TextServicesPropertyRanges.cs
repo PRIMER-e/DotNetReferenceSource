@@ -152,7 +152,7 @@ namespace System.Windows.Documents
 
             if (length < 0)
             {
-                // Cicero bug!  Length should never be less than zero.
+                // Cicero 
                 start = null;
                 end = null;
             }

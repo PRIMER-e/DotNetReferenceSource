@@ -33,7 +33,7 @@ using MS.Utility;
 namespace MS.Internal.Globalization
 {
     /// <remarks>
-    /// Note: the class name and property name must be kept in [....]'ed with
+    /// Note: the class name and property name must be kept in sync'ed with
     /// Framework\System\Windows\Localization.cs file.
     /// Compiler checks for them by literal string comparisons.
     /// </remarks>

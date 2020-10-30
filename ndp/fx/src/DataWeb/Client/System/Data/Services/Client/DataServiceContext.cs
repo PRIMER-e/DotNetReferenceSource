@@ -1871,7 +1871,7 @@ namespace System.Data.Services.Client
                 this.identityToDescriptor.Add(descriptor.Identity, descriptor);
             }
 
-            // DEVNOTE([....]):
+            // DEVNOTE(Microsoft):
             // we used to mark the descriptor as Unchanged
             // but it's now up to the caller to do that
             return resource;
@@ -1984,7 +1984,7 @@ namespace System.Data.Services.Client
             }
 
             // Always sending the version along allows the server to fail before processing.
-            // devnote([....]): this needs to be set before SendingRequest is fired, so client has a chance to modify them
+            // devnote(Microsoft): this needs to be set before SendingRequest is fired, so client has a chance to modify them
             if (requestVersion != null && requestVersion.Major > 0)
             {
                 // if request version is 0.x, then we don't put a DSV header 
@@ -4058,7 +4058,7 @@ namespace System.Data.Services.Client
             /// <summary>option in use for SaveChanges</summary>
             private readonly SaveChangesOptions options;
 
-            /// <summary>if true then async, else [....]</summary>
+            /// <summary>if true then async, else sync</summary>
             private readonly bool executeAsync;
 
             /// <summary>debugging trick to track number of completed requests</summary>
@@ -4128,7 +4128,7 @@ namespace System.Data.Services.Client
             /// <param name="options">options</param>
             /// <param name="callback">user callback</param>
             /// <param name="state">user state object</param>
-            /// <param name="async">async or [....]</param>
+            /// <param name="async">async or sync</param>
             internal SaveResult(DataServiceContext context, string method, DataServiceRequest[] queries, SaveChangesOptions options, AsyncCallback callback, object state, bool async)
                 : base(context, method, callback, state)
             {
@@ -4265,7 +4265,7 @@ namespace System.Data.Services.Client
                     this.HandleCompleted(pereq); // will invoke user callback
                 }
 
-                Debug.Assert((this.CompletedSynchronously && this.IsCompleted) || !this.CompletedSynchronously, "[....] without complete");
+                Debug.Assert((this.CompletedSynchronously && this.IsCompleted) || !this.CompletedSynchronously, "sync without complete");
             }
 
 #if !ASTORIA_LIGHT // Synchronous methods not available
@@ -4368,7 +4368,7 @@ namespace System.Data.Services.Client
 #if !ASTORIA_LIGHT // Synchronous methods not available
                             else
                             {
-                                #region [....]
+                                #region sync
                                 if (null != contentStream && null != contentStream.Stream)
                                 {
                                     if (contentStream.IsKnownMemoryStream)
@@ -4436,8 +4436,8 @@ namespace System.Data.Services.Client
                 }
                 while (((null == pereq) || (pereq.RequestCompleted && asyncResult != null && asyncResult.CompletedSynchronously)) && !this.IsCompletedInternally);
 
-                Debug.Assert(this.executeAsync || this.CompletedSynchronously, "[....] !CompletedSynchronously");
-                Debug.Assert((this.CompletedSynchronously && this.IsCompleted) || !this.CompletedSynchronously, "[....] without complete");
+                Debug.Assert(this.executeAsync || this.CompletedSynchronously, "sync !CompletedSynchronously");
+                Debug.Assert((this.CompletedSynchronously && this.IsCompleted) || !this.CompletedSynchronously, "sync without complete");
                 Debug.Assert(this.entryIndex < this.ChangedEntries.Count || this.ChangedEntries.All(o => o.ContentGeneratedForSave), "didn't generate content for all entities/links");
             }
 

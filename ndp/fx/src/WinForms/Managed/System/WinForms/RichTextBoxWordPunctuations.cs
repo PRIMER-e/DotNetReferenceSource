@@ -20,10 +20,10 @@ namespace System.Windows.Forms {
     ///     can be used with the RichTextBox word wrapping and word breaking features.
     /// </devdoc>
     /* 
-      
-
-
-*/
+      CONSIDER: This should be marked with the Flags attribute, but we can't because our
+              code generator cannot emit code for OR'd combinations of flags.
+              
+              Flags */
 
 
     [SuppressMessage("Microsoft.Design", "CA1027:MarkEnumsWithFlags")]              

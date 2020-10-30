@@ -3,55 +3,47 @@
 namespace WPFUtils
 {
 
-#if _MANAGED
+#if defined(__cplusplus_cli)
 /// <SecurityNote>
 /// Critical - Receives a native pointer as parameter.
-///            Loads a dll from an input path.
 /// </SecurityNote>
 [System::Security::SecurityCritical]
 #endif
-HMODULE LoadDWriteLibraryAndGetProcAddress(const wchar_t *pwszWpftxtPath, void **pfncptrDWriteCreateFactory)
+HMODULE LoadDWriteLibraryAndGetProcAddress(void **pfncptrDWriteCreateFactory)
 {
-    OSVERSIONINFOEX osvi;
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-    osvi.dwMajorVersion = 6;
-    osvi.dwMinorVersion = 1;
-    osvi.dwBuildNumber  = 7226; // 6/2/2009
-
-    DWORDLONG dwlConditionMask = 0;
-    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-    VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, VER_GREATER_EQUAL);
-
-    HMODULE hDWriteLibrary = NULL;
-    if (VerifyVersionInfo(
-        &osvi,
-        VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER,
-        dwlConditionMask
-        ))
+    HMODULE hDWriteLibrary = nullptr;
+    
+    // KB2533623 introduced the LOAD_LIBRARY_SEARCH_SYSTEM32 flag. It also introduced
+    // the AddDllDirectory function. We test for presence of AddDllDirectory as an 
+    // indirect evidence for the support of LOAD_LIBRARY_SEARCH_SYSTEM32 flag. 
+    HMODULE hKernel32 = GetModuleHandle(L"kernel32.dll");
+    if (hKernel32 != nullptr)
     {
-        // Perhaps this could fail on Server 2008 R2? The wpftxt load below
-        // will then happen.
-        hDWriteLibrary = LoadLibrary(L"dwrite.dll");
-        if (hDWriteLibrary)
+        if (GetProcAddress(hKernel32, "AddDllDirectory") != nullptr)
         {
-            *pfncptrDWriteCreateFactory = GetProcAddress(hDWriteLibrary, "DWriteCreateFactory");
+            // All supported platforms newer than Vista SP2 shipped with dwrite.dll.
+            // On Vista SP2, the .NET servicing process will ensure that a MSU containing 
+            // dwrite.dll will be delivered as a prerequisite - effectively guaranteeing that 
+            // this following call to LoadLibraryEx(dwrite.dll) will succeed, and that it will 
+            // not be susceptible to typical DLL planting vulnerability vectors.
+            hDWriteLibrary = LoadLibraryEx(L"dwrite.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        }
+        else 
+        {
+            // LOAD_LIBRARY_SEARCH_SYSTEM32 is not supported on this OS. 
+            // Fall back to using plain ol' LoadLibrary
+            // There is risk that this call might fail, or that it might be
+            // susceptible to DLL hijacking. 
+            hDWriteLibrary = LoadLibrary(L"dwrite.dll");
         }
     }
-
-    if (!hDWriteLibrary)
+    
+    if (hDWriteLibrary)
     {
-        hDWriteLibrary = LoadLibrary(pwszWpftxtPath);
-
-        if (hDWriteLibrary)
-        {
-            // In our private wpftxt_v0400 binary, DWriteCreateFactory is exported only by ordinal 1.
-            *pfncptrDWriteCreateFactory = GetProcAddress(hDWriteLibrary, (LPCSTR)1);
-        }
+        *pfncptrDWriteCreateFactory = GetProcAddress(hDWriteLibrary, "DWriteCreateFactory");
     }
 
     return hDWriteLibrary;
 }
 
-}//namespace
+}// namespace WPFUtils

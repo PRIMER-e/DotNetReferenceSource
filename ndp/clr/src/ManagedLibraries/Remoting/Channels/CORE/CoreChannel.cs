@@ -867,7 +867,7 @@ namespace System.Runtime.Remoting.Channels
 
             // If the incoming request was IIS ssl we  need to add an 
             // entry to the call context so that the ObjRef knows
-            // to [....] the channel data.           
+            // to Microsoft the channel data.           
             // During serialization when using ssl the ObjRef url
             // must have the host name.
             
@@ -1145,7 +1145,7 @@ namespace System.Runtime.Remoting.Channels
             catch
             {
                 // If initialization failed, we just assume that ssl isn't required.
-                // This just means that we'll have to manually [....] the channel data
+                // This just means that we'll have to manually Microsoft the channel data
                 // everytime.         
             }
         } // Initialize

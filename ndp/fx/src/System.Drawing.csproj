@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{2defc6a9-7eda-4106-b78e-1f3f5a439dd7}</ProjectGuid>
+    <ProjectGuid>{712ac13c-4586-461b-9626-7c107a6981eb}</ProjectGuid>
     <OutputPath>.</OutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Drawing</AssemblyName>
@@ -12,98 +12,31 @@
     <NoStdLib>True</NoStdLib>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <DefineConstants>CODE_ANALYSIS_BASELINE;FEATURE_LEGACYSURFACEAREA;FEATURE_UTF32;FEATURE_UTF7;FEATURE_SERIALIZATION;DRAWING_NAMESPACE;TRACE;RETAIL;WIN32</DefineConstants>
+    <DefineConstants>CODE_ANALYSIS_BASELINE;FEATURE_LEGACYSURFACEAREA;FEATURE_UTF32;FEATURE_UTF7;DRAWING_NAMESPACE;TRACE;RETAIL;WIN32</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " >
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\clr\src\BCL\mscorlib.csproj">
-      <Project>{a72657be-225c-4239-956e-ee2a30893b41}</Project>
+    <ProjectReference Include="..\..\clr\src\bcl\mscorlib.csproj">
+      <Project>{20f34c38-8c60-44e7-b703-0e341d274957}</Project>
       <Name>mscorlib</Name>
     </ProjectReference>
-    <ProjectReference Include="System.Configuration.csproj">
-      <Project>{62fc083e-241c-4b38-affd-03374c75097c}</Project>
-      <Name>System.Configuration</Name>
-    </ProjectReference>
     <ProjectReference Include="System.csproj">
-      <Project>{20c75c70-c8b6-4dfb-a4e5-16d09099776d}</Project>
+      <Project>{85716da4-9fb2-4f44-9c4d-b7431fdf1b20}</Project>
       <Name>System</Name>
     </ProjectReference>
+    <ProjectReference Include="Configuration\System.Configuration.csproj">
+      <Project>{a4d7a44f-817d-4fad-ba6a-076580aadfbe}</Project>
+      <Name>System.Configuration</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="misc\externdll.cs" />
-    <Compile Include="misc\HandleCollector.cs" />
-    <Compile Include="misc\DebugHandleTracker.cs" />
-    <Compile Include="misc\CompModSwitches.cs" />
-    <Compile Include="misc\CoreSwitches.cs" />
-    <Compile Include="misc\InvariantComparer.cs" />
-    <Compile Include="misc\ClientUtils.cs" />
-    <Compile Include="misc\DbgUtil.cs" />
-    <Compile Include="misc\GDI\ApplyGraphicsProperties.cs" />
-    <Compile Include="misc\GDI\DeviceContext.cs" />
-    <Compile Include="misc\GDI\DeviceContexts.cs" />
-    <Compile Include="misc\GDI\DeviceContextGraphicsMode.cs" />
-    <Compile Include="misc\GDI\DeviceContextType.cs" />
-    <Compile Include="misc\GDI\GdiObjectType.cs" />
-    <Compile Include="misc\GDI\FxCopSuppression.cs" />
-    <Compile Include="misc\GDI\WindowsRegion.cs" />
-    <Compile Include="misc\GDI\WindowsRegionCombineMode.cs" />
-    <Compile Include="misc\GDI\WindowsGraphics.cs" />
-    <Compile Include="misc\GDI\NativeMethods.cs" />
-    <Compile Include="misc\GDI\SafeNativeMethods.cs" />
-    <Compile Include="misc\GDI\UnsafeNativeMethods.cs" />
-    <Compile Include="commonui\System\Drawing\AssemblyAttributes.cs" />
-    <Compile Include="commonui\System\Drawing\Bitmap.cs" />
-    <Compile Include="commonui\System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
-    <Compile Include="commonui\System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
-    <Compile Include="commonui\System\Drawing\BitmapSelector.cs" />
-    <Compile Include="commonui\System\Drawing\Brush.cs" />
-    <Compile Include="commonui\System\Drawing\Brushes.cs" />
-    <Compile Include="commonui\System\Drawing\BufferedGraphics.cs" />
-    <Compile Include="commonui\System\Drawing\BufferedGraphicsContext.cs" />
-    <Compile Include="commonui\System\Drawing\BufferedGraphicsManager.cs" />
-    <Compile Include="commonui\System\Drawing\Color.cs" />
-    <Compile Include="commonui\System\Drawing\ColorConverter.cs" />
-    <Compile Include="commonui\System\Drawing\ContentAlignment.cs" />
-    <Compile Include="commonui\System\Drawing\CopyPixelOperation.cs" />
-    <Compile Include="commonui\System\Drawing\DashCap.cs" />
-    <Compile Include="commonui\System\Drawing\FontConverter.cs" />
-    <Compile Include="commonui\System\Drawing\FxCopSuppression.cs" />
-    <Compile Include="commonui\System\Drawing\GraphicsContext.cs" />
-    <Compile Include="commonui\System\Drawing\Graphics.cs" />
-    <Compile Include="commonui\System\Drawing\Icon.cs" />
-    <Compile Include="commonui\System\Drawing\IconConverter.cs" />
-    <Compile Include="commonui\System\Drawing\Image.cs" />
-    <Compile Include="commonui\System\Drawing\ImageAnimator.cs" />
-    <Compile Include="commonui\System\Drawing\ImageConverter.cs" />
-    <Compile Include="commonui\System\Drawing\ImageInfo.cs" />
-    <Compile Include="commonui\System\Drawing\IntSecurity.cs" />
-    <Compile Include="commonui\System\Drawing\KnownColor.cs" />
-    <Compile Include="commonui\System\Drawing\KnownColorTable.cs" />
-    <Compile Include="commonui\System\Drawing\NativeMethods.cs" />
-    <Compile Include="commonui\System\Drawing\Pen.cs" />
-    <Compile Include="commonui\System\Drawing\Pens.cs" />
-    <Compile Include="commonui\System\Drawing\Point.cs" />
-    <Compile Include="commonui\System\Drawing\PointConverter.cs" />
-    <Compile Include="commonui\System\Drawing\PropertyItemInternal.cs" />
-    <Compile Include="commonui\System\Drawing\Rectangle.cs" />
-    <Compile Include="commonui\System\Drawing\RectangleConverter.cs" />
-    <Compile Include="commonui\System\Drawing\Region.cs" />
-    <Compile Include="commonui\System\Drawing\RotateFlipType.cs" />
-    <Compile Include="commonui\System\Drawing\Size.cs" />
-    <Compile Include="commonui\System\Drawing\SizeConverter.cs" />
-    <Compile Include="commonui\System\Drawing\SolidBrush.cs" />
-    <Compile Include="commonui\System\Drawing\SystemBrushes.cs" />
-    <Compile Include="commonui\System\Drawing\SystemColors.cs" />
-    <Compile Include="commonui\System\Drawing\SystemFonts.cs" />
-    <Compile Include="commonui\System\Drawing\SystemIcons.cs" />
-    <Compile Include="commonui\System\Drawing\SystemPens.cs" />
-    <Compile Include="commonui\System\Drawing\ToolboxBitmapAttribute.cs" />
-    <Compile Include="commonui\System\Drawing\UnsafeNativeMethods.cs" />
+    <Compile Include="..\..\..\InternalApis\Clr\inc\AppContextDefaultValues.cs" />
+    <Compile Include="..\..\..\InternalApis\Clr\inc\LocalAppContext.cs" />
     <Compile Include="commonui\System\Drawing\Advanced\AdjustableArrowCap.cs" />
     <Compile Include="commonui\System\Drawing\Advanced\BitmapData.cs" />
     <Compile Include="commonui\System\Drawing\Advanced\Blend.cs" />
@@ -214,7 +147,23 @@
     <Compile Include="commonui\System\Drawing\Advanced\WarpMode.cs" />
     <Compile Include="commonui\System\Drawing\Advanced\WmfPlaceableFileHeader.cs" />
     <Compile Include="commonui\System\Drawing\Advanced\WrapMode.cs" />
+    <Compile Include="commonui\System\Drawing\AppContextDefaultValues.Defaults.cs" />
+    <Compile Include="commonui\System\Drawing\AssemblyAttributes.cs" />
+    <Compile Include="commonui\System\Drawing\Bitmap.cs" />
+    <Compile Include="commonui\System\Drawing\BitmapSelector.cs" />
+    <Compile Include="commonui\System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
+    <Compile Include="commonui\System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
+    <Compile Include="commonui\System\Drawing\Brush.cs" />
+    <Compile Include="commonui\System\Drawing\Brushes.cs" />
+    <Compile Include="commonui\System\Drawing\BufferedGraphics.cs" />
+    <Compile Include="commonui\System\Drawing\BufferedGraphicsContext.cs" />
+    <Compile Include="commonui\System\Drawing\BufferedGraphicsManager.cs" />
+    <Compile Include="commonui\System\Drawing\Color.cs" />
+    <Compile Include="commonui\System\Drawing\ColorConverter.cs" />
     <Compile Include="commonui\System\Drawing\Configuration\SystemDrawingSection.cs" />
+    <Compile Include="commonui\System\Drawing\ContentAlignment.cs" />
+    <Compile Include="commonui\System\Drawing\CopyPixelOperation.cs" />
+    <Compile Include="commonui\System\Drawing\DashCap.cs" />
     <Compile Include="commonui\System\Drawing\Design\CategoryNameCollection.cs" />
     <Compile Include="commonui\System\Drawing\Design\IPropertyValueUIService.cs" />
     <Compile Include="commonui\System\Drawing\Design\IToolboxItemProvider.cs" />
@@ -233,7 +182,26 @@
     <Compile Include="commonui\System\Drawing\Design\ToolboxItemCreatorCallback.cs" />
     <Compile Include="commonui\System\Drawing\Design\UITypeEditor.cs" />
     <Compile Include="commonui\System\Drawing\Design\UITypeEditorEditStyle.cs" />
+    <Compile Include="commonui\System\Drawing\FontConverter.cs" />
+    <Compile Include="commonui\System\Drawing\FxCopSuppression.cs" />
+    <Compile Include="commonui\System\Drawing\Graphics.cs" />
+    <Compile Include="commonui\System\Drawing\GraphicsContext.cs" />
+    <Compile Include="commonui\System\Drawing\Icon.cs" />
+    <Compile Include="commonui\System\Drawing\IconConverter.cs" />
     <Compile Include="commonui\System\Drawing\IDeviceContext.cs" />
+    <Compile Include="commonui\System\Drawing\Image.cs" />
+    <Compile Include="commonui\System\Drawing\ImageAnimator.cs" />
+    <Compile Include="commonui\System\Drawing\ImageConverter.cs" />
+    <Compile Include="commonui\System\Drawing\ImageInfo.cs" />
+    <Compile Include="commonui\System\Drawing\IntSecurity.cs" />
+    <Compile Include="commonui\System\Drawing\KnownColor.cs" />
+    <Compile Include="commonui\System\Drawing\KnownColorTable.cs" />
+    <Compile Include="commonui\System\Drawing\LocalAppContextSwitches.cs" />
+    <Compile Include="commonui\System\Drawing\NativeMethods.cs" />
+    <Compile Include="commonui\System\Drawing\Pen.cs" />
+    <Compile Include="commonui\System\Drawing\Pens.cs" />
+    <Compile Include="commonui\System\Drawing\Point.cs" />
+    <Compile Include="commonui\System\Drawing\PointConverter.cs" />
     <Compile Include="commonui\System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="commonui\System\Drawing\Printing\Duplex.cs" />
     <Compile Include="commonui\System\Drawing\Printing\InvalidPrinterException.cs" />
@@ -267,6 +235,42 @@
     <Compile Include="commonui\System\Drawing\Printing\QueryPageSettingsEventArgs.cs" />
     <Compile Include="commonui\System\Drawing\Printing\QueryPageSettingsEventHandler.cs" />
     <Compile Include="commonui\System\Drawing\Printing\TriState.cs" />
+    <Compile Include="commonui\System\Drawing\PropertyItemInternal.cs" />
+    <Compile Include="commonui\System\Drawing\Rectangle.cs" />
+    <Compile Include="commonui\System\Drawing\RectangleConverter.cs" />
+    <Compile Include="commonui\System\Drawing\Region.cs" />
+    <Compile Include="commonui\System\Drawing\RotateFlipType.cs" />
+    <Compile Include="commonui\System\Drawing\Size.cs" />
+    <Compile Include="commonui\System\Drawing\SizeConverter.cs" />
+    <Compile Include="commonui\System\Drawing\SolidBrush.cs" />
+    <Compile Include="commonui\System\Drawing\SystemBrushes.cs" />
+    <Compile Include="commonui\System\Drawing\SystemColors.cs" />
+    <Compile Include="commonui\System\Drawing\SystemFonts.cs" />
+    <Compile Include="commonui\System\Drawing\SystemIcons.cs" />
+    <Compile Include="commonui\System\Drawing\SystemPens.cs" />
+    <Compile Include="commonui\System\Drawing\ToolboxBitmapAttribute.cs" />
+    <Compile Include="commonui\System\Drawing\UnsafeNativeMethods.cs" />
+    <Compile Include="misc\ClientUtils.cs" />
+    <Compile Include="misc\CompModSwitches.cs" />
+    <Compile Include="misc\CoreSwitches.cs" />
+    <Compile Include="misc\DbgUtil.cs" />
+    <Compile Include="misc\DebugHandleTracker.cs" />
+    <Compile Include="misc\DpiHelper.cs" />
+    <Compile Include="misc\GDI\ApplyGraphicsProperties.cs" />
+    <Compile Include="misc\GDI\DeviceContext.cs" />
+    <Compile Include="misc\GDI\DeviceContextGraphicsMode.cs" />
+    <Compile Include="misc\GDI\DeviceContexts.cs" />
+    <Compile Include="misc\GDI\DeviceContextType.cs" />
+    <Compile Include="misc\GDI\FxCopSuppression.cs" />
+    <Compile Include="misc\GDI\GdiObjectType.cs" />
+    <Compile Include="misc\GDI\NativeMethods.cs" />
+    <Compile Include="misc\GDI\SafeNativeMethods.cs" />
+    <Compile Include="misc\GDI\UnsafeNativeMethods.cs" />
+    <Compile Include="misc\GDI\WindowsGraphics.cs" />
+    <Compile Include="misc\GDI\WindowsRegion.cs" />
+    <Compile Include="misc\GDI\WindowsRegionCombineMode.cs" />
+    <Compile Include="misc\HandleCollector.cs" />
+    <Compile Include="misc\InvariantComparer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

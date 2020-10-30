@@ -309,8 +309,8 @@ namespace System.Activities.Core.Presentation
                 ModelItem parent = GetStateMachineModelItem(modelItem);
                 if (null != parent)
                 {
-                    // State can be dropped to a non-StateMachine container (Bug 220966)
-                    // so a null check is needed.
+                    // State can be dropped to a non-StateMachine container (
+
                     StoreShapeSizeWithUndoRecursively(parent);
                 }
             }

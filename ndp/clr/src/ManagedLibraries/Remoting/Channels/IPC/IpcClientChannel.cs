@@ -5,7 +5,7 @@
 // ==--==
 //===========================================================================
 //  File:       IpcClientChannel.cs
-//  Author:   [....]@Microsoft.Com
+//  Author:   Microsoft@Microsoft.Com
 //  Summary:    Implements a channel that transmits method calls over Ipc.
 //
 //==========================================================================

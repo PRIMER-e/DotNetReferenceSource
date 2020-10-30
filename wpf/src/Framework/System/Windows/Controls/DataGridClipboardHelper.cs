@@ -76,12 +76,19 @@ namespace System.Windows.Controls
                 
         internal static void GetClipboardContentForHtml(StringBuilder content)
         {
+            const int bytecountPrefixContext = 135; // Byte count of context before the content in the HTML format
+            const int bytecountSuffixContext = 36; // Byte count of context after the content in the HTML format
             content.Insert(0, "<TABLE>");
             content.Append("</TABLE>");
 
-            // Marshal.SystemDefaultCharSize is 2 on WinXP Pro - so the offsets seem to be in character counts instead of bytes. 
-            int bytecountEndOfFragment = 135 + content.Length;
-            int bytecountEndOfHtml = bytecountEndOfFragment + 36;
+            // DDVSO: 104825 - The character set supported by the clipboard is Unicode in its UTF-8 encoding.
+            // There are characters in Asian languages which require more than 2 bytes for encoding into UTF-8
+            // Marshal.SystemDefaultCharSize is 2 and would not be appropriate in all cases. We have to explicitly calculate the number of bytes.  
+            byte[] sourceBytes = Encoding.Unicode.GetBytes(content.ToString());
+            byte[] destinationBytes = Encoding.Convert(Encoding.Unicode, Encoding.UTF8, sourceBytes);
+
+            int bytecountEndOfFragment = bytecountPrefixContext + destinationBytes.Length;
+            int bytecountEndOfHtml = bytecountEndOfFragment + bytecountSuffixContext;
             string prefix = string.Format(CultureInfo.InvariantCulture, DATAGRIDVIEW_htmlPrefix, bytecountEndOfHtml.ToString("00000000", CultureInfo.InvariantCulture), bytecountEndOfFragment.ToString("00000000", CultureInfo.InvariantCulture)) + DATAGRIDVIEW_htmlStartFragment;
             content.Insert(0, prefix);
             content.Append(DATAGRIDVIEW_htmlEndFragment);

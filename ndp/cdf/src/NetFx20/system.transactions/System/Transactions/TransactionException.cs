@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 using System.Transactions.Diagnostics;
-
+using System.Transactions.Configuration;
 
 namespace System.Transactions
 {
@@ -11,6 +11,11 @@ namespace System.Transactions
     [Serializable]
     public class TransactionException : System.SystemException
     {
+        internal static bool IncludeDistributedTxId(Guid distributedTxId)
+        {
+            return (distributedTxId != Guid.Empty && AppSettings.IncludeDistributedTxIdInExceptionMessage);
+        }
+
         internal static TransactionException Create( string traceSource, string message, Exception innerException )
         {
             if ( DiagnosticTrace.Error )
@@ -19,11 +24,9 @@ namespace System.Transactions
                     message
                     );
             }
-
             return new TransactionException( message, 
                 innerException );
         }
-
 
         internal static TransactionException CreateTransactionStateException( string traceSource, Exception innerException )
         {
@@ -31,33 +34,20 @@ namespace System.Transactions
                 innerException );
         }
 
-
-        internal static Exception CreateEnlistmentStateException( string traceSource, Exception innerException )
+        internal static Exception CreateEnlistmentStateException( string traceSource, Exception innerException, Guid distributedTxId )
         {
-            if ( DiagnosticTrace.Error )
+            string messagewithTxId = SR.GetString(SR.EnlistmentStateException);
+            if (IncludeDistributedTxId(distributedTxId))
+                messagewithTxId = String.Format(SR.GetString(SR.DistributedTxIDInTransactionException), messagewithTxId, distributedTxId);
+
+            if (DiagnosticTrace.Error)
             {
-                InvalidOperationExceptionTraceRecord.Trace( traceSource,
-                    SR.GetString( SR.EnlistmentStateException )
+                InvalidOperationExceptionTraceRecord.Trace(traceSource,
+                    messagewithTxId
                     );
             }
-
-            return new InvalidOperationException( SR.GetString( SR.EnlistmentStateException ),
-                innerException );
+            return new InvalidOperationException(messagewithTxId, innerException);
         }
-
-
-        internal static Exception CreateTransactionCompletedException( string traceSource )
-        {
-            if ( DiagnosticTrace.Error )
-            {
-                InvalidOperationExceptionTraceRecord.Trace( traceSource,
-                    SR.GetString( SR.TransactionAlreadyCompleted )
-                    );
-            }
-
-            return new InvalidOperationException( SR.GetString( SR.TransactionAlreadyCompleted ) );
-        }
-
 
         internal static Exception CreateInvalidOperationException( string traceSource, string message, Exception innerException )
         {
@@ -70,7 +60,6 @@ namespace System.Transactions
 
             return new InvalidOperationException( message, innerException );
         }
-        
 
         /// <summary>
         /// 
@@ -113,8 +102,56 @@ namespace System.Transactions
         {
         }
 
-    }
+        internal static TransactionException Create(string message, Guid distributedTxId)
+        {
+            if (IncludeDistributedTxId(distributedTxId))
+            {
+                return new TransactionException(String.Format(SR.GetString(SR.DistributedTxIDInTransactionException), message, distributedTxId));
+            }
+            return new TransactionException(message);
+        }
 
+        internal static TransactionException Create(string traceSource, string message, Exception innerException, Guid distributedTxId)
+        {
+            string messagewithTxId = message;
+            if (IncludeDistributedTxId(distributedTxId))
+                messagewithTxId = String.Format(SR.GetString(SR.DistributedTxIDInTransactionException), messagewithTxId, distributedTxId);
+
+            return TransactionException.Create(traceSource, messagewithTxId, innerException);
+        }
+
+        internal static TransactionException CreateTransactionStateException(string traceSource, Exception innerException, Guid distributedTxId)
+        {
+            return TransactionException.Create(traceSource, SR.GetString(SR.TransactionStateException),
+                innerException, distributedTxId);
+        }
+
+        internal static Exception CreateTransactionCompletedException(string traceSource, Guid distributedTxId)
+        {
+            string messagewithTxId = SR.GetString(SR.TransactionAlreadyCompleted);
+            if (IncludeDistributedTxId(distributedTxId))
+                messagewithTxId = String.Format(SR.GetString(SR.DistributedTxIDInTransactionException), messagewithTxId, distributedTxId);
+
+            if (DiagnosticTrace.Error)
+            {
+                InvalidOperationExceptionTraceRecord.Trace(traceSource,
+                    messagewithTxId
+                    );
+            }
+
+            return new InvalidOperationException(messagewithTxId);
+        }
+
+        internal static Exception CreateInvalidOperationException(string traceSource, string message, Exception innerException, Guid distributedTxId)
+        {
+            string messagewithTxId = message;
+            if (IncludeDistributedTxId(distributedTxId))
+                messagewithTxId = String.Format(SR.GetString(SR.DistributedTxIDInTransactionException), messagewithTxId, distributedTxId);
+
+            return CreateInvalidOperationException(traceSource, messagewithTxId, innerException);
+        }
+
+    }
 
 
     /// <summary>
@@ -123,24 +160,27 @@ namespace System.Transactions
     [Serializable]
     public class TransactionAbortedException : TransactionException
     {
-        internal static new TransactionAbortedException Create( string traceSource, string message, Exception innerException )
+        internal static new TransactionAbortedException Create(string traceSource, string message, Exception innerException, Guid distributedTxId)
         {
-            if ( DiagnosticTrace.Error )
+            string messagewithTxId = message;
+            if (IncludeDistributedTxId(distributedTxId))
+                messagewithTxId = String.Format(SR.GetString(SR.DistributedTxIDInTransactionException), messagewithTxId, distributedTxId);
+
+            return TransactionAbortedException.Create(traceSource, messagewithTxId, innerException);
+        }
+
+        internal static new TransactionAbortedException Create(string traceSource, string message, Exception innerException)
+        {
+            if (DiagnosticTrace.Error)
             {
-                TransactionExceptionTraceRecord.Trace( traceSource,
+                TransactionExceptionTraceRecord.Trace(traceSource,
                     message
                     );
             }
 
-            return new TransactionAbortedException( message, 
-                innerException );
+            return new TransactionAbortedException(message,
+                innerException);
         }
-
-        internal static TransactionAbortedException Create( string traceSource, Exception innerException )
-        {
-            return TransactionAbortedException.Create( traceSource, SR.GetString( SR.TransactionAborted ), innerException );
-        }
-
         /// <summary>
         /// 
         /// </summary>
@@ -182,6 +222,17 @@ namespace System.Transactions
         {
         }
 
+        internal TransactionAbortedException(
+            Exception innerException,
+            Guid distributedTxId
+        )
+            : base(IncludeDistributedTxId(distributedTxId) ? 
+                String.Format(SR.GetString(SR.DistributedTxIDInTransactionException), SR.GetString(SR.TransactionAborted), distributedTxId)
+                : SR.GetString(SR.TransactionAborted),
+                innerException)
+        {
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -203,22 +254,26 @@ namespace System.Transactions
     [Serializable]
     public class TransactionInDoubtException : TransactionException
     {
-        internal static new TransactionInDoubtException Create( string traceSource, string message, Exception innerException )
+        internal static new TransactionInDoubtException Create(string traceSource, string message, Exception innerException, Guid distributedTxId)
         {
-            if ( DiagnosticTrace.Error )
+            string messagewithTxId = message;
+            if (IncludeDistributedTxId(distributedTxId))
+                messagewithTxId = String.Format(SR.GetString(SR.DistributedTxIDInTransactionException), messagewithTxId, distributedTxId);
+
+            return TransactionInDoubtException.Create(traceSource, messagewithTxId, innerException);
+        }
+
+        internal static new TransactionInDoubtException Create(string traceSource, string message, Exception innerException)
+        {
+            if (DiagnosticTrace.Error)
             {
-                TransactionExceptionTraceRecord.Trace( traceSource,
+                TransactionExceptionTraceRecord.Trace(traceSource,
                     message
                     );
             }
 
-            return new TransactionInDoubtException( message, 
-                innerException );
-        }
-
-        internal static TransactionInDoubtException Create( string traceSource, Exception innerException )
-        {
-            return TransactionInDoubtException.Create( traceSource, SR.GetString( SR.TransactionIndoubt ), innerException );
+            return new TransactionInDoubtException(message,
+                innerException);
         }
 
         /// <summary>

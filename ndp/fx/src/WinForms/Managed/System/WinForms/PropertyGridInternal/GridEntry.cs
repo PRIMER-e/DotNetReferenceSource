@@ -798,7 +798,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
                 if (value != null) {
                     propertyDepth = value.PropertyDepth+1;
 
-                    // [....], why do we do this?
+                    // Microsoft, why do we do this?
                     if (this.childCollection != null) {
                         for (int i = 0; i < childCollection.Count; i++) {
                             childCollection.GetEntry(i).ParentGridEntry = this;
@@ -2442,7 +2442,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
         }
 
         internal virtual bool NotifyValue(int type) {
-            // KILLME, [....], more spagetti
+            // KILLME, Microsoft, more spagetti
             if (parentPE == null) {
                 return true;
             }
@@ -2846,7 +2846,7 @@ namespace System.Windows.Forms.PropertyGridInternal {
 
         public class DisplayNameSortComparer : IComparer {
             public int Compare(object left, object right) {
-		// review: ([....]) Is CurrentCulture correct here?  This was already reviewed as invariant...
+		// review: (Microsoft) Is CurrentCulture correct here?  This was already reviewed as invariant...
                 return String.Compare(((PropertyDescriptor)left).DisplayName, ((PropertyDescriptor)right).DisplayName, true, CultureInfo.CurrentCulture);
             }
         }

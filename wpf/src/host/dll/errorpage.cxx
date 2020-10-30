@@ -6,11 +6,11 @@
 //     Implements the ErrorPage class of PresentationHost.
 //
 //  History:
-//     2005/10/10 - [....]
+//     2005/10/10 - Microsoft
 //          Created (factored out of OleDocument.cxx)
-//     2006/03/22 - [....]
+//     2006/03/22 - Microsoft
 //          Reworked to host an HTMLDocument and show the error page in it while keeping the process running.
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -350,7 +350,7 @@ Cleanup:
     // The msg box is in the filter expression so that it's run before the stack is unwound.
     __except(MessageBox(g_pOleDoc ? g_pOleDoc->GetTopWindow() : 0, 
             L"An exception occurred in PresentationHostDLL!CErrorPage.\n"
-            L"** This is a bug. **\nPlease report it to ActApp/[....], preferably with a\n"
+            L"** This is a bug. **\nPlease report it to ActApp/Microsoft, preferably with a\n"
             L"memory dump of PresentationHost.exe (or XPSViewer.exe)\n"
             L"taken before closing this.", 0, 0), 
         false)

@@ -7,7 +7,7 @@
 //      syndication items or feeds.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

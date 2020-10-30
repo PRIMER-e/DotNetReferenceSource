@@ -561,9 +561,9 @@ namespace MS.Internal.Ink
 
                     isInside = false;
 
-                    // NTRAID#Window OS bug-1029694-2004/10/18-xiaotu, refactor the code to make it a method
-                    // to increase the maintainability of the program. FxCop bug.
-                    // Calculate the exact locations to cut.
+                    // NTRAID#Window OS 
+
+
                     CalculateCutLocations(spineVector, hitBegin, hitEnd, endRadius, beginRadius, ref result);
 
                     if (result.IsFull)

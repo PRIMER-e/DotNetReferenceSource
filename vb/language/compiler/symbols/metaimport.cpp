@@ -1794,7 +1794,7 @@ void MetaImport::DoImportBaseAndImplements
             }
             else
             {
-                // [....]:
+                // Microsoft:
                 // For multitargeting, you may be in a scenario where you reference two different
                 // mscorlibs. Only one is the "ComPlusProject", and the other is not. So there will
                 // be at least one System.Object that falls in here. This can also happen if you manage
@@ -2039,7 +2039,7 @@ void MetaImport::GetImplementsList
             else if (IgnoreInaccessibleTypes && psym->IsNamedRoot() && !Bindable::IsAccessibleOutsideAssembly(psym->PNamedRoot()))
             {
                 // Ignore inaccessible types in the implements list for classes
-                // Bug VSWhidbey 487686
+                // 
             }
             else
             {
@@ -2168,7 +2168,7 @@ void MetaImport::LoadChildren
     // in any assembly which potentially could be embedded: that is, any assembly imported from a typelib.
     // We can't check the wellknownattrvals yet, because they haven't necessarily been ----ed, but the
     // assemblyidentity happens to record the presence of a typelib attribute, so we can check there.
-    // Absence of correct ordering information was behind Dev10 bug #621561.
+    // Absence of correct ordering information was behind Dev10 
     bool fAllocLocations = m_pMetaDataFile->GetProject()->GetAssemblyIdentity()->IsImportedFromCOMTypeLib() ||
         m_pMetaDataFile->GetProject()->GetAssemblyIdentity()->IsPrimaryInteropAssembly();
 #else
@@ -4874,7 +4874,7 @@ BCSYM *MetaImport::GetTypeByNameInProject
         {
             DynamicFixedSizeHashTable<STRING *, BCSYM_Container *> *pNameHash = pFile->GetNameHash();
 
-            // Bug VSWhidbey 535411.
+            // 
             if (pNameHash)
             {
                 BCSYM_Container **ppSym = pNameHash->HashFind(pstrTypeName);
@@ -4900,7 +4900,7 @@ BCSYM *MetaImport::GetTypeByNameInProject
             //
             if (!pType &&
                 (pFile == pReferencedProject->GetPrimaryModule()) &&
-                pFile->GetNameHashForTypeFwds())                // Bug VSWhidbey 535411.
+                pFile->GetNameHashForTypeFwds())                // 
             {
                 DynamicFixedSizeHashTable<STRING *, BCSYM_TypeForwarder *> *pNameHashForTypeFwds = pFile->GetNameHashForTypeFwds();
                 BCSYM_TypeForwarder **ppTypeFwd = pNameHashForTypeFwds->HashFind(pstrTypeName);
@@ -5631,7 +5631,7 @@ BCSYM *MetaImport::DecodeFieldSignature
     if (ulData != IMAGE_CEE_CS_CALLCONV_FIELD || ptyp->IsVoidType())
         FieldIsBad = true;
     
-    //[....] I believe this assertion is too strong. I have seen it fire
+    //Microsoft I believe this assertion is too strong. I have seen it fire
     //on a seemingly fine signature.
     //VSASSERT((pSig == pSigEnd) || FieldIsBad, "Not at end of buffer.");
 
@@ -6005,7 +6005,7 @@ TypeArgumentError:
     }
 }
 
-// undone: [....] modified for 64 bit alignment problems.
+// undone: Microsoft modified for 64 bit alignment problems.
 // We have to change this in a better way.
 
 //============================================================================
@@ -6087,7 +6087,7 @@ BCSYM_Expression *MetaImport::DecodeValue
                     // 
                     Value.TypeCode = t_ref;
 
-                    // [....]: Back out part of 604868 to address build lab issue #4093
+                    // Microsoft: Back out part of 604868 to address build lab issue #4093
                     // Probably just need to #ifdef this differently for 64bit, but
                     // will let Cameron decide.
                     //Value.Integral = (__int32)*(USE_UNALIGNED void **)pvValue;
@@ -6189,15 +6189,15 @@ BCSYM_Expression *MetaImport::DecodeValue
             // Hack-A-Rama: Ran into a problem importing sub foo(optional x as string = nothing)
             // We need to know that the 'nothing' should be typed as a string so you'd think we would emit a string as nothing in the first place but
             // apparently although there is a way to represent a NULL string and an Empty string "", there doesn't appear to be a way to represent a
-            // NOTHING string.  So we do this instead on import.  See bug VS7#302609 for what led us to do this.
+            // NOTHING string.  So we do this instead on import.  See 
 
-            // Strip away the ByRef to get to the root type (see bug VS7#469628).
+            // Strip away the ByRef to get to the root type (see 
             ptyp = ptyp->IsPointerType() ? ptyp->PPointerType()->GetCompilerRoot() : ptyp;
 
             Value.TypeCode = ptyp->GetVtype() == t_string ?
                                 t_string :                      // Hack-a-rama.  The problem is that optional x as string = nothing
                                 ptyp->GetVtype() == t_array ?
-                                    t_array :                   // Problem with optional x() as Integer = Nothing. Bug VSWhidbey 495611.
+                                    t_array :                   // Problem with optional x() as Integer = Nothing. 
                                     t_ref;
             VSASSERT(*(USE_UNALIGNED __int32 *)pvValue == 0, "Can only handle NULL case in import.");
             VSASSERT(Value.Integral == 0, "ConstantValue's CTOR should init to zero.");
@@ -6226,9 +6226,9 @@ void MetaImport::TransferBadSymbol(_Inout_ BCSYM_NamedRoot *Destination, _In_ BC
         Destination->SetBadNameSpace(Source->GetBadNameSpace());
         Destination->SetBadExtra(Source->GetBadExtra());
 
-        // #Bug 131435 - DevDiv Bugs
-        // If error number isn't provided and the Source of error is not bindable,
-        // mark the current symbol as not bindable
+        // #
+
+
         if(!Destination->GetErrid() && Source->GetBindingSpace() == BINDSPACE_IgnoreSymbol)
         {
             Destination->SetBindingSpace(BINDSPACE_IgnoreSymbol);

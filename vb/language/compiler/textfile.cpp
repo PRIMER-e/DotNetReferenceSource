@@ -10,10 +10,10 @@
 //============================================================================
 // Loads the file into an in-memory buffer.
 //============================================================================
-//NOTE:[....],4/2000, we have three different text sources for the compiler
+//NOTE:Microsoft,4/2000, we have three different text sources for the compiler
 //one from disk file, one from IVsTextBuffer, and another from VBA buffer.
-//NOTE:[....],11/2000, we also have a file cache for the contents of disk files.
-// this function is mimic-ed by GetCryptHash, make sure they are in [....] when new text sources are added
+//NOTE:Microsoft,11/2000, we also have a file cache for the contents of disk files.
+// this function is mimic-ed by GetCryptHash, make sure they are in sync when new text sources are added
 HRESULT TextFile::GetFileText(
     _Inout_ NorlsAllocator * pnra,
     __deref_out_ecount_opt(* pcchText) WCHAR * * pwszText,
@@ -191,7 +191,7 @@ HRESULT TextFile::GetFileText(
                     IfNullThrow(hMap);
                     pData = (BYTE *)MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
                     IfNullThrow(pData);
-                    //[....]: moved file conversion to Unicode here
+                    //Microsoft: moved file conversion to Unicode here
                     //so that we can cache it in this format
                     IfFailThrow(LoadTextFileFromBytes(
                                                         pnra,
@@ -210,7 +210,7 @@ HRESULT TextFile::GetFileText(
                     // don't spends all of our time in CreateFile() to re-read the file.
                     WriteUnicodeSourceFileCache(wszFileContents, cchFileSize, ftTimestamp, IsDetectUTF8WithoutSig);
 
-                    //[....]: we used to do the conversion here, but now moved it up so we cache Unicode
+                    //Microsoft: we used to do the conversion here, but now moved it up so we cache Unicode
                 }
                 else
                 {
@@ -517,8 +517,8 @@ HRESULT TextFile::LoadTextFileFromBytes(
 
         if (cchFileSizeOut == 0)
         {
-            // Bug VSWhidbey 386072
-            //
+            // 
+
             wszFileContentsOut = (WCHAR*)pnra->Alloc(sizeof(WCHAR));
             *wszFileContentsOut = L'\0';
             cchFileSizeOut = 0;
@@ -551,7 +551,7 @@ HRESULT TextFile::LoadTextFileFromBytes(
 
 
 // Compute MD5 hash for PDB check sum by using vscommon\crypthash.lib
-// this function mimics GetTextFile(), make sure they are in [....] when new text sources are added
+// this function mimics GetTextFile(), make sure they are in sync when new text sources are added
 
 HRESULT TextFile::GetCryptHash(
     _Out_opt_ void * pvHashValue,

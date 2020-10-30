@@ -6,7 +6,7 @@
 //      Provides methods to convert URI and payload values.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Parsing

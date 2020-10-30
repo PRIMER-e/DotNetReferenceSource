@@ -8,7 +8,7 @@
 // Description: A block of text stored in a TextContainer.
 //
 // History:  
-//  2/18/2004 : [....] - Created
+//  2/18/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

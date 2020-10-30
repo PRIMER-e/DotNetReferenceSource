@@ -108,7 +108,6 @@ namespace System.Drawing {
         ///     The color of the background of push buttons and other 3D objects.
         /// </devdoc>
         public static Color Control {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return new Color(KnownColor.Control);
             }

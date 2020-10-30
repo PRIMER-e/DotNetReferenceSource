@@ -8,7 +8,7 @@
 // Description: Backing store for the PasswordBox control.
 //
 // History:  
-//  05/14/2004 : [....] - Created.
+//  05/14/2004 : Microsoft - Created.
 //
 //---------------------------------------------------------------------------
 
@@ -894,7 +894,7 @@ namespace System.Windows.Controls
             strongReference = weakReference.Target;
             if (strongReference != null && !(strongReference is PasswordTextPointer))
             {
-                // Diagnostics for bug 1267261.
+                // Diagnostics for 
                 Invariant.Assert(false, "Unexpected type: " + strongReference.GetType());
             }
 

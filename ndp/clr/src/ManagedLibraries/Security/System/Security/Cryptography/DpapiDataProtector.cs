@@ -5,7 +5,7 @@
 // ==--==
 //
 // <OWNER>jeffcoop</OWNER>
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 //
 
 using System;

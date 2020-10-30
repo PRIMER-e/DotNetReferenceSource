@@ -4341,7 +4341,7 @@ bool Compiler::FindFileInPath
         WCHAR *wszCurrentDir;
         WCHAR wszSeparator[] = L";";
 
-        // [....] 9/18/2004:  The allocation math here just produces the same size as the original string
+        // Microsoft 9/18/2004:  The allocation math here just produces the same size as the original string
         // (including NULL terminator) and so does not need to be checked...
         TEMPBUF(wszSearchPathCopy, WCHAR *, (wcslen(wszSearchPath)+1) * sizeof(WCHAR));
         IfNullThrow(wszSearchPathCopy);
@@ -4354,7 +4354,7 @@ bool Compiler::FindFileInPath
         // Try looking for wszFileName in each directory in wszSearchPath
         while ((wszCurrentDir != NULL) && (*wszCurrentDir != L'\0') && (!bFound))
         {
-            // [....] 9/18/2004:  ... but this allocation math is a bit more dodgy and should be
+            // Microsoft 9/18/2004:  ... but this allocation math is a bit more dodgy and should be
             // verified for overflow.
             size_t nAcc = wcslen(wszCurrentDir)+1; // Fine; original size plus its NULL terminator...
             IfFalseThrow((nAcc += wcslen(wszFileName)) >= wcslen(wszFileName) &&
@@ -4633,13 +4633,13 @@ HRESULT CompilerHost::LoadSpecifiedVBRuntimeLibrary
 #if IDE
         if (pVBRuntimeProject && pVBRuntimeProject->m_pTaskProvider)
         {
-            // Dev11 Bug 370167 - shiqic
-            // InitWithMetaData will create a CompilerTaskProvider for each normal CompilerProject. 
-			// When vb runtime is added as a normal dll, a CompilerTaskProvider will be attached to vb runtime. 
-            // CompilerTaskProvider will hold  a ref on CompilerPackage. This creates a circular reference, 
-            //     CompilerPackage->CompilerHost->VBRuntime(CompilerProject)->CompilerTaskProvider->CompilerPackage
-            // Circular reference will cause memory leak. For default libraries(mscorlib or MS.VB.dll) CompilerTaskProvider is 
-            // not necessary(see InitWithMetaData), so we can safely remove TaskProvider from vb runtime.
+            // Dev11 
+
+
+
+
+
+
 
             pVBRuntimeProject->m_pTaskProvider->UnregisterTaskProvider();
             RELEASE(pVBRuntimeProject->m_pTaskProvider);
@@ -5275,7 +5275,7 @@ void Compiler::BuildErrorListForOneProject
     CompilerHost *pCompilerHost = pProject->GetCompilerHost();
 
     // Get the strings for "error" and "warning"
-    // Note ([....] 09-15-2000): kperry says that the words "error" and "warning"
+    // Note (Microsoft 09-15-2000): kperry says that the words "error" and "warning"
     // should never be localized for compiler error outputs so that scripts
     // that parse the errors will always work.
     const WCHAR* wszError   = L"error";

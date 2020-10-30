@@ -148,7 +148,6 @@ namespace System.Drawing.Imaging {
         ///    Returns a value indicating whether the
         ///    specified object is an <see cref='System.Drawing.Imaging.ImageFormat'/> equivalent to this <see cref='System.Drawing.Imaging.ImageFormat'/>.
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public override bool Equals(object o) {
             ImageFormat format = o as ImageFormat;
             if (format == null)

@@ -7,7 +7,7 @@
 // Description: Contains the MediaElement class.
 //
 // History:
-//  07/28/2003 : [....]  - Added
+//  07/28/2003 : Microsoft  - Added
 //
 //---------------------------------------------------------------------------
 

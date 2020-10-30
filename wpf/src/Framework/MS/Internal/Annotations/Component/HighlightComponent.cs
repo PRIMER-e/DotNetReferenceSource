@@ -690,7 +690,7 @@ namespace MS.Internal.Annotations.Component
         // priority first
         private bool _highlightContent = true; //highlight only the content of tables, figures and floaters
         private bool _active = false; //saves the highlight state - active or not
-        private bool _isDirty = true; //shows if the annotation is in [....] with the content of the AnnotatedElement
+        private bool _isDirty = true; //shows if the annotation is in sync with the content of the AnnotatedElement
 
         //default color colors
         private Color _defaultBackroundColor = (Color)ColorConverter.ConvertFromString("#33FFFF00");

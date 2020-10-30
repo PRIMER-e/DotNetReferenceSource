@@ -672,7 +672,7 @@ namespace System.Windows.Forms {
 
             // Invoke BeginGetResponse on a threadpool thread, as it has
             // unpredictable latency, since, on first call, it may load in the
-            // configuration system (this is NCL bug 20605)
+            // configuration system (this is NCL 
             (new WaitCallback(BeginGetResponseDelegate)).BeginInvoke(req, null, null);
         }
 
@@ -1306,7 +1306,7 @@ namespace System.Windows.Forms {
                 }
                 catch (Exception ex)
                 {   //Dont throw but paint error image LoadAsync fails....
-                    // [....] FXCOP 
+                    // Microsoft FXCOP 
 
 
                     if (ClientUtils.IsCriticalException(ex))

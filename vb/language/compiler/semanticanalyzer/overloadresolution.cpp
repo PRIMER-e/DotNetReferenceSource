@@ -421,8 +421,8 @@ Semantics::InsertIfMethodAvailable
         DBG_SWITCH_PRINTF(fDumpOverload, L"    Comparing it against this existing candidate... %s\n", CandidateToDebugString(ExistingCandidate));
 
         // An overriding method hides the methods it overrides.
-        // Bug VSWhidbey 385900.
-        //
+        // 
+
         if (ViewAsProcedure(ExistingCandidate)->OverriddenProc() &&
             (ViewAsProcedure(ExistingCandidate)->OverriddenProc() == NewCandidate ||
                 ViewAsProcedure(ExistingCandidate)->OverriddenProc() == ViewAsProcedure(NewCandidate)->OverriddenProc()))
@@ -1440,9 +1440,9 @@ MakeScratchCopiesOfArguments
     {
         if (SavedArguments[ArgumentIndex])
         {
-            // Bug VSWhidbey 208815 requires that SX_ADDRESSOF nodoes also be
-            // deep copied here because InterpretDelegateBinding modifies some
-            // of the sub nodes of this node.
+            // 
+
+
 
             ILTree::ILNode *ArgumentCopy =
                 (SavedArguments[ArgumentIndex]->bilop == SX_PROPERTY_REFERENCE ||
@@ -2338,8 +2338,8 @@ Semantics::DetectArgumentErrors
         RequiresInstanceMethodBinding
     );
 
-    // Bug 122092: AddressOf wants just one line for inference errors, if ovrld flag is set
-    // matcharguments won't report any, so do it here.
+    // 
+
     if (InferenceFailed && HasFlag(OvrldFlags, OvrldReportErrorsForAddressOf))
     {
         if (m_ReportErrors && m_Errors)
@@ -2585,9 +2585,9 @@ Semantics::DetectUnspecificity
     OverloadResolutionFlags OvrldFlags
 )
 {
-    // Bug 122092: AddressOf doesn't want any details behind the methods for
-    // specificity because the top message conveys this already.
-    // Not reporting an error will just list the method name without quotes.
+    // 
+
+
     if (!HasFlag(OvrldFlags, OvrldReportErrorsForAddressOf))
     {
         ReportSemanticError(ERRID_NotMostSpecificOverload, CallLocation);
@@ -3018,7 +3018,7 @@ Semantics::CompareParameterTypeApplicability
         }
     }
 
-    // Bug 36231 - DevDiv Bugs
+    // 
     if(Argument && Argument->ResultType)
     {
         if (TypeHelpers::EquivalentTypes(Argument->ResultType, LeftType))
@@ -3718,7 +3718,7 @@ Semantics::LeastGenericProcedure
     return NULL;
 }
 
-//This procedure should be kept in [....] with MostSpecificProcedure.
+//This procedure should be kept in sync with MostSpecificProcedure.
 //In particular, if you add any new criteria to MostSpecificProcedure that will
 //cause one procedure to be more specific to another, then that same criteria
 //should be added to this procedure, such that the new condition will cause it to return false.
@@ -3917,7 +3917,7 @@ Semantics::AreProceduresEquallySpecific
     return true;
 }
 
-//This procedure should be kept in [....] with AreProceduresEquallySpecific.
+//This procedure should be kept in sync with AreProceduresEquallySpecific.
 //See the commetns on that procedure for details.
 OverloadList *
 Semantics::MostSpecificProcedureOfTwo
@@ -4164,7 +4164,7 @@ Semantics::MostSpecificProcedure
                                 Arguments,
                                 phase==0 ? &Semantics::CompareParameterApplicability : &Semantics::CompareParameterGenericDepth,
                                 Dummy,
-                                true, /* continue when both sides lose */// Bug VSWhidbey
+                                true, /* continue when both sides lose */// 
                                 CurrentCandidate->IsExtensionMethod,
                                 Contender->IsExtensionMethod,
                                 OvrldFlags
@@ -4974,7 +4974,7 @@ Semantics::ResolveOverloading
 )
 {
     // Port SP1 CL 2967550 to VS10
-    // [....]:
+    // Microsoft:
     // we don't want to set this flag when we do overload resolution.
     BackupValue<bool> backupLambda(&m_methodHasLambda);
 

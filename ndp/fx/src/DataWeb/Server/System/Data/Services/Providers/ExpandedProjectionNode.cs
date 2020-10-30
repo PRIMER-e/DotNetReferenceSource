@@ -7,7 +7,7 @@
 //      for queries with $expand and/or $select.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

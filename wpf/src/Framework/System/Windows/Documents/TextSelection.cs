@@ -746,8 +746,8 @@ namespace System.Windows.Documents
             {
                 // Use the locally defined caretElement because _caretElement can be null by
                 // detaching CaretElement object
-                // Stress bug#1583327 indicate that _caretElement can be set to null by
-                // detaching. So the below code is caching the caret element instance locally.
+                // Stress 
+
                 CaretElement caretElement = _caretElement;
                 if (caretElement != null)
                 {

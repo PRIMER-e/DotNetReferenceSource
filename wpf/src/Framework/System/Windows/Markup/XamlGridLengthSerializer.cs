@@ -272,7 +272,7 @@ namespace System.Windows.Markup
 
 #region Fields
 
-        //  Note: keep this array in [....] with the GridUnitType enum
+        //  Note: keep this array in sync with the GridUnitType enum
         static private string[] UnitStrings = { "auto", "px", "*" };
 
         //  this array contains strings for unit types that are not present in the GridUnitType enum

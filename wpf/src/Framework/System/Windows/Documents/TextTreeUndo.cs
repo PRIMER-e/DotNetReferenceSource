@@ -8,7 +8,7 @@
 // Description: Helper class for TextContainer, handles all undo operations.
 //
 // History:
-//  03/03/2004 : [....] - Created
+//  03/03/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

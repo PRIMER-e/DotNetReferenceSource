@@ -16,7 +16,7 @@ namespace System.Windows.Forms {
     /// <internalonly/>
     /// <devdoc>
     ///    <para>
-    ///       CategoryAttribute that can access [....] localized strings.
+    ///       CategoryAttribute that can access Microsoft localized strings.
     ///    </para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]

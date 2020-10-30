@@ -26,7 +26,7 @@ namespace MS.Internal.Documents
 
     /// <summary>
     /// PageCache acts as both a page-dimension cache and a proxy for an DocumentPaginator document.
-    /// It doles out pages to DocumentGrid and keeps the cache in [....] with the DocumentPaginator.
+    /// It doles out pages to DocumentGrid and keeps the cache in sync with the DocumentPaginator.
     /// </summary>
     /// <speclink>http://d2/DRX/default.aspx</speclink>
     internal class PageCache

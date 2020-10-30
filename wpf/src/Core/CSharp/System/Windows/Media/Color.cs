@@ -368,7 +368,7 @@ namespace System.Windows.Media
         ///<summary>
         /// Clamp - the color channels to the gamut [0..1].  If a channel is out
         /// of gamut, it will be set to 1, which represents full saturation.
-        /// todo: [....] up context values if they exist
+        /// todo: sync up context values if they exist
         ///</summary>
         public void Clamp()
         {

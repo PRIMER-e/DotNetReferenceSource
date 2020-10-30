@@ -27,12 +27,14 @@ namespace System.Web.Compilation {
     using System.Security.Permissions;
     using System.Reflection;
     using System.Runtime.ExceptionServices;
+    using System.Threading;
     using System.Threading.Tasks;
     
     internal static class CompilationUtil {
 
         internal const string CodeDomProviderOptionPath = "system.codedom/compilers/compiler/ProviderOption/";
         private const string CompilerDirectoryPath = "CompilerDirectoryPath";
+        private static int _maxConcurrentCompilations;
 
         internal static bool IsDebuggingEnabled(HttpContext context) {
             CompilationSection compConfig = MTConfigUtil.GetCompilationConfig(context);
@@ -331,7 +333,7 @@ namespace System.Web.Compilation {
             return buildProviders.GetBuildProviderTypes(appliesTo);
         }
 
-        // In partial trust, do not allow the CompilerDirectoryPath provider option in codedom settings (Dev10 bug 462348)
+        // In partial trust, do not allow the CompilerDirectoryPath provider option in codedom settings (Dev10 
         internal static void CheckCompilerDirectoryPathAllowed(IDictionary<string, string> providerOptions) {
             if (providerOptions == null) {
                 return;
@@ -443,10 +445,10 @@ namespace System.Web.Compilation {
             return t;
         }
 
-        // Devdiv Bug 57600
-        // We need to use the constructor with ProviderOptions to get the v3.5/v4.0 compiler that was possibly set in config.
-        // We first check if there is any providerOptions and invoke the constructor if so.
-        // Otherwise, we fall back to the default constructor.
+        // Devdiv 
+
+
+
         internal static CodeDomProvider CreateCodeDomProvider(Type codeDomProviderType) {
             CodeDomProvider codeDomProvider = CreateCodeDomProviderWithPropertyOptions(codeDomProviderType);
             if (codeDomProvider != null) {
@@ -491,7 +493,7 @@ namespace System.Web.Compilation {
                 // We need to explicitly set to v3.5, as it is possible for the
                 // user to only have specified it for one compiler but not 
                 // the other.
-                // Dev10 bug 809212
+                // Dev10 
                 providerOptions["CompilerVersion"] = "v3.5";
             }
             else {
@@ -521,7 +523,7 @@ namespace System.Web.Compilation {
                     provider = CodeDomProvider.CreateProvider(language, providerOptions);
                 }
                 // Restore the provider options if we previously manually added the compilerDirectoryPath.
-                // Otherwise, we might incorrectly invalidate the compilerDirectoryPath in medium trust (Dev10 bug 550299).
+                // Otherwise, we might incorrectly invalidate the compilerDirectoryPath in medium trust (Dev10 
                 if (addedCompilerDirectoryPath) {
                     providerOptions.Remove(CompilerDirectoryPath);
                 }
@@ -638,6 +640,31 @@ namespace System.Web.Compilation {
             }
             Debug.Assert(version.Length > 1, "Version has invalid length");
             return new Version(version.Substring(1));
-        }        
+        }
+
+        // Returns maximum number of concurrent compilations
+        internal static int MaxConcurrentCompilations {
+            get {
+                if (_maxConcurrentCompilations == 0) {
+                    int maxConcurrentCompilations;
+
+                    if (AppSettings.MaxConcurrentCompilations.HasValue && AppSettings.MaxConcurrentCompilations.Value >= 0) {
+                        maxConcurrentCompilations = AppSettings.MaxConcurrentCompilations.Value;
+                    }
+                    else {
+                        CompilationSection config = MTConfigUtil.GetCompilationAppConfig();
+                        maxConcurrentCompilations = config.MaxConcurrentCompilations;
+                    }
+
+                    if (maxConcurrentCompilations <= 0) {
+                        maxConcurrentCompilations = Environment.ProcessorCount;
+                    }
+
+                    Interlocked.CompareExchange(ref _maxConcurrentCompilations, maxConcurrentCompilations, 0);
+                }
+
+                return _maxConcurrentCompilations;
+            }
+        }
     }
 }

@@ -6,7 +6,7 @@
 //      Contains information about a particular resource.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

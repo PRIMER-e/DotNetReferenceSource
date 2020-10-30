@@ -7,7 +7,7 @@
 //              Gradient as a linear interpolation between two parallel lines.
 //
 // History:
-//  05/07/2003 : [....] - Created it.
+//  05/07/2003 : Microsoft - Created it.
 //  09/21/2004 : timothyc - Added GradientStopCollection constructors.
 //
 //---------------------------------------------------------------------------

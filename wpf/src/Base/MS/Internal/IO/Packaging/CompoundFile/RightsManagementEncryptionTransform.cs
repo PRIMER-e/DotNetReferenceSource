@@ -923,7 +923,7 @@ namespace MS.Internal.IO.Packaging.CompoundFile
                 {
                     //
                     // Construct a type-prefixed user name of the form
-                    // "Passport:[....]_smith@hotmail.com" or "Windows:domain\username",
+                    // "Passport:Microsoft_smith@hotmail.com" or "Windows:domain\username",
                     // depending on the authentication type of the user.
                     //
                     string typePrefixedUserName = MakeTypePrefixedUserName(user);
@@ -1090,7 +1090,7 @@ namespace MS.Internal.IO.Packaging.CompoundFile
         }
 
         /// <summary>
-        /// Construct a type-prefixed user name of the form "Passport:[....]_smith@hotmail.com"
+        /// Construct a type-prefixed user name of the form "Passport:Microsoft_smith@hotmail.com"
         /// or "Windows:domain\username", depending on the authentication type of the User.
         /// </summary>
         /// <param name="user">
@@ -1112,7 +1112,7 @@ namespace MS.Internal.IO.Packaging.CompoundFile
         }
 
         /// <summary>
-        /// Parse a type-prefixed user name of the form "Passport:[....]_smith@hotmail.com"
+        /// Parse a type-prefixed user name of the form "Passport:Microsoft_smith@hotmail.com"
         /// or "Windows:domain\username" into its "authentication type" and "user name"
         /// components (the parts before and after the colon, respectively).
         /// </summary>

@@ -15,8 +15,8 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", Scope="member", Target="MS.Internal.Controls.ActiveXHost.DoVerb(System.Int32):System.Boolean", MessageId="System.String.Format(System.String,System.Object)")]
 [module: SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", Scope="member", Target="MS.Internal.Documents.DocumentsTrace.TraceCallers(System.Int32):System.Void", MessageId="System.Int32.ToString")]
@@ -102,7 +102,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1048365
-// Developer: ChaiwatP ([....])
+// Developer: ChaiwatP (sambent)
 // Reason: These are trace strings used for debugging. They are not visible to users.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope="member", Target="MS.Internal.Data.CompositeCollectionView.Subscribe(System.Windows.Data.CollectionContainer):System.Void")]
@@ -111,7 +111,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1050486
-// Developer: ChaiwatP ([....])
+// Developer: ChaiwatP (bchapman)
 // Reason:
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", Scope="member", Target="MS.Win32.HwndWrapper..ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.String,System.IntPtr,MS.Win32.HwndWrapperHook[])")]
@@ -126,14 +126,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1070239
-// Developer: ChaiwatP ([....])
+// Developer: ChaiwatP (sambent)
 // Reason: These are trace strings used for debugging. They are not visible to users.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope="member", Target="MS.Internal.Data.CompositeCollectionView.Unsubscribe(System.Windows.Data.CollectionContainer,System.Boolean):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1079520
-// Developer: ChaiwatP ([....])
+// Developer: ChaiwatP (sambent)
 // Reason: These are trace strings used for debugging. They are not visible to users.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope="member", Target="System.Windows.Controls.ItemContainerGenerator.OnCollectionChanged(System.Object,System.Collections.Specialized.NotifyCollectionChangedEventArgs):System.Void")]
@@ -142,7 +142,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1081890
-// Developer: ChaiwatP ([....])
+// Developer: ChaiwatP (davidjen)
 // Reason: By design, resurfaced as new bug since renamed class Binding to BindingExpression. All Literals are input to internal dev trace logs that
 //	Only are active if built with special #define (not set by build labs).
 //***************************************************************************************************************************
@@ -166,7 +166,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1206726
-// Developer: ChaiwatP ([....])
+// Developer: ChaiwatP (sambent)
 // Reason: These are trace strings used for debugging. They are not visible to users.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope="member", Target="System.Windows.Data.BindingExpression.System.Windows.IWeakEventListener.ReceiveWeakEvent(System.Type,System.Object,System.EventArgs):System.Boolean")]
@@ -248,7 +248,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632972 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: jezhan
 // Reason: xmlns syntax is not subject to localization
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Scope = "member", Target = "System.Windows.Baml2006.Baml2006Reader.#Logic_GetFullXmlns(System.String)")]

@@ -367,7 +367,7 @@ namespace System.Windows.Forms
             string formattedNullValueStr = formattedNullValue as string;
             string valueStr = value as string;
             if (formattedNullValueStr != null && valueStr != null) {
-                // Use same optimization as in WindowsFormsUtils.SafeCompareStrings(...). This addresses bug DevDiv Bugs 110336.
+                // Use same optimization as in WindowsFormsUtils.SafeCompareStrings(...). This addresses 
                 if (formattedNullValueStr.Length != valueStr.Length) {
                     return false;
                 }

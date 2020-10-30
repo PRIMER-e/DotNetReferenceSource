@@ -5,7 +5,7 @@
 // ==--==
 //===========================================================================
 //  File:       PortCache.cs
-//  Author:   [....]@Microsoft.Com
+//  Author:   Microsoft@Microsoft.Com
 //  Summary:    Implements a cache for port handles
 //
 //==========================================================================

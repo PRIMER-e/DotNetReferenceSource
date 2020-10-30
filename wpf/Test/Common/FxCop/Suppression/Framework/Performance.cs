@@ -25,7 +25,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1010553
-// Developer: [....]
+// Developer: drelyea
 // Reason: This is an AppDomainManager, and the behavior is by design. PresentationHost.exe sets environment variables to
 // this assembly and class name. When the CLR is started, the class specified by those environment variables will be
 // instantiated by reflection from the framework and used as the AppDomainManager.
@@ -233,7 +233,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1010456, 1417084, 1417085
-// Developer: [....] / kenlai
+// Developer: sambent / kenlai
 // Reason: These are not called internally but through reflection.  Used by diagnostic tools.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="System.Windows.Data.BindingOperations.get_IsCleanupEnabled():System.Boolean")]
@@ -259,7 +259,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1048386
-// Developer: [....]/kenlai
+// Developer: sambent/kenlai
 // Reason:  this method is here just to avoid the compiler error:
 //          error CS0649: Warning as Error: Field '..._traceLog' is never assigned to, and will always have its default value null
 //**************************************************************************************************************************
@@ -288,7 +288,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1124178
-// Developer: [....]
+// Developer: RajatG
 // Reason: This method is used in Core.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.PresentationFramework.SecurityHelper.DemandRegistryPermission():System.Void")]
@@ -341,7 +341,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1340925, 1340931, 1340932, 1388815, 1434241, 1434243, 1494812
-// Developer: [....]
+// Developer: SamBent
 // Reason: False positive.  The calls to GC.KeepAlive are required.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive", Scope="member", Target="MS.Internal.Data.PropertyPathWorker.UpdateSourceValueState(System.Int32,System.ComponentModel.ICollectionView,System.Object,System.Boolean):System.Void")]
@@ -370,8 +370,8 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1387909
 // Developer: olego
-// Reason: THIS IS AN FXCOP 
-
+// Reason: THIS IS AN FXCOP BUG - it should really be fixed by FxCop team. Adding exclusion per robertwl's recommendation.
+//***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="System.Windows.Controls.UIElementCollection.get_VisualParent():System.Windows.UIElement")]
 
 //**************************************************************************************************************************
@@ -440,7 +440,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1640625
-// Developer: [....] - Function for use by derived classes.   There are no derived classes yet.
+// Developer: bchapman - Function for use by derived classes.   There are no derived classes yet.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="System.Windows.Markup.BamlOptimizedStaticResourceRecord.get_LastFlagsSection():System.Collections.Specialized.BitVector32+Section")]
 
@@ -475,7 +475,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: no bug
-// Developer: [....] 
+// Developer: pantal 
 // This method is compiled only in chk builds, but needs to be available for compilation to consumer assert call which is not #if'ed out.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance","CA1811:AvoidUncalledPrivateCode", Scope="member", Target="System.Windows.Controls.VirtualizedCellInfoCollection.#IsValidCell(System.Windows.Controls.DataGridCellInfo)")]

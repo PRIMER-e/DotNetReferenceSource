@@ -161,7 +161,11 @@ WCHAR * SNI_Error_String[] =
 	L"Unable to locate the registry entry for SQLUserInstance.dll file path. Verify that the Local DB feature of SQL Server Express is properly installed.",
 	L"Registry value contains an invalid SQLUserInstance.dll file path. Verify that the Local DB feature of SQL Server Express is properly installed.",
 	L"Unable to load the SQLUserInstance.dll from the location specified in the registry. Verify that the Local DB feature of SQL Server Express is properly installed.",
-	L"Invalid SQLUserInstance.dll found at the location specified in the registry. Verify that the Local DB feature of SQL Server Express is properly installed."
+	L"Invalid SQLUserInstance.dll found at the location specified in the registry. Verify that the Local DB feature of SQL Server Express is properly installed.",
+	L"Unable to locate the registry entry for adalsql.dll file path. Verify that Active Directory Authentication Library for SQL Server is properly installed. For details, please refer to: http ://go.microsoft.com/fwlink/?LinkID=513072",
+	L"Unable to locate the correct registry entry for adalsql.dll. Verify that Active Directory Authentication Library for SQL Server is properly installed. For details, please refer to: http ://go.microsoft.com/fwlink/?LinkID=513072",
+	L"Unable to load adalsql.dll from the location specified in the registry. Verify that Active Directory Authentication Library for SQL Server is properly installed. For details, please refer to: http ://go.microsoft.com/fwlink/?LinkID=513072",
+	L"Unable to find adalsql.dll functions. Verify that Active Directory Authentication Library for SQL Server is properly installed. For details, please refer to: http ://go.microsoft.com/fwlink/?LinkID=513072"
 };
 CPL_ASSERT( (sizeof(SNI_Error_String) / sizeof(SNI_Error_String[0])) == (SNIE_MAX - SNIE_0 + 1));
 

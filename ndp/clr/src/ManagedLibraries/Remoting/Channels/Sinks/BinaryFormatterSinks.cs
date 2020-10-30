@@ -19,6 +19,7 @@ using System.Runtime.Serialization.Formatters;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Http;
+using System.Runtime.Remoting.Configuration;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Metadata;
 using System.Security;
@@ -590,7 +591,16 @@ namespace System.Runtime.Remoting.Channels
                 {
                     throw new RemotingException(CoreChannel.GetResourceString("Remoting_DeserializeMessage"));
                 }
-                
+
+                // Transparent proxy and MBRO IMessages are allowed conditionally by AppSettings
+                if (requestMsg is MarshalByRefObject && !AppSettings.AllowTransparentProxyMessage)
+                {
+                    // Null request to prevent calling transparent proxy methods in catch below.
+                    // Fwlink is provided to explain why it is not supported.  Inner exceptions propagate back to sender.
+                    requestMsg = null;
+                    throw new RemotingException(CoreChannel.GetResourceString("Remoting_DeserializeMessage"), 
+                                                new NotSupportedException(AppSettings.AllowTransparentProxyMessageFwLink));
+                }
 
                 // Dispatch Call
                 sinkStack.Push(this, null);

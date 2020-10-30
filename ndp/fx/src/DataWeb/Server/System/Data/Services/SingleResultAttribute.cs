@@ -7,7 +7,7 @@
 //      a single-result attribute.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

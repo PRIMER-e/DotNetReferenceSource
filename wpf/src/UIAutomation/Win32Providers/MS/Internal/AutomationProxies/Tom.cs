@@ -35,8 +35,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 
-// 
-
+// TODO: 2003/08/13 - alexsn: Right  now we really define only methods and enums that are getting used in the code
+// TODO: 2003/08/13 - alexsn: For everything else we put a stub, which can be easily converted to real thing when needed
 namespace MS.Internal.AutomationProxies
 {
     //------------------------------------------------------

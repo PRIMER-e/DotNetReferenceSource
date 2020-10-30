@@ -6,7 +6,7 @@
 //      The result from a expression to query components translation
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

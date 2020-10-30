@@ -27,7 +27,7 @@
 // and that does not prompt the user.
 // 
 // History:
-//  03/15/2006: [....] - Initial creation. 
+//  03/15/2006: Microsoft - Initial creation. 
 //-----------------------------------------------------------------------------
 
 using System;

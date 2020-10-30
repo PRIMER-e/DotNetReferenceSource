@@ -163,6 +163,9 @@ namespace System.Windows.Forms {
         private DateRangeEventHandler       onDateSelected;
         private EventHandler                   onRightToLeftLayoutChanged;
 
+        private int          nativeWndProcCount = 0;
+        private static bool? restrictUnmanagedCode;
+
         /// <include file='doc\MonthCalendar.uex' path='docs/doc[@for="MonthCalendar.MonthCalendar"]/*' />
         /// <devdoc>
         ///     Creates a new MonthCalendar object.  Styles are the default for a
@@ -176,7 +179,52 @@ namespace System.Windows.Forms {
             SetStyle(ControlStyles.UserPaint, false);
             SetStyle(ControlStyles.StandardClick, false);
             
-            TabStop = true;    
+            TabStop = true;
+
+            if (!restrictUnmanagedCode.HasValue) {
+                bool demandUnmanagedFailed = false;
+                try {
+                    IntSecurity.UnmanagedCode.Demand();
+                    restrictUnmanagedCode = false;
+                }
+                catch {
+                    // ensure that the static field is written to exactly once to avoid race conditions
+                    demandUnmanagedFailed = true;
+                }
+
+                if (demandUnmanagedFailed) {
+                    // Demand for unmanaged code failed, thus we are running in partial trust.
+                    // We need to assert a registry access permission, this is safe because
+                    // we are reading the registry and are not returning the information 
+                    // from the registry to the user.
+                    new RegistryPermission(PermissionState.Unrestricted).Assert();
+                    try {
+                        // for 32 bit applications on 64 bit machines this code is reading 
+                        // HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node node
+
+                        // to opt out, set a DWORD value AllowWindowsFormsReentrantDestroy=1
+                        RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework");
+                        if (key != null) {
+                            object o = key.GetValue("AllowWindowsFormsReentrantDestroy");
+                            if ((o != null) && (o is int) && ((int)o == 1)) {
+                                restrictUnmanagedCode = false;
+                            }
+                            else {
+                                restrictUnmanagedCode = true;
+                            }
+                        }
+                        else {
+                            restrictUnmanagedCode = true;
+                        }
+                    }
+                    catch {
+                        restrictUnmanagedCode = true;
+                    }
+                    finally {
+                        System.Security.CodeAccessPermission.RevertAssert();
+                    }
+                }
+            }
         }
 
         /// <include file='doc\MonthCalendar.uex' path='docs/doc[@for="MonthCalendar.AnnuallyBoldedDates"]/*' />
@@ -2310,10 +2358,41 @@ namespace System.Windows.Forms {
                     WmReflectCommand(ref m);
                     base.WndProc(ref m);
                     break;
+                case NativeMethods.WM_DESTROY:
+                    if (restrictUnmanagedCode == true && nativeWndProcCount > 0) {
+                        throw new InvalidOperationException();
+                    }
+                    base.WndProc(ref m);
+                    break;
                 default:
                     base.WndProc(ref m);
                     break;
             }
+        }
+
+        /// <include file='doc\MonthCalendar.uex' path='docs/doc[@for="MonthCalendar.DefWndProc"]/*' />
+        /// <internalonly/>
+        /// <devdoc>
+        ///    Calls the default window procedure for the MonthCalendar control. 
+        /// </devdoc>
+        [
+            SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode),
+            EditorBrowsable(EditorBrowsableState.Advanced)
+        ]
+        protected override void DefWndProc(ref Message m) {
+            if (restrictUnmanagedCode == true) {
+                nativeWndProcCount++;
+                try {
+                    base.DefWndProc(ref m);
+                }
+                finally {
+                    nativeWndProcCount--;
+                }
+
+                return;
+            }
+
+            base.DefWndProc(ref m);
         }
 
         /// <include file='doc\MonthCalendar.uex' path='docs/doc[@for="MonthCalendar.HitTestInfo"]/*' />

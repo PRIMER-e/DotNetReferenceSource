@@ -16,7 +16,7 @@
 // History:
 //  10/27/01: mihaii   Created
 //  05/21/03: marka    Moved over to WCP dir. Made match spec, updated comments.
-//  11/14/05: [....]  "Island Frame" implementation. Journaling-related operations factored out into
+//  11/14/05: Microsoft  "Island Frame" implementation. Journaling-related operations factored out into
 //                     JournalNavigationScope.
 //
 //---------------------------------------------------------------------------
@@ -438,7 +438,7 @@ namespace System.Windows.Navigation
         /// Called when style is actually applied.
         /// </summary>
         /// <remarks>
-        /// [....] 
+        /// Microsoft 
 
 
 
@@ -474,7 +474,7 @@ namespace System.Windows.Navigation
                 {
                     // transitioning to Framelet style
 
-                    // [....] 
+                    // Microsoft 
 
 
 

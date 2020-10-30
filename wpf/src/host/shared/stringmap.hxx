@@ -7,9 +7,9 @@
 //     elements.
 //
 // History:
-//      2005/06/19 - [....]
+//      2005/06/19 - Microsoft
 //          Created
-//      2007/09/20-[....]
+//      2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

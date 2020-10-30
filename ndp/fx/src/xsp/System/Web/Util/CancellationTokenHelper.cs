@@ -34,6 +34,10 @@ namespace System.Web.Util {
             _state = (canceled) ? STATE_CANCELED : STATE_CREATED;
         }
 
+        internal bool IsCancellationRequested {
+            get { return _cts.IsCancellationRequested; }
+        }
+
         internal CancellationToken Token {
             get { return _cts.Token; }
         }

@@ -18,36 +18,36 @@
 
 #include "snipch.hpp"
 
-// Converts from Ascii or Hex to Decimal integer
-int Strtoi(const char * szStr)
+// Converts from Unicode or Hex to Decimal integer
+int Wcstoi(const WCHAR * wszStr)
 {
     UINT retVal = 0;
 	bool fNegative=false;
 
-	if( szStr && *szStr)
+	if( wszStr && *wszStr)
 	{
-		char ch;
+		WCHAR ch;
 
-		if(*szStr=='-')
+		if(*wszStr==L'-')
 		{
 			fNegative=true;
-			szStr++;
+			wszStr++;
 		}
-		else if(*szStr == '+')
-			szStr++;
+		else if(*wszStr == L'+')
+			wszStr++;
 
 		// Check if it is a hex number
-		if( ('0' == szStr[0]) && (('X' == szStr[1]) || ('x' == szStr[1])) )
+		if( (L'0' == wszStr[0]) && ((L'X' == wszStr[1]) || (L'x' == wszStr[1])) )
 		{
-			szStr+=2;
-			while( ch = *szStr++)
+			wszStr+=2;
+			while( ch = *wszStr++)
 			{
-				if(ch >= '0' && ch <='9' )
-					ch-='0';
-				else if( ch >= 'A' && ch<='F' )
-					ch=ch-'A' + 10;
-				else if( ch >= 'a' && ch<='f')
-					ch=ch-'a'+10;
+				if(ch >= L'0' && ch <=L'9' )
+					ch-=L'0';
+				else if( ch >= L'A' && ch<=L'F' )
+					ch=ch-L'A' + 10;
+				else if( ch >= L'a' && ch<=L'f')
+					ch=ch-L'a'+10;
 				else
 					return 0;	//invalid string
 
@@ -60,10 +60,10 @@ int Strtoi(const char * szStr)
 		// Otherwise its an int
 		else
 		{
-			while( ch = *szStr++)
+			while( ch = *wszStr++)
 			{
-				if(ch >= '0' && ch <='9' )
-					ch-='0';
+				if(ch >= L'0' && ch <=L'9' )
+					ch-=L'0';
 				else
 					return 0;	//invalid string
 					

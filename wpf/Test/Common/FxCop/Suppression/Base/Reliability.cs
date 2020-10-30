@@ -19,12 +19,12 @@ using System.Diagnostics.CodeAnalysis;
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive", Scope="member", Target="MS.Utility.TraceProvider.Finalize():System.Void")]
 
-// [....]
+// DavidJen
 // Bug #1214012
 // the CollectionChanged event is never called, only used to test if the OC has listeners
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.Collections.ObjectModel.ObservableCollection`1.CheckReentrancy():System.Void")]
 
-// [....]
+// DavidJen
 // Bug #1213089
 // no GroupDescription state is affected should the OnPropertyChanged event fail with an exception
 [module: SuppressMessage("Microsoft.AvalonObjectModelInternal", "AvOMInt1000:PublicEventCallerMustBeHardened", Scope="member", Target="System.ComponentModel.GroupDescription.OnPropertyChanged(System.String):System.Void")]
@@ -40,7 +40,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: No Bug
-// Developer: [....]
+// Developer: pantal
 // Reason: Won't fix legacy items, clearing up FxCop scans.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability","CA2006:UseSafeHandleToEncapsulateNativeResources", Scope="member", Target="MS.Internal.Interop.PROPVARIANT.#pointerVal")]

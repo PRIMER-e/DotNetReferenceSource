@@ -4,7 +4,7 @@
 // 
 // Contents:  The XML Composite font parsing
 //
-// Created:   6-11-2003 Tarek Mahmoud Sayed ([....])
+// Created:   6-11-2003 Tarek Mahmoud Sayed (Microsoft)
 //
 //---------------------------------------------------------------------------
 
@@ -14,6 +14,7 @@ using System.Security;
 using System.Security.Permissions;
 using System.Text;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Markup;
 using System.Xml;
@@ -187,6 +188,13 @@ namespace MS.Internal.FontFace
                 {
                     ParseFontFamilyElement();
                 }
+                // DevDiv:1158540
+                // CompositeFont files have been modified to allow a family collection in order to select
+                // a family based on OS versions.
+                else if (IsStartElement(FontFamilyCollectionElement, CompositeFontNamespace))
+                {
+                    ParseFontFamilyCollectionElement();
+                }
                 else
                 {
                     FailUnknownElement();
@@ -322,6 +330,33 @@ namespace MS.Internal.FontFace
         #endregion ProcessingInstructions
 
         /// <summary>
+        /// DevDiv:1158540
+        /// Find the OS specific font family from a collection in the CompositeFont
+        /// </summary>
+        private void ParseFontFamilyCollectionElement()
+        {
+            string expectedOS = (OSVersionHelper.IsOsWindows10OrGreater) 
+                ? OperatingSystemVersion.Windows10.ToString() : OperatingSystemVersion.Windows8Point1.ToString();
+
+            bool foundOsSection = false;
+
+            while (_reader.Read())
+            {
+                // Once we find a FontFamilyElement with the proper OS attribute, parse it
+                if (_reader.GetAttribute("OS") == expectedOS)
+                {
+                    foundOsSection = true;
+                    ParseFontFamilyElement();
+                }
+            }
+
+            if (!foundOsSection)
+            {
+                Fail(string.Format("No FontFamily element found in FontFamilyCollection that matches OS: {0}", expectedOS));
+            }
+        }
+
+        /// <summary>
         /// Parses the FontFamily element, including its attributes and children,
         /// and advances to the next sibling element.
         /// </summary>
@@ -345,7 +380,10 @@ namespace MS.Internal.FontFace
                         {
                             _compositeFontInfo.LineSpacing = GetAttributeAsDouble();
                         }
-                        else
+                        // DevDiv:1158540
+                        // We have to ignore the newly added OS attribute since it is just
+                        // used in FontFamilyElement selection, not for anything else.
+                        else if (name != OsAttribute)
                         {
                             FailUnknownAttribute();
                         }
@@ -941,6 +979,9 @@ namespace MS.Internal.FontFace
         private const string XmlNamespace = "http://www.w3.org/XML/1998/namespace";
         private const string XmlnsNamespace = "http://www.w3.org/2000/xmlns/";
 
+        // DevDiv:1158540
+        // Adding new collection element to hold multiple FontFamilyElements
+        private const string FontFamilyCollectionElement = "FontFamilyCollection";
         private const string FontFamilyElement = "FontFamily";
         private const string BaselineAttribute = "Baseline";
         private const string LineSpacingAttribute = "LineSpacing";
@@ -969,6 +1010,10 @@ namespace MS.Internal.FontFace
         private const string DeviceFontCharacterMetricsPropertyElement = "FamilyTypeface.DeviceFontCharacterMetrics";
         private const string CharacterMetricsElement = "CharacterMetrics";
         private const string MetricsAttribute = "Metrics";
+
+        // DevDiv:1158540
+        // FontFamilyElements can now have OS specific attributes
+        private const string OsAttribute = "OS";
     }
 }
 

@@ -175,7 +175,7 @@ ObsoleteChecker::CheckObsolete
     {
         if (ContainerContextForSymbolUsage && pErrorTable)
         {
-            // [....]:
+            // Microsoft:
             // If we have the same attribute in the unnamed namespace and in a class somewhere,
             // then this assert will fire. We'll keep this assert, but protect the code below
             // so that we don't AV.
@@ -222,7 +222,7 @@ ObsoleteChecker::CheckObsolete
 
     bool ShouldDisplayObsoleteError = false;
 
-    // HACK:[....] - Needed because currently we don't propagate any attributes applied to a withevents
+    // HACK:Microsoft - Needed because currently we don't propagate any attributes applied to a withevents
     // variable to its underlying property.
     // This should go away once we decide on how we want to allow users to specify attributes on synthetic
     // symbols and how we would infer about what attributes should be propagated from the real symbol in
@@ -836,7 +836,7 @@ ObsoleteChecker::ScanMethodForObsoleteUsage
 
 
 /*
-        // [....] 5-2-2001:  Checking for obsolete usage within optional param values
+        // Microsoft 5-2-2001:  Checking for obsolete usage within optional param values
         // won't be supported in VS7 because it's too hard.
 
         if (pparam->IsOptional() &&

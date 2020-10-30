@@ -18,7 +18,7 @@
 //  The stream is read only
 //
 // History:
-//  05/23/05: [....]: Initial implementation.
+//  05/23/05: Microsoft: Initial implementation.
 //-----------------------------------------------------------------------------
 
 using System;

@@ -2,13 +2,13 @@
 #define _REG_HPP_
 
 DWORD GetProtocolList( __inout ProtList * pProtList, 
-							   const char * szServer,
-							   const char * szOriginalServer );
+							   const WCHAR * wszServer,
+							   const WCHAR * wszOriginalServer );
 
 
 DWORD GetProtocolDefaults( 	__out ProtElem * pProtElem,
-									const char * pszProtocol,
-									const char * szServer );
+									const WCHAR * pwszProtocol,
+									const WCHAR * wszServer );
 
 DWORD GetUserInstanceDllPath( __out_bcount(cchDllPathSize) LPSTR szDllPath, 
 									__in DWORD cchDllPathSize,
@@ -20,11 +20,11 @@ namespace LastConnectCache
 	
 	void Shutdown();
 
-	BOOL GetEntry( const char * szAlias, __out ProtElem * pProtElem );
+	BOOL GetEntry( const WCHAR * wszAlias, __out ProtElem * pProtElem );
 
-	void SetEntry( const char * szAlias, __in ProtElem * pProtElem );
+	void SetEntry( const WCHAR * wszAlias, __in ProtElem * pProtElem );
 
-	void RemoveEntry( const char * szAlias );
+	void RemoveEntry( const WCHAR * wszAlias );
 
 }
 

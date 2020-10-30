@@ -6,7 +6,7 @@
 // Enum to represent the choice of protocol version that the service may decide to support.
 // </summary>
 //
-// @owner [....]
+// @owner pawelka
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Common

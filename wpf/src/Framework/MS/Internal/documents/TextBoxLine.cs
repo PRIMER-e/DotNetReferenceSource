@@ -44,6 +44,7 @@ namespace System.Windows.Controls
         internal TextBoxLine(TextBoxView owner)
         {
             _owner = owner;
+            PixelsPerDip = _owner.GetDpi().PixelsPerDip;
         }
 
         #endregion Constructors
@@ -97,6 +98,10 @@ namespace System.Windows.Controls
             }
             Invariant.Assert(run != null, "TextRun has not been created.");
             Invariant.Assert(run.Length > 0, "TextRun has to have positive length.");
+            if (run.Properties != null)
+            {
+                run.Properties.PixelsPerDip = this.PixelsPerDip;
+            }
 
             return run;
         }
@@ -159,21 +164,21 @@ namespace System.Windows.Controls
         /// <param name="textRunCache">Run cache.</param>
         /// <param name="formatter">Text formatter.</param>
         /// <remarks>
-        /// formatWidth/paragraphWidth is an attempt to work around bug 114719.
-        /// Unfortunately, Line Services cannot guarantee that once a line
-        /// has been measured, measuring the same content with the actual line
-        /// width will produce the same line.
-        /// 
-        /// For example, suppose we format dcp 0 with paragraphWidth = 100.
-        /// Suppose this results in a line from dcp 0 - 10, with width = 95.
-        ///
-        /// We would expect that a call to FormatLine with dcp = 0,
-        /// paragraphWidth = 95 would result in the same 10 char line.
-        /// But in practice it might return a 9 char line.
-        /// 
-        /// The workaround is to pass in an explicit formatting width across
-        /// multiple calls, even if the paragraphWidth changes.
-        /// </remarks>
+        /// formatWidth/paragraphWidth is an attempt to work around 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         internal void Format(int dcp, double formatWidth, double paragraphWidth, LineProperties lineProperties, TextRunCache textRunCache, TextFormatter formatter)
         {
             _lineProperties = lineProperties;

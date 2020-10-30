@@ -784,7 +784,7 @@ struct SolutionExtensionData
 //=============================================================================
 // Holds the info accosiated with a Sub Main. Please note that either
 // m_SubMainSymbol or m_ParentSymbol is non-NULL. We use m_ParentSymbol when
-// we don't have a BCSYM_Proc for Main (i.e. faking main for [....])
+// we don't have a BCSYM_Proc for Main (i.e. faking main for Microsoft)
 //
 // Valid Entry Points are:
 //
@@ -798,7 +798,7 @@ struct SolutionExtensionData
 struct SubMainInfo
 {
     BCSYM_Proc      *m_SubMainSymbol;       // BCSYM for Sub Main
-    BCSYM_NamedRoot *m_ParentSymbol;        // BCSYM for Container of Sub Main (used for [....])
+    BCSYM_NamedRoot *m_ParentSymbol;        // BCSYM for Container of Sub Main (used for Microsoft)
     bool             m_IsValidEntryPoint;   // Is this Main a valid entry point?
     bool             m_IsInvalidOnlyDueToGenericness;   // Is this Main invalid only because it is either
                                                         // a generic method or nested in a generic type ?
@@ -877,8 +877,8 @@ private:
 // CompilerProject so that they can be emitted after the manifest for the
 // CompilerProject is emitted. This is required so that any security attributes
 // defined in a project when used in the same project are emitted correctly.
-// Bug VSWhidbey 320892.
-//========================================================================
+// 
+
 struct SecAttrErrorInfo
 {
     STRING *pstrAttrName;                   // Name of the security attribute that was applied.
@@ -954,7 +954,7 @@ class CompilerHost;
 class _declspec( uuid( "8B683E87-C664-44b8-A6A4-A405BAA715EE" ) )
 CompilerProject :
     // public IUnknown,
-    // [....] 2/4/03: VSWhidbey 56848:  IUnknown is already implied by the other interfaces, and will
+    // Microsoft 2/4/03: VSWhidbey 56848:  IUnknown is already implied by the other interfaces, and will
     // cause C4584 to be fired when that warning is turned back on.
     public IVbCompilerProject,
     public IVbVbaCompiler,
@@ -3097,7 +3097,7 @@ private:
     // These need to be saved and emitted after the manifest for this project
     // has been emitted. This is required so that any security attributes
     // defined in this project when used in this same project are emitted
-    // correctly. Bug VSWhidbey 320892.
+    // correctly. 
     CSingleList<SecAttrInfo> m_slAppliedSecurityAttributes;
 
 #if IDE 

@@ -1417,7 +1417,7 @@ namespace System.ServiceModel.Security
                     writer.Flush();
                     stream.Seek(0, SeekOrigin.Begin);
                     XmlNode skiNode;
-                    using (XmlDictionaryReader reader = XmlDictionaryReader.CreateDictionaryReader(new XmlTextReader(stream)))
+                    using (XmlDictionaryReader reader = XmlDictionaryReader.CreateDictionaryReader(new XmlTextReader(stream) { DtdProcessing = DtdProcessing.Prohibit }))
                     {
                         reader.MoveToContent();
                         skiNode = doc.ReadNode(reader);
@@ -1524,7 +1524,7 @@ namespace System.ServiceModel.Security
                     foreach (XmlNode node in element.ChildNodes)
                         if (node is XmlElement)
                         {
-                            // PreSharp Bug: Parameter 'requiredClaims' to this public method must be validated: A null-dereference can occur here.
+                            // PreSharp 
 #pragma warning suppress 56506
                             requiredClaims.Add((XmlElement)node);
                         }

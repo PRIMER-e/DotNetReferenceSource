@@ -6,7 +6,7 @@
 //      Provides an expression visitor that can replace a ParameterExpression.
 // </summary>
 //
-// @owner  [....], [....]
+// @owner  Microsoft, Microsoft
 //---------------------------------------------------------------------
 namespace System.Data.Services.Client
 {

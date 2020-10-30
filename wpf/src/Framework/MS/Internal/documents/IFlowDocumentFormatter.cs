@@ -7,7 +7,7 @@
 // Description: Content formatter associated with FlowDocument.
 //
 // History:  
-//  11/07/2005 : [....] - created.
+//  11/07/2005 : grzegorz - created.
 //
 //---------------------------------------------------------------------------
 

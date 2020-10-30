@@ -1,24 +1,24 @@
 #ifndef __XPSDOCUMENTWRITER_HPP__
 #define __XPSDOCUMENTWRITER_HPP__
 /*++
-                                                                              
-    Copyright (C) 2004 - 2005 Microsoft Corporation                                   
-    All rights reserved.                                                        
-                                                                              
-    Module Name:  
+
+    Copyright (C) 2004 - 2005 Microsoft Corporation
+    All rights reserved.
+
+    Module Name:
 
         XPSDocumentWriter.hpp
-                                                                              
+
     Abstract:
-    
+
         This object is instantiated against an XPSEmitter object. It is a public object to be used
         to serialize Visuals to Print Subsystem objeects.
-        
-    Author: 
+
+    Author:
 
         Ali Naqvi (alinaqvi) - 22nd May 2005
-                                                                             
-    Revision History:                                                           
+
+    Revision History:
 --*/
 using namespace System::Runtime::Serialization;
 using namespace System::Windows::Xps::Packaging;
@@ -63,18 +63,18 @@ namespace Xps
 
     ///<SecurityNote>
     /// Most public methods on this type are critical. They provide access to printer devices.
-    /// In order for these methods to be PublicOK 
-    /// any other public methods that expose an instance of XpsDocumentWriter must 
+    /// In order for these methods to be PublicOK
+    /// any other public methods that expose an instance of XpsDocumentWriter must
     /// first prompt the user with the print dialog.
     ///</SecurityNote>
     public ref class XpsDocumentWriter: public SerializerWriter
     {
-    
+
     internal:
-    
+
         /// <summary>
         /// Instantiates a <c>XpsDocumentWriter</c> against an object implementing <c>XPSEmitter</c>.
-        /// </summary>        
+        /// </summary>
         /// <param name="serializeReach"><c>XPSEmitter</c> object that will serialize and write the document objects.</param>
         ///<SecurityNote>
         /// Critical    - Accesses types from non-APTCA reachframework.dll         //            (MXDWSerializationManager, XpsDocument, IXpsFixedDocumentSequenceReader, PrintTicket, PrintTicketLevel)
@@ -91,7 +91,7 @@ namespace Xps
 
         /// <summary>
         /// Instantiates a <c>XpsDocumentWriter</c> against an object implementing <c>XPSEmitter</c>.
-        /// </summary>        
+        /// </summary>
         /// <param name="serializeReach"><c>XPSEmitter</c> object that will serialize and write the document objects.</param>
         ///<SecurityNote>
         /// Critical    - Accesses types from non-APTCA reachframework.dll        //            (MXDWSerializationManager, XpsDocument, IXpsFixedDocumentSequenceReader, PrintTicket, PrintTicketLevel)
@@ -110,7 +110,7 @@ namespace Xps
 
         /// <summary>
         /// Instantiates a <c>XpsDocumentWriter</c> against an object implementing <c>XPSEmitter</c>.
-        /// </summary>        
+        /// </summary>
         /// <param name="serializeReach"><c>XPSEmitter</c> object that will serialize and write the document objects.</param>
         /// <param name="bogus"><c>Bogus</c> Bogus param to have a second internal constructor.</param>
         ///<SecurityNote>
@@ -123,14 +123,14 @@ namespace Xps
             );
 
         /// <summary>
-        /// Writes a <c>FixedDocumentSequence</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes a <c>FixedDocumentSequence</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="fixedDocumentSequence"><c>FixedDocumentSequence</c> object to be written.</param>
         /// <param name="printJobIdentifier">Print Job identifier.</param>
         /// <SecurityNote>
         /// Critical:      Although it returns the print job id, considerent critical information in Partial trust
         /// TreatAsSafe  : The caller needs DefaultPrinting permission to get the print job id from serialization manager.
-        ///                See the PackageSerializationManager.JobIdentifier property demanding in wcp/Print/Reach/Serialization/manager/MetroSerializationManager.cs 
+        ///                See the PackageSerializationManager.JobIdentifier property demanding in wcp/Print/Reach/Serialization/manager/MetroSerializationManager.cs
         /// </SecurityNote>
         [SecuritySafeCritical]
         void
@@ -140,8 +140,27 @@ namespace Xps
             );
 
         /// <summary>
+        /// Writes a <c>FixedDocumentSequence</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
+        /// <param name="fixedDocumentSequence"><c>FixedDocumentSequence</c> object to be written.</param>
+        /// <param name="printTicket">Print ticket.</param>
+        /// <param name="printJobIdentifier">Print Job identifier.</param>
+        /// <SecurityNote>
+        /// Critical:      Although it returns the print job id, considerent critical information in Partial trust
+        /// TreatAsSafe  : The caller needs DefaultPrinting permission to get the print job id from serialization manager.
+        ///                See the PackageSerializationManager.JobIdentifier property demanding in wcp/Print/Reach/Serialization/manager/MetroSerializationManager.cs
+        /// </SecurityNote>
+        [SecuritySafeCritical]
+        void
+        BeginPrintFixedDocumentSequence(
+            System::Windows::Documents::FixedDocumentSequence^      fixedDocumentSequence,
+            PrintTicket^                                            printTicket,
+            Int32&                                                  printJobIdentifier
+            );
+
+        /// <summary>
         /// Dispose objects and deletes the print job.
-        /// </summary>        
+        /// </summary>
         /// <SecurityNote>
         ///    Critical - Calls critical EndWrite
         ///</SecurityNote>
@@ -154,8 +173,8 @@ namespace Xps
     public:
 
         /// <summary>
-        /// Writes an <c>XpsDocument</c> to the destination object. 
-        /// </summary>        
+        /// Writes an <c>XpsDocument</c> to the destination object.
+        /// </summary>
         /// <param name="documentPath"><c>XpsDocument</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll (XpsDocument, IXpsFixedDocumentSequenceReader
@@ -168,10 +187,10 @@ namespace Xps
             );
 
         /// <summary>
-        /// Writes an <c>XpsDocument</c> to the destination object. 
-        /// </summary>        
+        /// Writes an <c>XpsDocument</c> to the destination object.
+        /// </summary>
         /// <param name="documentPath"><c>XpsDocument</c> object to be written.</param>
-        /// <param name="notificationLevel"><c>XpsDocumentNotificationLevel</C> 
+        /// <param name="notificationLevel"><c>XpsDocumentNotificationLevel</C>
         /// granularity of notification. if ReceiveNotificationEnabled is set, then the document would be re-serialized and extented
         /// XPS content can't be preserved.
         /// </param>
@@ -186,8 +205,8 @@ namespace Xps
             );
 
         /// <summary>
-        /// Writes an <c>DocumentPaginator</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes an <c>DocumentPaginator</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="documentPaginator"><c>DocumentPaginator</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll (PrintTicketLevel)
@@ -199,7 +218,7 @@ namespace Xps
         Write(
             System::Windows::Documents::DocumentPaginator^      documentPaginator
             ) override;
-    
+
         /// <aummary>
         /// Writes an <c>DocumentPaginator</c> to the <c>XPSEmitter</c> object.
         /// </summary>
@@ -218,8 +237,8 @@ namespace Xps
             ) override;
 
         /// <summary>
-        /// Writes a <c>Visual</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes a <c>Visual</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="visual"><c>Visual</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -250,8 +269,8 @@ namespace Xps
             ) override;
 
         /// <summary>
-        /// Writes a <c>DocumentSequence</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes a <c>DocumentSequence</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="documentSequence"><c>DocumentSequence</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -265,8 +284,8 @@ namespace Xps
             ) override;
 
         /// <summary>
-        /// Writes a <c>DocumentSequence</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes a <c>DocumentSequence</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="documentSequence"><c>DocumentSequence</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <SecurityNote>
@@ -282,8 +301,8 @@ namespace Xps
             ) override;
 
         /// <summary>
-        /// Writes a <c>FixedDocument</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes a <c>FixedDocument</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="fixedDocument"><c>FixedDocument</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -297,8 +316,8 @@ namespace Xps
             ) override;
 
         /// <summary>
-        /// Writes a <c>FixedDocument</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes a <c>FixedDocument</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="fixedDocument"><c>FixedDocument</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <SecurityNote>
@@ -314,8 +333,8 @@ namespace Xps
             ) override;
 
         /// <summary>
-        /// Writes a <c>FixedPage</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes a <c>FixedPage</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="fixedPage"><c>FixedPage</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -328,8 +347,8 @@ namespace Xps
             System::Windows::Documents::FixedPage^          fixedPage
             ) override;
 
-        /// Writes a <c>FixedPage</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Writes a <c>FixedPage</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="fixedPage"><c>FixedPage</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <SecurityNote>
@@ -344,10 +363,10 @@ namespace Xps
             PrintTicket^                                    printTicket
             ) override;
 
-        
+
         /// <summary>
-        /// Asynchronously Writes an <c>XpsDocument</c> to the destination object. 
-        /// </summary>        
+        /// Asynchronously Writes an <c>XpsDocument</c> to the destination object.
+        /// </summary>
         /// <param name="documentPath"><c>XpsDocument</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -360,10 +379,10 @@ namespace Xps
             );
 
         /// <summary>
-        /// Asynchronously Writes an <c>XpsDocument</c> to the destination object. 
-        /// </summary>        
+        /// Asynchronously Writes an <c>XpsDocument</c> to the destination object.
+        /// </summary>
         /// <param name="documentPath"><c>XpsDocument</c> object to be written.</param>
-        /// <param name="notificationLevel"><c>XpsDocumentNotificationLevel</C> 
+        /// <param name="notificationLevel"><c>XpsDocumentNotificationLevel</C>
         /// granularity of notification. if ReceiveNotificationEnabled is set, then the document would be re-serialized and extented
         /// XPS content can't be preserved.
         /// </param>
@@ -379,8 +398,8 @@ namespace Xps
             );
 
         /// <summary>
-        /// Asynchronously write an <c>DocumentPaginator</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Asynchronously write an <c>DocumentPaginator</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="documentPaginator"><c>DocumentPaginator</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -395,7 +414,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write an <c>DocumentPaginator</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="documentPaginator"><c>DocumentPaginator</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <SecurityNote>
@@ -412,7 +431,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write an <c>DocumentPaginator</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="documentPaginator"><c>DocumentPaginator</c> object to be written.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
         /// <SecurityNote>
@@ -429,7 +448,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write an <c>DocumentPaginator</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="documentPaginator"><c>DocumentPaginator</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
@@ -447,8 +466,8 @@ namespace Xps
             ) override;
 
         /// <summary>
-        /// Asynchronously write a <c>Visual</c> to the <c>XPSEmitter</c> object. 
-        /// </summary>        
+        /// Asynchronously write a <c>Visual</c> to the <c>XPSEmitter</c> object.
+        /// </summary>
         /// <param name="visual"><c>Visual</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -463,7 +482,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>Visual</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="visual"><c>Visual</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <SecurityNote>
@@ -480,7 +499,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>Visual</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="visual"><c>Visual</c> object to be written.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
         /// <SecurityNote>
@@ -497,7 +516,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>Visual</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="visual"><c>Visual</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
@@ -516,7 +535,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>DocumentSequence</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="documentSequence"><c>DocumentSequence</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -531,7 +550,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>DocumentSequence</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="documentSequence"><c>DocumentSequence</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <SecurityNote>
@@ -548,7 +567,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>DocumentSequence</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="documentSequence"><c>DocumentSequence</c> object to be written.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
         /// <SecurityNote>
@@ -565,7 +584,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>DocumentSequence</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="documentSequence"><c>DocumentSequence</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
@@ -584,7 +603,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>FixedDocument</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="fixedDocument"><c>FixedDocument</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -599,7 +618,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>FixedDocument</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="fixedDocument"><c>FixedDocument</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <SecurityNote>
@@ -616,7 +635,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>FixedDocument</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="fixedDocument"><c>FixedDocument</c> object to be written.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
         /// <SecurityNote>
@@ -633,7 +652,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>FixedDocument</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="fixedDocument"><c>FixedDocument</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
@@ -652,7 +671,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>FixedPage</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="fixedPage"><c>FixedPage</c> object to be written.</param>
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
@@ -667,7 +686,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>FixedPage</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="fixedPage"><c>FixedPage</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <SecurityNote>
@@ -684,7 +703,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>FixedPage</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="fixedPage"><c>FixedPage</c> object to be written.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
         /// <SecurityNote>
@@ -701,7 +720,7 @@ namespace Xps
 
         /// <summary>
         /// Asynchronously write a <c>FixedPage</c> to the <c>XPSEmitter</c> object.
-        /// </summary>        
+        /// </summary>
         /// <param name="fixedPage"><c>FixedPage</c> object to be written.</param>
         /// <param name="printTicket"><c>PrintTicket</c> to apply to object.</param>
         /// <param name="userSuppliedState">User supplied object.</param>
@@ -719,7 +738,7 @@ namespace Xps
             ) override;
 
         /// <SecurityNote>
-        ///    Critical - Uses type from non-APTCA reachframework.dll 
+        ///    Critical - Uses type from non-APTCA reachframework.dll
         ///               (XpsSerializationManagerAsync, NgcSerializationManagerAsync)
         ///    PublicOK - User is always prompted with a trusted Print Dialog before an XpsDocumentWriter instance is exposed in partial trust
         ///</SecurityNote>
@@ -728,7 +747,7 @@ namespace Xps
         void
         CancelAsync(
             ) override;
-        
+
         /// <summary>
         /// Creates and returns the <c>VisualsToXpsDocument</c> visuals collater for batch writing.
         /// </summary>
@@ -778,7 +797,7 @@ namespace Xps
             public:
 
             virtual
-            void 
+            void
             add(
                 WritingPrintTicketRequiredEventHandler^   handler
                 ) override
@@ -798,7 +817,7 @@ namespace Xps
             virtual
             void
             raise(
-                Object^                                sender, 
+                Object^                                sender,
                  WritingPrintTicketRequiredEventArgs^   e
                  )
             {
@@ -813,7 +832,7 @@ namespace Xps
             public:
 
             virtual
-            void 
+            void
             add(
                 WritingProgressChangedEventHandler^   handler
                 ) override
@@ -829,11 +848,11 @@ namespace Xps
             {
                 _WritingProgressChanged-=handler;
              }
-            
+
             virtual
             void
             raise(
-                Object^                                sender, 
+                Object^                                sender,
                  WritingProgressChangedEventArgs^   e
                  )
             {
@@ -846,7 +865,7 @@ namespace Xps
             public:
 
             virtual
-            void 
+            void
             add(
                 WritingCompletedEventHandler^   handler
                 ) override
@@ -862,11 +881,11 @@ namespace Xps
             {
                 _WritingCompleted-=handler;
              }
-            
+
             virtual
             void
             raise(
-                Object^                                sender, 
+                Object^                                sender,
                  WritingCompletedEventArgs^   e
                  )
             {
@@ -879,7 +898,7 @@ namespace Xps
             public:
 
             virtual
-            void 
+            void
             add(
                 WritingCancelledEventHandler^   handler
                 ) override
@@ -907,11 +926,11 @@ namespace Xps
 
 
             virtual
-            void 
+            void
             raise(
                 Object^                     sender,
                 WritingCancelledEventArgs^  args
-                ) 
+                )
             {
                 _WritingCancelled(sender,args);
             }
@@ -924,7 +943,7 @@ namespace Xps
         {
             internal:
 
-            void 
+            void
             add(
                 WritingPrintTicketRequiredEventHandler^   handler
                 )
@@ -947,7 +966,7 @@ namespace Xps
             [SecuritySafeCritical]
             void
             raise(
-                Object^                                sender, 
+                Object^                                sender,
                  WritingPrintTicketRequiredEventArgs^   e
                  )
             {
@@ -961,7 +980,7 @@ namespace Xps
 
         event WritingProgressChangedEventHandler^ _WritingProgressChanged;
         event WritingCompletedEventHandler^       _WritingCompleted;
-        event WritingCancelledEventHandler^ _WritingCancelled;      
+        event WritingCancelledEventHandler^ _WritingCancelled;
 
     internal:
         /// <SecurityNote>
@@ -998,12 +1017,12 @@ namespace Xps
         ///    Critical - Uses type from non-APTCA reachframework.dll (XpsWritingProgressChangeLevel        /// <SecurityNote>
         [SecurityCritical]
         WritingProgressChangeLevel
-        TranslateProgressChangeLevel( 
+        TranslateProgressChangeLevel(
             System::
             Windows::
-            Xps::Serialization::XpsWritingProgressChangeLevel xpsChangeLevel 
+            Xps::Serialization::XpsWritingProgressChangeLevel xpsChangeLevel
             );
-        
+
         /// <SecurityNote>
         ///  Critical    - Uses type from non-APTCA reachframework.dll (PrintTicket)
         ///  TreatAsSafe - User is always prompted with a trusted Print Dialog before an XpsDocumentWriter instance is exposed in partial trust
@@ -1097,7 +1116,7 @@ namespace Xps
         ///<SecurityNote>
         /// Critical    - Calls CreateXPSDocument when printing to MXDW driver
         /// TreatAsSafe - Only creates files at path passed back from the MXDW driver which is trusted
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecuritySafeCritical]
         bool
         BeginWrite(
@@ -1145,7 +1164,7 @@ namespace Xps
         ///<SecurityNote>
         /// Critical    - When running in PT, we need to evelate to determine if the driver is Mxdw
         /// TreatAsSafe - the driver name is not handed outside of the method, besides it's not considered to be critical in PT.
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecuritySafeCritical]
         bool
         MxdwConversionRequired(
@@ -1154,7 +1173,7 @@ namespace Xps
 
         ///<SecurityNote>
         /// Critical    - Returns User selected path from MXDW driver
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         String^
         MxdwInitializeOptimizationConversion(
@@ -1163,7 +1182,7 @@ namespace Xps
 
         ///<SecurityNote>
         /// Critical    - Will create an arbitrary file at the passed in file name
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         void
         CreateXPSDocument(
@@ -1187,59 +1206,59 @@ namespace Xps
         };
 
         PrintQueue^                         destinationPrintQueue;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         XpsDocument^                        destinationDocument;
-        
+
         DocumentWriterState                 currentState;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         PrintTicket^                        currentUserPrintTicket;
-        
+
         Object^                             _currentUserState;
         ArrayList^                          _printTicketSequences;
         ArrayList^                          _writingProgressSequences;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         MXDWSerializationManager^           _mxdwManager;
-        
+
         Package^                            _mxdwPackage;
         Boolean                             _isDocumentCloned;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         XpsDocument^                        _sourceXpsDocument;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         IXpsFixedDocumentSequenceReader^    _sourceXpsFixedDocumentSequenceReader;
-        
+
         Package^                            _sourcePackage;
         Int32                               _writingCancelledEventHandlersCount;
         PrintSystemDispatcherObject^    accessVerifier;
 
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         System::Windows::Xps::Serialization::PrintTicketLevel              currentWriteLevel;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         System::Windows::Xps::Serialization::PackageSerializationManager^  _manager;
 
@@ -1251,8 +1270,8 @@ namespace Xps
     {
 
     internal:
-        
-    
+
+
         /// <SecurityNote>
         ///     Critical - Initializes critical members(_mxdwManager, destinationDocument)
         ///     Safe     - Initializes to safe values (null)
@@ -1262,7 +1281,7 @@ namespace Xps
             XpsDocumentWriter^  writer,
             PrintQueue^         printQueue
             );
-    
+
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll (XpsDocument)
         /// <SecurityNote>
@@ -1271,7 +1290,7 @@ namespace Xps
             XpsDocumentWriter^  writer,
             XpsDocument^        document
             );
-    
+
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll (PrintTicket)
         /// <SecurityNote>
@@ -1282,7 +1301,7 @@ namespace Xps
             PrintTicket^        documentSequencePrintTicket,
             PrintTicket^        documentPrintTicket
             );
-    
+
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll (PrintTicket, XpsDocument)
         /// <SecurityNote>
@@ -1293,14 +1312,14 @@ namespace Xps
             PrintTicket^        documentSequencePrintTicket,
             PrintTicket^        documentPrintTicket
             );
-    
+
     public:
 
         virtual
         void
         BeginBatchWrite(
             ) override;
-    
+
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
         ///    PublicOK - User is always prompted with a trusted Print Dialog before an XpsDocumentWriter instance is exposed in partial trust
@@ -1310,13 +1329,13 @@ namespace Xps
         void
         EndBatchWrite(
             ) override;
-    
+
         virtual
         void
         Write(
             System::Windows::Media::Visual^     visual
             ) override;
-    
+
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
         ///    PublicOK - User is always prompted with a trusted Print Dialog before an XpsDocumentWriter instance is exposed in partial trust
@@ -1328,13 +1347,13 @@ namespace Xps
             System::Windows::Media::Visual^     visual,
             PrintTicket^                        printTicket
             ) override;
-    
+
         virtual
         void
         WriteAsync(
             System::Windows::Media::Visual^     visual
             ) override;
-    
+
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
         ///    PublicOK - User is always prompted with a trusted Print Dialog before an XpsDocumentWriter instance is exposed in partial trust
@@ -1346,14 +1365,14 @@ namespace Xps
             System::Windows::Media::Visual^     visual,
             PrintTicket^                        printTicket
             ) override;
-        
+
         virtual
         void
         WriteAsync(
             System::Windows::Media::Visual^     visual,
             Object^                             userSuppliedState
             ) override;
-    
+
         /// <SecurityNote>
         ///    Critical - Uses type from non-APTCA reachframework.dll
         ///    PublicOK - User is always prompted with a trusted Print Dialog before an XpsDocumentWriter instance is exposed in partial trust
@@ -1414,7 +1433,7 @@ namespace Xps
         ///<SecurityNote>
         /// Critical    - Calls CreateXPSDocument when printing to MXDW driver
         /// TreatAsSafe - Only creates files at path passed back from the MXDW driver which is trusted
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecuritySafeCritical]
         bool
         WriteVisual(
@@ -1433,7 +1452,7 @@ namespace Xps
         ///<SecurityNote>
         /// Critical    - When running in PT, we need to evelate to determine if the driver is Mxdw
         /// TreatAsSafe - the driver name is not handed outside of the method, besides it's not considered to be critical in PT.
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecuritySafeCritical]
         bool
         MxdwConversionRequired(
@@ -1442,7 +1461,7 @@ namespace Xps
 
         ///<SecurityNote>
         /// Critical    - Exposes user selected file path
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         String^
         MxdwInitializeOptimizationConversion(
@@ -1451,7 +1470,7 @@ namespace Xps
 
         ///<SecurityNote>
         /// Critical    - Will create an arbitrary file at the passed in file name
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         void
         CreateXPSDocument(
@@ -1479,38 +1498,38 @@ namespace Xps
         };
 
         Object^                     _currentUserState;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         PrintTicket^                _documentSequencePrintTicket;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         PrintTicket^                _documentPrintTicket;
-        
+
         XpsDocumentWriter^          parentWriter;
         VisualsCollaterState        currentState;
         PrintQueue^                 destinationPrintQueue;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         XpsDocument^                destinationDocument;
         bool                        isPrintTicketEventHandlerSet;
         bool                        isCompletionEventHandlerSet;
         bool                        isProgressChangedEventHandlerSet;
-        
+
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         MXDWSerializationManager^   _mxdwManager;
-        
+
         Package^                    _mxdwPackage;
         Hashtable^                  _printTicketsTable;
         ArrayList^                  _printTicketSequences;
@@ -1519,12 +1538,12 @@ namespace Xps
 
         ///<SecurityNote>
         /// Critical    - Field for critical type
-        ///</SecurityNote>            
+        ///</SecurityNote>
         [SecurityCritical]
         System::Windows::Xps::Serialization::PackageSerializationManager^  _manager;
     };
 
-    
+
     /// <summary>
     /// This class is used to throw exceptions from the XpsDocumentWriter and related classes.
     /// </summary>
@@ -1533,19 +1552,19 @@ namespace Xps
     {
     public:
         /// <summary>
-        /// 
+        ///
         /// </summary>
         XpsWriterException(
             );
-        
+
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         XpsWriterException(
             String^     message
             );
-        
+
         /// <summary>
         ///
         /// </summary>

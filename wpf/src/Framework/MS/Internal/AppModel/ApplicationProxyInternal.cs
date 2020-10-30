@@ -13,7 +13,7 @@
 //              invoking the delegate from the right thread.
 //
 // History:
-//  07/03/2003 [....]  Created
+//  07/03/2003 Microsoft  Created
 //  10/04/2005 FrankGor Documented & refactored class; primary reason was ensure
 //                      disposal of all XpsViewer (DocumentApplication)
 //                      resources
@@ -22,10 +22,10 @@
 //**
 //** IMPORTANT: Running arbitrary application code in the context of an incoming call from the browser
 //**    should be avoided. This could lead to unexpected reentrancy (on either side) or making the
-//      browser frame unresponsive while the application code is running. Bug 1139336 illustrates
-//      what can happen if the application code enters a local message loop while the browser is
-//      blocked. To avoid such situations in general, use Dispatcher.BeginInvoke() instead of making
-//      direct calls into unknown code.
+//      browser frame unresponsive while the application code is running. 
+
+
+
 
 
 using System;
@@ -342,7 +342,7 @@ namespace MS.Internal.AppModel
             if (_show)
             {
                 // The window is shown asynchronously (using Visibility, not Show()) to allow first restoring
-                // the Journal on history navigation. This prevents bug 1367999.
+                // the Journal on history navigation. This prevents 
                 _rbw.Value.Visibility = Visibility.Visible;
 
                 // initial focus should be on us, not the browser frame
@@ -596,7 +596,7 @@ namespace MS.Internal.AppModel
                 // The entry may be null here when the user has selected "New Window" or pressed Ctrl+N.
                 // In this case the browser calls us on IPersistHistory::Save and then throws that data
                 // away.  Hopefully at some point in the future that saved data will be loaded in the new
-                // window via IPersistHistory::Load.  This unusual behavior is tracked in bug 1353584.
+                // window via IPersistHistory::Load.  This unusual behavior is tracked in 
             }
 
             if (entry != null)
@@ -808,7 +808,7 @@ namespace MS.Internal.AppModel
                 if (! _rbw.Value.JournalNavigationScope.NavigateToEntry(index))
                 {
                     // When the navigation is canceled, we want to notify browser to prevent the internal journal from
-                    // getting out of [....] with the browser's.
+                    // getting out of sync with the browser's.
                     // The exception will be caught by the interop layer and browser will cancel the navigation as a result.
 
                     // If the navigation is initiated pragmatically by calling GoBack/Forward (comparing to user initiated

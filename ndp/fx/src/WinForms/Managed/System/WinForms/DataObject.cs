@@ -587,8 +587,8 @@ namespace System.Windows.Forms {
 
         /// <include file='doc\DataObject.uex' path='docs/doc[@for="DataObject.GetDataIntoOleStructs"]/*' />
         /// <devdoc>
-        ///     Populates Ole datastructes from a [....] dataObject. This is the core
-        ///     of [....] to OLE conversion.
+        ///     Populates Ole datastructes from a Microsoft dataObject. This is the core
+        ///     of Microsoft to OLE conversion.
         /// </devdoc>
         /// <internalonly/>
         private void GetDataIntoOleStructs(ref FORMATETC formatetc,
@@ -876,7 +876,16 @@ namespace System.Windows.Forms {
                 hr = SaveStringToHandle(medium.unionmember, data.ToString(), false);
             }
             else if (format.Equals(DataFormats.Html)) {
-                 hr = SaveHtmlToHandle(medium.unionmember, data.ToString());
+                if (WindowsFormsUtils.TargetsAtLeast_v4_5) {
+                    hr = SaveHtmlToHandle(medium.unionmember, data.ToString());
+                }
+                else {
+                    // This will return UTF-8 strings as an array of ANSI characters, which makes it the wrong behavior.
+                    // Since there are enough samples online how to workaround that, we will continue to return the
+                    // incorrect value to applications targeting netfx 4.0
+                    // DevDiv2 
+                    hr = SaveStringToHandle(medium.unionmember, data.ToString(), false);
+                }
             }
             else if (format.Equals(DataFormats.UnicodeText)) {
                  hr = SaveStringToHandle(medium.unionmember, data.ToString(), true);
@@ -1447,7 +1456,16 @@ namespace System.Windows.Forms {
                         data = ReadStringFromHandle(hglobal, false);
                     }
                     else if (format.Equals(DataFormats.Html)) {
-                        data = ReadHtmlFromHandle(hglobal);
+                        if (WindowsFormsUtils.TargetsAtLeast_v4_5) {
+                            data = ReadHtmlFromHandle(hglobal);
+                        }
+                        else {
+                            // This will return UTF-8 strings as an array of ANSI characters, which makes it the wrong behavior.
+                            // Since there are enough samples online how to workaround that, we will continue to return the
+                            // incorrect value to applications targeting netfx 4.0
+                            // DevDiv2 
+                            data = ReadStringFromHandle(hglobal, false);
+                        }
                     }
 
                     else if (format.Equals(DataFormats.UnicodeText)) {
@@ -1728,11 +1746,10 @@ namespace System.Windows.Forms {
 
 
                     for (int i=0; i<count; i++) {
-                        int charlen = UnsafeNativeMethods.DragQueryFile(new HandleRef(null, hdrop), i, sb, sb.Capacity);
-                        string s = sb.ToString();
-                        if (s.Length > charlen) {
-                            s = s.Substring(0, charlen);
-                        }
+                        int charlen = UnsafeNativeMethods.DragQueryFileLongPath(new HandleRef(null, hdrop), i, sb);
+                        if (0 == charlen)
+                            continue;
+                        string s = sb.ToString(0, charlen);
 
                         // SECREVIEW : do we really need to do this?
                         //

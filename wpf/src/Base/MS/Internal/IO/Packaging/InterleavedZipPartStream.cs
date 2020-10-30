@@ -539,7 +539,7 @@ namespace MS.Internal.IO.Packaging
         private PieceDirectory       _dir;
 
         // Cached value for the current piece number.
-        // (Lazily [....]'ed to _currentOffset when GetCurrentPieceNumber() is invoked.)
+        // (Lazily sync'ed to _currentOffset when GetCurrentPieceNumber() is invoked.)
         private int                 _currentPieceNumber;
 
         // Control value to decide whether to use _currentPieceNumber without updating it.

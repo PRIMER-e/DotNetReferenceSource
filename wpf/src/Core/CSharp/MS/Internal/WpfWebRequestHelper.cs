@@ -8,7 +8,7 @@
 //      type from filename.
 //
 //  History:
-//      2007/04/11   [....]     Created
+//      2007/04/11   Microsoft     Created
 //
 //------------------------------------------------------------------------
 
@@ -74,8 +74,8 @@ static class WpfWebRequestHelper
             // It will then call this method again.
         }
 
-        // Work around the issue with FileWebRequest not handling #. Details in bug 1096304.
-        // FileWebRequest doesn't support the concept of query and fragment. 
+        // Work around the issue with FileWebRequest not handling #. Details in 
+
         if (uri.IsFile)
         {
             uri = new Uri(uri.GetLeftPart(UriPartial.Path));

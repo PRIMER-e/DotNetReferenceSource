@@ -200,8 +200,8 @@ namespace System.Windows.Media.Animation
             // We check our static default fields which are of type Freezable
             // to make sure that they are not mutable, otherwise we will throw
             // if these get touched by more than one thread in the lifetime
-            // of your app.  (Windows OS Bug #947272)
-            //
+            // of your app.  (Windows OS 
+
             Debug.Assert(s_Children == null || s_Children.IsFrozen,
                 "Detected context bound default value TimelineGroup.s_Children (See OS Bug #947272).");
 

@@ -24,18 +24,18 @@ using MS.Win32;
 
 namespace MS.Internal.AutomationProxies
 {
-    // Helper static class used by the Win32 proxies to get [....] information
+    // Helper static class used by the Win32 proxies to get Microsoft information
     static class WindowsFormsHelper
     {
         #region Proxy Create
 
-        // Static Create method called by UIAutomation to create proxies for [....] controls.
+        // Static Create method called by UIAutomation to create proxies for Microsoft controls.
         // returns null if unsuccessful
         internal static IRawElementProviderSimple Create(IntPtr hwnd, int idChild, int idObject)
         {
             // Currently there is an issue with CLR remoting that causes Accessible.CreateNativeFromEvent() to fail
-            // for [....] controls.  Until that is resolved use AccessibleObjectFromWindow() instead.  It will
-            // return a Native IAccessble and not a OleAcc implementaion.  [....] does provide a Native IAccessible.
+            // for Microsoft controls.  Until that is resolved use AccessibleObjectFromWindow() instead.  It will
+            // return a Native IAccessble and not a OleAcc implementaion.  Microsoft does provide a Native IAccessible.
 
             Accessible acc = null;
             if (Accessible.AccessibleObjectFromWindow(hwnd, idObject, ref acc) != NativeMethods.S_OK || acc == null)
@@ -75,13 +75,13 @@ namespace MS.Internal.AutomationProxies
             return null;
         }
 
-        // Static Create method called by UIAutomation to create a Button proxy for [....] Buttons.
+        // Static Create method called by UIAutomation to create a Button proxy for Microsoft Buttons.
         // returns null if unsuccessful
         internal static IRawElementProviderSimple CreateButton(IntPtr hwnd)
         {
             // Currently there is an issue with CLR remoting that causes Accessible.CreateNativeFromEvent() to fail
-            // for [....] controls.  Until that is resolved use AccessibleObjectFromWindow() instead.  It will
-            // return a Native IAccessble and not a OleAcc implementaion.  [....] does provide a Native IAccessible.
+            // for Microsoft controls.  Until that is resolved use AccessibleObjectFromWindow() instead.  It will
+            // return a Native IAccessble and not a OleAcc implementaion.  Microsoft does provide a Native IAccessible.
 
             Accessible acc = null;
             if (Accessible.AccessibleObjectFromWindow(hwnd, NativeMethods.OBJID_CLIENT, ref acc) != NativeMethods.S_OK || acc == null)

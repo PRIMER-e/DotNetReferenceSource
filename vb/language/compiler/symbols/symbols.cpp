@@ -1169,7 +1169,7 @@ void Symbols::GetClass
     // but we need some information right now and this at least catches the obvious case where the class is clearly abstract ( it has MustOverride methods in it )
     ClassSymbol->SetMustOverridesSatisifed(!(DeclFlags & DECLF_HasMustOverrideMethod));
     ClassSymbol->SetNotInheritable(!!(DeclFlags & DECLF_NotInheritable));
-    ClassSymbol->SetMustInherit(!!(DeclFlags & DECLF_MustInherit)); // [....]: Hack Alert!  CLASSF_MustInherit == DECLF_BaseOnly or this wouldn't work.  I'm forced
+    ClassSymbol->SetMustInherit(!!(DeclFlags & DECLF_MustInherit)); // Microsoft: Hack Alert!  CLASSF_MustInherit == DECLF_BaseOnly or this wouldn't work.  I'm forced
     // down this primrose path by the existing design (this is apparently being done on access flags, as well).  I will clean this up when I get the chance to fix it for
     // all of Declared.
     ClassSymbol->SetIsPartialType(!!(DeclFlags & DECLF_Partial ));

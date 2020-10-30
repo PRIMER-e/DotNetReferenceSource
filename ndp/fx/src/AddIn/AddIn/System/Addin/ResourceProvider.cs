@@ -42,12 +42,12 @@ namespace System.AddIn
             {
                 Contract.Requires(Path.IsPathRooted(addInAssemblyFileName));
 
-                // @
-
-
-
-
-
+                // @TODO: This should be using ReflectionOnlyLoadFrom to ensure we
+                // don't run into potential security issues with module constructors,
+                // but the V2 ResourceManager uses normal reflection to get the custom
+                // attributes on an assembly, so this throws an exception on V2.  
+                // In V3, we can change the ResourceManager to call 
+                // GetCustomAttributeData instead, and use ReflectionOnlyLoadFrom here.
                 Assembly addIn = Assembly.LoadFrom(addInAssemblyFileName);
                 ResourceManager resMgr = new ResourceManager(resMgrBaseName, addIn);
                 CultureInfo culture = Thread.CurrentThread.CurrentUICulture;

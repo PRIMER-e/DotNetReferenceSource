@@ -7,7 +7,7 @@
 // Description: Cached metrics of an inline objects. 
 //
 // History:  
-//  04/25/2003 : [....] - moving from Avalon branch.
+//  04/25/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 

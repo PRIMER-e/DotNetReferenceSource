@@ -351,7 +351,7 @@ namespace System.Security.Policy
                 this.lblMachineAccess.Font =
                 this.lblPublisher.Font = new Font(this.Font, FontStyle.Bold);
             }
-            Invalidate(); // Workaround a bug where the form's background does not repaint properly
+            Invalidate(); // Workaround a 
         }
     }
 }

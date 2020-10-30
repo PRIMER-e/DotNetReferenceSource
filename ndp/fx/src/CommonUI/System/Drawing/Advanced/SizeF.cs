@@ -143,7 +143,6 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public bool IsEmpty {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return width == 0 && height == 0;
             }

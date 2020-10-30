@@ -130,9 +130,9 @@ namespace System.Windows.Automation.Peers
             }
         }
 
-        // Note: see bug 1555137 for details.
-        // Never inline, as we don't want to unnecessarily link the
-        // automation DLL via the ISelectionProvider interface type initialization.
+        // Note: see 
+
+
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         internal void RaiseSelectionEvents(SelectionChangedEventArgs e)
         {

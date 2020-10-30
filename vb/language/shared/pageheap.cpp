@@ -2,7 +2,7 @@
 //
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 //
-//  Page Heap management.  Ruthlessly stolen from the C# team.  Please notify [....] and [....]
+//  Page Heap management.  Ruthlessly stolen from the C# team.  Please notify Microsoft and Microsoft
 //  about any changes to this file.  It is likely the change will need to be mirrored in the C#
 //  implementation
 //
@@ -62,7 +62,9 @@ void PageHeap::StaticInit()
 
         OSVERSIONINFO osvi;
         osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+#pragma warning ( disable : 4996 )
         BOOL ok = GetVersionEx(&osvi);
+#pragma warning ( default : 4996 )
         VSASSERT(ok, "Invalid");
         reliableCommit = ok && osvi.dwMajorVersion >= 5;
     }
@@ -112,7 +114,7 @@ PageHeap::~PageHeap()
 
 void PageHeap::ShrinkUnusedResources()
 {
-    //[....] the ordering of these is important. First free all possible
+    //Microsoft the ordering of these is important. First free all possible
     //pages. That may result in an unused arena which are harvested by the second call.
     DecommitUnusedPages();
     FreeUnusedArenas();
@@ -126,7 +128,7 @@ void PageHeap::ShrinkUnusedResources()
 #endif
 }
 
-// [....] Search a segment of pages in an arena for cPages of contiguous free pages.
+// Microsoft Search a segment of pages in an arena for cPages of contiguous free pages.
 int PageHeap::PageArena::LookForPages(unsigned int cPages, int indexPageBegin, int indexLastValidPage)
 {
     unsigned int cPagesRemaining = cPages;
@@ -240,7 +242,7 @@ void * PageHeap::PageArena::AllocPagesHelper(int iPage, unsigned int cPages, Pag
 
 void* PageHeap::PageArena::AllocPages(unsigned int cPages, PageHeap& parent)
 {
-    //[....] If SPREAD_ALLOCATIONS defined, minimize the reuse of address space.
+    //Microsoft If SPREAD_ALLOCATIONS defined, minimize the reuse of address space.
     //Do this so that pointers to address space that has been allocated
     //and then freed more likely point to either decommitted or protected pages.
     //Otherwise, if we continue to reuse the same address space, dangling ptrs 
@@ -479,7 +481,7 @@ void PageHeap::FreePagesHelper(ProtectedEntityFlagsEnum entity, PageArena * aren
     {
         iPage = initialPageIndex;
         BOOL b = VirtualFree((BYTE *)arena->pages + (iPage << pageShift), sz, MEM_DECOMMIT);
-        ASSERT(b);  //[....] throw VcsException?
+        ASSERT(b);  //Microsoft throw VcsException?
         size_t cPgs = sz >> pageShift;
         if (b)
         {

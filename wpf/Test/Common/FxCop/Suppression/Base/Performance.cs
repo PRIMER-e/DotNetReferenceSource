@@ -26,8 +26,8 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.Security.RightsManagement.ClientSession.GetGrantsFromBoundUseLicense(MS.Internal.Security.RightsManagement.SafeRightsManagementHandle,System.Security.RightsManagement.ContentUser):System.Collections.Generic.List`1<System.Security.RightsManagement.ContentGrant>")]
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.Security.RightsManagement.ClientSession.GetGrantsFromBoundUseLicenseList(System.Collections.Generic.List`1<MS.Internal.Security.RightsManagement.SafeRightsManagementHandle>,System.Security.RightsManagement.ContentUser):System.Collections.Generic.List`1<System.Security.RightsManagement.ContentGrant>")]
@@ -67,7 +67,7 @@ using System.Diagnostics.CodeAnalysis;
 // Bug ID: 1131122
 // Developer: patricsw
 // Reason: All of these methods are part of a generic data structure object. Although the methods are not currently
-//         called it would seem ---- to delete them so that in the future somebody would have to reimplement them
+//         called it would seem silly to delete them so that in the future somebody would have to reimplement them
 //         if they needed them (i.e. it sorts of like implementing a list with GetFirst()/GetLast() and deleting
 //         GetLast() because it hasn't been used yet..for code maintenance it makes sense (IMHO) to leave these in).
 //***************************************************************************************************************************
@@ -93,7 +93,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="type", Target="MS.Utility.FrugalObjectList`1")]
 
 // Bug ID: 1653880
-// Developer: [....]
+// Developer: SamBent
 // Reason:  Dispose is not always able to remove the subclass from the WndProc chain.
 //          The Finalizer uses a much more aggressive approach that always removes
 //          the subclass, perhaps at the expense of other subclasses.  Suppressing

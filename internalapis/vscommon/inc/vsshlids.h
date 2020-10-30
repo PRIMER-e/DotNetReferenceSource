@@ -497,7 +497,7 @@
 #define UICONTEXT_SolutionHasSingleProject  { 0xadfc4e66, 0x397, 0x11d1, { 0x9f, 0x4e, 0x0, 0xa0, 0xc9, 0x11, 0x0, 0x4f } }
 #define UICONTEXT_SolutionHasMultipleProjects   { 0x93694fa0, 0x397, 0x11d1, { 0x9f, 0x4e, 0x0, 0xa0, 0xc9, 0x11, 0x0, 0x4f } }
 #define UICONTEXT_CodeWindow        { 0x8fe2df1d, 0xe0da, 0x4ebe, { 0x9d, 0x5c, 0x41, 0x5d, 0x40, 0xe4, 0x87, 0xb5 } }
-#define UICONTEXT_NotBuildingAndNotDebugging   { 0x48ea4a80, 0xf14e, 0x4107, { 0x88, 0xfa, 0x8d, 0x0, 0x16, 0xf3, 0xb, 0x9c } } //VS 2005 Bug #35207 add new cmdUIGuid
+#define UICONTEXT_NotBuildingAndNotDebugging   { 0x48ea4a80, 0xf14e, 0x4107, { 0x88, 0xfa, 0x8d, 0x0, 0x16, 0xf3, 0xb, 0x9c } } //VS 2005 
 #define UICONTEXT_SolutionExistsAndNotBuildingAndNotDebugging   { 0xd0e4deec, 0x1b53, 0x4cda, { 0x85, 0x59, 0xd4, 0x54, 0x58, 0x3a, 0xd2, 0x3b } }
 #define UICONTEXT_SolutionHasAppContainerProject   { 0x7CAC4AE1, 0x2E6B, 0x4B02, { 0xA9, 0x1C, 0x71, 0x61, 0x1E, 0x86, 0xF2, 0x73 } }
 // from vsshell110.h
@@ -663,9 +663,9 @@
 #define IDG_VS_MM_TOOLSADDINS         0x0104    // Tools/Addins menu goes here
 #define IDG_VS_MM_WINDOWHELP          0x0105    // Window/Help menus go here
 #define IDG_VS_MM_FULLSCREENBAR       0x0106    // Full Screen group
-//VS 2005 Bug #58088   Put refactorings on top-level menu 
+//VS 2005 
 #define IDG_VS_MM_REFACTORING         0x0107    // Refactorings go here
-#define IDG_VS_MM_REFACTORING_JS      0x0108    // VS 2005 bug #275998
+#define IDG_VS_MM_REFACTORING_JS      0x0108    // VS 2005 
 
 // All Macros Groups
 #define IDG_VS_MM_MACROS              0x010A
@@ -727,7 +727,7 @@
 #define IDG_VS_VIEW_OBJBRWSR          0x013A
 #define IDG_VS_VIEW_LINKS             0x013B
 #define IDG_VS_VIEW_COMMANDWELL       0x013C
-#define IDG_VS_VIEW_SYMBOLNAVIGATE_JS 0x013D // VS 2005 bug #303148
+#define IDG_VS_VIEW_SYMBOLNAVIGATE_JS 0x013D // VS 2005 
 
 // Project Menu Groups
 #define IDG_VS_PROJ_ADD               0x0140
@@ -900,7 +900,7 @@
 #define IDG_VS_CODEWIN_REFACTORING  0x02b5
 // 0x02B6 used below in IDG_VS_FINDRESULTS1_STOPFIND
 // 0x02B7 used below in IDG_VS_FINDRESULTS2_STOPFIND
-#define IDG_VS_CODEWIN_REFACTORING_JS 0x02b8 // VS 2005 bug #275998
+#define IDG_VS_CODEWIN_REFACTORING_JS 0x02b8 // VS 2005 
 #define IDG_VS_CODEWIN_LANGUAGE     0x02D0
 #define IDG_VS_CODEWIN_ADVANCED		0x02D1
 #define IDG_VS_CODEWIN_SNIPPETS     0x02D2

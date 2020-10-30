@@ -368,7 +368,7 @@ namespace System.Runtime.Remoting.Channels.Tcp
                 AcceptSocketCallback(ar);
         }
 
-        // This method is used by the helper to convert a [....] BeginAccept to async
+        // This method is used by the helper to convert a sync BeginAccept to async
         void AcceptSocketCallbackAsync(Object state)
         {
             AcceptSocketCallback((IAsyncResult) state);
@@ -619,7 +619,7 @@ namespace System.Runtime.Remoting.Channels.Tcp
                 // No response needed, but the following method will make sure that
                 //   we send at least a skeleton reply if the incoming request was
                 //   not marked OneWayRequest (client/server metadata could be out of
-                //   [....]).
+                //   sync).
                 streamManager.SendResponse(responseHeaders, responseStream);
                 break;
             } // case ServerProcessing.OneWay

@@ -460,8 +460,8 @@ namespace System.Management.Instrumentation
         {
             lock(mapQueryIdToQuery)
             {
-                // HACK: for bug where CancelQuery is not called correctly
-                // and we get a NewQuery where dwId is already in our hashtable
+                // HACK: for 
+
                 if(mapQueryIdToQuery.ContainsKey(dwId))
                     mapQueryIdToQuery.Remove(dwId);
                 mapQueryIdToQuery.Add(dwId, wszQuery);

@@ -48,6 +48,7 @@ namespace System.Windows.Media
         /// <param name="typeface">Type face used to display text.</param>
         /// <param name="emSize">Font em size in visual units (1/96 of an inch).</param>
         /// <param name="foreground">Foreground brush used to render text.</param>
+        [Obsolete("Use the PixelsPerDip override", false)]
         public FormattedText(
             string textToFormat,
             CultureInfo culture,
@@ -77,8 +78,41 @@ namespace System.Windows.Media
         /// <param name="typeface">Type face used to display text.</param>
         /// <param name="emSize">Font em size in visual units (1/96 of an inch).</param>
         /// <param name="foreground">Foreground brush used to render text.</param>
+        /// <param name="pixelsPerDip">DPI scale on which to render text</param>
+        public FormattedText(
+            string textToFormat,
+            CultureInfo culture,
+            FlowDirection flowDirection,
+            Typeface typeface,
+            double emSize,
+            Brush foreground,
+            double pixelsPerDip) : this(
+                textToFormat,
+                culture,
+                flowDirection,
+                typeface,
+                emSize,
+                foreground,
+                null,
+                TextFormattingMode.Ideal,
+                pixelsPerDip
+                )
+
+        {
+        }
+
+        /// <summary>
+        /// Construct a FormattedText object.
+        /// </summary>
+        /// <param name="textToFormat">String of text to be displayed.</param>
+        /// <param name="culture">Culture of text.</param>
+        /// <param name="flowDirection">Flow direction of text.</param>
+        /// <param name="typeface">Type face used to display text.</param>
+        /// <param name="emSize">Font em size in visual units (1/96 of an inch).</param>
+        /// <param name="foreground">Foreground brush used to render text.</param>
         /// <param name="numberSubstitution">Number substitution behavior to apply to the text; can be null,
         /// in which case the default number number method for the text culture is used.</param>
+        [Obsolete("Use the PixelsPerDip override", false)]
         public FormattedText(
             string textToFormat,
             CultureInfo culture,
@@ -95,7 +129,7 @@ namespace System.Windows.Media
                 foreground,
                 numberSubstitution,
                 TextFormattingMode.Ideal
-            )
+                )
         {
         }
 
@@ -110,6 +144,41 @@ namespace System.Windows.Media
         /// <param name="foreground">Foreground brush used to render text.</param>
         /// <param name="numberSubstitution">Number substitution behavior to apply to the text; can be null,
         /// in which case the default number number method for the text culture is used.</param>
+        /// <param name="pixelsPerDip">DPI scale on which to render text.</param>
+        public FormattedText(
+            string textToFormat,
+            CultureInfo culture,
+            FlowDirection flowDirection,
+            Typeface typeface,
+            double emSize,
+            Brush foreground,
+            NumberSubstitution numberSubstitution,
+            double pixelsPerDip) : this(
+                textToFormat,
+                culture,
+                flowDirection,
+                typeface,
+                emSize,
+                foreground,
+                numberSubstitution,
+                TextFormattingMode.Ideal,
+                pixelsPerDip
+                )
+        {
+        }
+
+        /// <summary>
+        /// Construct a FormattedText object.
+        /// </summary>
+        /// <param name="textToFormat">String of text to be displayed.</param>
+        /// <param name="culture">Culture of text.</param>
+        /// <param name="flowDirection">Flow direction of text.</param>
+        /// <param name="typeface">Type face used to display text.</param>
+        /// <param name="emSize">Font em size in visual units (1/96 of an inch).</param>
+        /// <param name="foreground">Foreground brush used to render text.</param>
+        /// <param name="numberSubstitution">Number substitution behavior to apply to the text; can be null,
+        /// in which case the default number number method for the text culture is used.</param>
+        [Obsolete("Use the PixelsPerDip override", false)]
         public FormattedText(
             string textToFormat,
             CultureInfo culture,
@@ -120,6 +189,38 @@ namespace System.Windows.Media
             NumberSubstitution numberSubstitution,
             TextFormattingMode textFormattingMode)
         {
+            InitFormattedText(textToFormat, culture, flowDirection, typeface, emSize, foreground, numberSubstitution, textFormattingMode, _pixelsPerDip);
+        }
+
+        /// <summary>
+        /// Construct a FormattedText object.
+        /// </summary>
+        /// <param name="textToFormat">String of text to be displayed.</param>
+        /// <param name="culture">Culture of text.</param>
+        /// <param name="flowDirection">Flow direction of text.</param>
+        /// <param name="typeface">Type face used to display text.</param>
+        /// <param name="emSize">Font em size in visual units (1/96 of an inch).</param>
+        /// <param name="foreground">Foreground brush used to render text.</param>
+        /// <param name="numberSubstitution">Number substitution behavior to apply to the text; can be null,
+        /// in which case the default number number method for the text culture is used.</param>
+        /// <param name="pixelsPerDip">DPI scale on which to render text.</param>
+        public FormattedText(
+            string textToFormat,
+            CultureInfo culture,
+            FlowDirection flowDirection,
+            Typeface typeface,
+            double emSize,
+            Brush foreground,
+            NumberSubstitution numberSubstitution,
+            TextFormattingMode textFormattingMode,
+            double pixelsPerDip)
+        {
+            InitFormattedText(textToFormat, culture, flowDirection, typeface, emSize, foreground, numberSubstitution, textFormattingMode, pixelsPerDip);
+        }
+
+        private void InitFormattedText(string textToFormat, CultureInfo culture, FlowDirection flowDirection, Typeface typeface,
+            double emSize, Brush foreground, NumberSubstitution numberSubstitution, TextFormattingMode textFormattingMode, double pixelsPerDip)
+        {
             if (textToFormat == null)
                 throw new ArgumentNullException("textToFormat");
 
@@ -129,20 +230,22 @@ namespace System.Windows.Media
             ValidateCulture(culture);
             ValidateFlowDirection(flowDirection, "flowDirection");
             ValidateFontSize(emSize);
+            _pixelsPerDip = pixelsPerDip;
 
             _textFormattingMode = textFormattingMode;
             _text = textToFormat;
             GenericTextRunProperties runProps = new GenericTextRunProperties(
-                                     typeface,
-                                     emSize,
-                                     12.0f, // default hinting size
-                                     null,  // decorations
-                                     foreground,
-                                     null,  // highlight background
-                                     BaselineAlignment.Baseline,
-                                     culture,
-                                     numberSubstitution
-                                     );
+                typeface,
+                emSize,
+                12.0f, // default hinting size
+                _pixelsPerDip,
+                null, // decorations
+                foreground,
+                null, // highlight background
+                BaselineAlignment.Baseline,
+                culture,
+                numberSubstitution
+                );
             _latestPosition = _formatRuns.SetValue(0, _text.Length, runProps, _latestPosition);
 
             _defaultParaProps = new GenericTextParagraphProperties(
@@ -152,26 +255,35 @@ namespace System.Windows.Media
                 false,
                 runProps,
                 TextWrapping.WrapWithOverflow,
-                0,  // line height not specified
-                0   // indentation not specified
+                0, // line height not specified
+                0 // indentation not specified
                 );
 
             InvalidateMetrics();
         }
-
 
         /// <summary>
         /// Returns the string of text to be displayed
         /// </summary>
         public string Text
         {
-            get
-            {
-                return _text;
-            }
+            get { return _text; }
         }
 
-        #endregion
+        /// <summary>
+        /// Sets the PixelsPerDip at which this text should be rendered. Must be set when creating FormattedObject and updated when DPI changes.
+        /// </summary>
+        public double PixelsPerDip
+        {
+            get { return _pixelsPerDip; }
+            set
+            {
+                _pixelsPerDip = value;
+                _defaultParaProps.DefaultTextRunProperties.PixelsPerDip = _pixelsPerDip;
+            }
+        }
+    
+    #endregion
 
         #region Formatting properties
 
@@ -255,6 +367,7 @@ namespace System.Windows.Media
                     runProps.Typeface,
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     foregroundBrush,
                     runProps.BackgroundBrush,
@@ -331,6 +444,7 @@ namespace System.Windows.Media
                     new Typeface(fontFamily, oldTypeface.Style, oldTypeface.Weight, oldTypeface.Stretch),
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -384,6 +498,7 @@ namespace System.Windows.Media
                     runProps.Typeface,
                     emSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -436,6 +551,7 @@ namespace System.Windows.Media
                     runProps.Typeface,
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -502,6 +618,7 @@ namespace System.Windows.Media
                     runProps.Typeface,
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -553,6 +670,7 @@ namespace System.Windows.Media
                     new Typeface(oldTypeface.FontFamily, oldTypeface.Style, weight, oldTypeface.Stretch),
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -604,6 +722,7 @@ namespace System.Windows.Media
                     new Typeface(oldTypeface.FontFamily, style, oldTypeface.Weight, oldTypeface.Stretch),
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -656,6 +775,7 @@ namespace System.Windows.Media
                     new Typeface(oldTypeface.FontFamily, oldTypeface.Style, oldTypeface.Weight, stretch),
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -707,6 +827,7 @@ namespace System.Windows.Media
                     typeface,
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     runProps.TextDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -758,6 +879,7 @@ namespace System.Windows.Media
                     runProps.Typeface,
                     runProps.FontRenderingEmSize,
                     runProps.FontHintingEmSize,
+                    _pixelsPerDip,
                     textDecorations,
                     runProps.ForegroundBrush,
                     runProps.BackgroundBrush,
@@ -1636,15 +1758,15 @@ namespace System.Windows.Media
         private CachedMetrics DrawAndCalculateMetrics(DrawingContext dc, Point drawingOffset, bool getBlackBoxMetrics)
         {
             // The calculation for FormattedText.Width and Overhangs was wrong for Right and Center alignment.
-            // Thus the fix of this bug is based on the fact that FormattedText always had 0 indent and no 
-            // TextMarkerProperties. These assumptions enabled us to remove TextLine.Start from the calculation 
-            // of the Width. TextLine.Start caused the calculation of FormattedText to be incorrect in cases 
-            // of Right and Center alignment because it took on -ve values when ParagraphWidth was 0 (which indicates infinite width). 
-            // This was a result of how TextFormatter interprets TextLine.Start. In the simplest case, it computes 
-            // TextLine.Start as Paragraph Width - Line Width (for Right alignment).
-            // So, the following two Debug.Asserts verify that the assumptions over which the bug fix was made are still valid 
-            // and not changed by adding features to FormattedText. Incase these assumptions were invalidated, the bug fix 
-            // should be revised and it will possibly involve alot of changes elsewhere.
+            // Thus the fix of this 
+
+
+
+
+
+
+
+
             Debug.Assert(_defaultParaProps.Indent == 0.0, "FormattedText was assumed to always have 0 indent. This assumption has changed and thus the calculation of Width and Overhangs should be revised.");
             Debug.Assert(_defaultParaProps.TextMarkerProperties == null, "FormattedText was assumed to always have no TextMarkerProperties. This assumption has changed and thus the calculation of Width and Overhangs should be revised.");
             CachedMetrics metrics = new CachedMetrics();
@@ -1744,6 +1866,7 @@ namespace System.Windows.Media
             public TextSourceImplementation(FormattedText text)
             {
                 _that = text;
+                PixelsPerDip = _that.PixelsPerDip;
             }
 
             /// <summary>
@@ -1765,11 +1888,14 @@ namespace System.Windows.Media
                     textSourceCharacterIndex
                     );
 
-                return new TextCharacters(_that._text,
+                TextRunProperties properties = thatFormatRider.CurrentElement as GenericTextRunProperties;
+                TextCharacters textCharacters = new TextCharacters(_that._text,
                     textSourceCharacterIndex,
                     thatFormatRider.Length,
-                    thatFormatRider.CurrentElement as GenericTextRunProperties
+                    properties
                     );
+                properties.PixelsPerDip = this.PixelsPerDip;
+                return textCharacters;
             }
 
 
@@ -1904,7 +2030,7 @@ namespace System.Windows.Media
 
         // properties and format runs
         private string                          _text;
-
+        private double                          _pixelsPerDip = MS.Internal.FontCache.Util.PixelsPerDip;
         private SpanVector                      _formatRuns = new SpanVector(null);
         private SpanPosition                    _latestPosition = new SpanPosition();
 

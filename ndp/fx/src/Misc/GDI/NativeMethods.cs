@@ -4,7 +4,7 @@
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -22,7 +22,7 @@ namespace System.Experimental.Gdi
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
 
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -207,7 +207,7 @@ namespace System.Experimental.Gdi
                     right - left,
                     bottom - top);
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             public override string ToString()
             {
                 Size size = this.Size;
@@ -236,7 +236,7 @@ namespace System.Experimental.Gdi
             {
                 return new System.Drawing.Point(this.x, this.y);
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             public override string ToString()
             {
                 return string.Format("{0}=[x={1}, y={2}]", this.GetType().Name, x, y);
@@ -275,7 +275,7 @@ namespace System.Experimental.Gdi
                 this.iRightMargin = rightMargin;
             }
 
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             public override string ToString()
             {
                 return string.Format("{0}=[tabLength={1}, leftMargin={2}, rightMargin={3}, lengthDrawn={4}]", this.GetType().Name, iTabLength, iLeftMargin, iRightMargin, uiLengthDrawn);
@@ -334,7 +334,7 @@ namespace System.Experimental.Gdi
                 this.lfFaceName         = lf.lfFaceName;
             }
 
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             public override string ToString() 
             {
                 return 
@@ -439,7 +439,7 @@ namespace System.Experimental.Gdi
             {
                 return new System.Drawing.Size(this.cx, this.cy);
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             public override string ToString()
             {
                 return string.Format("{0}=[width={1}, height={2}]", this.GetType().Name, cx, cy);

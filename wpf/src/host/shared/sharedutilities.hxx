@@ -7,9 +7,9 @@
 //    part of the exe.
 //
 //  History
-//      2005/05/04-[....]
+//      2005/05/04-Microsoft
 //          Moved InvokeBrowser to a shared location
-//      2007/09/20-[....]
+//      2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -23,6 +23,7 @@
 HRESULT GetDefaultBrowser(__inout_ecount(nBufferSize)LPCWSTR pszCommandlineToExec, size_t nBufferSize);
 HRESULT GetURLFromCommandLine(__in LPWSTR pszCommandStart, __deref_out_ecount(1) LPWSTR* ppszURL);
 HRESULT InvokeBrowser(__in LPCWSTR pszURL); 
+HRESULT GetInternetExplorerPath(_Out_writes_(MAX_PATH) LPWSTR pszPath);
 
 HRESULT GetRegistryDWORD(__in HKEY hKey, __in LPWSTR pswzSubKey, __in LPWSTR pswzName, __out_ecount(1) DWORD& dwValue, __in DWORD dwDefaultValue);
 HRESULT GetRegistryString(__in HKEY hKey, __in LPWSTR pswzSubKey, __in LPWSTR pswzName, CString& strValue);

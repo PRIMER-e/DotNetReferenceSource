@@ -20,7 +20,7 @@ using MS.Internal.Globalization;
 namespace System.Windows
 {
     //
-    // Note: the class name and property name must be kept in [....]'ed with
+    // Note: the class name and property name must be kept in sync'ed with
     // Framework\MS\Internal\Globalization\LocalizationComments.cs file.
     // Compiler checks for them by literal string comparisons.
     //

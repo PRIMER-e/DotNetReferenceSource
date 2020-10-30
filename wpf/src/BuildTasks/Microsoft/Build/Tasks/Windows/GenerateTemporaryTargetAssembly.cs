@@ -129,8 +129,8 @@ namespace Microsoft.Build.Tasks.Windows
                 // some file externsion has special meaning in MSBUILD system, such as a ".sln"
                 // means the file is a solution file with special file format. Since the temporary
                 // file is just for a project, we can use a fixed extension here, but the basic 
-                // file name is still random which can fix above VS.NET bug.
-                //
+                // file name is still random which can fix above VS.NET 
+
                 string randProj = Path.ChangeExtension(Path.GetRandomFileName(), TEMP_PROJ_EXT);
 
                 // Save the xmlDocument content into the temporary project file.

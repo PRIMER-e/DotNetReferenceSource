@@ -9,10 +9,10 @@
 //
 // History:
 //  01/10/03 : a-jeanp - created
-//  08/12/03:  alexsn - bug fixes
-//  03/02/04:  a-davidj - added text pattern
-//
-//---------------------------------------------------------------------------
+//  08/12/03:  alexsn - 
+
+
+
 
 using System;
 using System.Collections;
@@ -116,9 +116,9 @@ namespace MS.Internal.AutomationProxies
                 {
                     el = new WindowsEditBox(hwnd, null, 0);
 
-                    // If this is an Edit control inside of a [....] Spinner, need to treat the property
-                    // changes for as property changes on the whole [....] Spinner, not on the element
-                    // of the [....] Spinner.  [....] Spinner raise WinEvents on the Edit portion of
+                    // If this is an Edit control inside of a Microsoft Spinner, need to treat the property
+                    // changes for as property changes on the whole Microsoft Spinner, not on the element
+                    // of the Microsoft Spinner.  Microsoft Spinner raise WinEvents on the Edit portion of
                     // the spinner and not the UpDown portion like the Win32 Spinner.
                     IntPtr hwndParent = NativeMethodsSetLastError.GetAncestor(hwnd, NativeMethods.GA_PARENT);
                     if (hwndParent != IntPtr.Zero)
@@ -323,8 +323,8 @@ namespace MS.Internal.AutomationProxies
                 }
             }
 
-            // bug# 11147, Text/edit box should not enter more characters than what is allowed through keyboard.
-            // Determine the max number of chars this editbox accepts
+            // 
+
 
             int result = Misc.ProxySendMessageInt(_hwnd, NativeMethods.EM_GETLIMITTEXT, IntPtr.Zero, IntPtr.Zero);
             // A result of -1 means that no limit is set.

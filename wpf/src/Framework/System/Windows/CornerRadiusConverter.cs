@@ -112,7 +112,7 @@ namespace System.Windows
             throw GetConvertFromException(source);
         }
 
-//Workaround for PreSharp bug - it complains about value being possibly null even though there is a check above
+//Workaround for PreSharp 
 #pragma warning disable 56506
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace System.Windows
             throw new ArgumentException(SR.Get(SRID.CannotConvertType, typeof(CornerRadius), destinationType.FullName));
         }
 
-//Workaround for PreSharp bug - it complains about value being possibly null even though there is a check above
+//Workaround for PreSharp 
 #pragma warning restore 56506
 
         #endregion Public Methods

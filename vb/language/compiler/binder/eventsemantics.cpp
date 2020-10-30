@@ -165,15 +165,15 @@ Bindable::ValidateWithEventsVar
     // The WithEvents variable must source at least one non-shared event that is visible
     // to the container in which it is defined.
     //
-    // Errors are no longer reported for this scenario. - see bug VSWhidbey 542456.
-    // Because of this CheckForAccessibleEvents is no longer required, but this indirectly/subtly
-    // results in calls to ResolveShadowingOverloadingAndOverridingForContainer,
-    // ----AttributesOnAllSymbolsInContainer and other such tasks in bindable which later consumers
-    // of these withevent variable might be dependent on. So to minimize code churn and risk for
-    // whidbey, not removing this call. ----AttributesOnAllSymbolsInContainer is infact known to
-    // be required for withevents of interfaces with the CoClass attributes.
-    //
-    // 
+    // Errors are no longer reported for this scenario. - see 
+
+
+
+
+
+
+
+
 
 
 
@@ -1005,12 +1005,12 @@ Bindable::ValidateAndHookUpHandles
     BCSYM_EventDecl *Event = EventDecl->PEventDecl();
     HandlesEntry->SetEvent(Event);
 
-    // [....] - 11/17/2005
-    // See Bug # 544269
-    // The call to ResolveAllNamedTypesForContainer needed to be replaced with a call
-    // to ResolveShadowingOverloadingAndOverridingForContainer because event signatures
-    // are not necessarily setup untill after ResolveShadowingOverloadingAndOverriding
-    // has been called.
+    // Microsoft - 11/17/2005
+    // See 
+
+
+
+
 
     // Go and bind the event we are comparing against up to the state we need for
     // validating handles.

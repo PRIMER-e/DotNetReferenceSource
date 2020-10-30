@@ -19,8 +19,8 @@
 
 #include "StdAfx.h"
 
-// Keep this define - fixed one bug where the string and the string used to figure this length 
-// were out of [....].
+// Keep this define - fixed one 
+
 #define PLUS_ONE_STRING WIDE( "+1" )
 
 //-------------------------------------------------------------------------------------------------
@@ -106,12 +106,12 @@ BCSYM_Variable *Declared::MakeReturnLocal
 
     if ( OwningProc->IsPropertyGet())
     {
-        VSASSERT( wcslen( CLS_PROPERTY_GET_PREFIX ) == 4, "prefix changed!" ); // [....]: CONSDER - use the define for 4 (could probably get rid of assert in that case)
+        VSASSERT( wcslen( CLS_PROPERTY_GET_PREFIX ) == 4, "prefix changed!" ); // Microsoft: CONSDER - use the define for 4 (could probably get rid of assert in that case)
         VariableName = CompilerInstance->AddString( VariableName + 4 );
     }
     else if (OwningProc->IsPropertySet())
     {
-        VSASSERT( wcslen( CLS_PROPERTY_SET_PREFIX ) == 4, "prefix changed!" ); // [....]: CONSDER - use the define for 4 (could probably get rid of assert in that case)
+        VSASSERT( wcslen( CLS_PROPERTY_SET_PREFIX ) == 4, "prefix changed!" ); // Microsoft: CONSDER - use the define for 4 (could probably get rid of assert in that case)
         VSASSERT( wcslen( CLS_PROPERTY_PUT_PREFIX ) == 4, "prefix changed!" );
         VariableName = CompilerInstance->AddString( VariableName + 4 );
     }
@@ -564,7 +564,7 @@ Declared::MakeType
             // the error or warning will be reported in Semantics after the initializer is evaluated.
             // When Option Infer is on or we are using this for Lambda expressions , we should allow this scenario.
             // We used to ignore constants when inferring types using Option Infer, but we are removing that
-            // exception as per bug 400490.
+            // exception as per 
             VSASSERT(!Context || m_SourceFile, "Please inform the VB compiler that you have a repro for DevDiv 806843");
             if (Context &&
                 ( !(
@@ -742,7 +742,7 @@ Declared::MakeType
 
                 if (pBoundType == NULL && TypeTree->Opcode == ParseTree::Type::AlreadyBoundDelayCalculated)
                 {
-                    // [....]
+                    // Microsoft
                     // To fix 446866, what's happening is that in a scenario where an event is
                     // exposed in an interface, and a class implements this event but provides a
                     // wrong signature, bindable still produces code for this even though the delegate
@@ -1525,7 +1525,7 @@ Declared::MapVarDeclFlags
         // and GetDeclFlagInfo() can use it when calculating location information for the New specifier in
         // the event an error needs to be logged about the usage of 'New' on this member.
 
-        // [....]: 
+        // Microsoft: 
 
 
 
@@ -2132,7 +2132,7 @@ Declared::MakeNamespace(
               Statement;
               Statement = Statement->NextInBlock )
         {
-            // [....]: only do this if this attribute does not have a syntax error.
+            // Microsoft: only do this if this attribute does not have a syntax error.
 
             if ( Statement->Element->Opcode == ParseTree::Statement::Attribute &&
                  !Statement->Element->HasSyntaxError )
@@ -2492,8 +2492,8 @@ void Declared::ProcessAttributeList
 
 
             AttributeSymbol->SetExpression( m_SymbolAllocator.GetConstantExpression( 
-                                                    //&Attribute->TextSpan, //Fix for bug B32565, when Assembly or module the loc of DeferredExpr 
-                                                    // is different than Atribute location               
+                                                    //&Attribute->TextSpan, //Fix for 
+
                                                     &Attribute->DeferredRepresentationAsCall->TextSpan,
                                                     Symbol->IsNamedRoot() ? Symbol->PNamedRoot() : NULL, // context
                                                     NULL, // no const expr list
@@ -2923,7 +2923,7 @@ void Declared::MakeClassChildren
     bool SeenImplements = false; // Inherits can't come after data members, but must come after Inherits
 
 
-    // [....]: 
+    // Microsoft: 
 
 
 
@@ -3701,7 +3701,7 @@ void Declared::MakeEnum
     // set the current container context
     SetContainerContext(EnumSymbol);
 
-    // Bug 17864: we don't allow typeChars to follow an enum identifier
+    // 
     if ( EnumTree->Name.TypeCharacter != chType_NONE )
     {
         ReportError( ERRID_TypecharNotallowed, &EnumTree->Name.TextSpan );
@@ -4084,7 +4084,7 @@ void Declared::MakeInterface
     // Get the name - If we don't have a name, there isn't much to do.
     if ( InterfaceTree->Name.IsBad ) return;
 
-    // [....]: consider so much of the initial blocks of makeinterface,makeclass,makestructure,makeenum are the same.  Should really factor that stuff out.
+    // Microsoft: consider so much of the initial blocks of makeinterface,makeclass,makestructure,makeenum are the same.  Should really factor that stuff out.
     STRING *InterfaceName = InterfaceTree->Name.Name;
     Location *InterfaceNameLocation = &InterfaceTree->Name.TextSpan;
     if ( InterfaceTree->Name.TypeCharacter != chType_NONE )
@@ -5473,7 +5473,7 @@ void Declared::MakeParams
             else if (MethodFlags & DECLF_LambdaArguments)
             {
                 // In lambda parameters's we don't allow array specifiers without the type since
-                // inference can become ambiguous, see bug dd:80897
+                // inference can become ambiguous, see 
                 ReportError(ERRID_CantSpecifyParamsOnLambaParamNoType, &CurrentParameter->Name->TextSpan );
                 SymbolForParamType = m_SymbolAllocator.GetGenericBadNamedRoot();
                 IsBadParameter = true;
@@ -5490,7 +5490,7 @@ void Declared::MakeParams
                 ParamFlags &= ~PARAMF_ParamArray;
                 if (OwningProcedure && !(MethodFlags & DECLF_LambdaArguments))
                 {
-                    OwningProcedure->SetIsBad( m_SourceFile ); // [....]: why do we have to do this (use this particular setIsBad?)
+                    OwningProcedure->SetIsBad( m_SourceFile ); // Microsoft: why do we have to do this (use this particular setIsBad?)
                 }
             }
             else if ( SymbolForParamType->PArrayType()->GetRank() != 1 )
@@ -5610,7 +5610,7 @@ void Declared::MakeParams
         }
 
         // Check for OptionCompareAttribute
-        // NOTE: [....] - The attributes at this point have not been processed, so the GetOptionCompareData has
+        // NOTE: Microsoft - The attributes at this point have not been processed, so the GetOptionCompareData has
         //                not been set.  This only affects callers of function args marked with <OptionCompareAttribute>
         //                when called within the same project.  If we don't want to open this attribute to developers
         //                then it isn't necessary to process it here.
@@ -5832,7 +5832,7 @@ void Declared::MakeMemberVar
             }
 
             // Fill in the variable symbol.
-            // [....]  consider: the type is going to be the same for all the entries in the list so it seems to make sense to
+            // Microsoft  consider: the type is going to be the same for all the entries in the list so it seems to make sense to
             // build the type once outside this loop and pass it in.  The trouble is type-characters.  I need to go through the
             // logic in MakeType() inside MakeVariable() each time because the name may have a type character or there may
             // be an explicit type AND a type character, etc. and we need to catch those errors
@@ -6307,9 +6307,9 @@ void Declared::MakeMethodImpl
         HasMustOverrideMethod = true;
     }
 
-    // bug 19283 : a shared procedure cannot be marked as overrides, notoverridable or mustoverride
-    // Do this check before we set flags to shared for a module below so that we catch the case where they
-    // explicitly mark the method as shared along with overrides
+    // 
+
+
     if ( MethodFlags & DECLF_Shared )
     {
         if ( MethodFlags & DECLF_InvalidFlagsOnShared )
@@ -6512,7 +6512,7 @@ void Declared::MakeEvent
 
     if ( EventTree->Opcode == ParseTree::Statement::SyntaxError || EventTree->Name.IsBad )
     {
-        return; // Don't even try if we know the event declaration is horked - Bug #34508
+        return; // Don't even try if we know the event declaration is horked - 
     }
 
     bool DefinedInStruct = ContainerDeclFlags & DECLF_Structure;
@@ -6609,7 +6609,7 @@ void Declared::MakeEvent
             const DECLFLAGS DECLF_InvalidOnImplementsFlags = DECLF_Shared;
             if ( EventDeclFlags & DECLF_InvalidOnImplementsFlags )
             {
-                //Bug 314537 - Implementing with shared events is illegal.
+                //
                 ReportDeclFlagError( ERRID_SharedOnProcThatImpl, EventDeclFlags & DECLF_InvalidOnImplementsFlags, EventTree->Specifiers );
             }
 
@@ -6787,7 +6787,7 @@ Declared::BuildEventDelegate
             EventStatementListTree->Element->AsEventDeclaration() :
             EventStatementListTree->Element->AsBlockEventDeclaration()->EventSignature;
 
-    // For events implementing interface events, this may never get set if the host interface is bad (bug #307340)
+    // For events implementing interface events, this may never get set if the host interface is bad (
     BCSYM *DelegateSymbol = Symbols::GetGenericBadNamedRoot();
 
     // Create the event delegate name "<EventName>EventHandler"
@@ -7005,8 +7005,8 @@ Declared::BuildEventMethods
     }
     else
     {
-        // Fix for bug VisualStudio7 - 312488 - Event add/remove methods should not be virtual by default,
-        // but should be virtual final when event is implementing another event
+        // Fix for 
+
 
         EventMethodFlags |= ( EventDeclFlags & ( DECLF_Shared | DECLF_Implementing ));
     }
@@ -7939,7 +7939,7 @@ void Declared::MakeExpandedProperty
                     GetProperty->SetLocation( &CurrentPropertyMember->Element->TextSpan );
 
                     // Store away the custom attributes.
-                    ProcessAttributeList( CurrentPropertyMember->Element->AsMethodDefinition()->Attributes, GetProperty ); // [....]: Consider - you can't have attributes on the GET so why do this?
+                    ProcessAttributeList( CurrentPropertyMember->Element->AsMethodDefinition()->Attributes, GetProperty ); // Microsoft: Consider - you can't have attributes on the GET so why do this?
 
                     // Creating backing fields for any static vars
                     CreateBackingFieldsForStatics( CurrentPropertyMember->Element->AsMethodDefinition()->StaticLocalDeclarations,
@@ -7992,7 +7992,7 @@ void Declared::MakeExpandedProperty
                                       &pPropertyReturnTypeSymbol, &ParameterSymbolListForSet );
 
                     // Store away the custom attributes.
-                    ProcessAttributeList( CurrentPropertyMember->Element->AsMethodDefinition()->Attributes, SetProperty ); // [....]: Consider - you can't have attributes on the SET so why do this?
+                    ProcessAttributeList( CurrentPropertyMember->Element->AsMethodDefinition()->Attributes, SetProperty ); // Microsoft: Consider - you can't have attributes on the SET so why do this?
 
                     // Creating backing fields for any static vars
                     CreateBackingFieldsForStatics( CurrentPropertyMember->Element->AsMethodDefinition()->StaticLocalDeclarations, SetProperty, classDeclFlags, needSharedConstructor, pBackingStaticFieldsList );
@@ -8256,7 +8256,7 @@ void Declared::MakeDllDeclared
     // Change the context to be the DllDeclare symbol
     //
 
-    BCSYM_DllDeclare *DllDeclare = m_SymbolAllocator.AllocDllDeclare( true ); // the new context is the DLLDeclare symbol  [....]: move to after the check for bad below.
+    BCSYM_DllDeclare *DllDeclare = m_SymbolAllocator.AllocDllDeclare( true ); // the new context is the DLLDeclare symbol  Microsoft: move to after the check for bad below.
 
     // If we don't have a name, there isn't much we can do.
     if ( DllDeclareTree->Name.IsBad ) return;
@@ -8573,7 +8573,7 @@ void Declared::MakeProc
         }
     }
 
-    // bug 10265: no private on MustOverride functions
+    // 
     if ( MethodFlags & DECLF_MustOverride )
     {
         if ( MethodFlags & DECLF_Private )
@@ -9195,7 +9195,7 @@ Declared::BuildWithEventsProperty
     BCSYM_Param *ParamFirst = NULL, *LastParam = NULL;
     BCSYM_SyntheticMethod *SetMethod = SymbolAllocator->AllocSyntheticMethod(WithEventHasLocation   /* HasLocation ?*/);
     SymbolAllocator->GetParam( NULL, // no location
-                               CompilerInstance->AddString( WIDE( "WithEventsValue" )), // arg name  [....]: Consider Should this name be Value? Does it affect the CLR or COM Interop?
+                               CompilerInstance->AddString( WIDE( "WithEventsValue" )), // arg name  Microsoft: Consider Should this name be Value? Does it affect the CLR or COM Interop?
                                WithEventVarType,
                                NULL,
                                NULL,
@@ -9376,7 +9376,7 @@ void Declared::BuildAutoPropertyMethods
     BCSYM_Param *pParamFirst = NULL, *pLastParam = NULL;
     pSetMethod = pSymbolAllocator->AllocSyntheticMethod(hasLocation );
     pSymbolAllocator->GetParam( NULL, // no location
-                               pCompilerInstance->AddString( WIDE( "AutoPropertyValue" )), // arg name  [....]: Consider Should this name be Value? Does it affect the CLR or COM Interop?
+                               pCompilerInstance->AddString( WIDE( "AutoPropertyValue" )), // arg name  Microsoft: Consider Should this name be Value? Does it affect the CLR or COM Interop?
                                pAutoPropertyType,
                                NULL, // param flags
                                NULL, // initial value
@@ -10142,7 +10142,7 @@ void Declared::MakeLocalsFromDeclaration
     }
 
     // Wind through each variable declarator in the list
-    // [....]: consider - don't refigure the type out every time - only need to do it once.
+    // Microsoft: consider - don't refigure the type out every time - only need to do it once.
     // The complication is the way MakeType works with arrays...
     VARIABLEKIND KindOfVariable = VAR_Local;
     for ( ParseTree::DeclaratorList *DeclaratorList = Declaration->Variables;
@@ -10794,7 +10794,7 @@ void Declared::CreateBackingFieldsForStatics(
             }
 
             // Wind through each static variable in the list
-            // [....]: consider changing it so that we don't refigure the type out every time - only need to do it once.
+            // Microsoft: consider changing it so that we don't refigure the type out every time - only need to do it once.
             // The complication is the way MakeType works with arrays and type characters.
             for ( ParseTree::DeclaratorList *DeclaratorList = StaticDeclaration->Variables;
                   DeclaratorList;
@@ -11030,19 +11030,19 @@ Declared::CheckForTypeCharacter(
 
     while ( NameTree->IsQualified() )
     {
-        if ( NameTree->AsQualified()->Qualifier.IsBad ) return FoundTypeChar; // the thing is bad so we just punt  [....]:  
+        if ( NameTree->AsQualified()->Qualifier.IsBad ) return FoundTypeChar; // the thing is bad so we just punt  Microsoft:  
 
         if ( NameTree->AsQualified()->Qualifier.TypeCharacter != chType_NONE )
         {
             ReportError( ERRID_TypecharNotallowed, &NameTree->AsQualified()->Qualifier.TextSpan );
-            FoundTypeChar = true; // [....] 
+            FoundTypeChar = true; // Microsoft 
         }
         NameTree = NameTree->AsQualified()->Base;
     }
 
     VSASSERT( NameTree->IsSimple() ||NameTree->Opcode == ParseTree::Name::GlobalNameSpace , "Unexpected name tree kind" );
 
-    if ( NameTree->IsSimple() && NameTree->AsSimple()->ID.IsBad ) return FoundTypeChar; // the thing is bad so we just punt  [....]:  
+    if ( NameTree->IsSimple() && NameTree->AsSimple()->ID.IsBad ) return FoundTypeChar; // the thing is bad so we just punt  Microsoft:  
 
     if ( NameTree->IsSimple() && NameTree->AsSimple()->ID.TypeCharacter != chType_NONE )
     {

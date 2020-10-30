@@ -2,7 +2,7 @@
 //              Copyright (c) Microsoft Corporation.
 //
 // @File: bidinitpch.hpp
-// @Owner: [....]
+// @Owner: Microsoft
 // @Test: zlin
 //
 // <owner current="true" primary="true">adoprov</owner>

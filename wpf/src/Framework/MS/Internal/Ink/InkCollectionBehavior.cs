@@ -416,7 +416,8 @@ namespace MS.Internal.Ink
                     }
 
                     _cursorDrawingAttributes = InkCanvas.DefaultDrawingAttributes.Clone();
-                    _cachedPenCursor = PenCursorManager.GetPenCursor(da, false, (this.InkCanvas.FlowDirection == FlowDirection.RightToLeft));
+                    DpiScale dpi = this.InkCanvas.GetDpi();
+                    _cachedPenCursor = PenCursorManager.GetPenCursor(da, false, (this.InkCanvas.FlowDirection == FlowDirection.RightToLeft), dpi.DpiScaleX, dpi.DpiScaleY);
                 }
 
                 return _cachedPenCursor;

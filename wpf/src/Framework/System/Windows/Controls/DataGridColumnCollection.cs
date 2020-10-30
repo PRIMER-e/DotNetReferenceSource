@@ -159,7 +159,7 @@ namespace System.Windows.Controls
             base.ClearItems();
         }
 
-        #endregion 
+        #endregion
 
         #region Notification Propagation
 
@@ -208,7 +208,7 @@ namespace System.Windows.Controls
                     InvalidateColumnRealization(false);
                 }
             }
-            
+
             if (DataGridHelper.ShouldNotifyColumns(target))
             {
                 int count = this.Count;
@@ -249,9 +249,9 @@ namespace System.Windows.Controls
                 return _displayIndexMap;
             }
 
-            private set 
-            { 
-                _displayIndexMap = value; 
+            private set
+            {
+                _displayIndexMap = value;
             }
         }
 
@@ -300,7 +300,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Called when a column's display index has changed.  
+        ///     Called when a column's display index has changed.
         /// <param name="oldDisplayIndex">the old display index of the column</param>
         /// <param name="newDisplayIndex">the new display index of the column</param>
         private void OnColumnDisplayIndexChanged(DataGridColumn column, int oldDisplayIndex, int newDisplayIndex)
@@ -319,7 +319,7 @@ namespace System.Windows.Controls
                 return;
             }
 
-            // The DisplayIndex may have changed to the default value.  
+            // The DisplayIndex may have changed to the default value.
             newDisplayIndex = CoerceDefaultDisplayIndex(column);
 
             if (newDisplayIndex == oldDisplayIndex)
@@ -406,7 +406,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Sets the DisplayIndex on all newly inserted or added columns and updates the existing columns as necessary.  
+        ///     Sets the DisplayIndex on all newly inserted or added columns and updates the existing columns as necessary.
         /// </summary>
         private void UpdateDisplayIndexForNewColumns(IList newColumns, int startingIndex)
         {
@@ -489,7 +489,7 @@ namespace System.Windows.Controls
             {
                 DataGridColumn currentColumn = this[columnIndex];
                 int currentColumnDisplayIndex = currentColumn.DisplayIndex;
-                
+
                 ValidateDisplayIndex(currentColumn, currentColumnDisplayIndex);
 
                 if (currentColumn == changingColumn)
@@ -552,13 +552,13 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Updates the display index for all columns affected by the removal of a set of columns.  
+        ///     Updates the display index for all columns affected by the removal of a set of columns.
         /// </summary>
         private void UpdateDisplayIndexForRemovedColumns(IList oldColumns, int startingIndex)
         {
             DataGridColumn column;
             Debug.Assert(
-                oldColumns.Count == 1, 
+                oldColumns.Count == 1,
                 "This derives from ObservableCollection; it is impossible to remove multiple columns at once");
             Debug.Assert(IsUpdatingDisplayIndex == false, "We don't remove columns as part of a display index update operation");
 
@@ -598,7 +598,7 @@ namespace System.Windows.Controls
         ///     Updates the display index for the column that was just replaced and adjusts the other columns if necessary
         /// </summary>
         private void UpdateDisplayIndexForReplacedColumn(IList oldColumns, IList newColumns)
-        { 
+        {
             if (oldColumns != null && oldColumns.Count > 0 && newColumns != null && newColumns.Count > 0)
             {
                 Debug.Assert(oldColumns.Count == 1 && newColumns.Count == 1, "Multi replace isn't possible with ObservableCollection");
@@ -634,13 +634,13 @@ namespace System.Windows.Controls
                     for (int i = 0; i < count; i++)
                     {
                         var column = (DataGridColumn)oldColumns[i];
-                        
+
                         // Only clear the old column's index if its not in newColumns
                         if (newColumns != null && newColumns.Contains(column))
                         {
                             continue;
                         }
-                        
+
                         column.ClearValue(DataGridColumn.DisplayIndexProperty);
                     }
                 }
@@ -661,7 +661,7 @@ namespace System.Windows.Controls
             {
                 return true;
             }
-             
+
             // If we're adding a column the count will soon be increased by one -- so a DisplayIndex == Count is ok.
             return displayIndex >= 0 && (isAdding ? displayIndex <= Count : displayIndex < Count);
         }
@@ -737,7 +737,7 @@ namespace System.Windows.Controls
             }
         }
 
-        #endregion 
+        #endregion
 
         #region Frozen Columns
 
@@ -780,12 +780,12 @@ namespace System.Windows.Controls
         // Used by DataGridColumnCollection to delay the validation of DisplayIndex
         // Validation should be delayed because we in the process of adding columns we may have DisplayIndex less that current columns number
         // After all columns are generated or added in xaml we can do the validation
-        internal bool DisplayIndexMapInitialized 
-        { 
-            get 
-            { 
-                return _displayIndexMapInitialized; 
-            } 
+        internal bool DisplayIndexMapInitialized
+        {
+            get
+            {
+                return _displayIndexMapInitialized;
+            }
         }
 
         #endregion
@@ -802,7 +802,7 @@ namespace System.Windows.Controls
             perStarWidth = 0.0;
             foreach (DataGridColumn column in this)
             {
-                if (column == ignoredColumn || 
+                if (column == ignoredColumn ||
                     !column.IsVisible)
                 {
                     continue;
@@ -847,8 +847,8 @@ namespace System.Windows.Controls
         ///     Property which determines if there are any star columns
         ///     in the datagrid.
         /// </summary>
-        internal bool HasVisibleStarColumns 
-        { 
+        internal bool HasVisibleStarColumns
+        {
             get
             {
                 return _hasVisibleStarColumns;
@@ -861,7 +861,7 @@ namespace System.Windows.Controls
                     DataGridOwner.OnHasVisibleStarColumnsChanged();
                 }
             }
-        }        
+        }
 
         /// <summary>
         ///     Method which redetermines if the collection has any star columns are not.
@@ -986,7 +986,7 @@ namespace System.Windows.Controls
                 // If it was determined by the previous step that another iteration is needed
                 // then move all the partialResolvedColumns back to unResolvedColumns and there by
                 // restoring availablespace and totalfactors.
-                // If another iteration is not needed then allocate min widths to all columns in 
+                // If another iteration is not needed then allocate min widths to all columns in
                 // partial resolved columns and star share to all unresolved columns there by
                 // ending the loop
                 if (iterationRequired)
@@ -1053,10 +1053,19 @@ namespace System.Windows.Controls
         internal void InvalidateAverageColumnWidth()
         {
             _averageColumnWidth = null;
+
+            // changing a column width should also invalidate the maximum desired
+            // size of the row presenter (Dev11 821019)
+            VirtualizingStackPanel vsp = (DataGridOwner == null) ? null :
+                    DataGridOwner.InternalItemsHost as VirtualizingStackPanel;
+            if (vsp != null)
+            {
+                vsp.ResetMaximumDesiredSize();
+            }
         }
 
         /// <summary>
-        ///     Property holding the average widht of columns
+        ///     Property holding the average width of columns
         /// </summary>
         internal double AverageColumnWidth
         {
@@ -1072,7 +1081,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Helper method which determines the average with of all the columns
+        ///     Helper method which determines the average width of all the columns
         /// </summary>
         private double ComputeAverageColumnWidth()
         {
@@ -1129,9 +1138,9 @@ namespace System.Windows.Controls
         {
             ComputeColumnWidths();
             DataGridOwner.NotifyPropertyChanged(
-                DataGridOwner, 
-                "DelayedColumnWidthComputation", 
-                new DependencyPropertyChangedEventArgs(), 
+                DataGridOwner,
+                "DelayedColumnWidthComputation",
+                new DependencyPropertyChangedEventArgs(),
                 DataGridNotificationTarget.CellsPresenter | DataGridNotificationTarget.ColumnHeadersPresenter);
             return null;
         }
@@ -1625,7 +1634,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Method which reallocated the star factors of star columns on 
+        ///     Method which reallocated the star factors of star columns on
         ///     positive resize of a column
         /// </summary>
         private double ReallocateStarValuesForPositiveResize(
@@ -1946,7 +1955,7 @@ namespace System.Windows.Controls
         #region Width Give Away Methods
 
         /// <summary>
-        ///     Method which tries to give away the given amount of width 
+        ///     Method which tries to give away the given amount of width
         ///     among all the columns except the ignored column
         /// </summary>
         /// <param name="ignoredColumn">The column which is giving away the width</param>
@@ -1957,7 +1966,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Method which tries to give away the given amount of width 
+        ///     Method which tries to give away the given amount of width
         ///     among all the columns except the ignored column
         /// </summary>
         /// <param name="ignoredColumn">The column which is giving away the width</param>
@@ -2320,7 +2329,7 @@ namespace System.Windows.Controls
                 {
                     continue;
                 }
-                
+
                 DataGridLength width = column.Width;
                 if (width.IsStar)
                 {
@@ -2357,7 +2366,7 @@ namespace System.Windows.Controls
                 {
                     continue;
                 }
-            
+
                 DataGridLength width = column.Width;
                 if (width.IsStar)
                 {
@@ -2379,9 +2388,9 @@ namespace System.Windows.Controls
         ///     Property which indicates that the RealizedColumnsBlockList
         ///     is dirty and needs to be rebuilt for non-column virtualized rows
         /// </summary>
-        internal bool RebuildRealizedColumnsBlockListForNonVirtualizedRows 
-        { 
-            get; set; 
+        internal bool RebuildRealizedColumnsBlockListForNonVirtualizedRows
+        {
+            get; set;
         }
 
         /// <summary>
@@ -2400,7 +2409,7 @@ namespace System.Windows.Controls
 
                 // Notify other rows and column header row to
                 // remeasure their child panel's in order to be
-                // in [....] with latest column realization computations
+                // in sync with latest column realization computations
                 DataGrid dataGrid = DataGridOwner;
                 dataGrid.NotifyPropertyChanged(
                     dataGrid,
@@ -2413,18 +2422,18 @@ namespace System.Windows.Controls
         /// <summary>
         ///     List of realized column display index blocks for non-column virtualized rows
         /// </summary>
-        internal List<RealizedColumnsBlock> RealizedColumnsDisplayIndexBlockListForNonVirtualizedRows 
-        { 
-            get; set; 
+        internal List<RealizedColumnsBlock> RealizedColumnsDisplayIndexBlockListForNonVirtualizedRows
+        {
+            get; set;
         }
 
         /// <summary>
         ///     Property which indicates that the RealizedColumnsBlockList
         ///     is dirty and needs to be rebuilt for column virtualized rows
         /// </summary>
-        internal bool RebuildRealizedColumnsBlockListForVirtualizedRows 
-        { 
-            get; set; 
+        internal bool RebuildRealizedColumnsBlockListForVirtualizedRows
+        {
+            get; set;
         }
 
         /// <summary>
@@ -2440,14 +2449,14 @@ namespace System.Windows.Controls
             set
             {
                 _realizedColumnsBlockListForVirtualizedRows = value;
-                
+
                 // Notify other rows and column header row to
                 // remeasure their child panel's in order to be
-                // in [....] with latest column realization computations
+                // in sync with latest column realization computations
                 DataGrid dataGrid = DataGridOwner;
                 dataGrid.NotifyPropertyChanged(
                     dataGrid,
-                    "RealizedColumnsBlockListForVirtualizedRows", 
+                    "RealizedColumnsBlockListForVirtualizedRows",
                     new DependencyPropertyChangedEventArgs(),
                     DataGridNotificationTarget.CellsPresenter | DataGridNotificationTarget.ColumnHeadersPresenter);
             }
@@ -2456,9 +2465,9 @@ namespace System.Windows.Controls
         /// <summary>
         ///     List of realized column display index blocks for column virtualized rows
         /// </summary>
-        internal List<RealizedColumnsBlock> RealizedColumnsDisplayIndexBlockListForVirtualizedRows 
-        { 
-            get; set; 
+        internal List<RealizedColumnsBlock> RealizedColumnsDisplayIndexBlockListForVirtualizedRows
+        {
+            get; set;
         }
 
         /// <summary>
@@ -2531,7 +2540,7 @@ namespace System.Windows.Controls
         private bool _isUpdatingDisplayIndex;     // true if we're in the middle of updating the display index of each column.
         private List<int> _displayIndexMap;            // maps a DisplayIndex to an index in the _columns collection.
         private bool _displayIndexMapInitialized; // Flag is used to delay the validation of DisplayIndex until the first measure
-        private bool _isClearingDisplayIndex; // Flag indicating that we're currently clearing the display index.  We should not coerce default display index's during this time. 
+        private bool _isClearingDisplayIndex; // Flag indicating that we're currently clearing the display index.  We should not coerce default display index's during this time.
         private bool _columnWidthsComputationPending; // Flag indicating whether the columns width computaion operation is pending
         private Dictionary<DataGridColumn, DataGridLength> _originalWidthsForResize; // Dictionary to hold the original widths of columns for resize operation
         private double? _averageColumnWidth = null;       // average width of all visible columns

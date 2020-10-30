@@ -24,7 +24,7 @@
 #define MAX_ALIAS_LENGTH	(MAX_NAME_SIZE+1+MAX_INSTANCENAME_LENGTH)
 #define MAX_PROTOCOLNAME_LENGTH 10
 #define MAX_PROTOCOLPARAMETER_LENGTH 255
-#define DEFAULT_INSTANCE_NAME "mssqlserver"
+#define DEFAULT_INSTANCE_NAME L"mssqlserver"
 
 #define LOCALDB_WSTR L"(localDB)"
 #define LOCALDB_WSTR_LEN sizeof(LOCALDB_WSTR)/sizeof(WCHAR)
@@ -32,36 +32,36 @@
 #define LOCALDB_INST_WSTR L"(localDB)\\"
 #define LOCALDB_INST_WSTR_LEN sizeof(LOCALDB_INST_WSTR)/sizeof(WCHAR)
 
-extern char gszComputerName[];
+extern WCHAR gwszComputerName[];
 extern DWORD gdwSvrPortNum;
 extern BOOL g_fSandbox;            // Defined in sni.cpp
 
-// Converts from Ascii or Hex to Decimal integer
-int Strtoi(const char * szStr);
+// Converts from Unicode or Hex to Decimal integer
+int Wcstoi(const WCHAR * wszStr);
 
 // Skips white space and sees if theres chars after that
-_inline BOOL IsBlank(__in __nullterminated char * pStr)
+_inline BOOL IsBlank(__in __nullterminated WCHAR * pwStr)
 {
-	while(*pStr && (*pStr==' ' || *pStr=='\t'))
-		pStr++;
-	if(!*pStr)	//end of string
+	while(*pwStr && (*pwStr==L' ' || *pwStr==L'\t'))
+		pwStr++;
+	if(!*pwStr)	//end of string
 		return true;
 	return false;
 }
 
 // LocalHost checking
 //
-inline bool IsLocalHost( const char *szServer)
+inline bool IsLocalHost( const WCHAR *wszServer)
 {
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-	if( strcmp(".",szServer) &&  
-		_stricmp_l("(local)",szServer, GetDefaultLocale()) &&
-		_stricmp_l("localhost",szServer, GetDefaultLocale()) &&
-		CSTR_EQUAL != CompareStringA(LOCALE_SYSTEM_DEFAULT,
+	if( wcscmp(L".",wszServer) &&  
+		_wcsicmp_l(L"(local)",wszServer, GetDefaultLocale()) &&
+		_wcsicmp_l(L"localhost",wszServer, GetDefaultLocale()) &&
+		CSTR_EQUAL != CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									 NORM_IGNORECASE|NORM_IGNOREWIDTH,
-									 gszComputerName, -1,
-									 szServer, -1))
+									 gwszComputerName, -1,
+									 wszServer, -1))
 OACR_WARNING_POP
 	{
 		return false;
@@ -75,27 +75,31 @@ DWORD CopyConnectionString(__in LPCWSTR wszConnect, __out LPWSTR* pwszCopyConnec
 
 class ConnectParameter {
 public:
-	char m_szServerName[MAX_NAME_SIZE + 1];
-	char m_szOriginalServerName[MAX_NAME_SIZE + 1];
-	char m_szInstanceName[MAX_INSTANCENAME_LENGTH + 1];
-	char m_szProtocolName[MAX_PROTOCOLNAME_LENGTH + 1];
-	char m_szProtocolParameter[MAX_PROTOCOLPARAMETER_LENGTH + 1];
-	char m_szAlias[MAX_ALIAS_LENGTH + 1];
+	WCHAR m_wszServerName[MAX_NAME_SIZE + 1];
+	WCHAR m_wszOriginalServerName[MAX_NAME_SIZE + 1];
+	WCHAR m_wszInstanceName[MAX_INSTANCENAME_LENGTH + 1];
+	WCHAR m_wszProtocolName[MAX_PROTOCOLNAME_LENGTH + 1];
+	WCHAR m_wszProtocolParameter[MAX_PROTOCOLPARAMETER_LENGTH + 1];
+	WCHAR m_wszAlias[MAX_ALIAS_LENGTH + 1];
 	bool m_fCanUseCache;
 	bool m_fStandardInstName;
 	bool m_fParallel;
+	TransparentNetworkResolutionMode m_TransparentNetworkResolution;
+	int  m_TotalTimeout;
 
 	ConnectParameter()
 	{
-		m_szServerName[0]=0;
-		m_szOriginalServerName[0]=0;
-		m_szInstanceName[0]=0;
-		m_szProtocolName[0]=0;
-		m_szProtocolParameter[0]=0;
-		m_szAlias[0]=0;
+		m_wszServerName[0]=L'\0';
+		m_wszOriginalServerName[0]=L'\0';
+		m_wszInstanceName[0]=L'\0';
+		m_wszProtocolName[0]=L'\0';
+		m_wszProtocolParameter[0]=L'\0';
+		m_wszAlias[0]=L'\0';
 		m_fCanUseCache=true;
 		m_fStandardInstName=true;
 		m_fParallel=false;
+		m_TransparentNetworkResolution = TransparentNetworkResolutionMode::DisabledMode;
+		m_TotalTimeout = SNIOPEN_TIMEOUT_VALUE;
 	}
 
 	~ConnectParameter()
@@ -171,13 +175,21 @@ Exit:
 		
 	}
 	
-	DWORD ParseConnectionString( const char * szConnect, bool fParallel )
+		DWORD ParseConnectionString(const WCHAR * wszConnect, bool fParallel , TransparentNetworkResolutionMode transparentNetworkResolution, int totalTimeout)
 	{
-		BidxScopeAutoSNI1( SNIAPI_TAG _T( "szConnect: '%hs'\n"), szConnect);
+		m_TransparentNetworkResolution = transparentNetworkResolution;
+		m_TotalTimeout = totalTimeout;
+
+		return ParseConnectionString(wszConnect, fParallel);
+	}
+	
+	DWORD ParseConnectionString( const WCHAR * wszConnect, bool fParallel )
+	{
+		BidxScopeAutoSNI1( SNIAPI_TAG _T( "wszConnect: '%s'\n"), wszConnect);
 
 		BOOL  fLastErrorSet = FALSE; 
-		char *pPtr;
-		char *pEnd;
+		WCHAR *pwPtr;
+		WCHAR *pwEnd;
 		BOOL  fHasParameter = FALSE;
 		
 		m_fParallel = fParallel;
@@ -189,9 +201,9 @@ Exit:
 		// rest of the processing.  This is pretty important.  It means that
 		// we can be assured that what we are processing is a well-formed
 		// string.
-		DWORD len = (DWORD) strlen (szConnect);
-		char *szCopyConnect = NewNoX(gpmo) char[len + 1];
-		if( !szCopyConnect )
+		DWORD len = (DWORD) wcslen (wszConnect);
+		WCHAR *wszCopyConnect = NewNoX(gpmo) WCHAR[len + 1];
+		if( !wszCopyConnect )
 		{
 			SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_SYSTEM, ERROR_OUTOFMEMORY );
 
@@ -203,11 +215,11 @@ Exit:
 		DWORD dwRet = ERROR_INVALID_PARAMETER;
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-		DWORD cch = LCMapStringA(LOCALE_SYSTEM_DEFAULT,
+		DWORD cch = LCMapStringW(LOCALE_SYSTEM_DEFAULT,
 							LCMAP_LOWERCASE,
-							szConnect,
+							wszConnect,
 							-1,
-							szCopyConnect,
+							wszCopyConnect,
 							len + 1
 							);
 OACR_WARNING_POP
@@ -217,49 +229,49 @@ OACR_WARNING_POP
 			goto ExitFunc;
 			
 		}		
-		szCopyConnect[len] = 0;
+		wszCopyConnect[len] = 0;
 
-		if( ERROR_SUCCESS != StrTrimBoth_Sys(szCopyConnect, len+1 , NULL, " \t", 3))
+		if( ERROR_SUCCESS != StrTrimBothW_Sys(wszCopyConnect, len+1 , NULL, L" \t", ARRAYSIZE(L" \t")))
 		{
 			goto ExitFunc;
 		}
 
 		
-		pPtr=szCopyConnect;
+		pwPtr=wszCopyConnect;
 
 		//prefix
-		if(pEnd=strchr(pPtr,':'))
+		if(pwEnd=wcschr(pwPtr,L':'))
 		{
-			*pEnd = 0;
+			*pwEnd = 0;
 
 			//data before ':' can be part of ipv6 address
 			Assert( 6<=MAX_PROTOCOLNAME_LENGTH );
-			if ((pEnd - pPtr) > MAX_PROTOCOLNAME_LENGTH)
+			if ((pwEnd - pwPtr) > MAX_PROTOCOLNAME_LENGTH)
 				goto ExitFunc;
 			
 			//Devnote: If this is IPv6 address, the num of bytes should be less than 5, so 10 bytes is ok.
-			(void) StringCchCopyA(m_szProtocolName,CCH_ANSI_STRING(m_szProtocolName),pPtr);
-			if( ERROR_SUCCESS != StrTrimBoth_Sys(m_szProtocolName, strlen(m_szProtocolName) + 1 , NULL, " \t", 3))
+			(void) StringCchCopyW(m_wszProtocolName,ARRAYSIZE(m_wszProtocolName),pwPtr);
+			if( ERROR_SUCCESS != StrTrimBothW_Sys(m_wszProtocolName, wcslen(m_wszProtocolName) + 1 , NULL, L" \t", ARRAYSIZE(L" \t")))
 			{
 				goto ExitFunc;
 			}
 			
 			//check if it is an ipv6 address
-			if( pEnd==pPtr ||
-				strcmp("tcp",m_szProtocolName) &&
-				strcmp("np",m_szProtocolName) &&
-				strcmp("lpc",m_szProtocolName) &&
-				strcmp("via",m_szProtocolName) &&
-				strcmp("admin",m_szProtocolName))
+			if( pwEnd==pwPtr ||
+				wcscmp(L"tcp",m_wszProtocolName) &&
+				wcscmp(L"np",m_wszProtocolName) &&
+				wcscmp(L"lpc",m_wszProtocolName) &&
+				wcscmp(L"via",m_wszProtocolName) &&
+				wcscmp(L"admin",m_wszProtocolName))
 			{
 				//restore
-				*pEnd = ':';	
-				*m_szProtocolName = '\0';
+				*pwEnd = L':';	
+				*m_wszProtocolName = L'\0';
 			}
 			else
 			{				
-				pPtr = pEnd + 1;
-				if( ERROR_SUCCESS != StrTrimBoth_Sys(pPtr, strlen(pPtr)+1, NULL, " \t", 3))
+				pwPtr = pwEnd + 1;
+				if( ERROR_SUCCESS != StrTrimBothW_Sys(pwPtr, wcslen(pwPtr)+1, NULL, L" \t", ARRAYSIZE(L" \t")))
 				{
 					goto ExitFunc;
 				}	
@@ -273,107 +285,107 @@ OACR_WARNING_POP
 		//pipename
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-		if(CSTR_EQUAL == CompareStringA(LOCALE_SYSTEM_DEFAULT,
+		if(CSTR_EQUAL == CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									  0,
-									  pPtr, 2,
-									  "\\\\",2))
+									  pwPtr, 2,
+									  L"\\\\",2))
 OACR_WARNING_POP
 		{
 			// If there is a protocol specified and its not 'np'
 			// report an error
-			if( !m_szProtocolName[0] )
-				(void) StringCchCopyA( m_szProtocolName, CCH_ANSI_STRING(m_szProtocolName),"np");
-			else if( strcmp("np", m_szProtocolName) )
+			if( !m_wszProtocolName[0] )
+				(void) StringCchCopyW( m_wszProtocolName, ARRAYSIZE(m_wszProtocolName),L"np");
+			else if( wcscmp(L"np", m_wszProtocolName) )
 				goto ExitFunc;
 
-			if( strlen(pPtr ) > MAX_PROTOCOLPARAMETER_LENGTH )
+			if( wcslen(pwPtr ) > MAX_PROTOCOLPARAMETER_LENGTH )
 				goto ExitFunc;			
 			
-			(void) StringCchCopyA(m_szProtocolParameter,CCH_ANSI_STRING(m_szProtocolParameter),pPtr);				
+			(void) StringCchCopyW(m_wszProtocolParameter,ARRAYSIZE(m_wszProtocolParameter),pwPtr);				
 
-			char *szServerStart = pPtr+2;
-			char *szServerEnd =StrChrA_SYS(szServerStart, (int) strlen(szServerStart),'\\');
-			if( !szServerEnd )
+			WCHAR *wszServerStart = pwPtr+2;
+			WCHAR *wszServerEnd =StrChrW_SYS(wszServerStart, (int) wcslen(wszServerStart),L'\\');
+			if( !wszServerEnd )
 				goto ExitFunc;
 
-			*szServerEnd = 0;
+			*wszServerEnd = 0;
 			
-			if (IsBlank(szServerStart))
+			if (IsBlank(wszServerStart))
 				goto ExitFunc;
 
 			// always copy the exact server name (as parsed from the named pipe) to the original name
-			(void) StringCchCopyA(m_szOriginalServerName,CCH_ANSI_STRING(m_szOriginalServerName),szServerStart);
+			(void) StringCchCopyW(m_wszOriginalServerName,ARRAYSIZE(m_wszOriginalServerName),wszServerStart);
 			
-			if (IsLocalHost(szServerStart))
+			if (IsLocalHost(wszServerStart))
 			{
-				(void) StringCchCopyA(m_szServerName,CCH_ANSI_STRING(m_szServerName),gszComputerName);
+				(void) StringCchCopyW(m_wszServerName,ARRAYSIZE(m_wszServerName),gwszComputerName);
 			}
 			else
 			{
-				if (FAILED (StringCchCopyA(m_szServerName,CCH_ANSI_STRING(m_szServerName),szServerStart)))
+				if (FAILED (StringCchCopyW(m_wszServerName,ARRAYSIZE(m_wszServerName),wszServerStart)))
 					goto ExitFunc;
 			}
 
 			//	Parse instance Name from PipeName
 			//
 			//	Skip the "\pipe\"
-			char *szPipeEnd = StrChrA_SYS(szServerEnd+1,(int)strlen(szServerEnd+1),'\\');
-			if(!szPipeEnd)
+			WCHAR *wszPipeEnd = StrChrW_SYS(wszServerEnd+1,(int)wcslen(wszServerEnd+1),L'\\');
+			if(!wszPipeEnd)
 				goto ExitFunc;
 
-			char* szInstStart=0, *szInstEnd=0;
+			WCHAR* wszInstStart=0, *wszInstEnd=0;
 
 			//	stardard default instance, i.e. \\server\pipe\sql\query
 			//
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-			if( CSTR_EQUAL == CompareStringA(LOCALE_SYSTEM_DEFAULT,
+			if( CSTR_EQUAL == CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									  0,
-									  szPipeEnd+1,
-									  (int) strlen(szPipeEnd+1),
-									  "sql\\query",
-									  (int) sizeof("sql\\query")-1))
+									  wszPipeEnd+1,
+									  (int) wcslen(wszPipeEnd+1),
+									  L"sql\\query",
+									  (int) ARRAYSIZE(L"sql\\query")-1))
 OACR_WARNING_POP
 			{		
-				m_szInstanceName[0]=0;
+				m_wszInstanceName[0]=0;
 			}			
 			// 	Possible standard named instance, i.e. "\\server\pipe\MSSQL$instancename\sql\query".
-			//	Use lower case because we just map the szConnect to lower case using LCMapStringA above.
+			//	Use lower case because we just map the wszConnect to lower case using LCMapStringA above.
 			//	Note that FQDN, pipename and SPN is case in sensitive.
 			//
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-			else if(CSTR_EQUAL == CompareStringA(LOCALE_SYSTEM_DEFAULT,
+			else if(CSTR_EQUAL == CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									  0,
-									  szPipeEnd+1,
-									  (int) sizeof("mssql$")-1,
-									  "mssql$",
-									  (int) sizeof("mssql$")-1))
+									  wszPipeEnd+1,
+									  (int) ARRAYSIZE(L"mssql$")-1,
+									  L"mssql$",
+									  (int) ARRAYSIZE(L"mssql$")-1))
 OACR_WARNING_POP
 			{
 
 				//	standard named instance must finish with "\sql\query".
 				//
-				szInstEnd= StrChrA_SYS(szPipeEnd+1, (int) strlen(szPipeEnd+1),'\\');				
+				wszInstEnd= StrChrW_SYS(wszPipeEnd+1, (int) wcslen(wszPipeEnd+1),L'\\');				
 
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-				if( CSTR_EQUAL == CompareStringA(LOCALE_SYSTEM_DEFAULT,
+				if( CSTR_EQUAL == CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									  0,
-									  szInstEnd+1,
-									  (int) strlen(szInstEnd+1),
-									  "sql\\query",
-									  (int) sizeof("sql\\query")-1))
+									  wszInstEnd+1,
+									  (int) wcslen(wszInstEnd+1),
+									  L"sql\\query",
+									  (int) ARRAYSIZE(L"sql\\query")-1))
 OACR_WARNING_POP
 				{
 					// standard named instance, i.e. \\server\pipe\MSSQL$instance\sql\query.
 					// Find the start of the instance name
 					//
-					szInstStart = StrChrA_SYS(szPipeEnd+1, (int) strlen(szPipeEnd+1),'$');
-					Assert(szInstStart);
-					*szInstEnd=0;
+					wszInstStart = StrChrW_SYS(wszPipeEnd+1, (int) wcslen(wszPipeEnd+1),L'$');
+					Assert(wszInstStart);
+					*wszInstEnd=0;
 					
-					if (FAILED (StringCchCopyA(m_szInstanceName,CCH_ANSI_STRING(m_szInstanceName),szInstStart+1)))
+					if (FAILED (StringCchCopyW(m_wszInstanceName,ARRAYSIZE(m_wszInstanceName),wszInstStart+1)))
 						goto ExitFunc;
 
 				}
@@ -381,7 +393,7 @@ OACR_WARNING_POP
 				//
 				else
 				{
-					if (FAILED (StringCchPrintf_lA(m_szInstanceName,CCH_ANSI_STRING(m_szInstanceName),"pipe%s", GetDefaultLocale(), szPipeEnd+1)))
+					if (FAILED (StringCchPrintf_lW(m_wszInstanceName,ARRAYSIZE(m_wszInstanceName),L"pipe%s", GetDefaultLocale(), wszPipeEnd+1)))
 						goto ExitFunc;
 
 					m_fStandardInstName=false;
@@ -391,7 +403,7 @@ OACR_WARNING_POP
 			//
 			else
 			{
-				if (FAILED (StringCchPrintf_lA(m_szInstanceName,CCH_ANSI_STRING(m_szInstanceName),"pipe%s", GetDefaultLocale(),  szPipeEnd+1)))
+				if (FAILED (StringCchPrintf_lW(m_wszInstanceName,ARRAYSIZE(m_wszInstanceName),L"pipe%s", GetDefaultLocale(),  wszPipeEnd+1)))
 					goto ExitFunc;
 
 				m_fStandardInstName=false;
@@ -406,13 +418,13 @@ OACR_WARNING_POP
 
 
 		// parameter.
-		if( pEnd = strchr(pPtr,',') )
+		if( pwEnd = wcschr(pwPtr,L',') )
 		{
-			*pEnd = 0;
+			*pwEnd = 0;
 
-			char * szProtocolParameter = pEnd + 1; 
+			WCHAR * wszProtocolParameter = pwEnd + 1; 
 
-			if( ERROR_SUCCESS != StrTrimBoth_Sys(szProtocolParameter, strlen(szProtocolParameter)+1, NULL, " \t", 3))
+			if( ERROR_SUCCESS != StrTrimBothW_Sys(wszProtocolParameter, wcslen(wszProtocolParameter)+1, NULL, L" \t", ARRAYSIZE(L" \t")))
 			{
 				goto ExitFunc;
 			}
@@ -421,13 +433,13 @@ OACR_WARNING_POP
 			// parameter specification even if protocol is not
 			// specified (for backward compatibility with netlibs 
 			// 2.x).  
-			if(m_szProtocolName[0] == 0)
-				(void) StringCchCopyA(m_szProtocolName,CCH_ANSI_STRING(m_szProtocolName),"tcp");
+			if(m_wszProtocolName[0] == 0)
+				(void) StringCchCopyW(m_wszProtocolName,ARRAYSIZE(m_wszProtocolName),L"tcp");
 
 			
 			// SQL BU DT 384073: "," is acceptable only for VIA and TCP
 			// other protocols may fall through here, force fail exit
-			if( strcmp("via", m_szProtocolName) &&  strcmp("tcp", m_szProtocolName) )
+			if( wcscmp(L"via", m_wszProtocolName) &&  wcscmp(L"tcp", m_wszProtocolName) )
 			{			
 				goto ExitFunc;
 			}
@@ -435,15 +447,15 @@ OACR_WARNING_POP
 
 			// SQL BU DT 291063: 2.8 netlibs allow for an additional
 			// TCP parameter ",urgent" but ignores it, and does not even 
-			// validate it's actually ",urgent" (Webdata QFE bug 449).  
-			// To preserve backward compatibility, SNI will do the same.  
-			if( !strcmp("tcp", m_szProtocolName) )
+			// validate it's actually ",urgent" (Webdata QFE 
+
+			if( !wcscmp(L"tcp", m_wszProtocolName) )
 			{
-				if( char * pComma = strchr(szProtocolParameter, ',') )
+				if( WCHAR * pComma = wcschr(wszProtocolParameter, L',') )
 				{
 					*pComma = 0; 
 					
-					if( ERROR_SUCCESS != StrTrimBoth_Sys(szProtocolParameter, strlen(szProtocolParameter)+1, NULL, " \t", 3))
+					if( ERROR_SUCCESS != StrTrimBothW_Sys(wszProtocolParameter, wcslen(wszProtocolParameter)+1, NULL, L" \t", ARRAYSIZE(L" \t")))
 					{
 						goto ExitFunc;
 					}
@@ -451,48 +463,48 @@ OACR_WARNING_POP
 			}
 
 			// Error out on blank parameter and ",\"
-			if( !(*szProtocolParameter) || *szProtocolParameter == '\\' )
+			if( !(*wszProtocolParameter) || *wszProtocolParameter == L'\\' )
 				goto ExitFunc;
 
-			if(strlen(szProtocolParameter) > MAX_PROTOCOLPARAMETER_LENGTH)
+			if(wcslen(wszProtocolParameter) > MAX_PROTOCOLPARAMETER_LENGTH)
 				goto ExitFunc;
 			
-			if( IsBlank(pPtr) )
+			if( IsBlank(pwPtr) )
 				goto ExitFunc;
 
 			//Trim off possible "\instancename" in format of "hostname,port\instancename" to
 			//preserve MDAC behavior, i.e. ignore instancename when port is present.
-			if(pEnd = StrChrA_SYS(szProtocolParameter, (int) strlen(szProtocolParameter),'\\'))
-				*pEnd = 0;
+			if(pwEnd = StrChrW_SYS(wszProtocolParameter, (int) wcslen(wszProtocolParameter),L'\\'))
+				*pwEnd = 0;
 			
-			(void)StringCchCopyA(m_szProtocolParameter,CCH_ANSI_STRING(m_szProtocolParameter),szProtocolParameter);
+			(void)StringCchCopyW(m_wszProtocolParameter,ARRAYSIZE(m_wszProtocolParameter),wszProtocolParameter);
 
 			fHasParameter = true;
 			m_fCanUseCache = false;
 		}
 
 		//instancename
-		if( pEnd=StrChrA_SYS(pPtr, (int) strlen(pPtr),'\\'))
+		if( pwEnd=StrChrW_SYS(pwPtr, (int) wcslen(pwPtr),L'\\'))
 		{
-			*pEnd = 0;
-			if(strlen(pEnd+1) > MAX_INSTANCENAME_LENGTH)
+			*pwEnd = 0;
+			if(wcslen(pwEnd+1) > MAX_INSTANCENAME_LENGTH)
 				goto ExitFunc;
 
-			if( IsBlank(pPtr) )
+			if( IsBlank(pwPtr) )
 				goto ExitFunc;
 
-			if( ERROR_SUCCESS != StrTrimBoth_Sys(pEnd+1, strlen(pEnd+1)+1, NULL, " \t", 3))
+			if( ERROR_SUCCESS != StrTrimBothW_Sys(pwEnd+1, wcslen(pwEnd+1)+1, NULL, L" \t", ARRAYSIZE(L" \t")))
 			{
 				goto ExitFunc;
 			}
 
 			// SQL BU DT 338117: treat missing instance name as default
 			// instance to preserve 2.8 netlibs behavior.  
-			if( *(pEnd+1) )
+			if( *(pwEnd+1) )
 			{
 				// Per testing it appears that 2.8 did not treat white 
 				// space as a default instance.  
-				if( IsBlank(pEnd+1) )
+				if( IsBlank(pwEnd+1) )
 					goto ExitFunc;
 
 				//Only save "\instancename" when port number is not available to 
@@ -500,7 +512,7 @@ OACR_WARNING_POP
 				//It is needed in format of "hostname\instancename,port".
 				if( !fHasParameter )
 				{
-					(void)StringCchCopyA(m_szInstanceName,CCH_ANSI_STRING(m_szInstanceName),pEnd+1);
+					(void)StringCchCopyW(m_wszInstanceName,ARRAYSIZE(m_wszInstanceName),pwEnd+1);
 					
 				}
 			}
@@ -508,42 +520,42 @@ OACR_WARNING_POP
 
 		// Instance name "mssqlserver" is reserved for default
 		// instance, and is not allowed.  
-		if( !strcmp(DEFAULT_INSTANCE_NAME, m_szInstanceName) )
+		if( !wcscmp(DEFAULT_INSTANCE_NAME, m_wszInstanceName) )
 			goto ExitFunc; 			
 
-		if(strlen(pPtr) > MAX_NAME_SIZE)
+		if(wcslen(pwPtr) > MAX_NAME_SIZE)
 			goto ExitFunc;
 
 
 		//server name
-		if( ERROR_SUCCESS != StrTrimBoth_Sys(pPtr, strlen(pPtr)+1, NULL, " \t", 3))
+		if( ERROR_SUCCESS != StrTrimBothW_Sys(pwPtr, wcslen(pwPtr)+1, NULL, L" \t", ARRAYSIZE(L" \t")))
 		{
 			goto ExitFunc;
 		}
 		
 		// always copy the exact server name to the original name
-		(void) StringCchCopyA(m_szOriginalServerName,CCH_ANSI_STRING(m_szOriginalServerName),pPtr);
+		(void) StringCchCopyW(m_wszOriginalServerName,ARRAYSIZE(m_wszOriginalServerName),pwPtr);
 		
-		if(IsBlank(pPtr) || IsLocalHost(pPtr))
+		if(IsBlank(pwPtr) || IsLocalHost(pwPtr))
 		{
 			// For DAC use "localhost" instead of the server name.  
-			if( strcmp("admin", m_szProtocolName) )
+			if( wcscmp(L"admin", m_wszProtocolName) )
 			{
-				(void)StringCchCopyA(m_szServerName,CCH_ANSI_STRING(m_szServerName),gszComputerName);
+				(void)StringCchCopyW(m_wszServerName,ARRAYSIZE(m_wszServerName),gwszComputerName);
 			}
 			else
 			{
-				(void)StringCchCopyA(m_szServerName,CCH_ANSI_STRING(m_szServerName),"localhost");
+				(void)StringCchCopyW(m_wszServerName,ARRAYSIZE(m_wszServerName),L"localhost");
 			}
 		}
 		else
 		{
-			(void)StringCchCopyA(m_szServerName,CCH_ANSI_STRING(m_szServerName),pPtr);
+			(void)StringCchCopyW(m_wszServerName,ARRAYSIZE(m_wszServerName),pwPtr);
 		}
 
 		// Check if lpc was the protocol and the servername was NOT
 		// the local computer - in that case, error out
-		if( !strcmp("lpc", m_szProtocolName) && !IsLocalHost(m_szServerName) )
+		if( !wcscmp(L"lpc", m_wszProtocolName) && !IsLocalHost(m_wszServerName) )
 		{
 			Assert( dwRet == ERROR_INVALID_PARAMETER );
 			
@@ -554,14 +566,14 @@ OACR_WARNING_POP
 			goto ExitFunc;
 		}
 		
-		(void)StringCchCopyA(m_szAlias,CCH_ANSI_STRING(m_szAlias),m_szServerName);
+		(void)StringCchCopyW(m_wszAlias,ARRAYSIZE(m_wszAlias),m_wszServerName);
 
-		if(m_szInstanceName[0])
+		if(m_wszInstanceName[0])
 		{
-			(void)StringCchCatA(m_szAlias,CCH_ANSI_STRING(m_szAlias),"\\");
-			(void)StringCchCatA(m_szAlias,CCH_ANSI_STRING(m_szAlias), m_szInstanceName);
-			if( !strcmp("lpc",m_szProtocolName) 
-				|| !strcmp("admin",m_szProtocolName))
+			(void)StringCchCatW(m_wszAlias,ARRAYSIZE(m_wszAlias),L"\\");
+			(void)StringCchCatW(m_wszAlias,ARRAYSIZE(m_wszAlias), m_wszInstanceName);
+			if( !wcscmp(L"lpc",m_wszProtocolName) 
+				|| !wcscmp(L"admin",m_wszProtocolName))
 				m_fCanUseCache = false;
 		}
 		else
@@ -571,25 +583,25 @@ OACR_WARNING_POP
 
 		if( fParallel )
 		{
-			if( !strcmp("np",m_szProtocolName) ||
-				!strcmp("via",m_szProtocolName) ||
-				!strcmp("lpc",m_szProtocolName) ||
-				!strcmp("admin",m_szProtocolName) )
+			if( !wcscmp(L"np",m_wszProtocolName) ||
+				!wcscmp(L"via",m_wszProtocolName) ||
+				!wcscmp(L"lpc",m_wszProtocolName) ||
+				!wcscmp(L"admin",m_wszProtocolName) )
 			{
 				dwRet = ERROR_INVALID_PARAMETER;
 				SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_49, dwRet );
 				fLastErrorSet = TRUE; 
 				goto ExitFunc;
 			}
-			else if( '\0' == m_szProtocolName[0] )
+			else if( L'\0' == m_wszProtocolName[0] )
 			{
-				HRESULT hr = StringCchCopyA(m_szProtocolName,CCH_ANSI_STRING(m_szProtocolName),"tcp");
+				HRESULT hr = StringCchCopyW(m_wszProtocolName,ARRAYSIZE(m_wszProtocolName),L"tcp");
 				if( FAILED(hr) )
 				{
 					// We don't expect this to fail for either of the stated reasons on MSDN...
 					Assert( STRSAFE_E_INSUFFICIENT_BUFFER != hr );
 					Assert( STRSAFE_E_INVALID_PARAMETER != hr );
-					BidTrace1( ERROR_TAG _T("StringCchCopyA failed: %d{HRESULT}.\n"), hr);
+					BidTrace1( ERROR_TAG _T("StringCchCopyW failed: %d{HRESULT}.\n"), hr);
 					
 					dwRet = ERROR_INVALID_PARAMETER;
 					SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_10, dwRet );
@@ -602,7 +614,7 @@ OACR_WARNING_POP
 
 	ExitFunc:
 
-		delete [] szCopyConnect;
+		delete [] wszCopyConnect;
 
 		if( ERROR_SUCCESS != dwRet )
 		{
@@ -615,24 +627,24 @@ OACR_WARNING_POP
 		}
 		else
 		{
-			Assert(m_szServerName[0]);
+			Assert(m_wszServerName[0]);
 			BidTraceU8( SNI_BID_TRACE_ON, SNI_TAG 
-				_T("m_szProtocolName: '%hs', ")
-				_T("m_szServerName: '%hs', ")
-				_T("m_szInstanceName: '%hs', ")
-				_T("m_szProtocolParameter: '%hs', ")
-				_T("m_szAlias: '%hs', ")
+				_T("m_wszProtocolName: '%s', ")
+				_T("m_wszServerName: '%s', ")
+				_T("m_wszInstanceName: '%s', ")
+				_T("m_wszProtocolParameter: '%s', ")
+				_T("m_wszAlias: '%s', ")
 				_T("m_fCanUseCache: %d{bool}, ")
 				_T("m_fStandardInstName: %d{bool}, ")
-				_T("m_szOriginalServerName: '%hs'\n"), 
-				m_szProtocolName , 
-				m_szServerName, 
-				m_szInstanceName, 
-				m_szProtocolParameter, 
-				m_szAlias, 
+				_T("m_wszOriginalServerName: '%s'\n"), 
+				m_wszProtocolName , 
+				m_wszServerName, 
+				m_wszInstanceName, 
+				m_wszProtocolParameter, 
+				m_wszAlias, 
 				m_fCanUseCache,
 				m_fStandardInstName,
-				m_szOriginalServerName);
+				m_wszOriginalServerName);
 		}
 		
 		BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), dwRet);
@@ -652,33 +664,35 @@ public:
 	//	Use m_ProviderNum if equal to INVALID_PROV.  
 	//
 	ProviderNum m_ProviderToReport;
-	char 		m_szServerName[MAX_NAME_SIZE+1];
-	char 		m_szOriginalServerName[MAX_NAME_SIZE+1];
+	WCHAR 		m_wszServerName[MAX_NAME_SIZE+1];
+	WCHAR 		m_wszOriginalServerName[MAX_NAME_SIZE+1];
 
 	union
 	{
 		struct
 		{
-			char szPort[MAX_PROTOCOLPARAMETER_LENGTH+1];
+			WCHAR wszPort[MAX_PROTOCOLPARAMETER_LENGTH+1];
 			bool fParallel;
+			TransparentNetworkResolutionMode transparentNetworkIPResolution;
+			int  totalTimeout;
 		} Tcp;
 
 		struct
 		{
-			char Pipe[MAX_PATH+1];
+			WCHAR Pipe[MAX_PATH+1];
 		} Np;
 
 		struct
 		{
-			char Alias[MAX_ALIAS_LENGTH+1];
+			WCHAR Alias[MAX_ALIAS_LENGTH+1];
 		} Sm;
 
 		struct
 		{
 			USHORT Port;
-			char Vendor[MAX_NAME_SIZE+1];
-			char Host[MAX_NAME_SIZE+1];
-			char Param[MAX_PROTOCOLPARAMETER_LENGTH+1];
+			WCHAR Vendor[MAX_NAME_SIZE+1];
+			WCHAR Host[MAX_NAME_SIZE+1];
+			WCHAR Param[MAX_PROTOCOLPARAMETER_LENGTH+1];
 		} Via;
 	};
 	
@@ -690,8 +704,8 @@ public:
 
 		m_ProviderToReport = INVALID_PROV; 
 
-		m_szServerName[0] = 0x00; 
-		m_szOriginalServerName[0] = 0x00;
+		m_wszServerName[0] = 0x00; 
+		m_wszOriginalServerName[0] = 0x00;
 		
 		m_Next = 0;
 	}
@@ -700,13 +714,13 @@ public:
 	{
 	}
 
-	DWORD Init( const char szServer[], const char szOriginalServerName[] )
+	DWORD Init( const WCHAR wszServer[], const WCHAR wszOriginalServerName[] )
 	{
-		BidxScopeAutoSNI2( SNIAPI_TAG _T( "szServer: '%hs', szOriginalServerName: '%hs'\n"), szServer, szOriginalServerName);
+		BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszServer: '%s', wszOriginalServerName: '%s'\n"), wszServer, wszOriginalServerName);
 
-		Assert( szServer[0] );
+		Assert( wszServer[0] );
 
-		DWORD dwRet = (DWORD) StringCchCopyA (m_szServerName, CCH_ANSI_STRING(m_szServerName), szServer);
+		DWORD dwRet = (DWORD) StringCchCopyW (m_wszServerName, ARRAYSIZE(m_wszServerName), wszServer);
 
 		if( ERROR_SUCCESS != dwRet )
 		{
@@ -714,7 +728,7 @@ public:
 		}
 
 		
-		dwRet = (DWORD) StringCchCopyA (m_szOriginalServerName, CCH_ANSI_STRING(m_szOriginalServerName), szOriginalServerName);
+		dwRet = (DWORD) StringCchCopyW (m_wszOriginalServerName, ARRAYSIZE(m_wszOriginalServerName), wszOriginalServerName);
 
 	Exit:
 		BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), dwRet);
@@ -730,6 +744,8 @@ public:
 		{
 			case TCP_PROV:
 				Tcp.fParallel = false;
+				Tcp.transparentNetworkIPResolution = TransparentNetworkResolutionMode::DisabledMode;
+				Tcp.totalTimeout = SNIOPEN_TIMEOUT_VALUE;
 				break;
 			default:
 				// nothing to be done for other protocols
@@ -742,9 +758,9 @@ public:
 		return m_ProviderNum;
 	}
 
-	static DWORD MakeProtElem (__in LPSTR szConnect, __out ProtElem ** ppProtElem)
+	static DWORD MakeProtElem (__in LPWSTR wszConnect, __out ProtElem ** ppProtElem)
 	{
-		BidxScopeAutoSNI2( SNIAPI_TAG _T( "szConnect: '%hs', ppProtElem: %p\n"), szConnect, ppProtElem);
+		BidxScopeAutoSNI2( SNIAPI_TAG _T( "wszConnect: '%s', ppProtElem: %p\n"), wszConnect, ppProtElem);
 
 		*ppProtElem = 0;
 		
@@ -764,7 +780,7 @@ public:
 
 		// ProtElem::MakeProtElem is only called by direct consumer calls to SNIOpenSync, which does not take an fParallel parameter - so, always pass False here.
 		// While SNIOpenSyncEx calls also go through SNIOpenSync, they will not call MakeProtElem - the ProtElem gets constructed by a different call to ParseConnectionString
-		dwRet = pConnectParams->ParseConnectionString( szConnect, false );
+		dwRet = pConnectParams->ParseConnectionString( wszConnect, false );
 		
 		if( ERROR_SUCCESS != dwRet )
 		{
@@ -790,7 +806,7 @@ public:
 			return dwRet;
 		}
 
-		dwRet = pProtElem->Init( pConnectParams->m_szServerName, pConnectParams->m_szOriginalServerName ); 
+		dwRet = pProtElem->Init( pConnectParams->m_wszServerName, pConnectParams->m_wszOriginalServerName ); 
 
 		if ( ERROR_SUCCESS != dwRet )
 		{
@@ -799,27 +815,27 @@ public:
 
 		dwRet = ERROR_INVALID_PARAMETER;
 
-		switch( pConnectParams->m_szProtocolName[0] )
+		switch( pConnectParams->m_wszProtocolName[0] )
 		{
-			case 't':
+			case L't':
 
-				if( strcmp("tcp",pConnectParams->m_szProtocolName))
+				if( wcscmp(L"tcp",pConnectParams->m_wszProtocolName))
 					goto ErrorExit;
 
 				pProtElem->SetProviderNum(TCP_PROV);
 
-				if(pConnectParams->m_szInstanceName[0])
+				if(pConnectParams->m_wszInstanceName[0])
 				{
 					goto ErrorExit;
 				}
 		
-				if(pConnectParams->m_szProtocolParameter[0])
+				if(pConnectParams->m_wszProtocolParameter[0])
 				{
-					if( 0 == Strtoi(pConnectParams->m_szProtocolParameter))
+					if( 0 == Wcstoi(pConnectParams->m_wszProtocolParameter))
 						goto ErrorExit;
 
-					C_ASSERT(sizeof(pProtElem->Tcp.szPort) == sizeof(pConnectParams->m_szProtocolParameter));
-					memcpy(pProtElem->Tcp.szPort, pConnectParams->m_szProtocolParameter, sizeof(pProtElem->Tcp.szPort));
+					C_ASSERT(sizeof(pProtElem->Tcp.wszPort) == sizeof(pConnectParams->m_wszProtocolParameter));
+					memcpy(pProtElem->Tcp.wszPort, pConnectParams->m_wszProtocolParameter, sizeof(pProtElem->Tcp.wszPort));
 				}
 				else 
 				{

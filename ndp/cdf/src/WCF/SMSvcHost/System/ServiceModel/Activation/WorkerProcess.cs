@@ -179,7 +179,7 @@ namespace System.ServiceModel.Activation
             this.connectionDuplicator = OperationContext.Current.GetCallbackChannel<IConnectionDuplicator>();
 
             // Prevent this duplicate operation from timing out, faulting the pipe, and stopping any further communication with w3wp
-            // we're gated by MaxPendingAccepts + MaxPendingConnection. see CSD Main bug 193390 for details
+            // we're gated by MaxPendingAccepts + MaxPendingConnection. see CSD Main 
             ((IContextChannel)this.connectionDuplicator).OperationTimeout = TimeSpan.MaxValue;
 
             ListenerExceptionStatus status = ListenerExceptionStatus.Success;

@@ -4,7 +4,7 @@
 // 
 // ==--==
 //
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 
 /*
  * This files defines the following types:
@@ -38,7 +38,6 @@ namespace System.Threading
     using System.Runtime.ConstrainedExecution;
     using System.Diagnostics.Contracts;
     using System.Collections.Concurrent;
-
 
     #region struct NativeOverlapped
 
@@ -291,18 +290,21 @@ namespace System.Threading
     public class Overlapped
     {
         private OverlappedData m_overlappedData;
+        private static PinnableBufferCache s_overlappedDataCache = new PinnableBufferCache("System.Threading.OverlappedData", ()=> new OverlappedData());
    
 #if FEATURE_CORECLR
         [System.Security.SecuritySafeCritical]  // auto-generated
 #endif
         public Overlapped() 
         {
-            m_overlappedData = OverlappedDataCache.GetOverlappedData(this);
+            m_overlappedData = (OverlappedData) s_overlappedDataCache.Allocate();
+            m_overlappedData.m_overlapped = this;
         }
 
         public Overlapped(int offsetLo, int offsetHi, IntPtr hEvent, IAsyncResult ar)
         {
-            m_overlappedData = OverlappedDataCache.GetOverlappedData(this);
+            m_overlappedData = (OverlappedData) s_overlappedDataCache.Allocate();
+            m_overlappedData.m_overlapped = this;
             m_overlappedData.m_nativeOverlapped.OffsetLow = offsetLo;
             m_overlappedData.m_nativeOverlapped.OffsetHigh = offsetHi;
             m_overlappedData.UserHandle = hEvent;
@@ -429,139 +431,12 @@ namespace System.Threading
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);
             OverlappedData overlappedData = overlapped.m_overlappedData;
             overlapped.m_overlappedData = null;
-            OverlappedDataCache.CacheOverlappedData(overlappedData);
+            overlappedData.ReInitialize();
+            s_overlappedDataCache.Free(overlappedData);
         }
     
     }
 
     #endregion class Overlapped
-
-
-    #region class OverlappedDataCache
-
-    internal sealed class OverlappedDataCache : CriticalFinalizerObject
-    {
-        // OverlappedData will be pinned during async io operation.
-        // In order to avoid pinning in gen 0, we use a cache to recycle OverlappedData objects.  We also allocate
-        // them in batches to avoid fragmentation.
-        const int BatchSize = 16;
-
-        // We keep two stacks of OverlappedData objects.  This one holds the objects that have been returned to 
-        // the cache since the last Gen2 GC.  We will prefer to re-use these ones, to allow the ones in the other
-        // stack to eventually be collected.
-        static volatile ConcurrentStack<OverlappedData> s_usedSinceLastGC = new ConcurrentStack<OverlappedData>();
-
-        // This stack holds objects that have not been touched since the last Gen2 GC.  The ones that remain untouched
-        // at the next Gen2 GC will be discarded.
-        static volatile ConcurrentStack<OverlappedData> s_notUsedSinceLastGC;
-
-        // We keep exactly one dummy instance of OverlappedDataCache around at all times, so that we can use its finalizer
-        // to detect when a GC has occurred.  
-        static int s_finalizerRegistered;
-        private static void EnsureFinalizerRegistered()
-        {
-            if (s_finalizerRegistered == 0)
-                if (Interlocked.Exchange(ref s_finalizerRegistered, 1) == 0)
-                    new OverlappedDataCache();
-        }
-
-#if FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical]
-        internal OverlappedDataCache()
-        {
-        }
-#endif
-
-#if FEATURE_LEGACYNETCF
-        [System.Security.SecuritySafeCritical]  // because it calls GC.GetGeneration
-#endif
-        ~OverlappedDataCache()
-        {
-            //
-            // First, we need to keep this instance alive so it will get future "notifications" of GCs
-            //
-            if (!Environment.HasShutdownStarted &&
-                !AppDomain.CurrentDomain.IsFinalizingForUnload())
-            {
-                GC.ReRegisterForFinalize(this);
-            }
-
-            //
-            // If the "recently used" stack has made it to Gen2, then it's time to throw out the old
-            // objects
-            //
-            if (GC.GetGeneration(s_usedSinceLastGC) >= GC.MaxGeneration)
-            {
-                //
-                // Throw away the objects that haven't been touched in a while,
-                // and move the rest of the objects so they become candidates for 
-                // discarding at the next GC.  The ones that get used before that happens
-                // will not be discarded, since they'll be added to the new "recently-used"
-                // list.
-                // 
-                s_notUsedSinceLastGC = s_usedSinceLastGC;
-                s_usedSinceLastGC = new ConcurrentStack<OverlappedData>();
-            }
-        }
-
-        //
-        // Retrieve an OverlappedData from the cache, or create a new one
-        //
-        internal static OverlappedData GetOverlappedData(Overlapped overlapped)
-        {
-            EnsureFinalizerRegistered();
-
-            OverlappedData result = null;
-
-            //
-            // First, try to pop a recently-used object.
-            //
-            ConcurrentStack<OverlappedData> stack = s_usedSinceLastGC;
-            stack.TryPop(out result);
-
-            //
-            // If we didn't get one, try to resurrect an older one.
-            //
-            if (result == null)
-            {
-                stack = s_notUsedSinceLastGC;
-                if (stack != null)
-                    stack.TryPop(out result);
-            }
-
-            //
-            // We didn't find anything in the cache, so we need to create a new instance.
-            //
-            if (result == null)
-            {
-                //
-                // To reduce fragmentation, we'll create a whole batch of these, and cache all but the one
-                // we return.  Because we're allocating the batch all at once, it is likely that all instances
-                // will be contiguous in memory.
-                //
-                for (int i = 0; i < BatchSize - 1; i++)
-                    s_usedSinceLastGC.Push(new OverlappedData());
-
-                result = new OverlappedData();
-            }
-
-            result.m_overlapped = overlapped;
-            return result;
-        }
-
-        //
-        // Return a free OverlappedData to the cache
-        //
-        [System.Security.SecurityCritical]
-        internal static void CacheOverlappedData(OverlappedData data)
-        {
-            data.ReInitialize();
-
-            // this is, by definition, a recently-used object
-            s_usedSinceLastGC.Push(data);
-        }
-    }
-
-    #endregion class OverlappedDataCache
 
 }  // namespace

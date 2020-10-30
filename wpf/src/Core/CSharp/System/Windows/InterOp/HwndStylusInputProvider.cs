@@ -98,10 +98,10 @@ namespace System.Windows.Interop
         void IInputProvider.NotifyDeactivate() {}
 
         /////////////////////////////////////////////////////////////////////
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
-        /// <SecurityNote>
-        ///     Critical: This code is critical since it handles all stylus messages and could be used to spoof input
-        /// </SecurityNote>
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+
+
+
         [SecurityCritical]
         internal IntPtr FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {

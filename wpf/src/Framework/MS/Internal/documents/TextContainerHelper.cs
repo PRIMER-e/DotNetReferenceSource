@@ -7,7 +7,7 @@
 // Description: Helper services for TextContainer.
 //
 // History:
-//  07/26/2004 : [....] - Created.
+//  07/26/2004 : Microsoft - Created.
 //
 //---------------------------------------------------------------------------
 

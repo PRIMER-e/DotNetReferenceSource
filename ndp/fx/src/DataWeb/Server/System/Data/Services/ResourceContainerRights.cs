@@ -7,7 +7,7 @@
 //      resource set.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

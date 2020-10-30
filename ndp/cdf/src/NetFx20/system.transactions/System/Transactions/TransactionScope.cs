@@ -652,8 +652,8 @@ namespace System.Transactions
                         rollbackTransaction.Rollback();
 
                         successful = true;
-                        throw TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceBase ), 
-                            SR.GetString( SR.TransactionScopeInvalidNesting ), null );
+                        throw TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceBase ),
+                            SR.GetString(SR.TransactionScopeInvalidNesting), null, rollbackTransaction.DistributedTxId);
                     }
                     // Verify that expectedCurrent is the same as the "current" current if we the interopOption value is None.
                     else if ( EnterpriseServicesInteropOption.None == actualCurrentScope.interopOption )
@@ -692,7 +692,8 @@ namespace System.Transactions
                                     );
                             }
 
-                            exToThrow = TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceBase ), SR.GetString( SR.TransactionScopeIncorrectCurrent ), null );
+                            exToThrow = TransactionException.CreateInvalidOperationException(SR.GetString(SR.TraceSourceBase), SR.GetString(SR.TransactionScopeIncorrectCurrent), null,
+                                current == null ? Guid.Empty : current.DistributedTxId);
 
                             // If there is a current transaction, abort it.
                             if ( null != current )
@@ -718,7 +719,8 @@ namespace System.Transactions
                     {
                         if ( null == exToThrow )
                         {
-                            exToThrow = TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceBase ), SR.GetString( SR.TransactionScopeInvalidNesting ), null );
+                            exToThrow = TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceBase ), SR.GetString( SR.TransactionScopeInvalidNesting ), null,
+                                current == null ? Guid.Empty : current.DistributedTxId );
                         }
                     
                         if ( DiagnosticTrace.Warning )
@@ -796,7 +798,8 @@ namespace System.Transactions
 
                             if ( null == exToThrow )
                             {
-                                exToThrow = TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceBase ), SR.GetString( SR.TransactionScopeIncorrectCurrent ), null );
+                                exToThrow = TransactionException.CreateInvalidOperationException(SR.GetString(SR.TraceSourceBase), SR.GetString(SR.TransactionScopeIncorrectCurrent), null,
+                                    current == null ? Guid.Empty : current.DistributedTxId);
                             }
                         
                             // If there is a current transaction, abort it.
@@ -1248,8 +1251,8 @@ namespace System.Transactions
                 // if this is a not supported scope it will be cleared.
                 if ( newCurrent != null )
                 {
-                    // To work around an SWC bug in Com+ we need to create 2
-                    // service domains.
+                    // To work around an SWC 
+
 
                     // Com+ will by default try to inherit synchronization from
                     // an existing context.  Turn that off.
@@ -1267,12 +1270,13 @@ namespace System.Transactions
             {
                 if ( System.Transactions.Oletx.NativeMethods.XACT_E_NOTRANSACTION == e.ErrorCode )
                 {
-                    throw TransactionException.Create( SR.GetString( SR.TraceSourceBase ),
-                        SR.GetString( SR.TransactionAlreadyOver ), 
-                        e );
+                    throw TransactionException.Create(SR.GetString(SR.TraceSourceBase),
+                        SR.GetString(SR.TransactionAlreadyOver),
+                        e,
+                        newCurrent == null ? Guid.Empty : newCurrent.DistributedTxId);
                 }
 
-                throw TransactionException.Create( SR.GetString( SR.TraceSourceBase ), e.Message, e );
+                throw TransactionException.Create(SR.GetString(SR.TraceSourceBase), e.Message, e, newCurrent == null ? Guid.Empty : newCurrent.DistributedTxId);
             }
             finally
             {
@@ -1300,8 +1304,8 @@ namespace System.Transactions
         {
             if ( this.createdDoubleServiceDomain )
             {
-                // This is an ugly work around to a bug in Com+ that prevents the use of BYOT and SWC with
-                // anything other than required synchronization.
+                // This is an ugly work around to a 
+
                 SysES.ServiceDomain.Leave();
             }
             SysES.ServiceDomain.Leave();

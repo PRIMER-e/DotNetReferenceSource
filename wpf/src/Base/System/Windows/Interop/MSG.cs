@@ -17,7 +17,7 @@ namespace System.Windows.Interop
     /// This class is the managed version of the Win32 MSG datatype.
     /// </summary>
     /// <remarks>
-    /// For Avalon/[....] interop to work, [....] needs to be able to modify MSG structs as they are
+    /// For Avalon/Microsoft interop to work, Microsoft needs to be able to modify MSG structs as they are
     /// processed, so they are passed by ref (it's also a perf gain)
     ///
     /// - but in the Partial Trust scenario, this would be a security vulnerability; allowing partially trusted code
@@ -33,7 +33,7 @@ namespace System.Windows.Interop
     /// - set access is restricted via a call to SecurityHelper.DemandUnrestrictedUIPermission, which is optimized
     ///    to a no-op in the Full Trust scenario, and will throw a security exception in the Partial Trust scenario
     ///
-    /// - NOTE: This breaks Avalon/[....] interop in the Partial Trust scenario, but that's not a supported
+    /// - NOTE: This breaks Avalon/Microsoft interop in the Partial Trust scenario, but that's not a supported
     ///              scenario anyway.
     /// </remarks>
     [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]

@@ -4,7 +4,7 @@
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -27,7 +27,7 @@ namespace System.Experimental.Gdi
     ///         Encapsulates a GDI Pen object.
     ///     </para>
     /// </devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -126,7 +126,7 @@ namespace System.Experimental.Gdi
 
                 lb.lbColor = ColorTranslator.ToWin32( this.wndBrush.Color );
                 lb.lbStyle = IntNativeMethods.BS_SOLID;
-                lb.lbHatch = 0; // CONSIDER: Check if HatchBrush and get the style if so (If needed in the future).
+                lb.lbHatch = 0; // 
                 
                 // Note: We currently don't support custom styles, that's why 0 and null for last two params.
                 this.nativeHandle = IntSafeNativeMethods.ExtCreatePen((int)this.style, this.width, lb, 0, null );

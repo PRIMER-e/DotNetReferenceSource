@@ -1871,7 +1871,7 @@ namespace System.Windows.Forms {
 
 
         /// <devdoc>
-        ///     Checks whether the current [....] app is running on a secure desktop under a terminal
+        ///     Checks whether the current Microsoft app is running on a secure desktop under a terminal
         ///     server session.  This is the case when the TS session has been locked.
         ///     This method is useful when calling into GDI+ Graphics methods that modify the object's
         ///     state, these methods fail under a locked terminal session.

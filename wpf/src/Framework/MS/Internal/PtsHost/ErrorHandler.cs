@@ -7,7 +7,7 @@
 // Description: Helpers to handle unexpected situations.
 //
 // History:
-//  05/02/2003 : [....] - moving from Avalon branch.
+//  05/02/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -134,13 +134,13 @@ namespace MS.Internal.PtsHost
         //internal static string NoObjectAtDcp                    = "No object has been found for specified 'dcp'.";
         //internal static string InvalidArg                       = "Invalid argument.";
         //internal static string EmptyLine                        = "Created line is empty.";
-        //internal static string ParaRectOutOfSync                = "Paragraph rect out of [....].";
+        //internal static string ParaRectOutOfSync                = "Paragraph rect out of sync.";
         internal static string HandledInsideSegmentPara         = "Paragraph structure invalidation should be handled by Segments.";
         internal static string EmptyParagraph                   = "There are no lines in the paragraph.";
         //internal static string UnsuportedParagraphBreak         = "Returned paragraph break is not supported.";
-        internal static string ParaStartsWithEOP                = "NameTable is out of [....] with TextContainer. The next paragraph begins with EOP.";
+        internal static string ParaStartsWithEOP                = "NameTable is out of sync with TextContainer. The next paragraph begins with EOP.";
         internal static string FetchParaAtTextRangePosition     = "Trying to fetch paragraph at not supported TextPointer - TextRange.";
-        internal static string ParagraphCharacterCountMismatch  = "Paragraph's character count is out of [....].";
+        internal static string ParagraphCharacterCountMismatch  = "Paragraph's character count is out of sync.";
         internal static string ContainerNeedsTextElement        = "Container paragraph can be only created for TextElement.";
         internal static string CannotPositionInsideUIElement    = "Cannot position TextPointer inside a UIElement.";
         internal static string CannotFindUIElement              = "Cannot find specified UIElement in the TextContainer.";
@@ -154,7 +154,7 @@ namespace MS.Internal.PtsHost
         //internal static string UpdateRecordAlreadyCreated       = "UpdateRecord has been already created.";
         //internal static string EmptyDTRList                     = "DTR list is empty.";
         //internal static string NullNextUpdateRecord             = "Next UpdateRecord cannot be null.";
-        //internal static string DTRListOutOfSync                 = "DTRList is out of [....].";
+        //internal static string DTRListOutOfSync                 = "DTRList is out of sync.";
         //internal static string DtrOutOfScope                    = "DTR is exciding presenter scope.";
         internal static string NoVisualToTransfer               = "Old paragraph does not have a visual node. Cannot transfer data.";
         internal static string UpdateShiftedNotValid            = "Update shifted is not a valid update type for top level PTS objects.";

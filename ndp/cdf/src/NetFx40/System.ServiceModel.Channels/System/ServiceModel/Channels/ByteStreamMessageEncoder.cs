@@ -13,8 +13,9 @@ namespace System.ServiceModel.Channels
     using SMTD = System.ServiceModel.Diagnostics.Application.TD;
     using System.Diagnostics;
 
-    class ByteStreamMessageEncoder : MessageEncoder, IStreamedMessageEncoder, IWebMessageEncoderHelper
+    class ByteStreamMessageEncoder : MessageEncoder, IStreamedMessageEncoder, IWebMessageEncoderHelper, ITraceSourceStringProvider
     {
+        string traceSourceString;
         string maxReceivedMessageSizeExceededResourceString;
         string maxSentMessageSizeExceededResourceString;
         XmlDictionaryReaderQuotas quotas;
@@ -280,6 +281,18 @@ namespace System.ServiceModel.Channels
             }
 
             return message.GetBody<Stream>();
+        }
+
+        string ITraceSourceStringProvider.GetSourceString()
+        {
+            // Other MessageEncoders use base.GetTraceSourceString but that would require a public api change in MessageEncoder
+            // as ByteStreamMessageEncoder is in a different assemly. The same logic is reimplemented here.
+            if (this.traceSourceString == null)
+            {
+                this.traceSourceString = DiagnosticTraceBase.CreateDefaultSourceString(this);
+            }
+
+            return this.traceSourceString;
         }
 
         class WriteMessageAsyncResult : AsyncResult

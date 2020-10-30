@@ -7,7 +7,7 @@
 //      supporting updating of resources
 // </summary>
 //
-// @owner  [....]
+// @owner  pratikp
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

@@ -209,8 +209,8 @@ namespace System.Windows.Input
             // reasons, we special-case Cut and Copy not to be subject to this check
             // even though they have been promoted to ISecureCommand in v4.0.
             //
-            // See Dev10 bug 815844 on reevaluating the threat model around protection
-            // of key bindings. The following demand may be unnecessary or misguided.
+            // See Dev10 
+
             ISecureCommand secure = command as ISecureCommand;
             if (   secure != null
                 && command != ApplicationCommands.Cut

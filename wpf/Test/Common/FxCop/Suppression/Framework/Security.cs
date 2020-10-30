@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID:    1398189
-// Developer: [....]
+// Developer: grzegorz
 // Reason:    Reviewed call graph. All calllers are marked as SecurityTreatAsSafe.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage", Scope="member", Target="MS.Internal.PtsHost.UnsafeNativeMethods.PTS.FsQuerySubpageBasicColumnList(System.IntPtr,System.IntPtr,System.Int32,MS.Internal.PtsHost.UnsafeNativeMethods.PTS+FSTRACKDESCRIPTION*,System.Int32&):System.Int32")]
@@ -15,8 +15,8 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID:    1390397
-// Developer: [....]
-// Reason:    Those mathods are reviewed. They are moved from FlowDo----netScrollViewer, which has been already reviewed.
+// Developer: grzegorz
+// Reason:    Those mathods are reviewed. They are moved from FlowDocumnetScrollViewer, which has been already reviewed.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2116:AptcaMethodsShouldOnlyCallAptcaMethods", Scope="member", Target="MS.Internal.Documents.DocumentViewerHelper.ShowFindUnsuccessfulMessage(MS.Internal.Documents.FindToolBar):System.Void")]
 [module: SuppressMessage("Microsoft.Security", "CA2116:AptcaMethodsShouldOnlyCallAptcaMethods", Scope="member", Target="MS.Internal.Documents.DocumentViewerHelper.ToggleFindToolBar(System.Windows.Controls.Decorator,System.EventHandler,System.Boolean):System.Void")]
@@ -91,7 +91,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1261979
 // Developer: AtanasK
-// Approved: SRamani and [....]
+// Approved: SRamani and BenCar
 // Reason: There is an event (ItemContainerGenerator.ItemsChanged) that is being attached to in Panel.
 // The event handler call path eventually makes its way to VirtualizingPanel.OnItemsChanged where the event arguments
 // are exposed. I don’t think there are any security issues with doing that.
@@ -100,7 +100,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1284600
-// Developer: [....]
+// Developer: grzegorz
 // Reason: MS.Internal.PtsHost.PtsContext.OnDestroyBreakRecord is marked as SecurityCritical and SecurityTreatAsSafe.
 //     It calls security critical methods and used critical data, but only internally and does not allow any access to it.
 //***************************************************************************************************************************
@@ -108,7 +108,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1235317
-// Developer: [....]
+// Developer: BenCar
 // Reason: There are no security demands or asserts involved with this method.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope="member", Target="System.Windows.Controls.VirtualizingPanel.OnItemsChanged(System.Object,System.Windows.Controls.ItemsChangedEventArgs):System.Void")]
@@ -143,7 +143,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1196958
-// Developer: [....]
+// Developer: SamBent
 // Reason: False positive.  This static field's value is actually immutable.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Scope="member", Target="System.Windows.Controls.GroupStyle.DefaultGroupPanel")]
@@ -157,14 +157,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: N/A
-// Developer: [....]
+// Developer: BenCar
 // Reason: Approved by avpttrev. Method does not expose any critical data in return values or parameters.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts", Scope="member", Target="System.Windows.SystemResources.EnsureResourceChangeListener():System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1106780 - FxCop: AptcaMethodsShouldOnlyCallAptcaMethods::MS.Internal.AppModel (presentationframework.dll 4 violation)
-// Developer: [....]
+// Developer: drelyea
 // Reason: Per marka, I have put a demand in all four of these methods. We do not want to make PresentationUI APTCA.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2116:AptcaMethodsShouldOnlyCallAptcaMethods", Scope="member", Target="MS.Internal.AppModel.XappLauncherApp.HandleError(System.Exception,System.String):System.Void")]
@@ -209,7 +209,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: Private run
-// Developer: [....]
+// Developer: andren
 // Reason: partial trust security team has reviewed all of these
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.MSInternal", "CA900:AptcaAssembliesShouldBeReviewed")]
@@ -899,7 +899,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID:    1399561
-// Developer: [....]
+// Developer: dwaynen
 // Reason: This was part of Akhil's work to prevent programatic paste in partial trust.  He confirmed it is OK to suppress.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope="member", Target="System.Windows.Controls.MenuItem.OnMouseLeftButtonDown(System.Windows.Input.MouseButtonEventArgs):System.Void", MessageId="0#")]
@@ -973,14 +973,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //*********************************************************************************************************************************
 // Bug ID:    1520819
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Body/paras of Find method has been changed without affecting any security critical code. Just simple rearrangement.
 //*********************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2116:AptcaMethodsShouldOnlyCallAptcaMethods", Scope="member", Target="MS.Internal.Documents.DocumentViewerHelper.Find(MS.Internal.Documents.FindToolBar,System.Windows.Documents.TextEditor,System.Windows.Documents.ITextView,System.Windows.Documents.ITextView):System.Windows.Documents.ITextRange")]
 
 //*********************************************************************************************************************************
 // Bug ID:    1520820
-// Developer: [....]
+// Developer: grzegorz
 // Reason: OnKeyDown is simply copy-paste of existing code like this from FlowDocumentScrollViewer. We are setting a property
 //         defined in non-APTCA assembly. This call does not entail any risk.
 //*********************************************************************************************************************************
@@ -989,7 +989,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //*********************************************************************************************************************************
 // Bug ID:    1523315
-// Developer: [....]
+// Developer: huwang
 // Reason: The WndProc is already marked as SecurityCritial. Talked Ariel. He agreed that we should suppress this.
 //*********************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Interop.HwndHost.WndProc(System.IntPtr,System.Int32,System.IntPtr,System.IntPtr,System.Boolean&):System.IntPtr")]
@@ -997,7 +997,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //*********************************************************************************************************************************
 // Bug ID: 1571473
-// Developer: [....]
+// Developer: benwest
 // Reason: All of these callers are SecurityCritical -- it is acceptable for them to call link demanded methods.
 //*********************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.Windows.Documents.SpellerInterop.EnumTextSegments(System.Char[],System.Int32,System.Windows.Documents.SpellerInterop+EnumSentencesCallback,System.Windows.Documents.SpellerInterop+EnumTextSegmentsCallback,System.Object):System.Int32")]
@@ -1056,7 +1056,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: 1641123, 164124
-// Developer: [....]
+// Developer: benwest
 // Reason: These methods are safe to override but not safe to call from untrusted code.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope = "member", Target = "System.Windows.Controls.PasswordBox.OnContextMenuOpening(System.Windows.Controls.ContextMenuEventArgs):System.Void", MessageId = "0#")]
@@ -1064,7 +1064,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: 1641128, 1641129
-// Developer: [....]
+// Developer: benwest
 // Reason: All of these callers are SecurityCritical -- it is acceptable for them to call link demanded methods.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.Windows.Documents.CaretElement.Win32CreateCaret():System.Void")]
@@ -1087,7 +1087,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: 1963850
-// Developer: [....]
+// Developer: benwest
 // Reason: All of these callers are SecurityCritical -- it is acceptable for them to call link demanded methods.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.Windows.Documents.FrameworkTextComposition.CompleteCurrentComposition(MS.Win32.UnsafeNativeMethods+ITfDocumentMgr):System.Void")]
@@ -1112,7 +1112,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: DevDiv 198726
-// Developer: [....]
+// Developer: andren
 // Reason: Marshal.FinalReleaseComObject is only being called with the specific connection point container object.  It won't release any random COM object.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security","CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="MS.Internal.Controls.ConnectionPointCookie.#.ctor(System.Object,System.Object,System.Type)")]
@@ -1120,7 +1120,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: DevDiv 198726
-// Developer: [....]
+// Developer: andren
 // Reason: There's already an available way to verify something is COMVisible w/o trying to get ObjectForScripting to do it.
 // The CLR Security team told us they would thus be removing the link demand from Marshal.IsTypeVisibleFromCom.
 //**************************************************************************************************************************
@@ -1128,14 +1128,14 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: DevDiv 198726
-// Developer: [....]
+// Developer: andren
 // Reason: Marshal.FinalReleaseComObject is only being called with the specific AxInstance this object owns, not any random COM object.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security","CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="System.Windows.Interop.ActiveXHost.#TransitionFromLoadedToPassive()")]
 
 // **************************************************************************************************************************
 // Bug ID: DevDiv 198726
-// Developer: [....]
+// Developer: andren
 // Reason: FxCop doesn't know that the LinkDemand for an interface must be on the interface definition (IKeyboardInputSink.cs).
 // Any LinkDemand on an actual interface method implementation is ignored.
 //**************************************************************************************************************************
@@ -1143,7 +1143,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: DevDiv 198726
-// Developer: [....]
+// Developer: andren
 // Reason: Added a LinkDemand to ActiveXHost.ActiveXSite.  Now, everyone calling that is complaining.  But they don't
 // directly return the ActiveXSite to the caller, so they are OK.
 //**************************************************************************************************************************
@@ -1155,7 +1155,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: DevDiv 200291
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Method has link demand, but overrides method without link demand. In this case, we do not trust the input 
 // ContextMenuEventArgs (which may have its UserInitiated bit set), so we do not tolerate this method being called in 
 // partial trust by a derived class. However, it is perfectly reasonable for a derived class in partial trust to override 
@@ -1164,14 +1164,14 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Security","CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope="member", Target="System.Windows.Controls.Primitives.TextBoxBase.#OnContextMenuOpening(System.Windows.Controls.ContextMenuEventArgs)")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: Implements a method from ISerializable interface, not overriding. Fxcop does not differentiate between implementing and overriding
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.Windows.Navigation.JournalEntry.#GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)")]
 
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason:  Even though the signature looks like an event handler's, these methods are not event handlers, they donot raise any events
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope = "member", Target = "System.Windows.Setter.#ReceiveMarkupExtension(System.Object,System.Windows.Markup.XamlSetMarkupExtensionEventArgs)")]
@@ -1180,14 +1180,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason:  DependencyPropertyKeys are generally declared read-only. 
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Scope = "member", Target = "System.Windows.Controls.DataGridColumn.#ActualWidthPropertyKey")]
 
 //**************************************************************************************************************************
 // Feature: Win7 Integration
-// Developer: [....]
+// Developer: joecast
 // Reason: Ignorable FxCop warnings: Intentional naming violations.  LinkDemands coming through because
 //         the class is locked down.
 //**************************************************************************************************************************
@@ -1196,21 +1196,21 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 632972 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: jezhan
 // Reason: This would break public API
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope = "member", Target = "System.Windows.Condition.#ReceiveMarkupExtension(System.Object,System.Windows.Markup.XamlSetMarkupExtensionEventArgs)")]
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope = "member", Target = "System.Windows.Condition.#ReceiveTypeConverter(System.Object,System.Windows.Markup.XamlSetTypeConverterEventArgs)")]
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope = "member", Target = "System.Windows.DataTrigger.#ReceiveMarkupExtension(System.Object,System.Windows.Markup.XamlSetMarkupExtensionEventArgs)")]
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: arathira
 // Reason: Callers are marked SecurityCritical and TreatAsSafe because CompositionTarget.TransformToDevice
 // and CompositionTarget.TransformToDevice are treated as safe.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.Windows.FrameworkElement.#GetDpi(System.Windows.Vector,System.Windows.FrameworkElement,System.Double&,System.Double&)")]
 //**************************************************************************************************************************
 // Bug ID: 692896 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: kedecond
 // Reason: XamlLoadPermission constructor saves a copy of AllowedAccess, so it should be safe.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2103:ReviewImperativeSecurity", Scope = "member", Target = "System.Windows.DeferrableContent.#.ctor(System.IO.Stream,System.Windows.Baml2006.Baml2006SchemaContext,System.Xaml.IXamlObjectWriterFactory,System.IServiceProvider,System.Object)")]
@@ -1218,7 +1218,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 732400 (DevDiv TFS Dev10)
-// Developer: [....]
+// Developer: juhanit
 // Reason: There is a LinkDemand on PresentationSource.get_CompositionTarget. GetClippedPositionOffsets calls this getter, 
 // but GetClippedPositionOffsets is marked as SecurityCritical and the CompositionTarget is never exposed.
 //**************************************************************************************************************************
@@ -1226,7 +1226,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: N/A
-// Developer: [....]
+// Developer: hrachyam
 // Reason: These methods have passed security reviews.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security","CA2103:ReviewImperativeSecurity", Scope="member", Target="System.Windows.Documents.SpellerInterop.#AddLexicon(System.String)", Justification="By Design and reviewed by Security Team")]
@@ -1234,7 +1234,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: N/A
-// Developer: [....]
+// Developer: hrachyam
 // Reason: The intent of this method is to accept as input parameter ONLY TextBoxBase derived objects.
 // Changing type of input parameter from TextoxBase to DependencyObject, as suggested by FxCop message for this issue is not appropriate.
 //**************************************************************************************************************************

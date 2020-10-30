@@ -333,7 +333,7 @@ namespace System.Windows.Documents
                 if (String.IsNullOrEmpty(UnicodeString) && String.IsNullOrEmpty(Indices))
                     throw new ArgumentException(SR.Get(SRID.GlyphsUnicodeStringAndIndicesCannotBothBeEmpty));
 
-                glyphRunProperties = new LayoutDependentGlyphRunProperties();
+                glyphRunProperties = new LayoutDependentGlyphRunProperties(GetDpi().PixelsPerDip);
 
                 if (!uri.IsAbsoluteUri)
                 {
@@ -1075,6 +1075,12 @@ namespace System.Windows.Documents
             public string           unicodeString;
             public IList<bool>      caretStops;
             public string           deviceFontName;
+            private float _pixelsPerDip;
+
+            public LayoutDependentGlyphRunProperties(double pixelsPerDip)
+            {
+                _pixelsPerDip = (float)pixelsPerDip;
+            }
 
             public GlyphRun CreateGlyphRun(Point origin, XmlLanguage language)
             {
@@ -1083,6 +1089,7 @@ namespace System.Windows.Documents
                     bidiLevel,                   // Bidi level
                     sideways,                    // sideways flag
                     fontRenderingSize,           // rendering em size in MIL units
+                    _pixelsPerDip,
                     glyphIndices,                // glyph indices
                     origin,                      // origin of glyph-drawing space
                     advanceWidths,               // glyph advances

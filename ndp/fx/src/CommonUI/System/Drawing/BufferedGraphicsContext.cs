@@ -232,10 +232,10 @@ namespace System.Drawing {
         //   TRUE if successful, FALSE otherwise.
         //
         // History:
-        //  07-Jun-1995 -by- Gilman Wong [[....]]
+        //  07-Jun-1995 -by- Gilman Wong [Microsoft]
         // Wrote it.
         //
-        //  15-Nov-2000 -by- Chris Anderson [[....]]
+        //  15-Nov-2000 -by- Chris Anderson [Microsoft]
         // Ported it to C#
         //
         /// </devdoc>
@@ -313,10 +313,10 @@ namespace System.Drawing {
         //   TRUE if successful, FALSE otherwise.
         //
         // History:
-        //  23-Jan-1996 -by- Gilman Wong [[....]]
+        //  23-Jan-1996 -by- Gilman Wong [Microsoft]
         // Wrote it.
         //
-        //  15-Nov-2000 -by- Chris Anderson [[....]]
+        //  15-Nov-2000 -by- Chris Anderson [Microsoft]
         // Ported it to C#
         //
         /// </devdoc>
@@ -428,10 +428,10 @@ namespace System.Drawing {
         //   Valid bitmap handle if successful, NULL if error.
         //
         // History:
-        //  23-Jan-1996 -by- Gilman Wong [[....]]
+        //  23-Jan-1996 -by- Gilman Wong [Microsoft]
         // Wrote it.
         //
-        //  15-Nov-2000 -by- Chris Anderson [[....]]
+        //  15-Nov-2000 -by- Chris Anderson [Microsoft]
         // Ported it to C#.
         //
         /// </devdoc>        

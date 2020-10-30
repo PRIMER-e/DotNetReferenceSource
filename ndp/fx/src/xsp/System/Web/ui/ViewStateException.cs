@@ -123,5 +123,18 @@ namespace System.Web.UI {
         internal static void ThrowViewStateError(Exception inner, string persistedState) {
             ThrowError(inner, persistedState, SR.Invalid_ControlState, false);
         }
+
+        // Returns true if this exception was caused by a view state MAC validation failure; false otherwise
+        internal static bool IsMacValidationException(Exception e) {
+            for (; e != null; e = e.InnerException) {
+                ViewStateException vse = e as ViewStateException;
+                if (vse != null && vse._macValidationError) {
+                    return true;
+                }
+            }
+
+            // not a ViewState MAC validation exception
+            return false;
+        }
     }
 }

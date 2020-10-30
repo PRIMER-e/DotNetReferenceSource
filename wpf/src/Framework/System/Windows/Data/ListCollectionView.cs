@@ -10,7 +10,7 @@
 // See spec at http://avalon/connecteddata/Specs/CollectionView.mht
 //
 // History:
-//  06/02/2003 : [....]   - Ported from DotNet tree
+//  06/02/2003 : Microsoft   - Ported from DotNet tree
 //  03/27/2004 : kenlai     - Implement IList
 //
 //---------------------------------------------------------------------------
@@ -1105,9 +1105,9 @@ namespace System.Windows.Data
 
                     // the pending changes may have moved (or even removed) the
                     // item.   Verify the index.
-                    if (index >= InternalList.Count || !Object.Equals(item, GetItemAt(index)))
+                    if (index >= InternalCount || !Object.Equals(item, GetItemAt(index)))
                     {
-                        index = InternalList.IndexOf(item);
+                        index = InternalIndexOf(item);
                         if (index < 0)
                             return;
                     }
@@ -2456,6 +2456,35 @@ namespace System.Windows.Data
             get { return ((_sort != null) && (_sort.Count > 0)); }
         }
 
+        // return an appropriate comparer.   Common logic used by ListCollectionView
+        // and by CollectionViewGroupInternal.
+        internal static IComparer PrepareComparer(IComparer customSort, SortDescriptionCollection sort, Func<CollectionView> lazyGetCollectionView)
+        {
+            if (customSort != null)
+            {
+                return customSort;
+            }
+
+            if (sort != null && sort.Count > 0)
+            {
+                CollectionView view = lazyGetCollectionView();
+                Debug.Assert(view != null, "lazyGetCollectionView should not return null");
+
+                if (view.SourceCollection != null)
+                {
+                    IComparer xmlComparer = SystemXmlHelper.PrepareXmlComparer(view.SourceCollection, sort, view.Culture);
+                    if (xmlComparer!= null)
+                    {
+                        return xmlComparer;
+                    }
+                }
+
+                return new SortFieldComparer(sort, view.Culture);
+            }
+
+            return null;
+        }
+
         #endregion Internal Methods
 
 
@@ -2815,7 +2844,7 @@ namespace System.Windows.Data
                 int newPosition = CurrentPosition + 1;
                 if (newPosition < InternalCount)
                 {
-                    // CurrentItem might be out of [....] if underlying list is not INCC
+                    // CurrentItem might be out of sync if underlying list is not INCC
                     // or if this Add is the result of a Replace (Rem + Add)
                     SetCurrent(GetItemAt(newPosition), newPosition);
                 }
@@ -2846,7 +2875,7 @@ namespace System.Windows.Data
         {
             if (oldIndex == CurrentPosition)
             {
-                // moving the current item - currency moves with the item (bug 1942184)
+                // moving the current item - currency moves with the item (
                 SetCurrent(GetItemAt(newIndex), newIndex);
             }
             else if (oldIndex < CurrentPosition && CurrentPosition <= newIndex)
@@ -2878,26 +2907,7 @@ namespace System.Windows.Data
         private void PrepareShaping()
         {
             // sort:  prepare the comparer
-            if (_customSort != null)
-            {
-                ActiveComparer = _customSort;
-            }
-            else if (_sort != null && _sort.Count > 0)
-            {
-                IComparer xmlComparer = SystemXmlHelper.PrepareXmlComparer(SourceCollection, _sort, Culture);
-                if (xmlComparer!= null)
-                {
-                    ActiveComparer = xmlComparer;
-                }
-                else
-                {
-                    ActiveComparer = new SortFieldComparer(_sort, Culture);
-                }
-            }
-            else
-            {
-                ActiveComparer = null;
-            }
+            ActiveComparer = ListCollectionView.PrepareComparer(_customSort, _sort, () => { return this; });
 
             // filter:  prepare the Predicate<object> filter
             ActiveFilter = Filter;

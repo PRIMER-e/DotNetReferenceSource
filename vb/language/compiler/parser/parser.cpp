@@ -513,12 +513,12 @@ Parser::SetLocation
             
             dim x = 1 + _
             EOL
-            REM This is bug 444553
+            REM This is 
 
-        In this case End will point to the REM.  Begin points to the EOL following the explicit line continuation.
-        When we backup, TokenWeBackedUpTo will be on the EOL as well.
-        This code treats the End token as non-inclusive as far as error reporting goes, so we need to look again at the condition
-        where the Begin token and End token are the same thing so we get the right span. */
+
+
+
+*/
         if (Beg == End )
         {
             SetLocationForSpanOfOneToken( Loc, Beg );
@@ -1954,7 +1954,7 @@ Parser::ParseDeclsAndMethodBodies
         new(*ConditionalCompilationSymbolsStorage)
         Symbols(m_Compiler, ConditionalCompilationSymbolsStorage, LineMarkers);
 
-    m_ConditionalConstantsScope = m_ConditionalCompilationSymbolsSource->AllocCCContainer(false, ProjectLevelCondCompScope->GetCompilerFile()); // [....] 
+    m_ConditionalConstantsScope = m_ConditionalCompilationSymbolsSource->AllocCCContainer(false, ProjectLevelCondCompScope->GetCompilerFile()); // Microsoft 
 
     VSASSERT(ProjectLevelCondCompScope, "");
     Symbols::SetParent(m_ConditionalConstantsScope, ProjectLevelCondCompScope);
@@ -2464,7 +2464,7 @@ Parser::ParseName
     ErrorTable Errors(m_Compiler, NULL, NULL);
 
     bool ErrorInConstruct = false;
-    Scanner NameTokens(m_pStringPool, NameToParse, wcslen(NameToParse), 0, 0, 0); // [....]: heads up - my names have no location so I send zeros.
+    Scanner NameTokens(m_pStringPool, NameToParse, wcslen(NameToParse), 0, 0, 0); // Microsoft: heads up - my names have no location so I send zeros.
 
     m_Errors = &Errors;
     m_InputStream = &NameTokens;
@@ -2502,7 +2502,7 @@ Parser::ParseTypeName
     ErrorTable Errors(m_Compiler, NULL, NULL);
 
     bool ErrorInConstruct = false;
-    Scanner NameTokens(m_pStringPool, NameToParse, wcslen(NameToParse), 0, 0, 0); // [....]: heads up - my names have no location so I send zeros.
+    Scanner NameTokens(m_pStringPool, NameToParse, wcslen(NameToParse), 0, 0, 0); // Microsoft: heads up - my names have no location so I send zeros.
 
     InitParserFromScannerStream(&NameTokens, &Errors);
 
@@ -4212,9 +4212,9 @@ Parser::ParseStatementInMethodBody
             // Without this fix, an invalid identifier error will be reported, and the file will
             // not decompile far enough.  The task list error will incorrectly hang around.
             //
-            // Note: This bug addresses the requirement that this method (ParseStatementInMethodBody)
-            //       should report ERRID_InvInsideEndsProc in exactly the same cases that FindEndProc
-            //       does
+            // Note: This 
+
+
             if (!(Specifiers->HasSpecifier(ParseTree::Specifier::Dim | ParseTree::Specifier::Const)) &&
                 (m_CurrentToken->m_TokenType == tkSUB ||
                  m_CurrentToken->m_TokenType == tkFUNCTION ||
@@ -4398,7 +4398,7 @@ Parser::ParseStatementInMethodBody
                 Assign->Source = ParseExpression(ErrorInConstruct);
                 if (ErrorInConstruct)
                 {
-                    // [....] to avoid other errors
+                    // Sync to avoid other errors
                     ResyncAt(0);
                 }
 
@@ -6245,8 +6245,8 @@ lbl_Conversion:
                 // Async, and Iterator as variable names, etc., continues to
                 // work correctly.
                 // 
-                // See Bug VSWhidbey 379914 for the original issue with CUSTOM.
-                //
+                // See 
+
                 if (TokenAsKeyword(m_CurrentToken) == tkCUSTOM)
                 {
                     Token *  pNext = m_CurrentToken->m_Next;
@@ -7077,7 +7077,7 @@ Parser::ParseInitializerList
                             break;
 
                         case ParseTree::Expression::Equal:
-                            // (Bug #27657 - DevDiv Bugs)
+                            // (
                             if(initExpr->AsBinary()->Left &&
                                 initExpr->AsBinary()->Left->Opcode == ParseTree::Expression::Name &&
                                 initExpr->AsBinary()->Left->AsName()->Name.Name)
@@ -7484,13 +7484,13 @@ Parser::ParseGenericArguments
         }
         else if (!m_InterpretationUnderIntelliSense)
         {
-            // Bug VSWhidbey 157413
-            // Propagate badness in the type argument list to the last type argument.
-            // This is needed to avoid spurious binding errors in the other parts of the
-            // compiler during name binding. It is better to propagate this badness than
-            // trying to resync at the right paren in order to avoid spurious errors that
-            // could possibly result due to a bad resync in extremely bad parse scenarios.
-            //
+            // 
+
+
+
+
+
+
             if (Type)
             {
                 Type->Opcode = ParseTree::Type::SyntaxError;
@@ -9003,7 +9003,7 @@ Parser::ParseHandlesList
             if (m_CurrentToken->m_TokenType == tkGLOBAL)
             {
                 // A handles name can't start with Global, it is local.
-                // Produce the error, ignore the token and let the name parse for [....].
+                // Produce the error, ignore the token and let the name parse for sync.
                 ReportSyntaxError(ERRID_NoGlobalInHandles, m_CurrentToken, ErrorInConstruct);
                 Term = new(m_TreeStorage) ParseTree::SimpleName;
                 Term->AsSimple()->ID = CreateId(m_CurrentToken);
@@ -10697,8 +10697,8 @@ Parser::ParseDelegateStatement
             // Force the type char to always be none in this error case because by default we
             // are setting the delegate to be a Procedure and not a Function below. Type chars
             // are not allowed on Procedures because they do not have a return type.
-            // This prevents spurious errors later on in declared. See Bug VSWhidbey 183964.
-            //
+            // This prevents spurious errors later on in declared. See 
+
             Result->Name.TypeCharacter = chType_NONE;
 
             break;
@@ -10765,7 +10765,7 @@ Parser::GetMissingEndProcError
 
  This function is used during declaration parsing to skip past the bodies of method definitions.
 
- [....]:Consider
+ Microsoft:Consider
  This function is a travesty and needs to be refactored.  In the smallest font I can read, the print-out 
  of this function spans half my office.  
 
@@ -11189,7 +11189,7 @@ bool Parser::FindEndProc
             {
                 /* May or may not end the procedure block depending on what follows.
 
-                   [....]: Consider tkLT is interesting because it may be the harbinger
+                   Microsoft: Consider tkLT is interesting because it may be the harbinger
                    for an attribute or it may preface an XmlNCName.
                    This code really expects it to be an attribute because it tries to consume
                    it below.  But trapping for the XmlNCName and doing a break; so that we
@@ -11351,7 +11351,7 @@ bool Parser::FindEndProc
                     Start->m_EOL.m_NextLineAlreadyScanned ?
                     Start->m_Next :
                     GetNextLine();
-                AtFirstStatementOnLine = true; // [....] - 
+                AtFirstStatementOnLine = true; // Microsoft - 
                 continue;
 
             case tkSharp:
@@ -11387,7 +11387,7 @@ bool Parser::FindEndProc
                         tkMethodKind->m_Prev->m_TokenType == tkDot ||
                         tkMethodKind->m_Prev->m_TokenType == tkBang))
                 {
-                    // resets the token stream to where we were before calling it. [....]: consider - take a flag to govern resetting
+                    // resets the token stream to where we were before calling it. Microsoft: consider - take a flag to govern resetting
                     // the token stream so we don't have to re-spin through the tokens again when we don't need to.  Plus, that would take 
                     // care of the problem with line-continuation in the parameter list
                     if (IsMultiLineLambda()) 
@@ -11409,7 +11409,7 @@ bool Parser::FindEndProc
             }
 
             if (m_CurrentToken->m_State.m_LexicalState == VB)
-                AtFirstStatementOnLine = m_CurrentToken->m_TokenType != tkColon; // [....] - 
+                AtFirstStatementOnLine = m_CurrentToken->m_TokenType != tkColon; // Microsoft - 
         }
     } // while (!Done)
 
@@ -12721,7 +12721,7 @@ Parser::ParseProcDeclareStatement
         Result->ReturnType = ParseGeneralType(ErrorInConstruct);
         if (ErrorInConstruct)
         {
-            // [....] at EOS to avoid any more errors.
+            // Sync at EOS to avoid any more errors.
             ResyncAt(0);
         }
     }
@@ -13144,7 +13144,7 @@ Parser::ParseAttributeSpecifier
                 EatNewLine();
             }
 #if 0
-            // [....]: Why was this code introduced? It breaks us big time when the /langVersion switch is specified (#557228-you can't
+            // Microsoft: Why was this code introduced? It breaks us big time when the /langVersion switch is specified (#557228-you can't
             // process any code that has two assembly attributes in a row anymore, which was legal in vs 2008) and it is unnecessary in v10.
             // I think he was anticipating a normal attribute immediately preceding an assembly attribute.  Which is an error but the way
             // the code worked before we catch it anyway.  Getting rid of this gives us exactly the same errors we had before without
@@ -14774,7 +14774,7 @@ Parser::ParseStatementLambda
     BackupValue<ParseTree::BlockStatement*> backupContext(&m_Context);
     BackupValue<int> backupContextIndex(&m_ContextIndex);
     BackupValue<ParseTree::LambdaBodyStatement*> backupLambdaBody(&m_pStatementLambdaBody);
-    BackupValue<ParseTree::LambdaBodyStatement*>backupFirstLambdaBody(&m_pFirstMultilineLambdaBody); // [....]: this is subtle - it is what ultimately sets m_pFirstMultilineLambdaBody == NULL on return from outermost lambda
+    BackupValue<ParseTree::LambdaBodyStatement*>backupFirstLambdaBody(&m_pFirstMultilineLambdaBody); // Microsoft: this is subtle - it is what ultimately sets m_pFirstMultilineLambdaBody == NULL on return from outermost lambda
 
     BackupValue<bool> backupCurrentError(&m_CurrentStatementInError);
 
@@ -14785,7 +14785,7 @@ Parser::ParseStatementLambda
 
     BackupValue<ParseTree::Statement::Opcodes> backupExitOpcode(&m_ExpectedExitOpcode);
 
-    // [....]: 501503
+    // Microsoft: 501503
     // We have to back up m_IsLineIf and set it to false when we parse the multiline lambda body. This is because
     // the lambda may be in a line if, and this will cause the flag to be true, which causes parsing subsequence
     // ifs to be totally horked.
@@ -14933,7 +14933,7 @@ Parser::ParseStatementLambda
     
     // Sometimes we re-parse the tokens of the multiline lambda, for example, when we are parsing a new expression.
     // Thus, we need to keep track of the EOL tokens and mark them as already having their next lines scanned so that the
-    // scanner and parser do not become out of [....].
+    // scanner and parser do not become out of sync.
     if (!isSingleLine)
     {
         if ( m_CurrentToken->m_TokenType == tkEOL )
@@ -15130,7 +15130,7 @@ Parser::ParseStatementLambda
         
         // Sometimes we re-parse the tokens of the multiline lambda, for example, when we are parsing a new expression.
         // Thus, we need to keep track of the EOL tokens and mark them as already having their next lines scanned so that the
-        // scanner and parser do not become out of [....].
+        // scanner and parser do not become out of sync.
         Token *pEOLToken = m_CurrentToken;
 
         // Get the next line
@@ -16515,7 +16515,7 @@ Parser::ParseXmlAttribute
         {
             // Case of quoted string without an attribute name.
 
-            // todo [....] - Move error to Semantics
+            // todo Microsoft - Move error to Semantics
             ReportSyntaxError(ERRID_ExpectedXmlName, m_CurrentToken, m_CurrentToken, ErrorInConstruct);
 
             Attribute->Value = ParseXmlAttributeValue(Attribute, ErrorInConstruct);
@@ -16695,7 +16695,7 @@ Parser::ParseXmlContent
             break;
 
         default:
-            // Todo: [....] - Provide list of expected tokens instead of one.
+            // Todo: Microsoft - Provide list of expected tokens instead of one.
             HandleUnexpectedToken(tkLT, ErrorInConstruct);
             Result = ExpressionSyntaxError();
             SetExpressionLocation(Result, m_CurrentToken, m_CurrentToken, NULL);
@@ -19558,11 +19558,11 @@ Parser::ParseQualifiedExpr
                       "We shouldn't get here without .<eol> tokens");
 
             /* We know we are sitting on an EOL preceded by a tkDot.  What we need to catch is the
-               case where a tkDot following an EOL isn't preceded by a valid token.  Bug Dev10_429652  For example:
-               with i <eol>
-                 .  <-- this is bad.  This . follows an EOL and isn't preceded by a tkID.  Can't have it hanging out like this
-                 field = 42
-            */
+               case where a tkDot following an EOL isn't preceded by a valid token.  
+
+
+
+*/
             if ( m_CurrentToken->m_Prev->m_Prev == NULL || // make sure we can look back far enough.  We know we can look back once, but twice we need to test
                  m_CurrentToken->m_Prev->m_Prev->m_TokenType == tkEOL ) // Make sure there is something besides air before the '.' DEV10_486908
             {
@@ -19736,7 +19736,7 @@ Parser::ParseParenthesizedArguments
     else
     {
         // On error, peek for ")" with "(". If ")" seen before
-        // "(", then [....] on that. Otherwise, assume missing ")"
+        // "(", then sync on that. Otherwise, assume missing ")"
         // and let caller decide.
 
         tokens Clue = PeekAheadFor(2, tkLParen, tkRParen);
@@ -20841,7 +20841,7 @@ Parser::TokenColumnEnd
     return ColumnEnd;
 }
 
-// ISSUE [....] -- these method templates are now defined inline in Parser.h.
+// ISSUE Microsoft -- these method templates are now defined inline in Parser.h.
 // They are not necessarily appropriate as inline methods, but VC does not allow
 // non-inline definitions of template member functions.
 
@@ -21042,14 +21042,14 @@ Parser::ReportSyntaxError
         {
             ParseError Error;
 
-            // Bug Devdiv 7000.
-            // When line continuation char is added without a
-            // preceding backspace or with comments following it,
-            // then a very unhelpful error indicating
-            // "Identifier Expected" is given. This fix is to give
-            // a better error in that scenario and also let pretty
-            // lister fix up the code.
-            //
+            // 
+
+
+
+
+
+
+
             if (Beg->m_Error.m_errid == ERRID_ExpectedIdentifier &&
                 Beg->m_Error.m_IsTokenForInvalidLineContinuationChar &&
                 Beg->m_Next &&
@@ -21841,7 +21841,7 @@ bool Parser::TryAddMultilineLambdaStatementsToLexicalStatementList
         // the last lexical statement in the statement list that contains the lambda body.
         if (pList->NextInBlock)
         {
-            // [....]: 486319
+            // Microsoft: 486319
             // It turns out that while the below assumptions hold for compiler parsing, it does not
             // hold when the IDE calls through here.
             // IE, the IDE will call this method even if there are errors, while in the compiler, we will
@@ -22221,7 +22221,7 @@ Parser::IsValidStatementTerminator
         T->m_TokenType == tkEOF ||
         T->m_TokenType == tkREM ||
         T->m_TokenType == tkXMLDocComment ||
-        // (bug 32704) "else" is a special case in the construct "if foo then resume else stmt"
+        // (
         (m_IsLineIf && T->m_TokenType == tkELSE);
 }
 
@@ -22403,7 +22403,7 @@ Parser::BeginsGeneric // A generic is signified by '(' [tkEOL] tkOF
         if (pNext->IsContinuableEOL()) // See if we need to go to the next line to find tkOF since '(' allows for implicit line continuation
         {
             Token * pNextLine = PeekNextLine(pNext);
-            if (pNextLine->m_StartLine == pNext->m_StartLine + 1) // [....]: this seems like a wierd check.  If the EOL is continuable this condition is always true so why check?
+            if (pNextLine->m_StartLine == pNext->m_StartLine + 1) // Microsoft: this seems like a wierd check.  If the EOL is continuable this condition is always true so why check?
             {
                 pNext = pNextLine;
             }
@@ -23413,7 +23413,7 @@ Parser::ParseConditionalCompilationStatement
                 ERRID_ExpectedConditionalDirective,
                 ErrorInConstruct);
 
-            // Forced location adjustment: make all # line squigle (bug #158394)
+            // Forced location adjustment: make all # line squigle (
             TempStatement->TextSpan.m_lBegLine = Start->m_StartLine;
             TempStatement->TextSpan.m_lBegColumn = TokenColumnBeg(Start);
             LinkStatement(TempStatement);
@@ -24550,7 +24550,7 @@ Parser::RecoverFromMismatchedEnd
                 if ( Start->m_Prev->m_TokenType == tkEOL )
                 {
                     m_CurrentToken = Start->m_Prev; // make the current token the EOL
-                    m_CurrentToken->m_EOL.m_NextLineAlreadyScanned = true; // and mark it so we know that the next line has been scanned so we don't get out of [....] with the scanner
+                    m_CurrentToken->m_EOL.m_NextLineAlreadyScanned = true; // and mark it so we know that the next line has been scanned so we don't get out of sync with the scanner
                 }
 
                 VSASSERT (m_pStatementLambdaBody->GetRawParent()->Opcode == ParseTree::Statement::HiddenBlock,

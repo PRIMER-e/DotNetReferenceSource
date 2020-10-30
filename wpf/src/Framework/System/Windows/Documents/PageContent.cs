@@ -538,7 +538,7 @@ namespace System.Windows.Documents
         }
 
 
-        // [....] load a page
+        // sync load a page
         private FixedPage _LoadPage()
         {
             EventTrace.EasyTraceEvent(EventTrace.Keyword.KeywordXPS, EventTrace.Event.WClientDRXGetPageBegin);

@@ -11,7 +11,7 @@
 //              http://avalon/coreUI/Specs/model%20tree%20--%20design.doc
 //
 // History:
-//  05/22/2003 : [....] - Created
+//  05/22/2003 : Microsoft - Created
 //  09/22/2004 : kenlai - moved aggregating functionality to CompositeCollection
 //
 //---------------------------------------------------------------------------
@@ -761,9 +761,9 @@ namespace System.Windows.Controls
         ///     Returns an object to be used in thread synchronization.
         /// </summary>
         /// <exception cref="NotSupportedException">
-        /// ItemCollection cannot provide a [....] root for synchronization while
+        /// ItemCollection cannot provide a sync root for synchronization while
         /// in ItemsSource mode.  Please use the ItemsSource directly to
-        /// get its [....] root.
+        /// get its sync root.
         /// </exception>
         object ICollection.SyncRoot
         {
@@ -1916,9 +1916,9 @@ namespace System.Windows.Controls
         {
             // when the collection changes, the enumerator is no longer valid.
             // This should be detected by IndexedEnumerable, but isn't because
-            // of bug 1164689.  As a partial remedy (for bug 1163708), discard the
-            // enumerator here.
-            // 
+            // of 
+
+
             InvalidateEnumerableWrapper();
 
             // notify listeners on ItemsControl (like ItemContainerGenerator)
@@ -2081,7 +2081,7 @@ namespace System.Windows.Controls
             if (LiveSortingMonitor.Busy)
                 return;
 
-            // if we have an inner collection view, keep its LiveSortingProperties collection in [....]
+            // if we have an inner collection view, keep its LiveSortingProperties collection in sync
             ICollectionViewLiveShaping icvls = _collectionView as ICollectionViewLiveShaping;
             if (icvls != null)
             {
@@ -2100,7 +2100,7 @@ namespace System.Windows.Controls
             if (!IsShapingActive || LiveSortingMonitor.Busy)
                 return;
 
-            // keep this ItemColl.LiveSortingProperties in [....] with inner collection view's
+            // keep this ItemColl.LiveSortingProperties in sync with inner collection view's
             ICollectionViewLiveShaping icvls = _collectionView as ICollectionViewLiveShaping;
             if (icvls != null)
             {
@@ -2120,7 +2120,7 @@ namespace System.Windows.Controls
             if (LiveFilteringMonitor.Busy)
                 return;
 
-            // if we have an inner collection view, keep its LiveFilteringProperties collection in [....]
+            // if we have an inner collection view, keep its LiveFilteringProperties collection in sync
             ICollectionViewLiveShaping icvls = _collectionView as ICollectionViewLiveShaping;
             if (icvls != null)
             {
@@ -2139,7 +2139,7 @@ namespace System.Windows.Controls
             if (!IsShapingActive || LiveFilteringMonitor.Busy)
                 return;
 
-            // keep this ItemColl.LiveFilteringProperties in [....] with inner collection view's
+            // keep this ItemColl.LiveFilteringProperties in sync with inner collection view's
             ICollectionViewLiveShaping icvls = _collectionView as ICollectionViewLiveShaping;
             if (icvls != null)
             {
@@ -2159,7 +2159,7 @@ namespace System.Windows.Controls
             if (LiveGroupingMonitor.Busy)
                 return;
 
-            // if we have an inner collection view, keep its LiveGroupingProperties collection in [....]
+            // if we have an inner collection view, keep its LiveGroupingProperties collection in sync
             ICollectionViewLiveShaping icvls = _collectionView as ICollectionViewLiveShaping;
             if (icvls != null)
             {
@@ -2178,7 +2178,7 @@ namespace System.Windows.Controls
             if (!IsShapingActive || LiveGroupingMonitor.Busy)
                 return;
 
-            // keep this ItemColl.LiveGroupingProperties in [....] with inner collection view's
+            // keep this ItemColl.LiveGroupingProperties in sync with inner collection view's
             ICollectionViewLiveShaping icvls = _collectionView as ICollectionViewLiveShaping;
             if (icvls != null)
             {
@@ -2192,7 +2192,7 @@ namespace System.Windows.Controls
         }
 
 
-        // keep collections in [....]
+        // keep collections in sync
         private void SynchronizeCollections<T>(NotifyCollectionChangedEventArgs e, Collection<T> origin, Collection<T> clone)
         {
             if (clone == null)
@@ -2252,7 +2252,7 @@ namespace System.Windows.Controls
                     break;
 
                 // this arm also handles cases where the two collections have gotten
-                // out of [....] (typically because exceptions prevented a previous [....]
+                // out of sync (typically because exceptions prevented a previous sync
                 // from happening)
                 case NotifyCollectionChangedAction.Reset:
                     CloneList(clone, origin);

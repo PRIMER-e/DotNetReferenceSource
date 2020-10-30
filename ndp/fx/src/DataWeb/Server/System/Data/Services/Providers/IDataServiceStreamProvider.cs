@@ -8,7 +8,7 @@
 //      source's stream implementation (ie. a stream provider).
 // </summary>
 //
-// @owner  [....]
+// @owner  jli
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

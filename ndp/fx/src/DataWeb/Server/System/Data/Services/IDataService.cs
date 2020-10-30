@@ -6,7 +6,7 @@
 //      Provides a non-generic interface to DataWeb services.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

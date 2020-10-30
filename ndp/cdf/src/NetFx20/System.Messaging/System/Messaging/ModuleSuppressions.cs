@@ -4,11 +4,11 @@
 using System.Diagnostics.CodeAnalysis;
 
 //
-// 
-
-
-
-
+// TODO, eugenesh: bug 532346
+// Fixing two groups of issues below (SpecifyStringComparison and UseOrdinalStringComparison)
+// will introduce too much churn at this late stage of Whidbey RTM.
+// Therefore, we exclude now and need to fix these violatins in Orcas
+//
 [module: SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Scope = "member", Target = "System.Messaging.MessageQueue.ValidatePath(System.String,System.Boolean):System.Boolean", MessageId = "System.String.EndsWith(System.String)")]
 [module: SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Scope = "member", Target = "System.Messaging.MessageQueue.ValidatePath(System.String,System.Boolean):System.Boolean", MessageId = "System.String.StartsWith(System.String)")]
 [module: SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Scope = "member", Target = "System.Messaging.MessageQueue.get_QueuePath():System.String", MessageId = "System.String.StartsWith(System.String)")]

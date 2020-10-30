@@ -88,7 +88,7 @@ namespace System.Windows.Controls.Primitives
                 Item = owningRow.Item;
             }
 
-            // At the time that a Row is prepared we can't [....] because the CellsPresenter isn't created yet.
+            // At the time that a Row is prepared we can't Sync because the CellsPresenter isn't created yet.
             // Doing it here ensures that the CellsPresenter is in the visual tree.
             SyncProperties(false);
         }
@@ -115,7 +115,7 @@ namespace System.Windows.Controls.Primitives
             NotifyPropertyChanged(this, new DependencyPropertyChangedEventArgs(DataGrid.CellStyleProperty, null, null), DataGridNotificationTarget.Cells);
 
             // We may have missed an Add / Remove of a column from the grid (DataGridRow.OnColumnsChanged)
-            // [....] the MultipleCopiesCollection count and update the Column on changed cells
+            // Sync the MultipleCopiesCollection count and update the Column on changed cells
             MultipleCopiesCollection cellItems = ItemsSource as MultipleCopiesCollection;
             if (cellItems != null)
             {

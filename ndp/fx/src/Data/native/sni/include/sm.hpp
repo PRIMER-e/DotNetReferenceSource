@@ -56,10 +56,10 @@ public:
 
 	static DWORD LoadInstapiIfNeeded();
 
-	static DWORD IsYukonByInstanceString(__in_opt LPSTR szInstance, __out BOOL * isYukon, __out_opt BOOL * pfNew, __out BOOL * pfVersionRetrieved);
+	static DWORD IsYukonByInstanceString(__in_opt LPWSTR wszInstance, __out BOOL * isYukon, __out_opt BOOL * pfNew, __out BOOL * pfVersionRetrieved);
 
-	static BOOL IsShilohClustered(LPSTR szInstance);
-	static BOOL IsClustered(__in LPSTR szInstance);
+	static BOOL IsShilohClustered(LPWSTR wszInstance);
+	static BOOL IsClustered(__in LPWSTR wszInstance);
 
 	static DWORD GetThreadSID( __out SID  ** ppSID );
 

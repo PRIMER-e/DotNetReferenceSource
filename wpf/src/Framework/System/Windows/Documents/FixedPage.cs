@@ -1309,7 +1309,8 @@ namespace System.Windows.Documents
                                         FlowDirection.LeftToRight,
                                         new Typeface("Arial"), 
                                         10,
-                                        Brushes.White);
+                                        Brushes.White,
+                                        GetDpi().PixelsPerDip);
             Point labelLocation = new Point(boundingRect.Left-25, (boundingRect.Bottom + boundingRect.Top)/2 - 10);
             Geometry geom = ft.BuildHighlightGeometry(labelLocation);
             Pen backgroundPen = new Pen(Brushes.Black,1);

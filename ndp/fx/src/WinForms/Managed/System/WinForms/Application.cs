@@ -366,9 +366,7 @@ namespace System.Windows.Forms {
                 if (executablePath == null) {
                     Assembly asm = Assembly.GetEntryAssembly();
                     if (asm == null) {
-                        StringBuilder sb = new StringBuilder(NativeMethods.MAX_PATH);
-                        UnsafeNativeMethods.GetModuleFileName(NativeMethods.NullHandleRef, sb, sb.Capacity);
-
+                        StringBuilder sb = UnsafeNativeMethods.GetModuleFileNameLongPath(NativeMethods.NullHandleRef);
                         executablePath = IntSecurity.UnsafeGetFullPath(sb.ToString());
                     }
                     else {
@@ -643,8 +641,7 @@ namespace System.Windows.Forms {
         public static string StartupPath {
             get {
                 if (startupPath == null) {
-                    StringBuilder sb = new StringBuilder(NativeMethods.MAX_PATH);
-                    UnsafeNativeMethods.GetModuleFileName(NativeMethods.NullHandleRef, sb, sb.Capacity);
+                    StringBuilder sb = UnsafeNativeMethods.GetModuleFileNameLongPath(NativeMethods.NullHandleRef);
                     startupPath = Path.GetDirectoryName(sb.ToString());
                 }
                 Debug.WriteLineIf(IntSecurity.SecurityDemand.TraceVerbose, "FileIO(" + startupPath + ") Demanded");
@@ -734,8 +731,8 @@ namespace System.Windows.Forms {
 
         internal static string WindowsFormsVersion {
             get {
-                // Notice   : Don't never ever change this name, since window class of [....] control is dependent on this.
-                //            And lots of partner team are related to window class of [....] control. Changing this will introduce breaking.
+                // Notice   : Don't never ever change this name, since window class of Microsoft control is dependent on this.
+                //            And lots of partner team are related to window class of Microsoft control. Changing this will introduce breaking.
                 //            If there is some reason need to change this, should take the accountability to notify partner team.
                 return "WindowsForms10";
             }
@@ -1462,7 +1459,7 @@ namespace System.Windows.Forms {
                     }
                     ProcessStartInfo currentStartInfo = Process.GetCurrentProcess().StartInfo;
                     currentStartInfo.FileName = Application.ExecutablePath;
-                    // [....]: use this according to spec.
+                    // Microsoft: use this according to spec.
                     // String executable = Assembly.GetEntryAssembly().CodeBase;
                     // Debug.Assert(executable != null);
                     if (sb.Length > 0)
@@ -2345,6 +2342,7 @@ namespace System.Windows.Forms {
             private CultureInfo             culture;
             private ArrayList               messageFilters;
             private IMessageFilter[]        messageFilterSnapshot;
+            private int                     inProcessFilters = 0;
             private IntPtr                  handle;
             private int                     id;
             private int                     messageLoopCount;
@@ -2455,7 +2453,7 @@ namespace System.Windows.Forms {
                                     try {
                                         IntPtr retval = IntPtr.Zero;
 
-                                        // PERF ALERT ([....]): Using typeof() of COM object spins up COM at JIT time.
+                                        // PERF ALERT (Microsoft): Using typeof() of COM object spins up COM at JIT time.
                                         // Guid compModGuid = typeof(UnsafeNativeMethods.SMsoComponentManager).GUID;
                                         //
                                         Guid compModGuid = new Guid("000C060B-0000-0000-C000-000000000046");
@@ -2788,7 +2786,9 @@ namespace System.Windows.Forms {
                                         }
                                     }
                                     finally {
-                                        contextHash.Remove((object)id);
+                                        lock (tcInternalSyncObject) {
+                                            contextHash.Remove((object)id);
+                                        }
                                         if (currentThreadContext == this) {
                                             currentThreadContext = null;
                                         }
@@ -3140,7 +3140,7 @@ namespace System.Windows.Forms {
                     int ret = UnsafeNativeMethods.OleInitialize();
 
 #if false
-                    // PERFTRACK : [....], 7/26/1999 - To avoid constructing the string in
+                    // PERFTRACK : Microsoft, 7/26/1999 - To avoid constructing the string in
                     //           : non-failure cases (vast majority), we will do the debug.fail
                     //           : inside an if statement.
                     //
@@ -3449,7 +3449,7 @@ namespace System.Windows.Forms {
 
                     if (messageLoopCount == 0) {
                         // If last message loop shutting down, install the
-                        // previous op [....] context in place before we started the first
+                        // previous op sync context in place before we started the first
                         // message loop.
                         WindowsFormsSynchronizationContext.Uninstall(false);
                     }
@@ -3535,8 +3535,11 @@ namespace System.Windows.Forms {
 
                 // Account for the case where someone removes a message filter
                 // as a result of PreFilterMessage.  the message filter will be 
-                // removed from _the next_ message.  
-                if (messageFilters != null && !GetState(STATE_FILTERSNAPSHOTVALID)) {
+                // removed from _the next_ message.
+                // If message filter is added or removed inside the user-provided PreFilterMessage function,
+                // and user code pumps messages, we might re-enter ProcessFilter on the same stack, we
+                // should not update the snapshot until the next message.
+                if (messageFilters != null && !GetState(STATE_FILTERSNAPSHOTVALID) && (LocalAppContextSwitches.DontSupportReentrantFilterMessage || inProcessFilters == 0)) {
                     if (messageFilters.Count > 0) {
                         messageFilterSnapshot = new IMessageFilter[messageFilters.Count];
                         messageFilters.CopyTo(messageFilterSnapshot);
@@ -3546,33 +3549,39 @@ namespace System.Windows.Forms {
                     }
                     SetState(STATE_FILTERSNAPSHOTVALID, true);
                 }
-            
-                if (messageFilterSnapshot != null) {
-                    IMessageFilter f;
-                    int count = messageFilterSnapshot.Length;
 
-                    Message m = Message.Create(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+                inProcessFilters++;
+                try {
+                    if (messageFilterSnapshot != null) {
+                        IMessageFilter f;
+                        int count = messageFilterSnapshot.Length;
 
-                    for (int i = 0; i < count; i++) {
-                        f = (IMessageFilter)messageFilterSnapshot[i];
-                        bool filterMessage = f.PreFilterMessage(ref m);
-                        // make sure that we update the msg struct with the new result after the call to
-                        // PreFilterMessage.
-                        if (f is IMessageModifyAndFilter) {
-                            msg.hwnd = m.HWnd;
-                            msg.message = m.Msg;
-                            msg.wParam  = m.WParam;
-                            msg.lParam = m.LParam;
-                            modified = true;
-                        }
-                       
-                        if (filterMessage) {
-                            // consider : m is by ref here, so the user can change it.  But we
-                            // are discarding changes by not propagating to msg.  Should we?
-                            filtered = true;
-                            break;
+                        Message m = Message.Create(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+
+                        for (int i = 0; i < count; i++) {
+                            f = (IMessageFilter)messageFilterSnapshot[i];
+                            bool filterMessage = f.PreFilterMessage(ref m);
+                            // make sure that we update the msg struct with the new result after the call to
+                            // PreFilterMessage.
+                            if (f is IMessageModifyAndFilter) {
+                                msg.hwnd = m.HWnd;
+                                msg.message = m.Msg;
+                                msg.wParam = m.WParam;
+                                msg.lParam = m.LParam;
+                                modified = true;
+                            }
+
+                            if (filterMessage) {
+                                // consider : m is by ref here, so the user can change it.  But we
+                                // are discarding changes by not propagating to msg.  Should we?
+                                filtered = true;
+                                break;
+                            }
                         }
                     }
+                }
+                finally {
+                    inProcessFilters--;
                 }
 
                 return filtered;
@@ -3634,7 +3643,7 @@ namespace System.Windows.Forms {
                     else
                     {
                         // See if this is a dialog message -- this is for handling any native dialogs that are launched from
-                        // [....] code.  This can happen with ActiveX controls that launch dialogs specificially
+                        // Microsoft code.  This can happen with ActiveX controls that launch dialogs specificially
                         //
 
                         // first, get the first top-level window in the hierarchy.
@@ -3771,7 +3780,7 @@ namespace System.Windows.Forms {
 
                 Debug.WriteLineIf(CompModSwitches.MSOComponentManager.TraceInfo, "ComponentManager : OnEnterState(" + uStateID + ", " + fEnter + ")");
 
-                // Return if our ([....]) Modal Loop is still running.
+                // Return if our (Microsoft) Modal Loop is still running.
                 if (ourModalLoop)
                 {
                     return;

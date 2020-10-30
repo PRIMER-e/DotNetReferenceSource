@@ -15,7 +15,7 @@
 //  07/31/2002: RogerCh: Add LockBytes support, suppress unmanaged code security.
 //  05/20/2003: RogerCh: Ported to WCP tree.
 //  05/28/2003: RogerCh: Removed name checks - now handled by LongNameManager
-//  02/10/2006: [....]: Added the CF interfaces for managed CF APIs
+//  02/10/2006: YoungGK: Added the CF interfaces for managed CF APIs
 //  03/14/2006: RukeH:   Change the IPropertySetStorage.Open() to return an HRESULT value.
 //
 //-----------------------------------------------------------------------------
@@ -65,7 +65,7 @@ namespace MS.Internal.IO.Packaging.CompoundFile
         void CopyTo(
             int ciidExclude,
             Guid[] rgiidExclude,
-            IntPtr snbExclude,// Not properly translated, use NULL to avoid -----up
+            IntPtr snbExclude,// Not properly translated, use NULL to avoid blow-up
             IStorage ppstg );
 
         void MoveElementTo(

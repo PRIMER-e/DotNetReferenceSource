@@ -306,7 +306,7 @@ namespace System.Windows
             }
 
             // Logical Parent must first be dropped before you are attached to a newParent
-            // This mitigates illegal tree state caused by logical child stealing as illustrated in bug 970706
+            // This mitigates illegal tree state caused by logical child stealing as illustrated in 
             if (_parent != null && newParent != null && _parent != newParent)
             {
                 throw new System.InvalidOperationException(SR.Get(SRID.HasLogicalParent));

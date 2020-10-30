@@ -1598,7 +1598,7 @@ namespace System.Windows.Forms {
                 //
                 owner.UpdateTooltip(panel);
 
-                // V#41207 - [....], 4/1/1998 - We must reindex the panels after a removal...
+                // V#41207 - Microsoft, 4/1/1998 - We must reindex the panels after a removal...
                 owner.UpdatePanelIndex();
                 owner.ForcePanelUpdate();
             }
@@ -1905,10 +1905,10 @@ namespace System.Windows.Forms {
             protected void WndProc(ref Message msg) {
                 switch (msg.Msg) {
                     case NativeMethods.WM_SETFOCUS:
-                        // bug 120872, the COMCTL StatusBar passes WM_SETFOCUS on to the DefWndProc, so
-                        // it will take keyboard focus.  We don't want it doing this, so we eat
-                        // the message.
-                        //
+                        // 
+
+
+
                         return;
                     default:
                         window.DefWndProc(ref msg);

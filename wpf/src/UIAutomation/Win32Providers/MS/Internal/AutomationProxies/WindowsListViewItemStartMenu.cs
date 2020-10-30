@@ -12,7 +12,7 @@
 //      IAccessible to support the Sart Menu.
 //
 // History:
-//        2005/01/25 - [....] - Created
+//        2005/01/25 - Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

@@ -7,7 +7,7 @@
 // Description: ListParagraph represents collection of list items.
 //
 // History:  
-//  06/06/2003 : [....] - moving from Avalon branch.
+//  06/06/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 #pragma warning disable 1634, 1691  // avoid generating warnings about unknown 

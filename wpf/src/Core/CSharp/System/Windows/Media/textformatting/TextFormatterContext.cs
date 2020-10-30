@@ -54,6 +54,7 @@ namespace System.Windows.Media.TextFormatting
         private LineServicesCallbacks               _callbacks;         // object to hold all delegates for callback
         private State                               _state;             // internal state flags
         private BreakStrategies                     _breaking;          // context's breaking strategy
+        private static Dictionary<char,bool>        _specialCharacters; // special characters
 
         
         /// <SecurityNote>
@@ -159,6 +160,11 @@ namespace System.Windows.Media.TextFormatting
                 if (lserr != LsErr.None)
                 {
                     ThrowExceptionFromLsError(SR.Get(SRID.CreateContextFailure, lserr), lserr);
+                }
+
+                if (_specialCharacters == null)
+                {
+                    SetSpecialCharacters(ref contextInfo);
                 }
 
                 _ploc.Value = ploc;
@@ -480,6 +486,73 @@ namespace System.Windows.Media.TextFormatting
                 throw new OutOfMemoryException (message);
 
             throw new Exception(message);
+        }
+
+        static internal bool IsSpecialCharacter(char c)
+        {
+            return _specialCharacters.ContainsKey(c);
+        }
+
+
+        static private void SetSpecialCharacters(ref LsContextInfo contextInfo)
+        {
+            Dictionary<char,bool> dict = new Dictionary<char,bool>();
+
+            /* The first three char fields do not designate special characters
+            dict[contextInfo.wchUndef] = true;
+            dict[contextInfo.wchNull] = true;
+            dict[contextInfo.wchSpace] = true;
+            */
+            dict[contextInfo.wchHyphen] = true;
+            dict[contextInfo.wchTab] = true;
+            dict[contextInfo.wchPosTab] = true;
+            dict[contextInfo.wchEndPara1] = true;
+            dict[contextInfo.wchEndPara2] = true;
+            dict[contextInfo.wchAltEndPara] = true;
+            dict[contextInfo.wchEndLineInPara] = true;
+            dict[contextInfo.wchColumnBreak] = true;
+            dict[contextInfo.wchSectionBreak] = true;
+            dict[contextInfo.wchPageBreak] = true;
+            dict[contextInfo.wchNonBreakSpace] = true;
+            dict[contextInfo.wchNonBreakHyphen] = true;
+            dict[contextInfo.wchNonReqHyphen] = true;
+            dict[contextInfo.wchEmDash] = true;
+            dict[contextInfo.wchEnDash] = true;
+            dict[contextInfo.wchEmSpace] = true;
+            dict[contextInfo.wchEnSpace] = true;
+            dict[contextInfo.wchNarrowSpace] = true;
+            dict[contextInfo.wchOptBreak] = true;
+            dict[contextInfo.wchNoBreak] = true;
+            dict[contextInfo.wchFESpace] = true;
+            dict[contextInfo.wchJoiner] = true;
+            dict[contextInfo.wchNonJoiner] = true;
+            dict[contextInfo.wchToReplace] = true;
+            dict[contextInfo.wchReplace] = true;
+            dict[contextInfo.wchVisiNull] = true;
+            dict[contextInfo.wchVisiAltEndPara] = true;
+            dict[contextInfo.wchVisiEndLineInPara] = true;
+            dict[contextInfo.wchVisiEndPara] = true;
+            dict[contextInfo.wchVisiSpace] = true;
+            dict[contextInfo.wchVisiNonBreakSpace] = true;
+            dict[contextInfo.wchVisiNonBreakHyphen] = true;
+            dict[contextInfo.wchVisiNonReqHyphen] = true;
+            dict[contextInfo.wchVisiTab] = true;
+            dict[contextInfo.wchVisiPosTab] = true;
+            dict[contextInfo.wchVisiEmSpace] = true;
+            dict[contextInfo.wchVisiEnSpace] = true;
+            dict[contextInfo.wchVisiNarrowSpace] = true;
+            dict[contextInfo.wchVisiOptBreak] = true;
+            dict[contextInfo.wchVisiNoBreak] = true;
+            dict[contextInfo.wchVisiFESpace] = true;
+            dict[contextInfo.wchEscAnmRun] = true;
+            dict[contextInfo.wchPad] = true;
+
+            // Many of these fields have value 'wchUndef'.  Remove it now.
+            // (This is robust, even if Init() changes the char field assignments.)
+            dict.Remove(contextInfo.wchUndef);
+
+            // Remember the result.  First thread to get here wins.
+            System.Threading.Interlocked.CompareExchange<Dictionary<char,bool>>(ref _specialCharacters, dict, null);
         }
 
 

@@ -30,6 +30,12 @@ namespace System.Windows.Forms
         private const byte DATAGRIDVIEWCOLUMNHEADERCELL_horizontalTextMarginRight = 2;
         private const byte DATAGRIDVIEWCOLUMNHEADERCELL_verticalMargin = 1;  // 1 pixel on top & bottom of glyph and text
 
+        private static bool isScalingInitialized = false;
+        private static byte sortGlyphSeparatorWidth = DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth;
+        private static byte sortGlyphHorizontalMargin = DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin;
+        private static byte sortGlyphWidth = DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth;
+        private static byte sortGlyphHeight = DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight; 
+
         private static Type cellType = typeof(DataGridViewColumnHeaderCell);
 
         private SortOrder sortGlyphDirection;
@@ -37,6 +43,20 @@ namespace System.Windows.Forms
         /// <include file='doc\DataGridViewColumnHeaderCell.uex' path='docs/doc[@for="DataGridViewColumnHeaderCell.DataGridViewColumnHeaderCell"]/*' />
         public DataGridViewColumnHeaderCell()
         {
+            if (!isScalingInitialized) {
+                if (DpiHelper.IsScalingRequired) {
+                    sortGlyphSeparatorWidth = (byte)DpiHelper.LogicalToDeviceUnitsX(DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth);
+                    sortGlyphHorizontalMargin = (byte)DpiHelper.LogicalToDeviceUnitsX(DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin);
+                    sortGlyphWidth = (byte)DpiHelper.LogicalToDeviceUnitsX(DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth);
+                    // make sure that the width of the base of the arrow is odd, otherwise the tip of the arrow is one pixel off to the side
+                    if ((sortGlyphWidth % 2) == 0) {
+                        sortGlyphWidth++;
+                    }
+                    sortGlyphHeight = (byte)DpiHelper.LogicalToDeviceUnitsY(DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight);
+                }
+                isScalingInitialized = true;
+            }
+
             this.sortGlyphDirection = SortOrder.None;
         }
 
@@ -100,8 +120,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
-                //
+                // SECREVIEW : Late-binding does not represent a security thread, see 
+
                 dataGridViewCell = (DataGridViewColumnHeaderCell) System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -549,15 +569,15 @@ namespace System.Windows.Forms
                                                      0);
                         }
                     }
-                    if (constraintSize.Height - borderAndPaddingHeights - 2 * DATAGRIDVIEWCOLUMNHEADERCELL_verticalMargin > DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight &&
+                    if (constraintSize.Height - borderAndPaddingHeights - 2 * DATAGRIDVIEWCOLUMNHEADERCELL_verticalMargin > sortGlyphHeight &&
                         this.OwningColumn != null && 
                         this.OwningColumn.SortMode != DataGridViewColumnSortMode.NotSortable)
                     {
-                        preferredSize.Width += DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth + 
-                                               2 * DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin;
+                        preferredSize.Width += sortGlyphWidth + 
+                                               2 * sortGlyphHorizontalMargin;
                         if (!string.IsNullOrEmpty(valStr))
                         {
-                            preferredSize.Width += DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth;
+                            preferredSize.Width += sortGlyphSeparatorWidth;
                         }
                     }
                     preferredSize.Width = Math.Max(preferredSize.Width, 1);
@@ -569,12 +589,12 @@ namespace System.Windows.Forms
                     Size glyphSize;
                     preferredSize = new Size(0, 0);
 
-                    if (allowedWidth >= DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth + 2 * DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin &&
+                    if (allowedWidth >= sortGlyphWidth + 2 * sortGlyphHorizontalMargin &&
                         this.OwningColumn != null && 
                         this.OwningColumn.SortMode != DataGridViewColumnSortMode.NotSortable)
                     {
-                        glyphSize = new Size(DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth + 2 * DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin,
-                                             DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight);
+                        glyphSize = new Size(sortGlyphWidth + 2 * sortGlyphHorizontalMargin,
+                                             sortGlyphHeight);
                     }
                     else
                     {
@@ -590,7 +610,7 @@ namespace System.Windows.Forms
                                 allowedWidth -
                                 DATAGRIDVIEWCOLUMNHEADERCELL_horizontalTextMarginLeft -
                                 DATAGRIDVIEWCOLUMNHEADERCELL_horizontalTextMarginRight -
-                                DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth -
+                                sortGlyphSeparatorWidth -
                                 glyphSize.Width > 0)
                             {
                                 preferredSize = new Size(0,
@@ -600,7 +620,7 @@ namespace System.Windows.Forms
                                                                                             allowedWidth -
                                                                                             DATAGRIDVIEWCOLUMNHEADERCELL_horizontalTextMarginLeft -
                                                                                             DATAGRIDVIEWCOLUMNHEADERCELL_horizontalTextMarginRight -
-                                                                                            DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth -
+                                                                                            sortGlyphSeparatorWidth -
                                                                                             glyphSize.Width,
                                                                                             flags));
                             }
@@ -649,13 +669,13 @@ namespace System.Windows.Forms
                     if (this.OwningColumn != null &&
                         this.OwningColumn.SortMode != DataGridViewColumnSortMode.NotSortable)
                     {
-                        preferredSize.Width += DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth +
-                                               2 * DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin;
+                        preferredSize.Width += sortGlyphWidth +
+                                               2 * sortGlyphHorizontalMargin;
                         if (!string.IsNullOrEmpty(valStr))
                         {
-                            preferredSize.Width += DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth;
+                            preferredSize.Width += sortGlyphSeparatorWidth;
                         }
-                        preferredSize.Height = Math.Max(preferredSize.Height, DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight);
+                        preferredSize.Height = Math.Max(preferredSize.Height, sortGlyphHeight);
                     }
                     preferredSize.Width = Math.Max(preferredSize.Width, 1);
                     preferredSize.Height = Math.Max(preferredSize.Height, 1);
@@ -824,7 +844,7 @@ namespace System.Windows.Forms
                         }
                     }
 
-                    // [....]: even though XP provides support for theming the sort glyph, 
+                    // Microsoft: even though XP provides support for theming the sort glyph, 
                     // we rely on our own implementation for painting the sort glyph
                     if (this.DataGridView.RightToLeftInternal)
                     {
@@ -915,9 +935,9 @@ namespace System.Windows.Forms
                 {
                     // Is there enough room to show the glyph?
                     int width = valBounds.Width -
-                        DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth -
-                        DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth -
-                        2 * DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin;
+                        sortGlyphSeparatorWidth -
+                        sortGlyphWidth -
+                        2 * sortGlyphHorizontalMargin;
                     if (width > 0)
                     {
                         bool widthTruncated;
@@ -925,30 +945,30 @@ namespace System.Windows.Forms
                         if (preferredHeight <= valBounds.Height && !widthTruncated)
                         {
                             displaySortGlyph = (this.SortGlyphDirection != SortOrder.None);
-                            valBounds.Width -= DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth +
-                                               DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth +
-                                               2 * DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin;
+                            valBounds.Width -= sortGlyphSeparatorWidth +
+                                               sortGlyphWidth +
+                                               2 * sortGlyphHorizontalMargin;
                             if (this.DataGridView.RightToLeftInternal)
                             {
-                                valBounds.X += DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth +
-                                               DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth +
-                                               2 * DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin;
+                                valBounds.X += sortGlyphSeparatorWidth +
+                                               sortGlyphWidth +
+                                               2 * sortGlyphHorizontalMargin;
                                 sortGlyphLocation = new Point(valBounds.Left -
                                                               DATAGRIDVIEWCOLUMNHEADERCELL_horizontalTextMarginLeft -
-                                                              DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth -
-                                                              DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin -
-                                                              DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth,
+                                                              sortGlyphSeparatorWidth -
+                                                              sortGlyphHorizontalMargin -
+                                                              sortGlyphWidth,
                                                               valBounds.Top + 
-                                                              (valBounds.Height-DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight)/2);
+                                                              (valBounds.Height-sortGlyphHeight)/2);
                             }
                             else
                             {
                                 sortGlyphLocation = new Point(valBounds.Right +
                                                               DATAGRIDVIEWCOLUMNHEADERCELL_horizontalTextMarginRight +
-                                                              DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphSeparatorWidth + 
-                                                              DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin,
+                                                              sortGlyphSeparatorWidth + 
+                                                              sortGlyphHorizontalMargin,
                                                               valBounds.Top + 
-                                                              (valBounds.Height-DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight)/2);
+                                                              (valBounds.Height-sortGlyphHeight)/2);
                             }
                         }
                     }
@@ -978,12 +998,12 @@ namespace System.Windows.Forms
             else
             {
                 if (paint && this.SortGlyphDirection != SortOrder.None &&
-                    valBounds.Width >= DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth + 2 * DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHorizontalMargin &&
-                    valBounds.Height >= DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight)
+                    valBounds.Width >= sortGlyphWidth + 2 * sortGlyphHorizontalMargin &&
+                    valBounds.Height >= sortGlyphHeight)
                 {
                     displaySortGlyph = true;
-                    sortGlyphLocation = new Point(valBounds.Left + (valBounds.Width-DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth)/2,
-                                                    valBounds.Top + (valBounds.Height-DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight)/2);
+                    sortGlyphLocation = new Point(valBounds.Left + (valBounds.Width-sortGlyphWidth)/2,
+                                                    valBounds.Top + (valBounds.Height-sortGlyphHeight)/2);
                 }
             }
 
@@ -1002,75 +1022,75 @@ namespace System.Windows.Forms
                             // Sunken look
                             g.DrawLine(penControlDark, 
                                 sortGlyphLocation.X, 
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-2, 
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2-1, 
+                                sortGlyphLocation.Y + sortGlyphHeight-2, 
+                                sortGlyphLocation.X + sortGlyphWidth/2-1, 
                                 sortGlyphLocation.Y);
                             g.DrawLine(penControlDark, 
                                 sortGlyphLocation.X+1, 
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-2, 
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2-1, 
+                                sortGlyphLocation.Y + sortGlyphHeight-2, 
+                                sortGlyphLocation.X + sortGlyphWidth/2-1, 
                                 sortGlyphLocation.Y);
                             g.DrawLine(penControlLightLight,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2,
+                                sortGlyphLocation.X + sortGlyphWidth/2,
                                 sortGlyphLocation.Y,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-2,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-2);
+                                sortGlyphLocation.X + sortGlyphWidth-2,
+                                sortGlyphLocation.Y + sortGlyphHeight-2);
                             g.DrawLine(penControlLightLight,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2,
+                                sortGlyphLocation.X + sortGlyphWidth/2,
                                 sortGlyphLocation.Y,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-3,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-2);
+                                sortGlyphLocation.X + sortGlyphWidth-3,
+                                sortGlyphLocation.Y + sortGlyphHeight-2);
                             g.DrawLine(penControlLightLight,
                                 sortGlyphLocation.X,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-2,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1);
+                                sortGlyphLocation.Y + sortGlyphHeight-1,
+                                sortGlyphLocation.X + sortGlyphWidth-2,
+                                sortGlyphLocation.Y + sortGlyphHeight-1);
                             break;
 
                         case DataGridViewAdvancedCellBorderStyle.Inset:
                             // Raised look
                             g.DrawLine(penControlLightLight, 
                                 sortGlyphLocation.X, 
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - 2, 
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2 - 1, 
+                                sortGlyphLocation.Y + sortGlyphHeight - 2, 
+                                sortGlyphLocation.X + sortGlyphWidth / 2 - 1, 
                                 sortGlyphLocation.Y);
                             g.DrawLine(penControlLightLight, 
                                 sortGlyphLocation.X+1, 
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - 2, 
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2 - 1, 
+                                sortGlyphLocation.Y + sortGlyphHeight - 2, 
+                                sortGlyphLocation.X + sortGlyphWidth / 2 - 1, 
                                 sortGlyphLocation.Y);
                             g.DrawLine(penControlDark,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2,
+                                sortGlyphLocation.X + sortGlyphWidth / 2,
                                 sortGlyphLocation.Y,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth - 2,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - 2);
+                                sortGlyphLocation.X + sortGlyphWidth - 2,
+                                sortGlyphLocation.Y + sortGlyphHeight - 2);
                             g.DrawLine(penControlDark,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2,
+                                sortGlyphLocation.X + sortGlyphWidth / 2,
                                 sortGlyphLocation.Y,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth - 3,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - 2);
+                                sortGlyphLocation.X + sortGlyphWidth - 3,
+                                sortGlyphLocation.Y + sortGlyphHeight - 2);
                             g.DrawLine(penControlDark,
                                 sortGlyphLocation.X,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - 1,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth - 2,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - 1);
+                                sortGlyphLocation.Y + sortGlyphHeight - 1,
+                                sortGlyphLocation.X + sortGlyphWidth - 2,
+                                sortGlyphLocation.Y + sortGlyphHeight - 1);
                             break;
 
                         default:
                             // Flat look
-                            for (int line = 0; line < DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2; line++)
+                            for (int line = 0; line < sortGlyphWidth / 2; line++)
                             {
                                 g.DrawLine(penControlDark,
                                     sortGlyphLocation.X + line,
-                                    sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - line - 1,
-                                    sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth - line - 1,
-                                    sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - line - 1);
+                                    sortGlyphLocation.Y + sortGlyphHeight - line - 1,
+                                    sortGlyphLocation.X + sortGlyphWidth - line - 1,
+                                    sortGlyphLocation.Y + sortGlyphHeight - line - 1);
                             }
                             g.DrawLine(penControlDark,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2 - 1,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight - DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2);
+                                sortGlyphLocation.X + sortGlyphWidth / 2,
+                                sortGlyphLocation.Y + sortGlyphHeight - sortGlyphWidth / 2 - 1,
+                                sortGlyphLocation.X + sortGlyphWidth / 2,
+                                sortGlyphLocation.Y + sortGlyphHeight - sortGlyphWidth / 2);
                             break;
                     }
                 }
@@ -1086,27 +1106,27 @@ namespace System.Windows.Forms
                             g.DrawLine(penControlDark, 
                                 sortGlyphLocation.X, 
                                 sortGlyphLocation.Y+1, 
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2-1, 
-                                sortGlyphLocation.Y+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1);
+                                sortGlyphLocation.X+sortGlyphWidth/2-1, 
+                                sortGlyphLocation.Y+sortGlyphHeight-1);
                             g.DrawLine(penControlDark, 
                                 sortGlyphLocation.X+1, 
                                 sortGlyphLocation.Y+1, 
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2-1, 
-                                sortGlyphLocation.Y+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1);
+                                sortGlyphLocation.X+sortGlyphWidth/2-1, 
+                                sortGlyphLocation.Y+sortGlyphHeight-1);
                             g.DrawLine(penControlLightLight,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2,
-                                sortGlyphLocation.Y+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-2,
+                                sortGlyphLocation.X+sortGlyphWidth/2,
+                                sortGlyphLocation.Y+sortGlyphHeight-1,
+                                sortGlyphLocation.X+sortGlyphWidth-2,
                                 sortGlyphLocation.Y+1);
                             g.DrawLine(penControlLightLight,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2,
-                                sortGlyphLocation.Y+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-3,
+                                sortGlyphLocation.X+sortGlyphWidth/2,
+                                sortGlyphLocation.Y+sortGlyphHeight-1,
+                                sortGlyphLocation.X+sortGlyphWidth-3,
                                 sortGlyphLocation.Y+1);
                             g.DrawLine(penControlLightLight,
                                 sortGlyphLocation.X,
                                 sortGlyphLocation.Y,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-2,
+                                sortGlyphLocation.X+sortGlyphWidth-2,
                                 sortGlyphLocation.Y);
                             break;
 
@@ -1115,45 +1135,45 @@ namespace System.Windows.Forms
                             g.DrawLine(penControlLightLight, 
                                 sortGlyphLocation.X, 
                                 sortGlyphLocation.Y+1, 
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2-1, 
-                                sortGlyphLocation.Y+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1);
+                                sortGlyphLocation.X+sortGlyphWidth/2-1, 
+                                sortGlyphLocation.Y+sortGlyphHeight-1);
                             g.DrawLine(penControlLightLight, 
                                 sortGlyphLocation.X+1, 
                                 sortGlyphLocation.Y+1, 
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2-1, 
-                                sortGlyphLocation.Y+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1);
+                                sortGlyphLocation.X+sortGlyphWidth/2-1, 
+                                sortGlyphLocation.Y+sortGlyphHeight-1);
                             g.DrawLine(penControlDark,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2,
-                                sortGlyphLocation.Y+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-2,
+                                sortGlyphLocation.X+sortGlyphWidth/2,
+                                sortGlyphLocation.Y+sortGlyphHeight-1,
+                                sortGlyphLocation.X+sortGlyphWidth-2,
                                 sortGlyphLocation.Y+1);
                             g.DrawLine(penControlDark,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth/2,
-                                sortGlyphLocation.Y+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphHeight-1,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-3,
+                                sortGlyphLocation.X+sortGlyphWidth/2,
+                                sortGlyphLocation.Y+sortGlyphHeight-1,
+                                sortGlyphLocation.X+sortGlyphWidth-3,
                                 sortGlyphLocation.Y+1);
                             g.DrawLine(penControlDark,
                                 sortGlyphLocation.X,
                                 sortGlyphLocation.Y,
-                                sortGlyphLocation.X+DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth-2,
+                                sortGlyphLocation.X+sortGlyphWidth-2,
                                 sortGlyphLocation.Y);
                             break;
 
                         default:
                             // Flat look
-                            for (int line = 0; line < DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2; line++)
+                            for (int line = 0; line < sortGlyphWidth / 2; line++)
                             {
                                 g.DrawLine(penControlDark,
                                     sortGlyphLocation.X + line,
                                     sortGlyphLocation.Y + line + 2,
-                                    sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth - line - 1,
+                                    sortGlyphLocation.X + sortGlyphWidth - line - 1,
                                     sortGlyphLocation.Y + line + 2);
                             }
                             g.DrawLine(penControlDark,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2 + 1,
-                                sortGlyphLocation.X + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2,
-                                sortGlyphLocation.Y + DATAGRIDVIEWCOLUMNHEADERCELL_sortGlyphWidth / 2 + 2);
+                                sortGlyphLocation.X + sortGlyphWidth / 2,
+                                sortGlyphLocation.Y + sortGlyphWidth / 2 + 1,
+                                sortGlyphLocation.X + sortGlyphWidth / 2,
+                                sortGlyphLocation.Y + sortGlyphWidth / 2 + 2);
                             break;
                     }
                 }
@@ -1213,7 +1233,7 @@ namespace System.Windows.Forms
                 Rectangle rectClip = Rectangle.Truncate(g.ClipBounds);
                 if ((int) HeaderItemState.Hot == headerState)
                 {
-                    // Workaround for a bug in XP theming: no painting of corners around orange tab.
+                    // Workaround for a 
                     VisualStyleRenderer.SetParameters(HeaderElement);
                     Rectangle cornerClip = new Rectangle(bounds.Left, bounds.Bottom-2, 2, 2);
                     cornerClip.Intersect(rectClip);

@@ -189,7 +189,7 @@ namespace MS.Internal.Automation
         }
 
         // Ensures that an element is enabled; throws exception otherwise
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         internal static void CheckEnabled(Visual visual)
         {
             UIElement el = visual as UIElement;
@@ -200,7 +200,7 @@ namespace MS.Internal.Automation
             }
         }
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         internal static object Invoke(AutomationPeer peer, DispatcherOperationCallback work, object arg)
         {
             Dispatcher dispatcher = peer.Dispatcher;

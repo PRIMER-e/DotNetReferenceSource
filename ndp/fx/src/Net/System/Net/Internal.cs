@@ -422,7 +422,7 @@ namespace System.Net {
     }
     
     //
-    // A simple [....] point, useful for deferring work.  Just an int value with helper methods.
+    // A simple sync point, useful for deferring work.  Just an int value with helper methods.
     // This is used by HttpWebRequest to syncronize Reads/Writes while waiting for a 100-Continue response.
     //
     internal struct InterlockedGate
@@ -1382,7 +1382,9 @@ typedef struct _SCHANNEL_CRED
             NoNameCheck     = 0x04,
             ValidateManual  = 0x08,
             NoDefaultCred   = 0x10,
-            ValidateAuto    = 0x20
+            ValidateAuto    = 0x20,
+            SendAuxRecord   = 0x00200000,
+            UseStrongCrypto = 0x00400000,
         }
 
         public SecureCredential(int version, X509Certificate certificate, SecureCredential.Flags flags, SchProtocols protocols, EncryptionPolicy policy) {

@@ -5,7 +5,7 @@
 // Description: DependencyProperty/value pair struct used by TextContainer undo.
 //
 // History:  
-//  03/03/2004 : [....] - Created
+//  03/03/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

@@ -919,7 +919,7 @@ namespace System.Windows.Forms {
                     Debug.Assert(uniqueID >= firstUniqueID); // ...check for ID range exhaustion (unlikely!)
                     // We add a weak ref wrapping a MenuItem to the static hash table, as supposed to adding the item 
                     // ref itself, to allow the item to be finalized in case it is not disposed and no longer referenced 
-                    // anywhere else, hence preventing leaks. See bug#352644
+                    // anywhere else, hence preventing leaks. See 
                     allCreatedMenuItems.Add(uniqueID, new WeakReference(this));
                 }
             }
@@ -1153,8 +1153,8 @@ namespace System.Windows.Forms {
                     Form activeMdiChild = GetMainMenu().GetFormUnsafe().ActiveMdiChild;
 
                     if (senderMenu.MenuItems.Count > 0) {
-                        // SECREVIEW : Late-binding does not represent a security threat, see bug#411899 for more info..
-                        //
+                        // SECREVIEW : Late-binding does not represent a security threat, see 
+
                         MenuItem sep = (MenuItem)Activator.CreateInstance(this.GetType());
                         sep.data.UserData = new MdiListUserData();
                         sep.Text = "-";
@@ -1180,8 +1180,8 @@ namespace System.Windows.Forms {
                             if ((activeFormAdded && (formsAddedToMenu < maxMenuForms))     ||  // don't exceed max
                                 (!activeFormAdded && (formsAddedToMenu < (maxMenuForms-1)) ||  // save room for active if it's not in yet
                                 (forms[i].Equals(activeMdiChild)))){                           // there's always room for activeMdiChild
-                                // SECREVIEW : Late-binding does not represent a security threat, see bug#411899 for more info..
-                                //
+                                // SECREVIEW : Late-binding does not represent a security threat, see 
+
                                 MenuItem windowItem = (MenuItem)Activator.CreateInstance(this.GetType());
                                 windowItem.data.UserData = new MdiListFormData(this, i);
                                 
@@ -1201,8 +1201,8 @@ namespace System.Windows.Forms {
                     // Child menu items to be displayed. This is necessary because we're managing our own
                     // MDI lists, rather than letting Windows do this for us.
                     if (visibleChildren > maxMenuForms) {
-                        // SECREVIEW : Late-binding does not represent a security threat, see bug#411899 for more info..
-                        //
+                        // SECREVIEW : Late-binding does not represent a security threat, see 
+
                         MenuItem moreWindows = (MenuItem)Activator.CreateInstance(this.GetType());
                         moreWindows.data.UserData = new MdiListMoreWindowsData(this);
                         moreWindows.Text = SR.GetString(SR.MDIMenuMoreWindows);
@@ -1224,8 +1224,8 @@ namespace System.Windows.Forms {
         ///    </para>
         /// </devdoc>
         public virtual MenuItem MergeMenu() {
-            // SECREVIEW : Late-binding does not represent a security threat, see bug#411899 for more info..
-            //
+            // SECREVIEW : Late-binding does not represent a security threat, see 
+
             MenuItem newItem = (MenuItem)Activator.CreateInstance(this.GetType());
             data.AddItem(newItem);
             newItem.MergeMenu(this);

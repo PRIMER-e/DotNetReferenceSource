@@ -5,7 +5,7 @@
 // ==--==
 //===========================================================================
 //  File:       IpcServerChannel.cs
-//  Author:   [....]@Microsoft.Com
+//  Author:   Microsoft@Microsoft.Com
 //  Summary:    Implements a channel that receives method calls over LPC.
 //
 //==========================================================================
@@ -475,7 +475,7 @@ namespace System.Runtime.Remoting.Channels.Ipc
                 // No response needed, but the following method will make sure that
                 //   we send at least a skeleton reply if the incoming request was
                 //   not marked OneWayRequest (client/server metadata could be out of
-                //   [....]).
+                //   sync).
                 ipcServerHandler.SendResponse(responseHeaders, responseStream);
                 break;
             } // case ServerProcessing.OneWay

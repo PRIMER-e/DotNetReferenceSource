@@ -264,7 +264,7 @@ namespace MS.Internal.Automation
         private static string [] BadImplClassnames = new string []
         {
             // The following classes are known to not check the lParam to WM_GETOBJECT, so avoid them:
-            // Keep list in [....] with UiaNodeFactory.cpp
+            // Keep list in sync with UiaNodeFactory.cpp
             "TrayClockWClass",
             "REListBox20W",
             "REComboBox20W",

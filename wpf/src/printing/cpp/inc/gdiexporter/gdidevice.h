@@ -206,6 +206,16 @@ public:
         return m_Caps;
     }
 
+    unsigned GetDpiX(void)
+    {
+        return m_nDpiX;
+    }
+
+    unsigned GetDpiY(void)
+    {
+        return m_nDpiY;
+    }
+
     /// <SecurityNote>
     /// Critical    - Calls native method to obtain the origin of the DC's coordinate system
     /// TreatAsSafe - Inputs are safe

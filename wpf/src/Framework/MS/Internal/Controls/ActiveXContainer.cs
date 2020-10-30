@@ -164,7 +164,7 @@ namespace MS.Internal.Controls
         [SecurityCritical]
         int UnsafeNativeMethods.IOleInPlaceFrame.SetActiveObject(UnsafeNativeMethods.IOleInPlaceActiveObject pActiveObject, string pszObjName)
         {
-            //[....] has code to remove selection handler around the active object
+            //Microsoft has code to remove selection handler around the active object
             //and add it around the new one
             //
             //Since we don't have anything like that in Avalon, we do nothing
@@ -270,7 +270,7 @@ namespace MS.Internal.Controls
 
             if (_siteUIActive != null )
             {
-                //[....] WebOC also uses ActiveXHost instead of ActiveXSite.
+                //Microsoft WebOC also uses ActiveXHost instead of ActiveXSite.
                 //Ideally it should have been the site but since its a 1-1 relationship
                 //for hosting the webOC, it will work
                 ActiveXHost tempSite = _siteUIActive;

@@ -8,7 +8,7 @@
 // Description: A static class that manipulates an array TextTreeTextBlocks.
 //
 // History:  
-//  2/18/2004 : [....] - Created
+//  2/18/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

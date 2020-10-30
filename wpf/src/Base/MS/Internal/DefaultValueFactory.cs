@@ -7,7 +7,7 @@
 // Description: Abstract base class for all default value factories
 //
 // History:
-//  2005/11/08 : [....] - Created
+//  2005/11/08 : jordanpa - Created
 //
 //---------------------------------------------------------------------------
 

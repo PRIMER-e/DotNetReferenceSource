@@ -295,13 +295,13 @@ namespace System.Transactions.Oletx
                             ex );
                     }
                 }
-                // In the case of Phase0, there is a bug in the proxy that causes an XACT_E_PROTOCOL
-                // error if the TM goes down while the enlistment is still active.  The Phase0Request is
-                // sent out with abortHint false, but the state of the proxy object is not changed, causing
-                // Phase0Done request to fail with XACT_E_PROTOCOL.
-                // For Prepared, we want to make sure the proxy aborts the transaction.  We don't need
-                // to drive the abort to the application here because the Phase1 enlistment will do that.
-                // In other words, treat this as if the proxy said Phase0Request( abortingHint = true ).
+                // In the case of Phase0, there is a 
+
+
+
+
+
+
                 else if ( NativeMethods.XACT_E_PROTOCOL == ex.ErrorCode )
                 {
                     this.phase0EnlistmentShim = null;
@@ -474,8 +474,8 @@ namespace System.Transactions.Oletx
                 {
                     // We are dealing with the committable transaction.  If Commit or BeginCommit has NOT been
                     // called, then we are dealing with a situation where the TM went down and we are getting
-                    // a bogus Phase0Request with abortHint = false (COMPlus bug 36760/36758).  This is an attempt
-                    // to not send the app a Prepare request when we know the transaction is going to abort.
+                    // a bogus Phase0Request with abortHint = false (COMPlus 
+
                     if (!committableTx.CommitCalled )
                     {
                         commitNotYetCalled = true;
@@ -510,8 +510,8 @@ namespace System.Transactions.Oletx
                                 // and result in an access violation while accessing the pPhase0EnlistmentAsync member variable of the Phase0Shim object. 
                                 this.alreadyVoted = true; 
                             }
-                            // I am not going to check for XACT_E_PROTOCOL here because that check is a workaround for a bug
-                            // that only shows up if abortingHint is false.
+                            // I am not going to check for XACT_E_PROTOCOL here because that check is a workaround for a 
+
                             catch ( COMException ex )
                             {
                                 if ( DiagnosticTrace.Verbose )
@@ -673,8 +673,8 @@ namespace System.Transactions.Oletx
                     );
             }
 
-            //Fix for stress bug CSDMain 126887. This is to synchronize with the corresponding AddDependentClone 
-            //which takes the container lock while incrementing the incompleteDependentClone count
+            //Fix for stress 
+
             lock (this)
             {
                 this.incompleteDependentClones--;
@@ -1241,7 +1241,7 @@ namespace System.Transactions.Oletx
             else if ( ( OletxVolatileEnlistmentState.Aborting == localState ) ||
                       ( OletxVolatileEnlistmentState.Aborted == localState ) )
             {
-                // An abort has ----d with this volatile Prepare
+                // An abort has raced with this volatile Prepare
                 // decrement the outstanding notifications making sure to vote no.
                 container.DecrementOutstandingNotifications( false );
                 return;
@@ -1502,7 +1502,7 @@ namespace System.Transactions.Oletx
                      ( OletxVolatileEnlistmentState.InDoubt != state )
                    )
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null, this.DistributedTxId );
                 }
 
                 state = OletxVolatileEnlistmentState.Done;
@@ -1549,7 +1549,7 @@ namespace System.Transactions.Oletx
             {
                 if ( OletxVolatileEnlistmentState.Preparing != state )
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null, this.DistributedTxId );
                 }
 
                 state = OletxVolatileEnlistmentState.Prepared;
@@ -1648,7 +1648,7 @@ namespace System.Transactions.Oletx
             {
                 if ( OletxVolatileEnlistmentState.Preparing != state )
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null, this.DistributedTxId );
                 }
 
                 // There are no more notifications that need to happen on this enlistment.
@@ -1711,7 +1711,7 @@ namespace System.Transactions.Oletx
         byte[] IPromotedEnlistment.GetRecoveryInformation()
         {
             throw TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceOletx ),
-                SR.GetString( SR.VolEnlistNoRecoveryInfo), null );
+                SR.GetString( SR.VolEnlistNoRecoveryInfo), null, this.DistributedTxId );
         }
         
         InternalEnlistment IPromotedEnlistment.InternalEnlistment

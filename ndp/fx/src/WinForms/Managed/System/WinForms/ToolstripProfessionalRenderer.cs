@@ -24,7 +24,15 @@ namespace System.Windows.Forms {
 
         private static readonly Size onePix = new Size(1, 1);
 
-        private const int overflowButtonWidth = 12;
+        private static bool isScalingInitialized = false;
+        private const int OVERFLOW_BUTTON_WIDTH = 12;
+        private const int OVERFLOW_ARROW_WIDTH = 9;
+        private const int OVERFLOW_ARROW_HEIGHT = 5;
+        private const int OVERFLOW_ARROW_OFFSETY = 8;
+        private static int overflowButtonWidth = OVERFLOW_BUTTON_WIDTH;
+        private static int overflowArrowWidth = OVERFLOW_ARROW_WIDTH;
+        private static int overflowArrowHeight = OVERFLOW_ARROW_HEIGHT;
+        private static int overflowArrowOffsetY = OVERFLOW_ARROW_OFFSETY;
 
         private Padding dropDownMenuItemPaintPadding = new Padding(2, 0, 1, 0);
         private ProfessionalColorTable professionalColorTable;
@@ -126,6 +134,8 @@ namespace System.Windows.Forms {
 
         /// <include file='doc\ToolStripProfessionalRenderer.uex' path='docs/doc[@for="ToolStripProfessionalRenderer.OnRenderOverflowButton"]/*' />
         protected override void OnRenderOverflowButtonBackground(ToolStripItemRenderEventArgs e) {
+            ScaleOverflowButtonSizesIfNeeded(); 
+            
             if (RendererOverride != null) {
                 base.OnRenderOverflowButtonBackground(e);
                 return;
@@ -142,34 +152,51 @@ namespace System.Windows.Forms {
           
             Rectangle overflowArrowRect = Rectangle.Empty;
             if (rightToLeft) {
-                overflowArrowRect = new Rectangle(0, item.Height -8, 9,5);        
+                overflowArrowRect = new Rectangle(0, item.Height - overflowArrowOffsetY, overflowArrowWidth, overflowArrowHeight);        
             }
             else {
-               overflowArrowRect = new Rectangle(item.Width - overflowButtonWidth, item.Height - 8, 9, 5);
+                overflowArrowRect = new Rectangle(item.Width - overflowButtonWidth, item.Height - overflowArrowOffsetY, overflowArrowWidth, overflowArrowHeight);
             }
 
             ArrowDirection direction = (horizontal) ? ArrowDirection.Down : ArrowDirection.Right;
 
             // in RTL the white highlight goes BEFORE the black triangle.
-            int rightToLeftShift = (rightToLeft && horizontal) ? -1 : 1;
-            
+            int rightToLeftShift = (rightToLeft && horizontal) ? -1: 1;
+
             // draw highlight	
             overflowArrowRect.Offset(1*rightToLeftShift, 1);
             RenderArrowInternal(g, overflowArrowRect, direction, SystemBrushes.ButtonHighlight);
 
             // draw black triangle
             overflowArrowRect.Offset(-1*rightToLeftShift, -1);
-            RenderArrowInternal(g, overflowArrowRect, direction, SystemBrushes.ControlText);
-               
+            Point middle = RenderArrowInternal(g, overflowArrowRect, direction, SystemBrushes.ControlText);
+
             // draw lines
             if (horizontal) {
                 rightToLeftShift = (rightToLeft) ? -2 : 0;
-                g.DrawLine(SystemPens.ControlText, overflowArrowRect.Right - 6, overflowArrowRect.Y - 2, overflowArrowRect.Right - 2, overflowArrowRect.Y - 2);
-                g.DrawLine(SystemPens.ButtonHighlight, overflowArrowRect.Right - 5 + rightToLeftShift, overflowArrowRect.Y - 1, overflowArrowRect.Right -1+rightToLeftShift, overflowArrowRect.Y - 1);
+                // width of the both lines is 1 pixel and lines are drawn next to each other, this the highlight line is 1 pixel below the black line 
+                g.DrawLine(SystemPens.ControlText, 
+                    middle.X - ToolStripRenderer.Offset2X, 
+                    overflowArrowRect.Y - ToolStripRenderer.Offset2Y, 
+                    middle.X + ToolStripRenderer.Offset2X, 
+                    overflowArrowRect.Y - ToolStripRenderer.Offset2Y);
+                g.DrawLine(SystemPens.ButtonHighlight, 
+                    middle.X - ToolStripRenderer.Offset2X + 1 + rightToLeftShift, 
+                    overflowArrowRect.Y - ToolStripRenderer.Offset2Y + 1, 
+                    middle.X + ToolStripRenderer.Offset2X + 1 + rightToLeftShift, 
+                    overflowArrowRect.Y - ToolStripRenderer.Offset2Y + 1);
             }
             else {
-                g.DrawLine(SystemPens.ControlText, overflowArrowRect.X, overflowArrowRect.Y, overflowArrowRect.X, overflowArrowRect.Bottom-1);
-                g.DrawLine(SystemPens.ButtonHighlight, overflowArrowRect.X+1, overflowArrowRect.Y+1, overflowArrowRect.X+1, overflowArrowRect.Bottom);
+                g.DrawLine(SystemPens.ControlText, 
+                    overflowArrowRect.X, 
+                    middle.Y - ToolStripRenderer.Offset2Y, 
+                    overflowArrowRect.X, 
+                    middle.Y + ToolStripRenderer.Offset2Y);
+                g.DrawLine(SystemPens.ButtonHighlight, 
+                    overflowArrowRect.X + 1, 
+                    middle.Y - ToolStripRenderer.Offset2Y + 1, 
+                    overflowArrowRect.X + 1, 
+                    middle.Y + ToolStripRenderer.Offset2Y + 1);
             }
         }
 
@@ -1079,30 +1106,30 @@ namespace System.Windows.Forms {
                     if (horizontal) {
                         Point top1 = new Point(overflowBoundsFill.X - 2, 0);
                         Point top2 = new Point(overflowBoundsFill.X - 1, 1);
-                        
+
                         if (rightToLeft) {
-                            top1.X = overflowBoundsFill.Right +1;
+                            top1.X = overflowBoundsFill.Right + 1;
                             top2.X = overflowBoundsFill.Right;
-                        }         
-                        g.FillRectangle(b, top1.X, top1.Y, 1,1);
-                        g.FillRectangle(b, top2.X, top2.Y, 1,1);
+                        }
+                        g.FillRectangle(b, top1.X, top1.Y, 1, 1);
+                        g.FillRectangle(b, top2.X, top2.Y, 1, 1);
                     }
                     else {
-                        g.FillRectangle(b, overflowBoundsFill.Width - 3, overflowBoundsFill.Top-1, 1, 1);
-                        g.FillRectangle(b, overflowBoundsFill.Width -2 , overflowBoundsFill.Top-2, 1, 1);
+                        g.FillRectangle(b, overflowBoundsFill.Width - 3, overflowBoundsFill.Top - 1, 1, 1);
+                        g.FillRectangle(b, overflowBoundsFill.Width - 2, overflowBoundsFill.Top - 2, 1, 1);
                     }
                 }
 
                 using (Brush b = new SolidBrush(overflowButtonGradientBegin/*Color.Green*/)) {
                     if (horizontal) {
-                        Rectangle fillRect = new Rectangle(overflowBoundsFill.X-1, 0, 1, 1);
+                        Rectangle fillRect = new Rectangle(overflowBoundsFill.X - 1, 0, 1, 1);
                         if (rightToLeft) {
                             fillRect.X = overflowBoundsFill.Right;
                         }
                         g.FillRectangle(b, fillRect);
                     }
                     else {
-                        g.FillRectangle(b, overflowBoundsFill.X, overflowBoundsFill.Top-1, 1, 1);
+                        g.FillRectangle(b, overflowBoundsFill.X, overflowBoundsFill.Top - 1, 1, 1);
                     }
                 }
             }
@@ -1356,10 +1383,24 @@ namespace System.Windows.Forms {
             }
         }
 
+        private static void ScaleOverflowButtonSizesIfNeeded() {
+            if (isScalingInitialized) {
+                return;
+            }          
+            if (DpiHelper.IsScalingRequired) {
+                ToolStripRenderer.ScaleArrowOffsetsIfNeeded();
+                overflowButtonWidth = DpiHelper.LogicalToDeviceUnitsX(OVERFLOW_BUTTON_WIDTH);
+                overflowArrowWidth = DpiHelper.LogicalToDeviceUnitsX(OVERFLOW_ARROW_WIDTH);
+                overflowArrowHeight = DpiHelper.LogicalToDeviceUnitsY(OVERFLOW_ARROW_HEIGHT);
+                overflowArrowOffsetY = DpiHelper.LogicalToDeviceUnitsY(OVERFLOW_ARROW_OFFSETY);
+            }
+            isScalingInitialized = true;
+        }
 
         // This draws differently sized arrows than the base one... 
         // used only for drawing the overflow button madness.
-        internal void RenderArrowInternal(Graphics g, Rectangle dropDownRect, ArrowDirection direction, Brush brush) {
+        private Point RenderArrowInternal(Graphics g, Rectangle dropDownRect, ArrowDirection direction, Brush brush) {
+
             Point middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
 
             // if the width is odd - favor pushing it over one pixel right.
@@ -1370,30 +1411,40 @@ namespace System.Windows.Forms {
             switch (direction) {
                 case ArrowDirection.Up:
                     arrow = new Point[] {
-                        new Point(middle.X - 2, middle.Y + 1), new Point(middle.X + 3, middle.Y + 1), new Point(middle.X, middle.Y - 2)
+                        new Point(middle.X - ToolStripRenderer.Offset2X, middle.Y + 1), 
+                        new Point(middle.X + ToolStripRenderer.Offset2X + 1, middle.Y + 1), 
+                        new Point(middle.X, middle.Y - ToolStripRenderer.Offset2Y)
                     };
                     break;
 
                 case ArrowDirection.Left:
                     arrow = new Point[] {
-                        new Point(middle.X + 2, middle.Y - 3), new Point(middle.X + 2, middle.Y + 3), new Point(middle.X - 1, middle.Y)
+                        new Point(middle.X + ToolStripRenderer.Offset2X, middle.Y - ToolStripRenderer.Offset2Y - 1), 
+                        new Point(middle.X + ToolStripRenderer.Offset2X, middle.Y + ToolStripRenderer.Offset2Y + 1), 
+                        new Point(middle.X - 1, middle.Y)
                     };
                     break;
 
                 case ArrowDirection.Right:
                     arrow = new Point[] {
-                        new Point(middle.X - 2, middle.Y - 3), new Point(middle.X - 2, middle.Y + 3), new Point(middle.X + 1, middle.Y)
+                        new Point(middle.X - ToolStripRenderer.Offset2X, middle.Y - ToolStripRenderer.Offset2Y - 1), 
+                        new Point(middle.X - ToolStripRenderer.Offset2X, middle.Y + ToolStripRenderer.Offset2Y + 1), 
+                        new Point(middle.X + 1, middle.Y)
                     };
                     break;
 
                 case ArrowDirection.Down:
                 default:
                     arrow = new Point[] {
-                        new Point(middle.X - 2, middle.Y - 1), new Point(middle.X + 3, middle.Y - 1), new Point(middle.X, middle.Y + 2)
+                        new Point(middle.X - ToolStripRenderer.Offset2X, middle.Y - 1), 
+                        new Point(middle.X + ToolStripRenderer.Offset2X + 1, middle.Y - 1), 
+                        new Point(middle.X, middle.Y + ToolStripRenderer.Offset2Y)
                     };
                     break;
             }
             g.FillPolygon(brush, arrow);
+
+            return middle;
         }
 
         #endregion PrivatePaintHelpers

@@ -47,7 +47,7 @@ namespace System.Windows.Forms {
 
         readonly int          bitDepth;
 
-        private static object syncLock = new object();//used to lock this class before [....]'ing to SystemEvents
+        private static object syncLock = new object();//used to lock this class before sync'ing to SystemEvents
 
         private static int desktopChangedCount = -1;//static counter of desktop size changes
 
@@ -270,7 +270,7 @@ namespace System.Windows.Forms {
 
                         //now that we have a lock, verify (again) our changecount...
                         if (desktopChangedCount == -1) {
-                            //[....] the UserPreference.Desktop change event.  We'll keep count 
+                            //sync the UserPreference.Desktop change event.  We'll keep count 
                             //of desktop changes so that the WorkingArea property on Screen 
                             //instances know when to invalidate their cache.
                             SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);

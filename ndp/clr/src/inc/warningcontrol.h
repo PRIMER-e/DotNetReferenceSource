@@ -59,8 +59,8 @@
                                                                  //                     printf("in finally");
                                                                  //             }
                                                                  //
-                                                                 // as (it's a bug) the return value gets toasted. So DON'T casually
-                                                                 // dismiss this warning if you're compiling w/o CXX EH turned on (the default).
+                                                                 // as (it's a 
+
 
 #pragma warning(3               :4530)   // C++ exception handler used, but unwind semantics are not enabled. Specify -GX
 #pragma warning(error   :4551)   // Function call missing argument list

@@ -3,7 +3,7 @@
 //      Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //
-// @owner  [....]
+// @owner  Microsoft
 // @backupOwner venkatja
 //---------------------------------------------------------------------
 
@@ -225,7 +225,6 @@ namespace System.Data.Common.CommandTrees.Internal
 
                 case PrimitiveTypeKind.Boolean:
                 case PrimitiveTypeKind.Byte:
-                case PrimitiveTypeKind.DateTime:
                 case PrimitiveTypeKind.Decimal:
                 case PrimitiveTypeKind.Double:
                 case PrimitiveTypeKind.Guid:
@@ -235,8 +234,15 @@ namespace System.Data.Common.CommandTrees.Internal
                 case PrimitiveTypeKind.Int32:
                 case PrimitiveTypeKind.Int64:
                 case PrimitiveTypeKind.Time:
-                case PrimitiveTypeKind.DateTimeOffset:
                     _key.AppendFormat(CultureInfo.InvariantCulture, "{0}", e.Value);
+                    break;
+
+                case PrimitiveTypeKind.DateTime:
+                    _key.Append(((DateTime)e.Value).ToString("o", CultureInfo.InvariantCulture));
+                    break;
+
+                case PrimitiveTypeKind.DateTimeOffset:
+                    _key.Append(((DateTimeOffset)e.Value).ToString("o", CultureInfo.InvariantCulture));
                     break;
 
                 case PrimitiveTypeKind.Geometry:

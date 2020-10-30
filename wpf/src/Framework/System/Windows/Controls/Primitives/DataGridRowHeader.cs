@@ -297,7 +297,7 @@ namespace System.Windows.Controls.Primitives
                 this.InvalidateArrange();
 
                 // If the DataGrid has not run layout the headers parent may not position the cells correctly when the header size changes.
-                // This will cause the cells to be out of [....] with the columns. To avoid this we will force a layout of the headers parent panel.
+                // This will cause the cells to be out of sync with the columns. To avoid this we will force a layout of the headers parent panel.
                 var parent = this.Parent as UIElement;
                 if (parent != null)
                 {

@@ -31,9 +31,10 @@ namespace MS.Internal.Data
         //
         //------------------------------------------------------
 
-        internal CollectionViewGroupInternal(object name, CollectionViewGroupInternal parent) : base(name)
+        internal CollectionViewGroupInternal(object name, CollectionViewGroupInternal parent, bool isExplicit=false) : base(name)
         {
             _parentGroup = parent;
+            _isExplicit = isExplicit;
         }
 
         #endregion Constructors
@@ -73,12 +74,36 @@ namespace MS.Internal.Data
                 bool oldIsBottomLevel = IsBottomLevel;
 
                 if (_groupBy != null)
+                {
                     PropertyChangedEventManager.RemoveHandler(_groupBy, OnGroupByChanged, String.Empty);
+                }
 
                 _groupBy = value;
 
                 if (_groupBy != null)
+                {
                     PropertyChangedEventManager.AddHandler(_groupBy, OnGroupByChanged, String.Empty);
+                }
+
+                // choose a comparer based on info in the GroupDescription and the owning collection view
+                _groupComparer = (_groupBy == null) ? null :
+                    ListCollectionView.PrepareComparer(
+                        _groupBy.CustomSort,
+                        _groupBy.SortDescriptionsInternal,
+                        () =>
+                        {
+                            for (CollectionViewGroupInternal group = this;
+                                    group != null;
+                                    group = group.Parent)
+                            {
+                                CollectionViewGroupRoot root = group as CollectionViewGroupRoot;
+                                if (root != null)
+                                {
+                                    return root.View;
+                                }
+                            }
+                            return null;    // this should never happen - root should always be present
+                        });
 
                 if (oldIsBottomLevel != IsBottomLevel)
                 {
@@ -151,8 +176,15 @@ namespace MS.Internal.Data
 
         internal void Add(object item)
         {
-            ChangeCounts(item, +1);
-            ProtectedItems.Add(item);
+            if (_groupComparer == null)
+            {
+                ChangeCounts(item, +1);
+                ProtectedItems.Add(item);
+            }
+            else
+            {
+                Insert(item, null, null);
+            }
         }
 
         internal int Remove(object item, bool returnLeafIndex)
@@ -170,11 +202,20 @@ namespace MS.Internal.Data
                 CollectionViewGroupInternal subGroup = item as CollectionViewGroupInternal;
                 if (subGroup != null)
                 {
+                    subGroup.Clear();
+
                     // Remove from the name to group map.
                     RemoveSubgroupFromMap(subGroup);
                 }
+
                 ChangeCounts(item, -1);
-                ProtectedItems.RemoveAt(localIndex);
+
+                // ChangeCounts may clear this group, if it is now empty.
+                // In that case, don't use localIndex - it's now out of range.
+                if (ProtectedItems.Count > 0)
+                {
+                    ProtectedItems.RemoveAt(localIndex);
+                }
             }
 
             return index;
@@ -182,6 +223,23 @@ namespace MS.Internal.Data
 
         internal void Clear()
         {
+            if (_groupBy != null)
+            {
+                // This group has subgroups.  Disconnect from GroupDescription events
+                PropertyChangedEventManager.RemoveHandler(_groupBy, OnGroupByChanged, String.Empty);
+                _groupBy = null;
+
+                // recursively clear subgroups
+                for (int i=0, n=ProtectedItems.Count; i < n; ++i)
+                {
+                    CollectionViewGroupInternal subGroup = ProtectedItems[i] as CollectionViewGroupInternal;
+                    if (subGroup != null)
+                    {
+                        subGroup.Clear();
+                    }
+                }
+            }
+
             FullCount = 1;
             ProtectedItemCount = 0;
             ProtectedItems.Clear();
@@ -311,8 +369,14 @@ namespace MS.Internal.Data
         // by the comparer.  (If comparer is null, just add at the end).
         internal int Insert(object item, object seed, IComparer comparer)
         {
+            // when group sorting is not declared,
             // never insert the new item/group before the explicit subgroups
-            int low = (GroupBy == null) ? 0 : GroupBy.GroupNames.Count;
+            int low = 0;
+            if (_groupComparer == null && GroupBy != null)
+            {
+                low = GroupBy.GroupNames.Count;
+            }
+
             int index = FindIndex(item, seed, comparer, low, ProtectedItems.Count);
 
             // now insert the item
@@ -326,30 +390,43 @@ namespace MS.Internal.Data
         {
             int index;
 
-            if (comparer != null)
+            if (_groupComparer == null)
             {
-                IListComparer ilc = comparer as IListComparer;
-                if (ilc != null)
+                // group sorting is not declared - find the position using the seed
+                if (comparer != null)
                 {
-                    // reset the IListComparer before each search.  This cannot be done
-                    // any less frequently (e.g. in Root.AddToSubgroups), due to the
-                    // possibility that the item may appear in more than one subgroup.
-                    ilc.Reset();
-                }
+                    IListComparer ilc = comparer as IListComparer;
+                    if (ilc != null)
+                    {
+                        // reset the IListComparer before each search.  This cannot be done
+                        // any less frequently (e.g. in Root.AddToSubgroups), due to the
+                        // possibility that the item may appear in more than one subgroup.
+                        ilc.Reset();
+                    }
 
-                for (index=low;  index < high;  ++index)
+                    for (index=low;  index < high;  ++index)
+                    {
+                        CollectionViewGroupInternal subgroup = ProtectedItems[index] as CollectionViewGroupInternal;
+                        object seed1 = (subgroup != null) ? subgroup.SeedItem : ProtectedItems[index];
+                        if (seed1 == DependencyProperty.UnsetValue)
+                            continue;
+                        if (comparer.Compare(seed, seed1) < 0)
+                            break;
+                    }
+                }
+                else
                 {
-                    CollectionViewGroupInternal subgroup = ProtectedItems[index] as CollectionViewGroupInternal;
-                    object seed1 = (subgroup != null) ? subgroup.SeedItem : ProtectedItems[index];
-                    if (seed1 == DependencyProperty.UnsetValue)
-                        continue;
-                    if (comparer.Compare(seed, seed1) < 0)
-                        break;
+                    index = high;
                 }
             }
             else
             {
-                index = high;
+                // group sorting is declared - find the position using the local comparer
+                for (index=low;  index < high;  ++index)
+                {
+                    if (_groupComparer.Compare(item, ProtectedItems[index]) < 0)
+                        break;
+                }
             }
 
             return index;
@@ -621,6 +698,11 @@ namespace MS.Internal.Data
             get { return _parentGroup; }
         }
 
+        private bool IsExplicit
+        {
+            get { return _isExplicit; }
+        }
+
         #endregion Private Properties
 
         #region Private methods
@@ -660,11 +742,8 @@ namespace MS.Internal.Data
 
             if (parent != null)
             {
-                GroupDescription groupBy = parent.GroupBy;
-                int index = parent.ProtectedItems.IndexOf(group);
-
                 // remove the subgroup unless it is one of the explicit groups
-                if (index >= groupBy.GroupNames.Count)
+                if (!group.IsExplicit)
                 {
                     parent.Remove(group, false);
                 }
@@ -688,11 +767,13 @@ namespace MS.Internal.Data
 
         GroupDescription    _groupBy;
         CollectionViewGroupInternal _parentGroup;
+        IComparer           _groupComparer;
         int                 _fullCount = 1;
         int                 _lastIndex;
         int                 _version;       // for detecting stale enumerators
         Hashtable           _nameToGroupMap; // To cache the mapping between name and subgroup
         bool                _mapCleanupScheduled = false;
+        bool                _isExplicit;
         static NamedObject  _nullGroupNameKey = new NamedObject("NullGroupNameKey");
 
         #endregion Private fields

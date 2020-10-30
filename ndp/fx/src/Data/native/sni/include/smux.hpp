@@ -57,7 +57,7 @@ private:
 	SNI_Packet *	m_pPacketKeyHolder;
 	LPVOID			m_StoredPacketKey;
 
-	//variables below are [....] specific
+	//variables below are sync specific
 	bool		m_fSync;
 
 	SNI_Packet *m_pLeftOver;

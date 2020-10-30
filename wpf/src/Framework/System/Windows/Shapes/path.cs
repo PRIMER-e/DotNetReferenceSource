@@ -5,7 +5,7 @@
 // Implementation of Path shape element.
 //
 // History:
-//  05/30/02 - [....] - Created.
+//  05/30/02 - Microsoft - Created.
 //
 // Copyright (C) 2003 by Microsoft Corporation.  All rights reserved.
 //

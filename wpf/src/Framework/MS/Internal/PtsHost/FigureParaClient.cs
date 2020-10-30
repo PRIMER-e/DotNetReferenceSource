@@ -8,7 +8,7 @@
 //              related data of paragraphs associated with figures.
 //
 // History:  
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -93,7 +93,7 @@ namespace MS.Internal.PtsHost
 
             _pageContext.AddFloatingParaClient(this);
 
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if(ThisFlowDirection != PageFlowDirection)
             {
@@ -222,7 +222,7 @@ namespace MS.Internal.PtsHost
 
             // Adjust rect to account for margins
             // Add margin values to rect offsets and subtract them from rect widths
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
             _rect.v += mbp.MarginTop;
             _rect.dv -= mbp.MarginTop + mbp.MarginBottom;
             _rect.u += mbp.MarginLeft;
@@ -406,7 +406,7 @@ namespace MS.Internal.PtsHost
             PTS.Validate(PTS.FsQuerySubpageDetails(PtsContext.Context, _paraHandle.Value, out subpageDetails));
 
             // Obtain all mbp info
-            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element);
+            MbpInfo mbp = MbpInfo.FromElement(Paragraph.Element, Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             if(ThisFlowDirection != PageFlowDirection)
             {

@@ -7,7 +7,7 @@
 //  Description:   Collection of packages to be used with PackWebRequest.
 //
 // History:
-//  07/25/2005: [....]: Created.
+//  07/25/2005: Microsoft: Created.
 //------------------------------------------------------------------------------
 
 using System;

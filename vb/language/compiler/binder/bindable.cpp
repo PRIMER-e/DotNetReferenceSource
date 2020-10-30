@@ -1821,11 +1821,11 @@ Bindable::BindContainerAndNestedTypes
 
     // Note: Normally the bindable instance of the container is deleted at the end of BindContainer(Container)
     // In some cases the instance can wrongly be reassigned to a new bindable during the binding of the nested
-    // containers. See bug VSWhidbey 344045 for an example.
+    // containers. See 
     if (Container->GetBindableInstanceIfAlreadyExists() &&
         !IsMyGroupCollection(Container))
     {
-        // See bug VSWhidbey 344045 for more details.
+        // See 
         VSFAIL("Bindable instance unexpected!!!");
         Container->DeleteBindableInstance();
     }
@@ -2063,8 +2063,8 @@ Bindable::ResolveBasesForContainer()
             }
 
             // This is so that cycle detection is forced on the current container after
-            // it bases are resolved later. See bug VSWhidbey 187738.
-            //
+            // it bases are resolved later. See 
+
             SetPossibleInheritanceCycleDetected(true);
 
             return;
@@ -4571,10 +4571,10 @@ Bindable::ValidateDirectConstraintsForGenericParams
 
     if (ParameterList)
     {
-        // Bug VSWhidbey 365493.
-        //
-        // Overriding methods and Private methods that implement interface methods are allowed
-        // to have redundancy and special types in constraints.
+        // 
+
+
+
 
         BCSYM_NamedRoot *Parent = ParameterList->GetParent();
 
@@ -5337,7 +5337,7 @@ Bindable::ConstraintsConflict
     VSASSERT(!Constraint2->IsBadConstraint(), "Bad constraint unexpected!!!");
 
     // Interface constraints do not clash with any other constraints.
-    // Bug VSWhidbey 449053.
+    // 
     if ((Constraint1->IsGenericTypeConstraint() &&
             IsInterface(Constraint1->PGenericTypeConstraint()->GetType())) ||
         (Constraint2->IsGenericTypeConstraint() &&
@@ -5866,17 +5866,17 @@ Bindable::DetectStructureMemberCycle
     {
         VSASSERT(*CycleCausingNode == NULL, "Inconsistency in struct cycle detection!!!");
 
-        // Bug VSWhidbey 196029
-        // Ignore bad members only if they are in source. Need to consider bad
-        // metadata members too because the metadata structure might actually
-        // have a private field that could cause a cycle, but which is marked
-        // bad for reasons like member clash.
-        //
-        // Ignore the synthetic withevents field - see bug VSWhidbey 208063
-        //
+        // 
+
+
+
+
+
+
+
         if ((Member->IsBad() &&
-                // Bug VSWhidbey 196029 - see explanation above.
-                //
+                // 
+
                 !StructureDefinedInMetaData) ||
             !Member->IsVariable() ||
             Member->PVariable()->IsShared() ||
@@ -5960,8 +5960,8 @@ Bindable::DetectStructureMemberCycle
             // A cycle error has already been reported on a field further down the stack.
             // So in order to skip further checking through that field, need to exit here.
             // If the rest of the cycle checking through this field is not skipped, this
-            // could lead to infinite bindings and stack overflow. See Bug VSWhidbey 263032.
-            //
+            // could lead to infinite bindings and stack overflow. See 
+
             if (*CycleCausingNode != NULL)
             {
                 break;
@@ -6000,8 +6000,8 @@ Bindable::DetectStructureMemberCycle
             // A cycle error has already been reported on a field further down the stack.
             // So in order to skip further checking through that field, need to exit here.
             // If the rest of the cycle checking through this field is not skipped, this
-            // could lead to infinite bindings and stack overflow. See Bug VSWhidbey 263032.
-            //
+            // could lead to infinite bindings and stack overflow. See 
+
             if (*CycleCausingNode != NULL)
             {
                 break;
@@ -6388,8 +6388,8 @@ Bindable::ResolveAllNamedTypesInContainerIfPossible
     {
         // If the previous steps i.e ResolveBases, etc. are in progress,
         // then this step i.e. ResolveAllNamedTypes cannot yet be started.
-        // Bug VSWhidbey 176508
-        //
+        // 
+
         if (!ContainingProject->HaveImportsBeenResolved() ||
             ContainingSourceFile->AreImportsBeingResolved() ||
             Container->GetBindableInstance()->GetStatusOfResolvePartialTypes() == Bindable::InProgress ||
@@ -7372,7 +7372,7 @@ Bindable::ResolveNamedType
         //
     }
 
-    // [....]:2008.09.21. Consider handling the following code differently.
+    // Microsoft:2008.09.21. Consider handling the following code differently.
     // Notionally we're in "bindable", so if GetContext() is a proc then we're assumed to be binding a method
     // signature, and that's why we mark the method as BadParamTypeOrReturnType. It's UGLY for the
     // function ResolveNamedType to have an undocumented side effect on the context of the argument it was
@@ -8216,8 +8216,8 @@ Bindable::ValidateNewConstraintForType
             // Report the MustInherit error only if no error is generated regarding a public parameterless
             // constructor. The reasons for this are:
             // - The public parameterless constructor missing is a more understandable error in this context
-            // - Too much clutter to report both errors - Bug VSWhidbey 169091
-            //
+            // - Too much clutter to report both errors - 
+
             if (SuitableConstructor && Class->IsMustInherit())
             {
                 if (ErrorLog)
@@ -9009,7 +9009,7 @@ Bindable::ResolveImportsList
     Once the delegate is known, we have to go back and set the parameters
     of the event.
 
-    NOTE: this has to be kept in [....] with the associated decompilation logic in
+    NOTE: this has to be kept in sync with the associated decompilation logic in
           bindableDecompilation.cpp
 *****************************************************************************/
 void
@@ -9264,7 +9264,7 @@ Bindable::CopyInvokeParamsToEvent
                 sizeof(BCSYM_ParamWithValue) :
                 sizeof(BCSYM_Param);
 
-        // [....] 9/13/2004: The numbers added together for the allocation are all values that we own, and are "small"
+        // Microsoft 9/13/2004: The numbers added together for the allocation are all values that we own, and are "small"
         // -- there is no danger of overflow, and so I have not altered the code at all.
         BCSYM_Param *BuiltParamSymbol =
             (BCSYM_Param*)Allocator->Alloc(
@@ -9325,7 +9325,7 @@ Bindable::CopyInvokeParamsToEvent
 
     Event->SetParamList(FirstParameter);
 
-    // Clone the return type if required. Bug VSWhidbey 357546.
+    // Clone the return type if required. 
 
     BCSYM *ReturnType = Event->GetCompilerType();
 
@@ -9494,8 +9494,8 @@ void Bindable::EvaluateDeclaredExpression
         IntegerLiteral->TextSpan = *ExpressionLocation;
 
         // For Ulong enums, force the constant increment value to be typed as an unsigned value to
-        // avoid a decimal result. Bug VSWhidbey 285217.
-        //
+        // avoid a decimal result. 
+
         IntegerLiteral->TypeCharacter =
             (ExpressionSymbol->GetForcedType() && ExpressionSymbol->GetForcedType()->GetVtype() == t_ui8) ?
                 chType_U8 :
@@ -9661,7 +9661,7 @@ void Bindable::EvaluateDeclaredExpression
                         // If this constant is assigned to a constant field, then ReferringDeclaration refers to the 
                         // constant variable.
                         //
-                        // Added for bug 482094.
+                        // Added for 
                         ReferringDeclaration,
                         ExpressionSymbol->IsSyntheticExpression(),
                         &ExpressionOfConstant);
@@ -9718,7 +9718,7 @@ void Bindable::EvaluateDeclaredExpression
         if (ValueOfConstant.TypeCode == t_string)
         {
             // Copy the spelling so that it lives as long as the symbol.
-            // [....] 9/13/2004: Since the string already exists, and we own the calculation of its length, there's no chance
+            // Microsoft 9/13/2004: Since the string already exists, and we own the calculation of its length, there's no chance
             // that the number will overflow (or else it could not have been allocated in the first place).
             WCHAR *Spelling =
                 (WCHAR *)SymbolAllocator->Alloc((ValueOfConstant.String.LengthInCharacters + 1) * sizeof(WCHAR));
@@ -9741,7 +9741,7 @@ void Bindable::EvaluateDeclaredExpression
 
         // Change an Object-typed constant to the type of its expression (VSW#177934).
 
-        if (ValueOfConstant.TypeCode != t_ref &&   // Devdiv Bug[24272] 
+        if (ValueOfConstant.TypeCode != t_ref &&   // Devdiv 
             ReferringDeclaration->IsVariable() &&
             TypeHelpers::IsRootObjectType(ReferringDeclaration->PVariable()->GetType()))
         {
@@ -9937,7 +9937,7 @@ Bindable::CanBeMyGroupCollectionMember
 }
 
 #if DEBUG
-// DebugPrintf co-function for the above CanBeMyGroupCollectionMember(). Keep in [....]
+// DebugPrintf co-function for the above CanBeMyGroupCollectionMember(). Keep in sync
 void
 Bindable::DebugPrintfCanBeMyGroupCollectionMember
 (
@@ -9963,7 +9963,7 @@ Bindable::DebugPrintfCanBeMyGroupCollectionMember
     }
     else
     {
-        VSFAIL("DebugPrintfCanBeMyGroupCollectionMember out of [....]");
+        VSFAIL("DebugPrintfCanBeMyGroupCollectionMember out of sync");
     }
     if(ms)
     {

@@ -12,7 +12,7 @@
 //              http://avalon/connecteddata/M5%20Specs/IDataCollection.mht
 //
 // History:
-//  07/14/2003 : [....] - Created
+//  07/14/2003 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 
@@ -75,7 +75,7 @@ namespace System.Windows.Data
 
         #region Public Properties
 
-        //ISSUE/[....]/030820 perf will potentially degrade if assigned collection
+        //ISSUE/Microsoft/030820 perf will potentially degrade if assigned collection
         //                      is only IEnumerable, but will improve if it
         //                      implements ICollection (for Count property), or,
         //                      better yet IList (for IndexOf and forward/backward enum using indexer)

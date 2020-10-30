@@ -6,7 +6,7 @@
 //      Provides a serializer for the Json Service Document format.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

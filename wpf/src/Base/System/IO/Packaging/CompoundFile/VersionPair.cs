@@ -8,9 +8,9 @@
 //  A major, minor version number pair.
 //
 // History:
-//  06/20/2002: [....]:  Created
+//  06/20/2002: Microsoft:  Created
 //  05/30/2003: LGolding: Ported to WCP tree. Split out from FormatVersion.cs.
-//  02/16/2005: [....]:  Changed Class name to VersionPair from VersionTuple
+//  02/16/2005: Microsoft:  Changed Class name to VersionPair from VersionTuple
 //
 //-----------------------------------------------------------------------------
 

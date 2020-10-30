@@ -363,6 +363,39 @@ namespace System.Windows.Forms {
         [DllImport(ExternDll.Shell32, CharSet=CharSet.Auto)]
         [ResourceExposure(ResourceScope.None)]
         public static extern int DragQueryFile(HandleRef hDrop, int iFile, StringBuilder lpszFile, int cch);
+
+        public static int DragQueryFileLongPath(HandleRef hDrop, int iFile, StringBuilder lpszFile)
+        {
+            if (null != lpszFile && 0 != lpszFile.Capacity && iFile != unchecked((int)0xFFFFFFFF))
+            {
+                int resultValue = 0;
+
+                // iterating by allocating chunk of memory each time we find the length is not sufficient.
+                // Performance should not be an issue for current MAX_PATH length due to this
+                if ((resultValue = DragQueryFile(hDrop, iFile, lpszFile, lpszFile.Capacity)) == lpszFile.Capacity)
+                {
+                    // passing null for buffer will return actual number of charectors in the file name.
+                    // So, one extra call would be suffice to avoid while loop in case of long path.
+                    int capacity = DragQueryFile(hDrop, iFile, null, 0);
+                    if (capacity < NativeMethods.MAX_UNICODESTRING_LEN)
+                    {
+                        lpszFile.EnsureCapacity(capacity);
+                        resultValue = DragQueryFile(hDrop, iFile, lpszFile, capacity);
+                    }
+                    else
+                    {
+                        resultValue = 0;
+                    }
+                }
+
+                lpszFile.Length = resultValue;
+                return resultValue;  // what ever the result.
+            }
+            else
+            {
+                return DragQueryFile(hDrop, iFile, lpszFile, lpszFile.Capacity);
+            }
+        }
         [DllImport(ExternDll.User32, ExactSpelling=true)]
         [ResourceExposure(ResourceScope.None)]
         public static extern bool EnumChildWindows(HandleRef hwndParent, NativeMethods.EnumChildrenCallback lpEnumFunc, HandleRef lParam);
@@ -486,11 +519,29 @@ namespace System.Windows.Forms {
         [DllImport(ExternDll.User32, ExactSpelling=true, CharSet=CharSet.Auto)]
         [ResourceExposure(ResourceScope.None)]
         public static extern int ScreenToClient( HandleRef hWnd, [In, Out] NativeMethods.POINT pt );
-        [DllImport(ExternDll.Kernel32, CharSet=CharSet.Auto)]
+        [DllImport(ExternDll.Kernel32, CharSet=CharSet.Auto, SetLastError = true)]
         [ResourceExposure(ResourceScope.None)]
         public static extern int GetModuleFileName(HandleRef hModule, StringBuilder buffer, int length);
+        public static StringBuilder GetModuleFileNameLongPath(HandleRef hModule)
+        {
+            StringBuilder buffer = new StringBuilder(NativeMethods.MAX_PATH);
+            int noOfTimes = 1;
+            int length = 0;
+            // Iterating by allocating chunk of memory each time we find the length is not sufficient.
+            // Performance should not be an issue for current MAX_PATH length due to this change.
+            while (((length = GetModuleFileName(hModule, buffer, buffer.Capacity)) == buffer.Capacity) 
+                && Marshal.GetLastWin32Error() == NativeMethods.ERROR_INSUFFICIENT_BUFFER 
+                && buffer.Capacity < NativeMethods.MAX_UNICODESTRING_LEN)
+            {
+                noOfTimes += 2; // Increasing buffer size by 520 in each iteration.
+                int capacity = noOfTimes * NativeMethods.MAX_PATH < NativeMethods.MAX_UNICODESTRING_LEN ? noOfTimes * NativeMethods.MAX_PATH : NativeMethods.MAX_UNICODESTRING_LEN;
+                buffer.EnsureCapacity(capacity);
+            }
+            buffer.Length = length;
+            return buffer;
+        }
         [DllImport(ExternDll.User32, CharSet=CharSet.Unicode)]
-        [ResourceExposure(ResourceScope.None)]
+        [ResourceExposure(ResourceScope.None)]        
         public static extern bool IsDialogMessage(HandleRef hWndDlg, [In, Out] ref NativeMethods.MSG msg);        
         [DllImport(ExternDll.User32, ExactSpelling=true, CharSet=CharSet.Auto)]
         [ResourceExposure(ResourceScope.None)]
@@ -520,7 +571,7 @@ namespace System.Windows.Forms {
         [DllImport(ExternDll.User32, ExactSpelling=true, CharSet=CharSet.Auto)]
         [ResourceExposure(ResourceScope.None)]
         public extern static bool EnumThreadWindows(int dwThreadId, NativeMethods.EnumThreadWindowsCallback lpfn, HandleRef lParam);
-        [return:MarshalAs(UnmanagedType.Bool)] [DllImport(ExternDll.Kernel32)]
+        [return:MarshalAs(UnmanagedType.Bool)] [DllImport(ExternDll.Kernel32, SetLastError=true)]
         [ResourceExposure(ResourceScope.None)]
         public extern static bool GetExitCodeThread(IntPtr hThread, out uint lpExitCode);
         [DllImport(ExternDll.User32, CharSet=CharSet.Auto)]
@@ -7446,11 +7497,39 @@ namespace System.Windows.Forms {
             [ResourceExposure(ResourceScope.None)]
             public static extern int SHGetSpecialFolderLocation(IntPtr hwnd, int csidl, ref IntPtr ppidl);
             //SHSTDAPI SHGetSpecialFolderLocation(HWND hwnd, int csidl, LPITEMIDLIST *ppidl);
-    
-            [DllImport(ExternDll.Shell32, CharSet=CharSet.Auto)]
+
+            [DllImport(ExternDll.Shell32, CharSet = CharSet.Auto)]
             [ResourceExposure(ResourceScope.None)]
-            public static extern bool SHGetPathFromIDList(IntPtr pidl, IntPtr pszPath);        
+            private static extern bool SHGetPathFromIDListEx(IntPtr pidl, IntPtr pszPath, int cchPath, int flags);
             //SHSTDAPI_(BOOL) SHGetPathFromIDListW(LPCITEMIDLIST pidl, LPWSTR pszPath);
+
+            public static bool SHGetPathFromIDListLongPath(IntPtr pidl, ref IntPtr pszPath)
+            {
+                int noOfTimes = 1;
+                // This is how size was allocated in the calling method.
+                int bufferSize = NativeMethods.MAX_PATH * Marshal.SystemDefaultCharSize;
+                int length = NativeMethods.MAX_PATH;
+                bool result = false;
+
+                // SHGetPathFromIDListEx returns false in case of insufficient buffer.
+                // This method does not distinguish between insufficient memory and an error. Until we get a proper solution,
+                // this logic would work. In the worst case scenario, loop exits when length reaches unicode string length.
+                while ((result = SHGetPathFromIDListEx(pidl, pszPath, length, 0)) == false 
+                        && length < NativeMethods.MAX_UNICODESTRING_LEN)
+                {
+                    string path = Marshal.PtrToStringAuto(pszPath);
+
+                    if (path.Length != 0 && path.Length < length)
+                        break;
+
+                    noOfTimes += 2; //520 chars capacity increase in each iteration.
+                    length = noOfTimes * length >= NativeMethods.MAX_UNICODESTRING_LEN 
+                        ? NativeMethods.MAX_UNICODESTRING_LEN : noOfTimes * length;
+                    pszPath = Marshal.ReAllocHGlobal(pszPath, (IntPtr)((length + 1) * Marshal.SystemDefaultCharSize));
+                }
+
+                return result;
+            }
             
             [DllImport(ExternDll.Shell32, CharSet=CharSet.Auto)]
             [ResourceExposure(ResourceScope.None)]
@@ -7463,15 +7542,22 @@ namespace System.Windows.Forms {
             //SHSTDAPI SHGetMalloc(LPMALLOC * ppMalloc);
 
             [SuppressMessage("Microsoft.Interoperability", "CA1400:PInvokeEntryPointsShouldExist")]
-            [DllImport(ExternDll.Shell32, PreserveSig = true, EntryPoint = "SHGetFolderPathEx")]
+            [DllImport(ExternDll.Shell32, PreserveSig = true)]
             [ResourceExposure(ResourceScope.None)]
-            private static extern int SHGetFolderPathExPrivate(ref Guid rfid, uint dwFlags, IntPtr hToken, [MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszPath, uint cchPath);
+            private static extern int SHGetKnownFolderPath(ref Guid rfid, uint dwFlags, IntPtr hToken, out IntPtr pszPath);
 
-            public static int SHGetFolderPathEx(ref Guid rfid, uint dwFlags, IntPtr hToken, [MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszPath, uint cchPath)
-            {
+            public static int SHGetFolderPathEx(ref Guid rfid, uint dwFlags, IntPtr hToken, StringBuilder pszPath)
+            {                
                 if (IsVista)
                 {
-                    return SHGetFolderPathExPrivate(ref rfid, dwFlags, hToken, pszPath, cchPath);
+                    IntPtr path = IntPtr.Zero;
+                    int result = -1;
+                    if ((result = SHGetKnownFolderPath(ref rfid, dwFlags, hToken, out path)) == NativeMethods.S_OK)
+                    {
+                        pszPath.Append(Marshal.PtrToStringAuto(path));
+                        CoTaskMemFree(path);
+                    }
+                    return result;
                 }
                 throw new NotSupportedException();
             }
@@ -8015,7 +8101,7 @@ namespace System.Windows.Forms {
             }
 
             [
-                // Ok to suppress because [....] apps cannot bleed accross different AppDomains
+                // Ok to suppress because Microsoft apps cannot bleed accross different AppDomains
                 // and ThemingScope class is not public so external code can't lock on typeof(ThemingScope).
                 System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity")
             ]

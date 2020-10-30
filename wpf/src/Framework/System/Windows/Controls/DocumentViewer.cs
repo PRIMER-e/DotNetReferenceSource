@@ -1372,7 +1372,7 @@ namespace System.Windows.Controls
 
         /// <summary>
         /// Merely calls the base's InvalidatePageViews (which is protected).
-        /// Used by our IDSI to keep the DPV collection in [....].
+        /// Used by our IDSI to keep the DPV collection in sync.
         /// </summary>
         internal void InvalidatePageViewsInternal()
         {

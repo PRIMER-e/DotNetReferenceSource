@@ -334,7 +334,8 @@ namespace System.Windows.Forms {
             Control windowControl = window as Control;
             // We want to enter in the IF block only if ShowParams does not return SW_SHOWNOACTIVATE.
             // for ToolStripDropDown ShowParams returns SW_SHOWNOACTIVATE, in which case we DONT want to check IsWindowActive and hence return true.
-            if ((windowControl.ShowParams & 0xF) != NativeMethods.SW_SHOWNOACTIVATE)
+            if (windowControl != null &&
+                (windowControl.ShowParams & 0xF) != NativeMethods.SW_SHOWNOACTIVATE)
             {
                 IntPtr hWnd = UnsafeNativeMethods.GetActiveWindow();
                 IntPtr rootHwnd =UnsafeNativeMethods.GetAncestor(new HandleRef(window, window.Handle), NativeMethods.GA_ROOT);
@@ -2207,7 +2208,7 @@ namespace System.Windows.Forms {
                    return;
                 }
 
-                if ( (tt.TipType & TipInfo.Type.Auto) != 0)
+                if ( (tt.TipType & TipInfo.Type.Auto) != 0 && window != null )
                 {
                     window.DefWndProc(ref m);
                     return;
@@ -2286,7 +2287,7 @@ namespace System.Windows.Forms {
                 }
 
                 // Must reset the maxwidth to the screen size.
-                // This is required to resolve VSWhidbey bug# 363408
+                // This is required to resolve VSWhidbey 
                 if ((tt.TipType & TipInfo.Type.Auto) != 0 || (tt.TipType & TipInfo.Type.SemiAbsolute) != 0) {
                    Screen screen = Screen.FromPoint(Cursor.Position);
                    UnsafeNativeMethods.SendMessage(new HandleRef(this, Handle), NativeMethods.TTM_SETMAXTIPWIDTH, 0, screen.WorkingArea.Width);
@@ -2336,7 +2337,9 @@ namespace System.Windows.Forms {
                  }
                  else if (nmhdr.code == NativeMethods.TTN_POP) {                    
                     WmPop();
-                    window.DefWndProc(ref msg);
+                    if (window != null) {
+                        window.DefWndProc(ref msg);
+                    }
                  } 
                  break;                
             
@@ -2345,7 +2348,7 @@ namespace System.Windows.Forms {
                  break;
 			
             case NativeMethods.WM_WINDOWPOSCHANGED:
-                 if (!WmWindowPosChanged())
+                 if (!WmWindowPosChanged() && window != null)
                  {
                     window.DefWndProc(ref msg);
                  }
@@ -2418,7 +2421,9 @@ namespace System.Windows.Forms {
                 //If not OwnerDraw, fall through
                 goto default;
             default:
-                window.DefWndProc(ref msg);
+                if (window != null) {
+                    window.DefWndProc(ref msg);
+                }
                 break;
             }
         }

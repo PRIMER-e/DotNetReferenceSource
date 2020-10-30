@@ -6,7 +6,7 @@
 //      Provides a class to represent system functions.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Parsing

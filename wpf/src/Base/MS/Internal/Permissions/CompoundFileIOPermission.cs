@@ -20,7 +20,7 @@
 //                      permission without agreement from this code owners.
 // 
 // History:  
-//  02/10/06 : [....] - Created
+//  02/10/06 : Microsoft - Created
 //---------------------------------------------------------------------------
 
 using System;

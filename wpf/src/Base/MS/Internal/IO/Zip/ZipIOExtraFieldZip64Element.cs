@@ -33,13 +33,13 @@ namespace MS.Internal.IO.Zip
 {
     internal enum ZipIOZip64ExtraFieldUsage
     {
-        None                         = 0,    
-        UncompressedSize    = 1,
-        CompressedSize          = 2,
-        OffsetOfLocalHeader     = 4,
-        DiskNumber                 = 8,
+        None = 0,
+        UncompressedSize = 1,
+        CompressedSize = 2,
+        OffsetOfLocalHeader = 4,
+        DiskNumber = 8,
     }
-    
+
     /// <summary>
     /// This class is used to represent and parse the the 
     /// ZIP64 Extended Information Extra Field (0x0001)
@@ -51,7 +51,7 @@ namespace MS.Internal.IO.Zip
         internal static ZipIOExtraFieldZip64Element CreateNew()
         {
             ZipIOExtraFieldZip64Element newElement = new ZipIOExtraFieldZip64Element();
-                
+
             return newElement;
         }
 
@@ -108,6 +108,15 @@ namespace MS.Internal.IO.Zip
                 size -= sizeof(UInt32);
             }
 
+            // There is an extra field that is not used and must be ignored.
+            // The reader must also advance past the unused bytes.
+            if (_zip64ExtraFieldUsage == ZipIOZip64ExtraFieldUsage.None)
+            {
+                reader.BaseStream.Seek(size, SeekOrigin.Current);
+                _ignoredFieldSize = size;
+                size = 0;
+            }
+
             if (size != 0)
             {
                 throw new FileFormatException(SR.Get(SRID.CorruptedData));
@@ -119,8 +128,8 @@ namespace MS.Internal.IO.Zip
         internal override void Save(BinaryWriter writer)
         {
             // if it is == 0 we shouldn't be persisting this 
-            Debug.Assert(SizeField>0);
-                
+            Debug.Assert(SizeField > 0);
+
             writer.Write(_constantFieldId);
             writer.Write(SizeField);
 
@@ -128,18 +137,18 @@ namespace MS.Internal.IO.Zip
             {
                 writer.Write(_uncompressedSize);
             }
-            
-            if ((_zip64ExtraFieldUsage  & ZipIOZip64ExtraFieldUsage.CompressedSize) != 0)
+
+            if ((_zip64ExtraFieldUsage & ZipIOZip64ExtraFieldUsage.CompressedSize) != 0)
             {
                 writer.Write(_compressedSize);
             }
 
-            if ((_zip64ExtraFieldUsage  & ZipIOZip64ExtraFieldUsage.OffsetOfLocalHeader) != 0)
+            if ((_zip64ExtraFieldUsage & ZipIOZip64ExtraFieldUsage.OffsetOfLocalHeader) != 0)
             {
                 writer.Write(_offsetOfLocalHeader);
             }
 
-            if ((_zip64ExtraFieldUsage  & ZipIOZip64ExtraFieldUsage.DiskNumber) != 0)
+            if ((_zip64ExtraFieldUsage & ZipIOZip64ExtraFieldUsage.DiskNumber) != 0)
             {
                 writer.Write(_diskNumber);
             }
@@ -156,10 +165,10 @@ namespace MS.Internal.IO.Zip
                 }
                 else
                 {
-                    return checked((UInt16) (SizeField + MinimumSize));
+                    return checked((UInt16)(SizeField + MinimumSize));
                 }
             }
-        }            
+        }
 
         // This property calculates the value of the size record whch holds the size without the Id and without the size itself.
         // we are always guranteed that   Size == SizeField + 2 * sizeof(UInt16))
@@ -168,7 +177,7 @@ namespace MS.Internal.IO.Zip
             get
             {
                 UInt16 size = 0;
-                
+
                 if ((_zip64ExtraFieldUsage & ZipIOZip64ExtraFieldUsage.UncompressedSize) != 0)
                 {
                     size += sizeof(UInt64);
@@ -189,6 +198,13 @@ namespace MS.Internal.IO.Zip
                     size += sizeof(UInt32);
                 }
 
+                // If the file contains a blank extra field, we need to correctly indicate that
+                // we skipped the data in this field so that the sizes match up in the end.
+                if (_ignoredFieldSize.HasValue)
+                {
+                    size += _ignoredFieldSize.Value;
+                }
+
                 return size;
             }
         }
@@ -197,58 +213,58 @@ namespace MS.Internal.IO.Zip
         {
             get
             {
-                return _constantFieldId; 
+                return _constantFieldId;
             }
         }
- 
+
         internal long UncompressedSize
         {
             get
             {
                 // we should never be asked to provide such value, if we do not have it  
                 Debug.Assert((_zip64ExtraFieldUsage & ZipIOZip64ExtraFieldUsage.UncompressedSize) != 0);
-                return (long)_uncompressedSize; 
+                return (long)_uncompressedSize;
             }
             set
             {
-                Debug.Assert(value >=0 );
+                Debug.Assert(value >= 0);
 
                 _zip64ExtraFieldUsage |= ZipIOZip64ExtraFieldUsage.UncompressedSize;
-                _uncompressedSize = (UInt64)value; 
+                _uncompressedSize = (UInt64)value;
             }
         }
-        
+
         internal long CompressedSize
         {
             get
             {
                 // we should never be asked to provide such value, if we do not have it  
                 Debug.Assert((_zip64ExtraFieldUsage & ZipIOZip64ExtraFieldUsage.CompressedSize) != 0);
-                return (long)_compressedSize; 
+                return (long)_compressedSize;
             }
             set
             {
-                Debug.Assert(value >=0 );
-                
+                Debug.Assert(value >= 0);
+
                 _zip64ExtraFieldUsage |= ZipIOZip64ExtraFieldUsage.CompressedSize;
-                _compressedSize = (UInt64)value;             
+                _compressedSize = (UInt64)value;
             }
         }
-        
+
         internal long OffsetOfLocalHeader
         {
             get
             {
                 // we should never be asked to provide such value, if we do not have it  
                 Debug.Assert((_zip64ExtraFieldUsage & ZipIOZip64ExtraFieldUsage.OffsetOfLocalHeader) != 0);
-                return (long)_offsetOfLocalHeader; 
+                return (long)_offsetOfLocalHeader;
             }
             set
             {
-                Debug.Assert(value >=0 );
-                
+                Debug.Assert(value >= 0);
+
                 _zip64ExtraFieldUsage |= ZipIOZip64ExtraFieldUsage.OffsetOfLocalHeader;
-                _offsetOfLocalHeader = (UInt64)value;             
+                _offsetOfLocalHeader = (UInt64)value;
             }
         }
 
@@ -270,7 +286,7 @@ namespace MS.Internal.IO.Zip
             {
                 return _zip64ExtraFieldUsage;
             }
-            set 
+            set
             {
                 _zip64ExtraFieldUsage = value;
             }
@@ -281,7 +297,8 @@ namespace MS.Internal.IO.Zip
         //  Private Constructor 
         //
         //------------------------------------------------------
-        internal ZipIOExtraFieldZip64Element() : base(_constantFieldId)
+        internal ZipIOExtraFieldZip64Element()
+            : base(_constantFieldId)
         {
             _zip64ExtraFieldUsage = ZipIOZip64ExtraFieldUsage.None;
         }
@@ -291,14 +308,14 @@ namespace MS.Internal.IO.Zip
         //  Private Methods 
         //
         //------------------------------------------------------
-        private void Validate ()
+        private void Validate()
         {
             // throw if we got any negative values 
-            if ((_compressedSize >= Int64.MaxValue) || 
-                 (_uncompressedSize >= Int64.MaxValue) || 
+            if ((_compressedSize >= Int64.MaxValue) ||
+                 (_uncompressedSize >= Int64.MaxValue) ||
                  (_offsetOfLocalHeader >= Int64.MaxValue))
             {
-                throw new NotSupportedException(SR.Get(SRID.Zip64StructuresTooLarge)); 
+                throw new NotSupportedException(SR.Get(SRID.Zip64StructuresTooLarge));
             }
 
             // throw if disk number isn't == 0 
@@ -319,9 +336,12 @@ namespace MS.Internal.IO.Zip
         private UInt64 _compressedSize;
         private UInt64 _offsetOfLocalHeader;
         private UInt32 _diskNumber;
-        
+
+        // Used for indicating there is an ignored extra field
+        private UInt16? _ignoredFieldSize;
+
         private ZipIOZip64ExtraFieldUsage _zip64ExtraFieldUsage;
     }
 }
 
-            
+

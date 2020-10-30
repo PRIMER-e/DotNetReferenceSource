@@ -529,10 +529,10 @@ namespace System.Windows.Media.Imaging
         }
 
         //
-        // Workaround for a change caused by a bug fix, CopyCommon checks this property when
-        // copying the delegates attached to events.
-        // Default implementation in BitmapSource, see comments in BitmapSource.cs for details.
-        //
+        // Workaround for a change caused by a 
+
+
+
         internal override bool ShouldCloneEventDelegates
         {
             get { return false; }

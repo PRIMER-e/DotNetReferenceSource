@@ -41,7 +41,7 @@ namespace System.Windows.Controls
 
             // Descendant of this class can override the metadata to give it
             // a value other than NaN and without trigger the propertychange
-            // callback and thus, result in _state be out-of-[....] with the
+            // callback and thus, result in _state be out-of-sync with the
             // Width property.
             _state = Double.IsNaN(Width) ? ColumnMeasureState.Init : ColumnMeasureState.SpecificWidth;
         }

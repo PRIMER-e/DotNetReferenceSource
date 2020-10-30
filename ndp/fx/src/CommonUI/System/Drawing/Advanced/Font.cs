@@ -527,7 +527,6 @@ namespace System.Drawing {
         /// </devdoc>
         internal IntPtr NativeFont
         {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get
             {
                 Debug.Assert( this.nativeFont != IntPtr.Zero, "this.nativeFont == IntPtr.Zero." );
@@ -542,7 +541,6 @@ namespace System.Drawing {
         [Browsable(false)]
         public FontFamily FontFamily 
         {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get 
             {
                 Debug.Assert(this.fontFamily != null, "fontFamily should never be null");
@@ -1039,7 +1037,6 @@ namespace System.Drawing {
         Browsable(false)
         ]
         public int Height {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return(int) Math.Ceiling(GetHeight());
             }

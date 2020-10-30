@@ -5,7 +5,7 @@
 // Description: Contains various journaling related internal enums and classes
 //
 // History:
-//  1/20/2005:  [....]     Branched off system/windows/navigation/JournalEntry.cs
+//  1/20/2005:  Microsoft     Branched off system/windows/navigation/JournalEntry.cs
 //
 // Copyright (C) 2006 by Microsoft Corporation.  All rights reserved.
 // 
@@ -73,8 +73,8 @@ namespace MS.Internal.AppModel
     /// Shared state for all journal entries associated with the same content object ("bind product").
     /// Journal entries created for fragment navigations or CustomContentState navigations within the
     /// current page share one JournalEntryGroupState object. This avoids duplication of state and
-    /// the problems described in bug 1216726.
-    /// </summary>
+    /// the problems described in 
+
     [Serializable]
     internal class JournalEntryGroupState
     {

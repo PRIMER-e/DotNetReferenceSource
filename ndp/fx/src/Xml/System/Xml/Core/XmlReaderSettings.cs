@@ -2,13 +2,16 @@
 // <copyright file="XmlReaderSettings.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
-// <owner current="true" primary="true">[....]</owner>
+// <owner current="true" primary="true">Microsoft</owner>
 //------------------------------------------------------------------------------
 
 using System.IO;
 using System.Diagnostics;
 using System.Security.Permissions;
 #if !SILVERLIGHT
+using Microsoft.Win32;
+using System.Globalization;
+using System.Security;
 using System.Xml.Schema;
 using System.Xml.XmlConfiguration;
 #endif
@@ -117,7 +120,7 @@ namespace System.Xml {
         // XmlResolver
         internal bool IsXmlResolverSet {
             get;
-            private set;
+            set; // keep set internal as we need to call it from the schema validation code
         }
 #endif
 
@@ -498,7 +501,20 @@ namespace System.Xml {
 
         void Initialize(XmlResolver resolver) {
             nameTable = null;
-            xmlResolver = (resolver == null ? CreateDefaultResolver() : resolver);
+#if !SILVERLIGHT
+            if (!EnableLegacyXmlSettings())
+            {
+                xmlResolver = resolver;
+                // limit the entity resolving to 10 million character. the caller can still
+                // override it to any other value or set it to zero for unlimiting it
+                maxCharactersFromEntities = (long) 1e7;
+            }
+            else
+#endif            
+            {
+                xmlResolver = (resolver == null ? CreateDefaultResolver() : resolver);
+                maxCharactersFromEntities = 0;
+            }
             lineNumberOffset = 0;
             linePositionOffset = 0;
             checkCharacters = true;
@@ -510,7 +526,6 @@ namespace System.Xml {
             dtdProcessing = DtdProcessing.Prohibit;
             closeInput = false;
 
-            maxCharactersFromEntities = 0;
             maxCharactersInDocument = 0;
 
 #if !SILVERLIGHT
@@ -532,6 +547,8 @@ namespace System.Xml {
 
         static XmlResolver CreateDefaultResolver() {
 #if SILVERLIGHT
+            if (BinaryCompatibility.TargetsAtLeast_Desktop_V4_5_1)
+                return new XmlSystemPathResolver();
             return new XmlXapResolver();
 #else
             return new XmlUrlResolver();
@@ -541,7 +558,15 @@ namespace System.Xml {
 #if !SILVERLIGHT
         internal XmlReader AddValidation(XmlReader reader) {
             if (this.validationType == ValidationType.Schema) {
-                reader = new XsdValidatingReader(reader, GetXmlResolver_CheckConfig(), this);
+                XmlResolver resolver = GetXmlResolver_CheckConfig();
+
+                if (resolver == null &&
+                    !this.IsXmlResolverSet &&
+                    !EnableLegacyXmlSettings())
+                {
+                    resolver = new XmlUrlResolver();
+                }
+                reader = new XsdValidatingReader(reader, resolver, this);
             }
             else if (this.validationType == ValidationType.DTD) {
                 reader = CreateDtdValidatingReader(reader);
@@ -583,11 +608,17 @@ namespace System.Xml {
 #pragma warning disable 618
 
 #if SILVERLIGHT
-                if (this.conformanceLevel != ConformanceLevel.Auto) {
+                // Starting from Windows phone 8.1 (TargetsAtLeast_Desktop_V4_5_1) we converge with the desktop behavior so we'll let the reader 
+                // not throw exception if has different conformance level than Auto.
+                if (BinaryCompatibility.TargetsAtLeast_Desktop_V4_5_1) {
+                    if (this.conformanceLevel != ConformanceLevel.Auto && this.conformanceLevel != XmlReader.GetV1ConformanceLevel(baseReader)) {
+                        throw new InvalidOperationException(Res.GetString(Res.Xml_IncompatibleConformanceLevel, this.conformanceLevel.ToString()));
+                    }
+                } else if (this.conformanceLevel != ConformanceLevel.Auto) {
                     throw new InvalidOperationException(Res.GetString(Res.Xml_IncompatibleConformanceLevel, this.conformanceLevel.ToString()));
                 }
 #else
-                if (this.conformanceLevel != ConformanceLevel.Auto && this.conformanceLevel != XmlReader.GetV1ConformanceLevel(baseReader)) {
+                                                if (this.conformanceLevel != ConformanceLevel.Auto && this.conformanceLevel != XmlReader.GetV1ConformanceLevel(baseReader)) {
                     throw new InvalidOperationException(Res.GetString(Res.Xml_IncompatibleConformanceLevel, this.conformanceLevel.ToString()));
                 }
 #endif
@@ -681,5 +712,61 @@ namespace System.Xml {
                 return baseReader;
             }
         }
+
+#if !SILVERLIGHT
+        private static bool? s_enableLegacyXmlSettings = null;
+
+        static internal bool EnableLegacyXmlSettings()
+        {
+            if (s_enableLegacyXmlSettings.HasValue)
+            {
+                return s_enableLegacyXmlSettings.Value;
+            }
+
+            if (!System.Xml.BinaryCompatibility.TargetsAtLeast_Desktop_V4_5_2)
+            {
+                s_enableLegacyXmlSettings = true;
+                return s_enableLegacyXmlSettings.Value;
+            }
+
+            bool enableSettings = false; // default value
+            if (!ReadSettingsFromRegistry(Registry.LocalMachine, ref enableSettings))
+            {
+                // still ok if this call return false too as we'll use the default value which is false
+                ReadSettingsFromRegistry(Registry.CurrentUser, ref enableSettings);
+            }
+
+            s_enableLegacyXmlSettings = enableSettings;
+            return s_enableLegacyXmlSettings.Value;
+        }
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        private static bool ReadSettingsFromRegistry(RegistryKey hive, ref bool value)
+        {
+            const string regValueName = "EnableLegacyXmlSettings";
+            const string regValuePath = @"SOFTWARE\Microsoft\.NETFramework\XML";
+
+            try
+            {                                                                     
+                using (RegistryKey xmlRegKey = hive.OpenSubKey(regValuePath, false))
+                {
+                    if (xmlRegKey != null)
+                    {
+                        if (xmlRegKey.GetValueKind(regValueName) == RegistryValueKind.DWord)
+                        {
+                            value = ((int)xmlRegKey.GetValue(regValueName)) == 1;
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch { /* use the default if we couldn't read the key */ }
+
+            return false;
+        }
+
+#endif // SILVERLIGHT
+        
     }
 }

@@ -142,7 +142,6 @@ namespace System.Drawing
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         internal IntPtr NativePen
         {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get
             {
                 //Need to comment this line out to allow for checking this.NativePen == IntPtr.Zero.

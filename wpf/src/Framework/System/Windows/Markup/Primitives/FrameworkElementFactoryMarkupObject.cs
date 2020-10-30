@@ -8,7 +8,7 @@
 //  Contents:  MarkupObject and MarkupProperty implementations for
 //             FrameworkElementFactory
 //
-//  Created:   04/28/2005 [....]
+//  Created:   04/28/2005 Microsoft
 //
 //------------------------------------------------------------------------
 

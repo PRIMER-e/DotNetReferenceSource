@@ -1128,8 +1128,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security threat, see bug#411899 for more info..
-                //
+                // SECREVIEW : Late-binding does not represent a security threat, see 
+
                 dataGridViewRow = (DataGridViewRow) System.Activator.CreateInstance(thisType);
             }
             if (dataGridViewRow != null)
@@ -1163,7 +1163,7 @@ namespace System.Windows.Forms
                 this.Cells.AddRange(cells);
             }
 
-            // SECREVIEW: VSWhidbey 332064: if this code is re-enabled and tc.GetType().Assembly == [....],
+            // SECREVIEW: VSWhidbey 332064: if this code is re-enabled and tc.GetType().Assembly == Microsoft,
             // consider adding a Demand for ReflectionPermission.
 
             /* object[] args = new object[1];

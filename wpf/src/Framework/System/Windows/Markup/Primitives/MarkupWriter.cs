@@ -7,7 +7,7 @@
 //
 //  Contents:  XAML writer
 //
-//  Created:   04/28/2005 [....]
+//  Created:   04/28/2005 Microsoft
 //
 //------------------------------------------------------------------------
 
@@ -655,6 +655,24 @@ namespace System.Windows.Markup.Primitives
             {
                 _writer.WriteAttributeString("xml", "space", NamespaceCache.XmlNamespace, "preserve");
                 scope.XmlnsSpacePreserve = true;
+
+                // Per the documentation for XmlWriterSettings.Indent, elements are indented as
+                // long as the element does not contain mixed content. Once WriteString or 
+                // WriteWhiteSpace method is called to write out a mixed element content, 
+                // the XmlWriter stops indenting. The indenting resumes once the mixed content
+                // element is closed. 
+                // 
+                // It is desirable to ensure that indentation is suspended within 
+                // an element with xml:space="preserve". Here, we make a dummy call to WriteString
+                // to indicate to the XmlWriter that we are about to write a "mixed" element 
+                // content. When we call WriteEndElement later in this method, indentation 
+                // behavior will be rolled back to that of the parent element (typically, 
+                // indentaiton will simply be resumed).
+                // 
+                // If the underlying XmlWriterSettings did not specify indentation, this would 
+                // have no net effect.  
+                _writer.WriteString(string.Empty);
+
                 if( scope.IsTopOfSpacePreservationScope && _xmlTextWriter != null )
                 {
                     // If we are entering a xml:space="preserve" scope and using
@@ -849,7 +867,7 @@ namespace System.Windows.Markup.Primitives
             // Write the end of the element
             _writer.WriteEndElement();
 
-            if( scope.IsTopOfSpacePreservationScope && 
+            if( scope.IsTopOfSpacePreservationScope &&
                 _xmlTextWriter != null &&
                 _xmlTextWriter.Formatting != previousFormatting )
             {
@@ -870,7 +888,7 @@ namespace System.Windows.Markup.Primitives
                 PropertyDescriptor descriptor = property.PropertyDescriptor;
 
                 // FrameworkTemplate.VisualTree should be treated as Content
-                if (descriptor != null && 
+                if (descriptor != null &&
                     typeof(FrameworkTemplate).IsAssignableFrom(descriptor.ComponentType) &&
                     property.Name == "Template" || property.Name == "VisualTree")
                 {
@@ -1168,14 +1186,32 @@ namespace System.Windows.Markup.Primitives
                 // early.
 
                 bool result = true;
-                bool currentTrimSurroundingWhitespace = keepLeadingSpace;
-                bool previousTrimSurroundingWhitespace = keepLeadingSpace;
+                bool currentTrimSurroundingWhitespace = !keepLeadingSpace;
+                bool previousTrimSurroundingWhitespace = !keepLeadingSpace;
                 string text = null;
                 MarkupProperty nestedContentProperty = null;
                 List<Type> wrapperTypes = GetWrapperTypes(contentProperty.PropertyType);
+
                 foreach (MarkupObject subItem in contentProperty.Items)
                 {
                     previousTrimSurroundingWhitespace = currentTrimSurroundingWhitespace;
+                    currentTrimSurroundingWhitespace = ShouldTrimSurroundingWhitespace(subItem);
+
+                    if (text != null)
+                    {
+                        result = IsNormalizationNeutralString(text, !previousTrimSurroundingWhitespace,
+                            !currentTrimSurroundingWhitespace);
+                        text = null;
+                        if (!result) return false;
+                    }
+                    if (nestedContentProperty != null)
+                    {
+                        result = HasOnlyNormalizationNeutralStrings(nestedContentProperty,
+                            !previousTrimSurroundingWhitespace, !currentTrimSurroundingWhitespace);
+                        nestedContentProperty = null;
+                        if (!result) return false;
+                    }
+
                     if (subItem.ObjectType == typeof(string))
                     {
                         text = TextValue(subItem);
@@ -1191,30 +1227,20 @@ namespace System.Windows.Markup.Primitives
                             continue;
                         }
                     }
-                    currentTrimSurroundingWhitespace = ShouldTrimSurroundingWhitespace(subItem);
-                    if (text != null)
-                    {
-                        result = IsNormalizationNeutralString(text, !previousTrimSurroundingWhitespace,
-                            !currentTrimSurroundingWhitespace);
-                        text = null;
-                        if (!result) return false;
-                    }
-                    if (nestedContentProperty != null)
-                    {
-                        result = HasOnlyNormalizationNeutralStrings(nestedContentProperty,
-                            !previousTrimSurroundingWhitespace, !currentTrimSurroundingWhitespace);
-                        nestedContentProperty = null;
-                        if (!result) return false;
-                    }
                 }
+
                 if (text != null)
+                {
                     // The last element was a string. Determine if it is normalization neutural.
                     result = IsNormalizationNeutralString(text, !previousTrimSurroundingWhitespace,
                         keepTrailingSpace);
+                }
                 else if (nestedContentProperty != null)
+                {
                     // The last element was a wrapped element. Determine if it is normalization neutural.
                     result = HasOnlyNormalizationNeutralStrings(nestedContentProperty,
                         !previousTrimSurroundingWhitespace, keepTrailingSpace);
+                }
                 return result;
             }
         }
@@ -1338,7 +1364,7 @@ namespace System.Windows.Markup.Primitives
                     }
                     else if( _xmlnsSpacePreserve == null )
                     {
-                        // Most common case - this scope inherits the parent's 
+                        // Most common case - this scope inherits the parent's
                         //  scope, so it's not a top level preservation scope.
                         return false;
                     }
@@ -1348,7 +1374,7 @@ namespace System.Windows.Markup.Primitives
                         //  preservation setting - we're top of our specific preservations cope.
                         return true;
                     }
-                    
+
                     // We have a specified preservation setting that matches the
                     //  containing scope's preservation setting.
                     Debug.Assert( ((bool)_xmlnsSpacePreserve) == _containingScope.XmlnsSpacePreserve ,
@@ -1557,7 +1583,7 @@ namespace System.Windows.Markup.Primitives
 
                         namespaceToUri = new Dictionary<string, string>();
                         XmlnsDefinitions[assembly] = namespaceToUri;
-                        
+
                         Object[] customAttrs = assembly.GetCustomAttributes(typeof(XmlnsDefinitionAttribute), true);
                         foreach (XmlnsDefinitionAttribute definition in customAttrs)
                         {
@@ -1655,12 +1681,12 @@ namespace System.Windows.Markup.Primitives
 
         private XmlWriter _writer;
 
-        // Same reference as _writer, but cast to a XmlTextWriter.  This is to work 
+        // Same reference as _writer, but cast to a XmlTextWriter.  This is to work
         //  around a XmlTextWriter-specific issue where it would inject extra whitespaces
-        //  to make XML human-readable even when whitespaces are significant.  
+        //  to make XML human-readable even when whitespaces are significant.
         //  (xml:space="preserve" is set to true.)
-        private XmlTextWriter _xmlTextWriter; 
-        
+        private XmlTextWriter _xmlTextWriter;
+
         private static DefaultValueAttribute _nullDefaultValueAttribute;
     }
 }

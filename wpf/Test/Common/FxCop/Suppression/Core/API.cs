@@ -253,7 +253,7 @@ using System.Diagnostics.CodeAnalysis;
 // Developer: Sherifm
 // Reason: FxCop tool bug, approved by PMVT
 //
-// [....]: The FxCop tool does not understand the pack 1 concept which indicates to the compiler to generate code that deals with alignment 
+// GSchneid: The FxCop tool does not understand the pack 1 concept which indicates to the compiler to generate code that deals with alignment 
 // issues on various platforms. Technically in Arrowhead we do not need to have unaligned structures anymore since we do not support
 // TS cross platform any longer.
 //***************************************************************************************************************************
@@ -459,7 +459,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1106757
-// Developer: [....]/Chandras
+// Developer: BChapman/Chandras
 // Reason: This is Win32 Interop Code and need to be that way for better readability.
 //         There is a bug in FxCop SuppressMessage Copy code. When SuppressMessage strings are copied for these violations
 //         it copied them without mentioning parameter name or number as below. This way we cannot distinguish the parameters.
@@ -514,7 +514,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //*******************************************************************************************************************
 // Bug ID: 1106758
-// Developer: [....]
+// Developer: bchapman
 // Reason: opened separate bug to move hwndhost to s.w.interop (pmvt)
 //*******************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.HwndHost.WndProc(System.IntPtr,System.Int32,System.IntPtr,System.IntPtr,System.Boolean&):System.IntPtr")]
@@ -580,14 +580,14 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1010736
 // Developer: a-shsolk
-// Reason: Closed by [....]; Resolved as Won't Fix by [....]
+// Reason: Closed by bchapman; Resolved as Won't Fix by bchapman
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope = "member", Target = "System.Windows.PresentationSource.FromVisual(System.Windows.Media.Visual):System.Windows.PresentationSource")]
 
 //**************************************************************************************************************************
 // Bug ID: 1080735
 // Developer: a-shsolk
-// Reason: Resolved as By Design by [....]; Closed by tyjones
+// Reason: Resolved as By Design by adsmith; Closed by tyjones
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope = "member", Target = "System.Windows.Media.TransformGroup.Children")]
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope = "member", Target = "System.Windows.Media.DashStyle.Dashes")]
@@ -608,7 +608,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Scope="type", Target="System.Windows.Media.VisualCollection+Enumerator")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: RRelyea
 // Reason: bulk exclude of warning level AvoidExcessiveComplexity
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.Input.StylusLogic.PreProcessInput(System.Object,System.Windows.Input.PreProcessInputEventArgs):System.Void")]
@@ -631,7 +631,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1233096
-// Developer: [....]
+// Developer: dwaynen
 // Reason: The decision was made to make DependencyPropertyChangedEventArgs a struct for perf reasons.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Scope="member", Target="e:System.Windows.UIElement.#IsMouseCapturedChanged")]
@@ -655,7 +655,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug IDs: 1240383, 1319516, 1319517
 // Developer: mikhaill
-// Reason: Concluded to be "By Design" by [....]; See dup bug #1080735
+// Reason: Concluded to be "By Design" by adsmith; See dup bug #1080735
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope = "member", Target = "System.Windows.Media.GuidelineSet.GuidelinesX")]
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope = "member", Target = "System.Windows.Media.GuidelineSet.GuidelinesY")]
@@ -666,7 +666,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1286120
-// Developer: [....]
+// Developer: danlehen
 // Reason: General DependencyObjects do not support cloning by design.  This is a Freezable specific service.
 //***************************************************************************************************************************
 [module: SuppressMessage("System.Windows", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope="member", Target="System.Windows.Freezable.CloneCore(System.Windows.Freezable):System.Void")]
@@ -686,8 +686,8 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Scope="member", Target="System.Windows.Input.StylusPointPropertyInfo.AreCompatible(System.Windows.Input.StylusPointPropertyInfo,System.Windows.Input.StylusPointPropertyInfo):System.Boolean")]
 [module: SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Scope="member", Target="System.Windows.Media.TextFormatting.TextCharacters..ctor(System.Windows.Media.TextFormatting.CharacterBufferReference,System.Int32,System.Windows.Media.TextFormatting.TextRunProperties)")]
@@ -717,7 +717,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1124174
-// Developer: [....]
+// Developer: rajatg
 // Reason: Need dictionary update for Rle, Png, Lzw (pmvt)
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="type", Target="System.Windows.Media.Imaging.PngBitmapDecoder")]
@@ -913,13 +913,13 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1129968
 // Developer: sergeym
-// Reason: Unicase is a standard name for one of glyph ----lzing modes.
+// Reason: Unicase is a standard name for one of glyph capitallzing modes.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.FontCapitals.Unicase")]
 
 //**************************************************************************************************************************
 // Bug ID: 1048332, 1048337
-// Developer: [....]
+// Developer: RajatG
 //
 // Reason: Words are not in the fxcop dictionary (Imaging)
 //***************************************************************************************************************************
@@ -971,9 +971,9 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: No ID
-// Developer: [....] MStokes SherifM
+// Developer: RajatG MStokes SherifM
 // Reason: Color naming stuff, agreed on by MStokes.
-// Status: confirm with [....] in m11.
+// Status: confirm with gregsc in m11.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1706:ShortAcronymsShouldBeUppercase", Scope="member", Target="System.Windows.Media.Color.ScR")]
 [module: SuppressMessage("Microsoft.Naming", "CA1706:ShortAcronymsShouldBeUppercase", Scope="member", Target="System.Windows.Media.Color.FromScRgb(System.Single,System.Single,System.Single,System.Single):System.Windows.Media.Color")]
@@ -983,7 +983,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1010160 1010163).
-// Developer: [....]
+// Developer: RRelyea
 // Reason: m11 will need tweaks.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors", Scope="member", Target="System.Windows.Media.Geometry..ctor(System.Windows.Media.Geometry,System.Windows.Media.Animation.Animatable+CloneType)")]
@@ -1011,7 +1011,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //*******************************************************************************************************************
 // Bug ID: no bug
-// Developer: [....]
+// Developer: bkaneva
 // Reason: Collection properties are allowed to be read/write in the Freezable model.
 //*******************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope="member", Target="System.Windows.Media.Effects.BitmapEffectGroup.Children")]
@@ -1087,14 +1087,14 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: no bug
-// Developer: [....]
+// Developer: bkaneva
 // Reason: See bug 1038650
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Scope="type", Target="System.Windows.Media.GeneralTransformCollection+Enumerator")]
 
 //**************************************************************************************************************************
 // Bug ID: 1191897
-// Developer: [....]
+// Developer: bkaneva
 // Reason: See bug 1038650
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Scope="type", Target="System.Windows.Media.Effects.BitmapEffectCollection+Enumerator")]
@@ -1162,7 +1162,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1191889, 1191890, 1191891, 1191892, 1191893, 1191894, 1191895, 1191896, 1191898, 1191899, 1191900
-// Developer: [....]
+// Developer: adsmith
 // Reason: These types are not intended to be compared as a usage scenario, so the default, reflection-based comparison is sufficient.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Scope="type", Target="System.Windows.Media.GeometryCollection+Enumerator")]
@@ -1180,7 +1180,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1191902, 1191903, 1191904, 1191905, 1191906
-// Developer: [....]
+// Developer: adsmith
 // Reason: These types are not intended to be compared as a usage scenario, so the default, reflection-based comparison is sufficient.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Scope="type", Target="System.Windows.Media.Media3D.Vector3DCollection+Enumerator")]
@@ -1191,7 +1191,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1206639
-// Developer: [....]
+// Developer: RajatG
 // Reason: Words are not in the fxcop dictionary (Imaging)
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="type", Target="System.Windows.Media.PixelFormats.PrgbaFloat128")]
@@ -1218,14 +1218,14 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1222524
-// Developer: [....]
+// Developer: adsmith
 // Reason: This type is not intended to be compared as a usage scenario, so the default, reflection-based comparison is sufficient.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Scope="type", Target="System.Windows.Media.Media3D.Visual3DCollection+Enumerator")]
 
 //**************************************************************************************************************************
 // Bug ID: 1218566
-// Developer: [....]
+// Developer: adsmith
 // Reason: This type is not intended to be compared as a usage scenario, so the default, reflection-based comparison is sufficient.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Scope="type", Target="System.Windows.Media.Int32Collection+Enumerator")]
@@ -1247,7 +1247,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1219910
-// Developer: [....]
+// Developer: dwaynen
 // Reason: Complex code happens
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.Input.CursorConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object):System.Object")]
@@ -1262,7 +1262,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: n/a
-// Developer: [....]
+// Developer: bencar
 // Reason: This is the correct spelling according to the spec.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Input.CommandManager.InvalidateRequerySuggested():System.Void")]
@@ -1291,14 +1291,14 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1246764
-// Developer: [....]
+// Developer: dwaynen
 // Reason: We sometimes return an array of these enums, so the size would matter.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1028:EnumStorageShouldBeInt32", Scope="type", Target="System.Windows.Input.KeyStates")]
 
 //**************************************************************************************************************************
 // Bug ID: n/a
-// Developer: [....]
+// Developer: bkaneva
 // Reason: This is the correct spelling according to the spec. Add to dictionary.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Media.Effects.GrainType.Contrasty")]
@@ -1330,7 +1330,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1313620
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Paginator name has been already approved. Moving it from Framework to Core.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="type", Target="System.Windows.Documents.IDocumentPaginatorSource")]
@@ -1338,21 +1338,21 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1313621
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Paginator name has been already approved. Moving it from Framework to Core.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="type", Target="System.Windows.Documents.DynamicDocumentPaginator")]
 
 //**************************************************************************************************************************
 // Bug ID: 1313622
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Paginator name has been already approved. Moving it from Framework to Core.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="type", Target="System.Windows.Documents.DocumentPaginator")]
 
 //**************************************************************************************************************************
 // Bug ID: 1313624
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Paginator name has been already approved.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Annotations.AnnotationDocumentPaginator..ctor(System.Windows.Documents.DocumentPaginator,System.IO.Stream)")]
@@ -1362,7 +1362,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1313625
-// Developer: [....]
+// Developer: grzegorz
 // Reason: Paginator name has been already approved.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Controls.Primitives.DocumentPageView.DocumentPaginator")]
@@ -1370,7 +1370,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1313628
-// Developer: [....]
+// Developer: grzegorz
 // Reason: DocumentPage.MissingDocumentPage is immutable, so there is pretty good reason not to call the base.Dispose().
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2215:DisposeMethodsShouldCallBaseClassDispose", Scope="member", Target="System.Windows.Documents.DocumentPage+MissingDocumentPage.Dispose():System.Void")]
@@ -1384,14 +1384,14 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1313629
-// Developer: [....]
+// Developer: grzegorz
 // Reason: ContentPosition.Missing is immutable.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Scope="member", Target="System.Windows.Documents.ContentPosition.Missing")]
 
 //**************************************************************************************************************************
 // Bug ID: 1313630
-// Developer: [....]
+// Developer: grzegorz
 // Reason: DocumentPage.Missing is immutable.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Scope="member", Target="System.Windows.Documents.DocumentPage.Missing")]
@@ -1434,7 +1434,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //*******************************************************************************************************************
 // Bug ID: 1337258
-// Developer: [....]
+// Developer: dwaynen
 // Reason: The decision was made to make DependencyPropertyChangedEventArgs a struct for perf reasons.
 //*******************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Scope="member", Target="e:System.Windows.ContentElement.#IsStylusCaptureWithinChanged")]
@@ -1477,7 +1477,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1340741
-// Developer: [....]
+// Developer: danlehen
 // Reason: Consistency with 2D.  Scale is used both as a noun and a verb.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames", Scope="member", Target="System.Windows.Media.Media3D.Matrix3D.Scale(System.Windows.Media.Media3D.Vector3D):System.Void", MessageId="0#")]
@@ -1707,14 +1707,14 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1380339
-// Developer: [....]
+// Developer: dwaynen
 // Reason:  Too late for API changes
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Scope="member", Target="System.Windows.UIElement.TranslatePoint(System.Windows.Point,System.Windows.UIElement):System.Windows.Point")]
 
 //**************************************************************************************************************************
 // Bug ID: 1380345
-// Developer: [....]
+// Developer: dwaynen
 // Reason:  This is our event pattern
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Scope="member", Target="System.Windows.IInputElement.RaiseEvent(System.Windows.RoutedEventArgs):System.Void")]
@@ -1738,7 +1738,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 1388908, 1434238
-// Developer: [....], gillesk
+// Developer: jordanpa, gillesk
 // Reason: Collection properties are allowed to be read/write in the Freezable model.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Scope = "member", Target = "System.Windows.Media.Animation.QuaternionAnimationUsingKeyFrames.System.Windows.Media.Animation.IKeyFrameAnimation.KeyFrames")]
@@ -1897,7 +1897,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //*******************************************************************************************************************
 // Bug ID: 
-// Developer: [....]
+// Developer: ChangoV
 // Reason: We can't add resource strings in v3.5. And this exception shold be thrown only in the "impossible" 
 //  condition when malicious code somehow manages to pass us a bogus WebResponse object.
 //*******************************************************************************************************************
@@ -1906,21 +1906,21 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //*******************************************************************************************************************
 // Bug ID: no bug
-// Developer: [....]
+// Developer: dwaynen
 // Reason: Fant is the name of the individual who implemented this scaling type.
 //*******************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Media.BitmapScalingMode.#Fant", MessageId="Fant")]
 
 //**************************************************************************************************************************
 // Bug IDs: 199045
-// Developer: [....]
+// Developer: brandf
 // Reason: SetBack doesn't refer to the english word 'Setback'
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId="SetBack", Scope="member", Target="System.Windows.Interop.D3DImage.#SetBackBuffer(System.Windows.Interop.D3DResourceType,System.IntPtr)")]
 
 //**************************************************************************************************************************
 // Bug IDs: 202854
-// Developer: [....]
+// Developer: bchapman
 // Reason:  FxCop doesn't like Uid as a name.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId="Uid", Scope="member", Target="System.Windows.UIElement.#Uid")]
@@ -1928,7 +1928,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 632951
-// Developer: [....]
+// Developer: brenclar
 // Reason: Our DP system does follow the event handler convention but our DependencyPropertyChangedEventArgs doesn't derive 
 //         from EventArgs (it's a struct for perf reasons).
 //***************************************************************************************************************************
@@ -1936,7 +1936,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug IDs: 632952
-// Developer: [....]
+// Developer: kedecond
 // Reason:  parameter names audioBytes, displayString, guid
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "bytes", Scope = "member", Target = "System.Windows.Clipboard.#SetAudio(System.Byte[])")]
@@ -1946,7 +1946,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 [module: SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "guid", Scope = "member", Target = "System.Windows.Input.StylusButtonCollection.#GetStylusButtonByGuid(System.Guid)")]
 //**************************************************************************************************************************
 // Bug IDs: 632952
-// Developer: [....]
+// Developer: kedecond
 // Reason:  DependencyPropertyChangedEventArgs is not derived from EventArgs. This cannot be changed now
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Scope = "member", Target = "System.Windows.ContentElement.#FocusableChanged")]
@@ -1985,7 +1985,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 [module: SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Scope = "member", Target = "System.Windows.UIElement3D.#IsVisibleChanged")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: Event is flagged as keyword
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "RemoveHandler", Scope = "member", Target = "System.Windows.IInputElement.#RemoveHandler(System.Windows.RoutedEvent,System.Delegate)")]
@@ -1993,7 +1993,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 [module: SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "RaiseEvent", Scope = "member", Target = "System.Windows.IInputElement.#RaiseEvent(System.Windows.RoutedEventArgs)")]
 //**************************************************************************************************************************
 // Bug IDs: 632952
-// Developer: [....]
+// Developer: kedecond
 // Reason:  Value and Type property names are flagged by fxcop as violations 
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods", Scope = "member", Target = "System.Windows.Input.TabletDevice.#Type")]
@@ -2021,7 +2021,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 [module: SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods", Scope = "member", Target = "System.Windows.Media.Animation.VectorKeyFrame.#Value")]
 //**************************************************************************************************************************
 // Bug IDs: 632952
-// Developer: [....]
+// Developer: kedecond
 // Reason:  ArgumentException thrown inside a property setter should have the paramName as the property name. 
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Scope = "member", Target = "System.Windows.Ink.DrawingAttributes.#set_Width(System.Double)")]
@@ -2031,7 +2031,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 [module: SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Scope = "member", Target = "System.Windows.Input.StylusPoint.#set_Y(System.Double)")]
 //**************************************************************************************************************************
 // Bug ID: 632973 (DevDiv)
-// Developer: [....]
+// Developer: kedecond
 // Reason: Preprocess and Subtree are dictionary words, but this would be a breaking change. 
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "PreProcess", Scope = "member", Target = "System.Windows.Input.InputManager.#PreProcessInput")]
@@ -2039,7 +2039,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: n/a
-// Developer: [....]
+// Developer: BrenClar
 // Reason: Changing a parameter name in a public API signature is a breaking change.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1720:IdentifiersShouldNotContainTypeNames", MessageId="string", Scope="member", Target="System.Windows.Media.TextFormatting.CharacterBufferRange.#.ctor(System.String,System.Int32,System.Int32)")]
@@ -2050,7 +2050,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 632951
-// Developer: [....]
+// Developer: brenclar
 // Reason: The property name would be even more confusing if cased differently, and it would require a breaking change to a 
 //         public API to make this change anyway.
 //***************************************************************************************************************************
@@ -2058,14 +2058,14 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: 632951
-// Developer: [....]
+// Developer: brenclar
 // Reason: DIPs is an acronym referring to device-independent pixels, not the English word "dips".
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1709:IdentifiersShouldBeCasedCorrectly", MessageId="DIPs", Scope="member", Target="System.Windows.Media.ImageSource.#PixelsToDIPs(System.Double,System.Int32)")]
 
 //**************************************************************************************************************************
 // Bug ID: 632951
-// Developer: [....]
+// Developer: brenclar
 // Reason: Transform and Transform3D.Value are not confusingly named, and changing this would require a breaking change to
 //         a public API.
 //***************************************************************************************************************************
@@ -2073,8 +2073,8 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 [module: SuppressMessage("Microsoft.Naming","CA1721:PropertyNamesShouldNotMatchGetMethods", Scope="member", Target="System.Windows.Media.Media3D.Transform3D.#Value")]
 
 //**************************************************************************************************************************
-// Developer: [....]
-// Reason: TouchDown does not refer to the ----n football term here. It refers to putting your finger on the screen.
+// Developer: bencar
+// Reason: TouchDown does not refer to the American football term here. It refers to putting your finger on the screen.
 //         TouchUp does not refer to fixing a paint job. It refers to lifting your finger from the screen.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId="TouchDown", Scope="member", Target="System.Windows.ContentElement.#OnPreviewTouchDown(System.Windows.Input.TouchEventArgs)")]
@@ -2116,7 +2116,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 [module: SuppressMessage("Microsoft.Naming","CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId="TouchUp", Scope="member", Target="System.Windows.Input.TouchFrameEventArgs.#SuspendMousePromotionUntilTouchUp()")]
 //**************************************************************************************************************************
 // Bug: 692903
-// Developer: [....]
+// Developer: kedecond
 // Reason: Quartic and Quintic are math words. 
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Quartic", Scope = "type", Target = "System.Windows.Media.Animation.QuarticEase")]
@@ -2190,7 +2190,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: Dev10 692903
-// Developer: [....]
+// Developer: bartde
 // Reason: This would break public API; well-justified design patterns.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId="hwnd", Scope="member", Target="System.Windows.Interop.HwndSource.#FromHwnd(System.IntPtr)", Justification="Standard spelling for HWND.")]
@@ -2228,7 +2228,7 @@ Target="System.Windows.Ink.IncrementalLassoHitTester.InternalAddPoints(System.Wi
 
 //**************************************************************************************************************************
 // Bug ID: NA
-// Developer: [....]
+// Developer: pantal
 // Reason: Shader is a valid word, but as there is no WPF scoped dictionary, we have to suppress.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId="Shader", Scope="member", Target="System.Windows.Media.RenderCapability.#IsPixelShaderVersionSupportedInSoftware(System.Int16,System.Int16)")]

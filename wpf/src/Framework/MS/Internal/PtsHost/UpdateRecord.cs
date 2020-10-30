@@ -8,7 +8,7 @@
 //              in the current container paragraph. 
 //
 // History:  
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 
@@ -51,7 +51,7 @@ namespace MS.Internal.PtsHost
             Dtr.PositionsAdded   += delta + Next.Dtr.PositionsAdded;
             Dtr.PositionsRemoved += delta + Next.Dtr.PositionsRemoved;
 
-            // Reasign [....] point and next UpdateRecord
+            // Reasign sync point and next UpdateRecord
             SyncPara = Next.SyncPara;
             Next     = Next.Next;
         }

@@ -7,7 +7,7 @@
 //
 //  Contents:  Value serializer for the RoutedEvent class
 //
-//  Created:   04/28/2005 [....]
+//  Created:   04/28/2005 Microsoft
 //
 //------------------------------------------------------------------------
 

@@ -1356,7 +1356,7 @@ void ErrorTable::Merge
 
     VSASSERT(!ContainsErrorAboveNoStep(pErrorTable->m_Errors), "Bad table to merge.");
 
-    // Note [....] 2/28/01
+    // Note Microsoft 2/28/01
     // The use of error tables in the compilation model assumes that compiling
     // a file generates all and only the errors for that file. That assumption
     // is incorrect during the MakeEvaluated step of Bindable, because
@@ -1603,7 +1603,7 @@ void ErrorTable::MergeProjectLevelImportErrors
             // Modify the error as follows:
             //      Error in project-level imports '|1' at '|2' : |3
 
-            // HACK ALERT: [....] - For project level imports, the start line is the index corresponding
+            // HACK ALERT: Microsoft - For project level imports, the start line is the index corresponding
             // to the error causing imports in the project's imports list.
             //
             unsigned ImportIndex = pError->m_loc.m_lBegLine;

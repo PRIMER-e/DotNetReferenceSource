@@ -8,7 +8,7 @@
 // Description: A group of non-overlapping text highlights with a single owner.
 //
 // History:  
-//  07/01/2004 : [....] - Created
+//  07/01/2004 : benwest - Created
 //
 //---------------------------------------------------------------------------
 

@@ -1421,6 +1421,19 @@ namespace Printing
             void
             );
 
+        [FriendAccessAllowed]
+        static
+        unsigned
+        GetDpiX(
+            ILegacyDevice ^legacyDevice
+            );
+
+        [FriendAccessAllowed]
+        static
+        unsigned
+        GetDpiY(
+            ILegacyDevice ^legacyDevice
+            );
 
         protected:
 
@@ -1775,6 +1788,17 @@ namespace Printing
         CreateSerializationManager(
             bool    isBatchMode,
             bool    mustSetJobIdentifier
+            );
+
+        ///<SecurityNote>
+        /// Critical     - Returns type from non-APTCA reachframework.dll (PackageSerializationManager)
+        ///</SecurityNote>
+        [SecurityCritical]
+        PackageSerializationManager^
+        CreateSerializationManager(
+            bool    isBatchMode,
+            bool    mustSetJobIdentifier,
+            PrintTicket^ printTicket
             );
 
         ///<SecurityNote>

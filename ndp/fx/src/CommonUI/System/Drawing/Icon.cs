@@ -46,11 +46,18 @@ namespace System.Drawing {
 
         private static int bitDepth;
 
+        // The PNG signature is specified at:
+        // http://www.w3.org/TR/PNG/#5PNG-file-signature
+        private const int PNGSignature1 = 137 + ('P' << 8) + ('N' << 16) + ('G' << 24);
+        private const int PNGSignature2 = 13 + (10 << 8) + (26 << 16) + (10 << 24);
+
         // Icon data
         //
         private byte[] iconData;
         private int bestImageOffset;
         private int bestBitDepth;
+        private int bestBytesInRes;
+        private bool?  isBestImagePng = null;
         private Size   iconSize = System.Drawing.Size.Empty;
         private IntPtr handle = IntPtr.Zero;
         private bool   ownHandle = true;
@@ -553,8 +560,7 @@ namespace System.Drawing {
             IntSecurity.ObjectFromWin32Handle.Demand();
             return new Icon(handle);
         }
-        
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
+
         private unsafe short GetShort(byte* pb)
         {
             int retval = 0;
@@ -601,8 +607,9 @@ namespace System.Drawing {
             if (iconData == null || handle != IntPtr.Zero) {
                 throw new InvalidOperationException(SR.GetString(SR.IllegalState, GetType().Name));
             }
-            
-            if (iconData.Length < Marshal.SizeOf(typeof(SafeNativeMethods.ICONDIR))) {
+
+            int icondirSize = Marshal.SizeOf(typeof(SafeNativeMethods.ICONDIR));
+            if (iconData.Length < icondirSize) {
                 throw new ArgumentException(SR.GetString(SR.InvalidPictureType, "picture", "Icon"));
             }
             
@@ -635,7 +642,7 @@ namespace System.Drawing {
                 short idReserved  = GetShort(pbIconData);
                 short idType      = GetShort(pbIconData + 2);
                 short idCount     = GetShort(pbIconData + 4);
-
+                
                 if (idReserved != 0 || idType != 1 || idCount == 0) 
                 {
                     throw new ArgumentException(SR.GetString(SR.InvalidPictureType, "picture", "Icon"));
@@ -645,15 +652,14 @@ namespace System.Drawing {
 
                 byte    bestWidth           = 0;
                 byte    bestHeight          = 0;
-                int     bestBytesInRes      = 0;
                 //int     bestBitDepth        = 0;
 
                 byte*   pbIconDirEntry      = unchecked(pbIconData + 6);
                 int     icondirEntrySize    = Marshal.SizeOf(typeof(SafeNativeMethods.ICONDIRENTRY));
 
-                Debug.Assert((icondirEntrySize * idCount) < iconData.Length, "Illegal number of ICONDIRENTRIES");
+                Debug.Assert((icondirEntrySize * (idCount - 1) + icondirSize) <= iconData.Length, "Illegal number of ICONDIRENTRIES");
 
-                if ((icondirEntrySize * idCount) >= iconData.Length) 
+                if ((icondirEntrySize * (idCount - 1) + icondirSize) > iconData.Length) 
                 {
                     throw new ArgumentException(SR.GetString(SR.InvalidPictureType, "picture", "Icon"));
                 }
@@ -727,10 +733,25 @@ namespace System.Drawing {
                     pbIconDirEntry += icondirEntrySize;
                 }
                 
-                Debug.Assert(bestImageOffset >= 0 && (bestImageOffset + bestBytesInRes) <= iconData.Length, "Illegal offset/length for the Icon data");
+                Debug.Assert(bestImageOffset >= 0 && bestBytesInRes >= 0 && (bestImageOffset + bestBytesInRes) <= iconData.Length, "Illegal offset/length for the Icon data");
 
-                if (bestImageOffset < 0 || (bestImageOffset + bestBytesInRes) > iconData.Length) 
-                {
+                if (bestImageOffset < 0) {
+                    throw new ArgumentException(SR.GetString(SR.InvalidPictureType, "picture", "Icon"));
+                }
+
+                if (bestBytesInRes < 0) {
+                    throw new Win32Exception(SafeNativeMethods.ERROR_INVALID_PARAMETER);
+                }
+
+                int endOffset;
+                try {
+                    endOffset = checked(bestImageOffset + bestBytesInRes);
+                }
+                catch (OverflowException) {
+                    throw new Win32Exception(SafeNativeMethods.ERROR_INVALID_PARAMETER);
+                }
+
+                if (endOffset > iconData.Length) {
                     throw new ArgumentException(SR.GetString(SR.InvalidPictureType, "picture", "Icon"));
                 }
 
@@ -745,7 +766,12 @@ namespace System.Drawing {
                     }
                 }
                 else {
-                    handle = SafeNativeMethods.CreateIconFromResourceEx(pbIconData + bestImageOffset, bestBytesInRes, true, 0x00030000, 0, 0, 0);
+                    try {
+                        handle = SafeNativeMethods.CreateIconFromResourceEx(checked(pbIconData + bestImageOffset), bestBytesInRes, true, 0x00030000, 0, 0, 0);
+                    }
+                    catch (OverflowException) {
+                        throw new Win32Exception(SafeNativeMethods.ERROR_INVALID_PARAMETER);
+                    }
                 }
                 if (handle == IntPtr.Zero) {
                     throw new Win32Exception();
@@ -910,7 +936,7 @@ namespace System.Drawing {
             Found:
                 return hasAlpha;
         }
-        
+
         // 
 
 
@@ -921,17 +947,29 @@ namespace System.Drawing {
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public Bitmap ToBitmap() {
+            // DontSupportPngFramesInIcons is true when the application is targeting framework version below 4.6
+            // and false when the application is targeting 4.6 and above. Downlevel application can also set the following switch
+            // to false in the .config file's runtime section in order to opt-in into the new behavior:
+            // <AppContextSwitchOverrides value="Switch.System.Drawing.DontSupportPngFramesInIcons=false" />
+            if (HasPngSignature() && !LocalAppContextSwitches.DontSupportPngFramesInIcons) {
+                return PngFrame();
+            } else {
+                return BmpFrame();
+            }
+        }
+
+        private Bitmap BmpFrame() {
             Bitmap bitmap = null;
             if(iconData != null && bestBitDepth == 32) {
                 // GDI+ doesnt handle 32 bpp icons with alpha properly
                 // we load the icon ourself from the byte table
                 bitmap = new Bitmap(Size.Width, Size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                Debug.Assert(bestImageOffset >= 0 && (bestImageOffset + 40 + (Size.Width * Size.Height - 1)*4) <= iconData.Length, "Illegal offset/length for the Icon data");
+                Debug.Assert(bestImageOffset >= 0 && (bestImageOffset + bestBytesInRes) <= iconData.Length, "Illegal offset/length for the Icon data");
 
                 unsafe
                 {
-                    System.Drawing.Imaging.BitmapData bmpdata = bitmap.LockBits(new Rectangle(0, 0, Size.Width, Size.Height), 
-                        System.Drawing.Imaging.ImageLockMode.WriteOnly, 
+                    System.Drawing.Imaging.BitmapData bmpdata = bitmap.LockBits(new Rectangle(0, 0, Size.Width, Size.Height),
+                        System.Drawing.Imaging.ImageLockMode.WriteOnly,
                         System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                     try
                     {
@@ -940,10 +978,10 @@ namespace System.Drawing {
                         // jumping the image header
                         int newOffset = bestImageOffset + Marshal.SizeOf(typeof(SafeNativeMethods.BITMAPINFOHEADER));
                         // there is no color table that we need to skip since we're 32bpp
-                        
+
                         int lineLength = Size.Width * 4;
                         int width = Size.Width;
-                        for(int j=(Size.Height-1)*4;j>=0;j-=4) 
+                        for(int j=(Size.Height-1)*4;j>=0;j-=4)
                         {
                             Marshal.Copy(iconData, newOffset + j * width, (IntPtr)pixelPtr, lineLength);
                             pixelPtr+=width;
@@ -1009,20 +1047,20 @@ namespace System.Drawing {
                 } finally {
                     if(info.hbmColor != IntPtr.Zero)
                         SafeNativeMethods.IntDeleteObject(new HandleRef(null, info.hbmColor));
-                    if(info.hbmMask != IntPtr.Zero) 
+                    if(info.hbmMask != IntPtr.Zero)
                         SafeNativeMethods.IntDeleteObject(new HandleRef(null, info.hbmMask));
                 }
             }
 
 
-            if(bitmap == null) {                
+            if(bitmap == null) {
                 // last chance... all the other cases (ie non 32 bpp icons coming from a handle or from the bitmapData)
 
                 // we have to do this rather than just return Bitmap.FromHIcon because 
                 // the bitmap returned from that, even though it's 32bpp, just paints where the mask allows it
                 // seems like another GDI+ weirdness. might be interesting to investigate further. In the meantime
                 // this looks like the right thing to do and is not more expansive that what was present before.
-                
+
                 Size size = Size;
                 bitmap = new Bitmap(size.Width, size.Height); // initialized to transparent
                 Graphics graphics = null;
@@ -1052,17 +1090,41 @@ namespace System.Drawing {
                     }
                 }
 
-                
+
                 // gpr: GDI+ is filling the surface with a sentinel color for GetDC,
                 // but is not correctly cleaning it up again, so we have to for it.
                 Color fakeTransparencyColor = Color.FromArgb(0x0d, 0x0b, 0x0c);
                 bitmap.MakeTransparent(fakeTransparencyColor);
-                
-            }                
-            
+
+            }
+
             Debug.Assert(bitmap != null, "Bitmap cannot be null");
             return bitmap;
-            
+        }
+
+        private Bitmap PngFrame() {
+            Bitmap bitmap = null;
+            if (iconData != null) {
+                using (MemoryStream stream = new MemoryStream()) {
+                    stream.Write(iconData, bestImageOffset, bestBytesInRes);
+                    bitmap = new Bitmap(stream);
+                }
+            }
+            return bitmap;
+        }
+
+        private bool HasPngSignature() {
+            if (!isBestImagePng.HasValue) {
+                if (iconData != null && iconData.Length >= bestImageOffset + 8) {
+                    int iconSignature1 = BitConverter.ToInt32(iconData, bestImageOffset);
+                    int iconSignature2 = BitConverter.ToInt32(iconData, bestImageOffset + 4);
+                    isBestImagePng = (iconSignature1 == PNGSignature1) && (iconSignature2 == PNGSignature2);
+                } else {
+                    isBestImagePng = false;
+                }
+            }
+
+            return isBestImagePng.Value;
         }
 
         /// <include file='doc\Icon.uex' path='docs/doc[@for="Icon.ToString"]/*' />

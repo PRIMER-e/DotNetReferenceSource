@@ -1071,7 +1071,6 @@ namespace System.Drawing {
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         public static Color Red {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return new Color(KnownColor.Red);
             }
@@ -1279,7 +1278,6 @@ namespace System.Drawing {
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         public static Color White {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return new Color(KnownColor.White);
             }
@@ -1375,7 +1373,6 @@ namespace System.Drawing {
         ///    Gets the red component value for this <see cref='System.Drawing.Color'/>.
         /// </devdoc>
         public byte R {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return(byte)((Value >> ARGBRedShift) & 0xFF);
             }
@@ -1386,7 +1383,6 @@ namespace System.Drawing {
         ///    Gets the green component value for this <see cref='System.Drawing.Color'/>.
         /// </devdoc>
         public byte G {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return(byte)((Value >> ARGBGreenShift) & 0xFF);
             }
@@ -1399,7 +1395,6 @@ namespace System.Drawing {
         ///    </para>
         /// </devdoc>
         public byte B {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return(byte)((Value >> ARGBBlueShift) & 0xFF);
             }
@@ -1412,7 +1407,6 @@ namespace System.Drawing {
         ///    </para>
         /// </devdoc>
         public byte A {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return(byte)((Value >> ARGBAlphaShift) & 0xFF);
             }
@@ -1437,7 +1431,6 @@ namespace System.Drawing {
         ///    Specifies whether this <see cref='System.Drawing.Color'/> is uninitialized.
         /// </devdoc>
         public bool IsEmpty {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return state == 0;
             }
@@ -1548,7 +1541,6 @@ namespace System.Drawing {
         ///       (alpha, red, green, and blue) values.
         ///    </para>
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static Color FromArgb(int argb) {
             return new Color((long)argb & 0xffffffff, StateARGBValueValid, null, (KnownColor)0);
         }
@@ -1824,7 +1816,6 @@ namespace System.Drawing {
         ///       are equivalent.
         ///    </para>
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static bool operator !=(Color left, Color right) {
             return !(left == right);
         }

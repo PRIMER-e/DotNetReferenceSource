@@ -437,9 +437,9 @@ namespace System.Windows.Documents
             }
 
             Invariant.Assert(image.Source is DrawingImage);
-
+            DpiScale dpi = image.GetDpi();
             DrawingImage di = (DrawingImage)image.Source;
-            RenderTargetBitmap rtb = new RenderTargetBitmap((int)(di.Width / 96.0 * SystemParameters.Dpi), (int)(di.Height / 96.0 * SystemParameters.Dpi), 
+            RenderTargetBitmap rtb = new RenderTargetBitmap((int)(di.Width * dpi.DpiScaleX), (int)(di.Height * dpi.DpiScaleY), 
                 96.0, 96.0, PixelFormats.Default);
             rtb.Render(image);
 

@@ -260,7 +260,7 @@ namespace System.Transactions
         internal override byte[] RecoveryInformation(InternalEnlistment enlistment)
         {
             throw TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceLtm ),
-                SR.GetString( SR.VolEnlistNoRecoveryInfo), null );
+                SR.GetString( SR.VolEnlistNoRecoveryInfo), null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId );
         }
 
     }

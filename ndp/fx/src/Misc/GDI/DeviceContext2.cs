@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -35,7 +35,7 @@ namespace System.Experimental.Gdi
     ///     of that; if you need to put back the old value after changing a property you need to get it
     ///     first and cache it.
     /// </devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -65,7 +65,7 @@ namespace System.Experimental.Gdi
             {
                 return ColorTranslator.FromWin32(IntUnsafeNativeMethods.GetBkColor( new HandleRef( this, this.Hdc )));
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             set
             {
                 SetBackgroundColor( value );
@@ -90,7 +90,7 @@ namespace System.Experimental.Gdi
             {
                 return (DeviceContextBackgroundMode) IntUnsafeNativeMethods.GetBkMode( new HandleRef( this, this.Hdc ) );
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             set
             {
                 SetBackgroundMode(value);
@@ -117,14 +117,14 @@ namespace System.Experimental.Gdi
                 return (DeviceContextBinaryRasterOperationFlags) IntUnsafeNativeMethods.GetROP2( new HandleRef( this, this.Hdc ) );
             }
             /*
-             * CONSIDER: implement if needed.
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
              * 
-            set
-            {
-            }
-#endif            
-            */
+
+
+
+
+
+
+*/
         }
 
         /// <devdoc>
@@ -208,7 +208,7 @@ namespace System.Experimental.Gdi
                 // the default font is System.
                 return WindowsFont.FromHdc( this.Hdc );
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             set
             {
                 Debug.Assert( value != null, "value == null." );
@@ -332,7 +332,7 @@ namespace System.Experimental.Gdi
             {
                 return (DeviceContextMapMode) IntUnsafeNativeMethods.GetMapMode( new HandleRef( this, this.Hdc ) );
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             set
             {
                 SetMapMode(value);
@@ -392,7 +392,7 @@ namespace System.Experimental.Gdi
             {
                 return (DeviceContextTextAlignment) IntUnsafeNativeMethods.GetTextAlign( new HandleRef( this, this.Hdc ) );
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             set
             {
                 SetTextAlignment(value);
@@ -418,7 +418,7 @@ namespace System.Experimental.Gdi
             {
                 return ColorTranslator.FromWin32(IntUnsafeNativeMethods.GetTextColor( new HandleRef( this, this.Hdc ) ));
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             set
             {
                 SetTextColor(value);

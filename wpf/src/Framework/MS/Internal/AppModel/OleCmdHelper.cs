@@ -48,7 +48,7 @@ namespace MS.Internal.AppModel
         internal const uint CommandEnabled = (uint)(UnsafeNativeMethods.OLECMDF.OLECMDF_ENABLED | UnsafeNativeMethods.OLECMDF.OLECMDF_SUPPORTED);
         internal const uint CommandDisabled = (uint)UnsafeNativeMethods.OLECMDF.OLECMDF_SUPPORTED;
 
-        // IMPORTANT: Keep this in [....] with wcp\host\inc\hostservices.idl
+        // IMPORTANT: Keep this in sync with wcp\host\inc\hostservices.idl
         internal static readonly Guid CGID_ApplicationCommands = new Guid(0xebbc8a63, 0x8559, 0x4892, 0x97, 0xa8, 0x31, 0xe9, 0xb0, 0xe9, 0x85, 0x91);
         internal static readonly Guid CGID_EditingCommands = new Guid(0xc77ce45, 0xd1c, 0x4f2a, 0xb2, 0x93, 0xed, 0xd5, 0xe2, 0x7e, 0xba, 0x47);
 

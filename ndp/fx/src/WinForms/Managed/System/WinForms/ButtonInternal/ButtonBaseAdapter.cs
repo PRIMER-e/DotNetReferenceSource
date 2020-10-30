@@ -1157,7 +1157,7 @@ namespace System.Windows.Forms.ButtonInternal {
                         layout.checkBounds.Y = (field.Y+field.Height)-layout.checkBounds.Height;
                     }
                     else if ((align & LayoutUtils.AnyTop) != 0) {
-                        layout.checkBounds.Y = field.Y + 2; // + 2: this needs to be aligned to the text (bug 87483)
+                        layout.checkBounds.Y = field.Y + 2; // + 2: this needs to be aligned to the text (
                     }
                     else {
                         layout.checkBounds.Y = field.Y + (field.Height - layout.checkBounds.Height)/2;

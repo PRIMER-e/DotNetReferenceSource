@@ -43,6 +43,8 @@ namespace System.Web {
     [ComVisible(false)]
     public abstract class HttpWorkerRequest {
         private DateTime _startTime;
+        private volatile bool _isInReadEntitySync;
+
         //it is up to the derived classes to implement a real id
         #pragma warning disable 0649
         private Guid _traceId;
@@ -499,6 +501,18 @@ namespace System.Web {
             // someone must have modified CACHE_URL, it is not valid
             throw new HttpException(SR.GetString(SR.Cache_url_invalid));
         } 
+
+        // Mark a blocking call
+        // It allows RequestTimeoutManager to eventualy to close the connection and unblock the caller
+        // and handle request timeout properly (if in cancelable state)
+        internal bool IsInReadEntitySync {
+            get {
+                return _isInReadEntitySync;
+            }
+            set {
+                _isInReadEntitySync = value;
+            }
+        }
 
         // optional members with defaults supplied
 

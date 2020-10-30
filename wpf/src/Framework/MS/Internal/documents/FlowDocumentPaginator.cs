@@ -7,7 +7,7 @@
 // Description: DynamicDocumentPaginator associated with FlowDocument.
 //
 // History:
-//  08/29/2005 : [....] - created.
+//  08/29/2005 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 
@@ -186,7 +186,7 @@ namespace MS.Internal.Documents
                         {
                             // If requested page number does not have pre-calculated BreakRecord,
                             // do synchronous pagination up to the requested page number.
-                            // [Synchronous pagination is done here, because GetPage is a [....] operation.]
+                            // [Synchronous pagination is done here, because GetPage is a sync operation.]
                             if (!_brt.HasPageBreakRecord(pageNumber))
                             {
                                 page = FormatPagesTill(pageNumber);
@@ -399,9 +399,9 @@ namespace MS.Internal.Documents
 
             //Invariant.Assert(textView.TextSegments.Count > 0, "Page cannot be empty.");
             // It is not necessarily WPF's fault if there are no TextSegments.  Dev11
-            // bug 156176 is a case where PTS aborts the formatting because the content
-            // exceeds its capacity.  Rather than crashing in this case, limp along
-            // as if the position couldn't be determined.
+            // 
+
+
             if (textView.TextSegments.Count == 0)
             {
                 return ContentPosition.Missing;

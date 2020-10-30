@@ -559,7 +559,6 @@ namespace System.Windows.Forms {
         [Browsable(false)]
         public virtual Rectangle Bounds {
             [SuppressMessage("Microsoft.Security", "CA2119:SealMethodsThatSatisfyPrivateInterfaces")]
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {     
                 return bounds;
             }
@@ -695,7 +694,6 @@ namespace System.Windows.Forms {
         /// This is more efficient than setting the size in the control's constructor.
         /// </devdoc>
         protected virtual Padding DefaultPadding {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return Padding.Empty;
             }
@@ -1131,7 +1129,6 @@ namespace System.Windows.Forms {
 
 
         bool IArrangedElement.ParticipatesInLayout {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 // this can be different than "Visible" property as "Visible" takes into account whether or not you 
                 // are parented and your parent is visible. 
@@ -1143,7 +1140,6 @@ namespace System.Windows.Forms {
         /// <include file='doc\ToolStripItem.uex' path='docs/doc[@for="ToolStripItem.IArrangedElement.Properties"]/*' />
         /// <internalonly/>
         PropertyStore IArrangedElement.Properties { 
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return this.Properties;
             }
@@ -1838,7 +1834,6 @@ namespace System.Windows.Forms {
         SRCategory(SR.CatLayout)
         ]
         public virtual Padding Padding {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get { return CommonProperties.GetPadding(this, DefaultPadding); }
             set {
                 if (Padding != value) {
@@ -1852,7 +1847,6 @@ namespace System.Windows.Forms {
         /// This is explicitly a winbar, because only winbars know how to manage winbaritems
         /// </devdoc>
         internal ToolStrip ParentInternal {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return parent;
             }
@@ -4229,7 +4223,6 @@ namespace System.Windows.Forms {
       
         // the thing that we fetch properties off of -- this can be different than ownerItem - e.g. case of split button.
         protected virtual ToolStripItem Owner {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get { return ownerItem; }                       
         }
                   

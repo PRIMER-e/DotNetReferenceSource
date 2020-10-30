@@ -182,10 +182,10 @@ namespace MS.Internal.Data
                 // and has a parent, don't use the result of FindName.  The
                 // element is probably an instance of a Xaml-subclassed control;
                 // we want to resolve the name starting in the next outer scope.
-                // (bug 1669408)
-                // Also, if the element's NavigationService property is locally
-                // set, the element is the root of a navigation and should use the
-                // inner scope (bug 1765041)
+                // (
+
+
+
                 if (d == scopeOwner && d is IComponentConnector &&
                     d.ReadLocalValue(System.Windows.Navigation.NavigationService.NavigationServiceProperty) == DependencyProperty.UnsetValue)
                 {
@@ -684,7 +684,7 @@ namespace MS.Internal.Data
         //------------------------------------------------------
 
         object _object;
-        WeakReference _element; // to DependencyObject (bug 986435)
+        WeakReference _element; // to DependencyObject (
     }
 
 #endregion ExplicitObjectRef

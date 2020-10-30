@@ -91,7 +91,8 @@ namespace MS.Internal.TextFormatting
         static public TextLine  Create(
             FormatSettings          settings,
             int                     cpFirst,
-            int                     paragraphWidth
+            int                     paragraphWidth,
+            double                  pixelsPerDip
             )
         {
             ParaProp pap = settings.Pap;
@@ -126,7 +127,8 @@ namespace MS.Internal.TextFormatting
                 cpFirst,
                 widthLeft,
                 paragraphWidth,
-                idealRunOffsetUnRounded
+                idealRunOffsetUnRounded,
+                pixelsPerDip
                 );
 
 
@@ -149,7 +151,8 @@ namespace MS.Internal.TextFormatting
                     cpFirst,
                     widthLeft,
                     paragraphWidth,
-                    idealRunOffsetUnRounded
+                    idealRunOffsetUnRounded,
+                    pixelsPerDip
                     );
 
                 if(run == null)
@@ -205,7 +208,8 @@ namespace MS.Internal.TextFormatting
                     cpFirst,
                     widthLeft,
                     paragraphWidth,
-                    idealRunOffsetUnRounded
+                    idealRunOffsetUnRounded,
+                    pixelsPerDip
                     );
 
                 if(    run == null
@@ -238,7 +242,8 @@ namespace MS.Internal.TextFormatting
                 paragraphWidth,
                 runs,
                 ref trailing,
-                ref trailingSpaceWidth
+                ref trailingSpaceWidth,
+                pixelsPerDip
                 ) as TextLine;
         }
 
@@ -263,8 +268,9 @@ namespace MS.Internal.TextFormatting
             int                     paragraphWidth,
             ArrayList               runs,
             ref int                 trailing,
-            ref int                 trailingSpaceWidth
-            )
+            ref int                 trailingSpaceWidth,
+            double pixelsPerDip
+            ) : base(pixelsPerDip)
         {
             // Compute line metrics
             int count = 0;
@@ -313,15 +319,15 @@ namespace MS.Internal.TextFormatting
             // justification (which results in us formatting the line in fast path), while Render might
             // (which results in us formatting that same line in full path).
 
-            _baselineOffset = formatter.IdealToReal(TextFormatterImp.RealToIdeal(realAscent));
+            _baselineOffset = formatter.IdealToReal(TextFormatterImp.RealToIdeal(realAscent), PixelsPerDip);
 
             if (realAscent + realDescent == realHeight)
             {
-                _height = formatter.IdealToReal(TextFormatterImp.RealToIdeal(realHeight));
+                _height = formatter.IdealToReal(TextFormatterImp.RealToIdeal(realHeight), PixelsPerDip);
             }
             else
             {
-                _height = formatter.IdealToReal(TextFormatterImp.RealToIdeal(realAscent) + TextFormatterImp.RealToIdeal(realDescent));
+                _height = formatter.IdealToReal(TextFormatterImp.RealToIdeal(realAscent) + TextFormatterImp.RealToIdeal(realDescent), PixelsPerDip);
             }
 
             if(_height <= 0)
@@ -330,8 +336,8 @@ namespace MS.Internal.TextFormatting
                 //  we need to work out the line height
 
                 // It needs to be exactly the same as in full path.
-                _height = formatter.IdealToReal((int)Math.Round(pap.DefaultTypeface.LineSpacing(pap.EmSize, Constants.DefaultIdealToReal, Util.PixelsPerDip, _settings.TextFormattingMode)));
-                _baselineOffset = formatter.IdealToReal((int)Math.Round(pap.DefaultTypeface.Baseline(pap.EmSize, Constants.DefaultIdealToReal, Util.PixelsPerDip, _settings.TextFormattingMode)));
+                _height = formatter.IdealToReal((int)Math.Round(pap.DefaultTypeface.LineSpacing(pap.EmSize, Constants.DefaultIdealToReal, PixelsPerDip, _settings.TextFormattingMode)), PixelsPerDip);
+                _baselineOffset = formatter.IdealToReal((int)Math.Round(pap.DefaultTypeface.Baseline(pap.EmSize, Constants.DefaultIdealToReal, PixelsPerDip, _settings.TextFormattingMode)), PixelsPerDip);
             }
 
             // Initialize the array of runs and set the TrimTrailingUnderline flag
@@ -361,20 +367,20 @@ namespace MS.Internal.TextFormatting
                 {
                     case TextAlignment.Right:
                         _idealOffsetUnRounded = paragraphWidth - idealWidthAtTrailing;
-                        _offset = formatter.IdealToReal(_idealOffsetUnRounded);
+                        _offset = formatter.IdealToReal(_idealOffsetUnRounded, PixelsPerDip);
                         break;
                     case TextAlignment.Center:
                         // exactly consistent with FullTextLine
                         _idealOffsetUnRounded = (int)Math.Round((paragraphWidth - idealWidthAtTrailing) * 0.5);
-                        _offset = formatter.IdealToReal(_idealOffsetUnRounded);
+                        _offset = formatter.IdealToReal(_idealOffsetUnRounded, PixelsPerDip);
                         break;
                 }
             }
 
             // converting all the ideal values to real values
-            _width = formatter.IdealToReal(idealWidth);
-            _widthAtTrailing = formatter.IdealToReal(idealWidthAtTrailing);
-            _paragraphWidth = formatter.IdealToReal(paragraphWidth);
+            _width = formatter.IdealToReal(idealWidth, PixelsPerDip);
+            _widthAtTrailing = formatter.IdealToReal(idealWidthAtTrailing, PixelsPerDip);
+            _paragraphWidth = formatter.IdealToReal(paragraphWidth, PixelsPerDip);
 
             // paragraphWidth == 0 means format width is unlimited and hence not overflowable.
             // we keep paragraphWidth for alignment calculation
@@ -468,7 +474,7 @@ namespace MS.Internal.TextFormatting
                 dcp -= run.Length;
             }
 
-            return _settings.Formatter.IdealToReal(idealAdvance + _idealOffsetUnRounded);
+            return _settings.Formatter.IdealToReal(idealAdvance + _idealOffsetUnRounded, PixelsPerDip);
         }
 
 
@@ -542,9 +548,9 @@ namespace MS.Internal.TextFormatting
             // When in TextFormattingMode.Display the math processing performed by SimpleTextLine 
             // involves some rounding operations because of which the decision to collapse the text may 
             // not be unanimous amongst SimpleTextLine and FullTextLine. There are several watson 
-            // crash reports that are testament to this theory. See Win8 PS bug# 643676. Hence we 
-            // now allow the case where FullTextLine concludes that it doesnt need to collapse the 
-            // text even though SimpleTextLine thought it should.
+            // crash reports that are testament to this theory. See Win8 PS 
+
+
             
             if (textLine.HasOverflowed)
             {
@@ -609,7 +615,7 @@ namespace MS.Internal.TextFormatting
                     boundingBox.Union(
                         run.Draw(
                             drawingContext,
-                            _settings.Formatter.IdealToReal(idealXRelativeToOrigin) + origin.X,
+                            _settings.Formatter.IdealToReal(idealXRelativeToOrigin, PixelsPerDip) + origin.X,
                             y,
                             false
                             )
@@ -937,7 +943,7 @@ namespace MS.Internal.TextFormatting
                         for (int i = 0; i < displayGlyphAdvances.Count; i++)
                         {
                             // convert ideal glyph advance width to real width for displaying
-                            displayGlyphAdvances[i] = _settings.Formatter.IdealToReal(run.NominalAdvances[i]);
+                            displayGlyphAdvances[i] = _settings.Formatter.IdealToReal(run.NominalAdvances[i], PixelsPerDip);
                         }
                     }
                     else
@@ -946,7 +952,7 @@ namespace MS.Internal.TextFormatting
                         for (int i = 0; i < run.NominalAdvances.Length; i++)
                         {
                             // convert ideal glyph advance width to real width for displaying
-                            displayGlyphAdvances.Add(_settings.Formatter.IdealToReal(run.NominalAdvances[i]));
+                            displayGlyphAdvances.Add(_settings.Formatter.IdealToReal(run.NominalAdvances[i], PixelsPerDip));
                         }
                     }
 
@@ -961,6 +967,7 @@ namespace MS.Internal.TextFormatting
                         new CharacterBufferRange(run.CharBufferReference, run.Length),
                         displayGlyphAdvances,
                         run.EmSize,
+                        (float)PixelsPerDip,
                         run.TextRun.Properties.FontHintingEmSize,
                         run.Typeface.NullFont,
                         CultureMapper.GetSpecificCulture(run.TextRun.Properties.CultureInfo),
@@ -1308,6 +1315,7 @@ namespace MS.Internal.TextFormatting
         public Flags                    RunFlags;               // run flags
 
         private TextFormatterImp _textFormatterImp;
+        private double _pixelsPerDip;
 
         [Flags]
         internal enum Flags : ushort
@@ -1357,7 +1365,7 @@ namespace MS.Internal.TextFormatting
                 if (Ghost || EOT)
                     return 0;
 
-                return TextRun.Properties.Typeface.Baseline(TextRun.Properties.FontRenderingEmSize, 1, Util.PixelsPerDip, _textFormatterImp.TextFormattingMode);
+                return TextRun.Properties.Typeface.Baseline(TextRun.Properties.FontRenderingEmSize, 1, _pixelsPerDip, _textFormatterImp.TextFormattingMode);
             }
         }
 
@@ -1368,7 +1376,7 @@ namespace MS.Internal.TextFormatting
                 if (Ghost || EOT)
                     return 0;
 
-                return TextRun.Properties.Typeface.LineSpacing(TextRun.Properties.FontRenderingEmSize, 1, Util.PixelsPerDip, _textFormatterImp.TextFormattingMode);
+                return TextRun.Properties.Typeface.LineSpacing(TextRun.Properties.FontRenderingEmSize, 1, _pixelsPerDip, _textFormatterImp.TextFormattingMode);
             }
         }
 
@@ -1387,9 +1395,10 @@ namespace MS.Internal.TextFormatting
             get { return this.TextRun is TextCharacters; }
         }
 
-        internal SimpleRun(TextFormatterImp textFormatterImp)
+        internal SimpleRun(TextFormatterImp textFormatterImp, double pixelsPerDip)
         {
             _textFormatterImp = textFormatterImp;
+            _pixelsPerDip = pixelsPerDip;
         }
 
 
@@ -1409,7 +1418,8 @@ namespace MS.Internal.TextFormatting
             int                     cpFirst,
             int                     widthLeft,
             int                     widthMax,
-            int                     idealRunOffsetUnRounded
+            int                     idealRunOffsetUnRounded,
+            double                  pixelsPerDip
             )
         {
             TextRun textRun;
@@ -1430,7 +1440,8 @@ namespace MS.Internal.TextFormatting
                 cpFirst,
                 runLength,
                 widthLeft,
-                idealRunOffsetUnRounded
+                idealRunOffsetUnRounded,
+                pixelsPerDip
                 );
         }
 
@@ -1456,7 +1467,8 @@ namespace MS.Internal.TextFormatting
             int                     cpFirst,
             int                     runLength,
             int                     widthLeft,
-            int                     idealRunOffsetUnRounded
+            int                     idealRunOffsetUnRounded,
+            double                  pixelsPerDip
             )
         {
             SimpleRun run = null;
@@ -1527,24 +1539,25 @@ namespace MS.Internal.TextFormatting
                             characterArray[0] = TextStore.CharCarriageReturn;
                             characterArray[1] = TextStore.CharLineFeed;
                             TextRun mergedTextRun = new TextCharacters(characterArray, 0, lengthOfRun, textRun.Properties);
-                            return new SimpleRun(lengthOfRun, mergedTextRun, (Flags.EOT | Flags.Ghost), settings.Formatter);
+                            return new SimpleRun(lengthOfRun, mergedTextRun, (Flags.EOT | Flags.Ghost), settings.Formatter, pixelsPerDip);
                         }
 
                     }
-                    return new SimpleRun(runLength, textRun, (Flags.EOT | Flags.Ghost), settings.Formatter);
+                    return new SimpleRun(runLength, textRun, (Flags.EOT | Flags.Ghost), settings.Formatter, pixelsPerDip);
                 }
                 else if (charString[0] == TextStore.CharLineFeed)
                 {
                     // LF in the middle of text stream treated as explicit paragraph break
                     // simple hard line break
                     runLength = 1;
-                    return new SimpleRun(runLength, textRun, (Flags.EOT | Flags.Ghost), settings.Formatter);
+                    return new SimpleRun(runLength, textRun, (Flags.EOT | Flags.Ghost), settings.Formatter, pixelsPerDip);
                 }
                 else if (canProcessTabsInSimpleShapingPath && charString[0] == TextStore.CharTab)
                 {
                     return CreateSimpleRunForTab(settings,
                                                  textRun,
-                                                 idealRunOffsetUnRounded);
+                                                 idealRunOffsetUnRounded,
+                                                 pixelsPerDip);
                 }
 
                 // attempt to create a simple run for text
@@ -1554,7 +1567,8 @@ namespace MS.Internal.TextFormatting
                     settings.Formatter,
                     widthLeft,
                     settings.Pap.EmergencyWrap,
-                    canProcessTabsInSimpleShapingPath
+                    canProcessTabsInSimpleShapingPath,
+                    pixelsPerDip
                     );
 
                 if (run == null)
@@ -1571,12 +1585,12 @@ namespace MS.Internal.TextFormatting
             }
             else if (textRun is TextEndOfLine)
             {
-                run = new SimpleRun(runLength, textRun, (Flags.EOT | Flags.Ghost), settings.Formatter);
+                run = new SimpleRun(runLength, textRun, (Flags.EOT | Flags.Ghost), settings.Formatter, pixelsPerDip);
             }
             else if (textRun is TextHidden)
             {
                 // hidden run
-                run = new SimpleRun(runLength, textRun, Flags.Ghost, settings.Formatter);
+                run = new SimpleRun(runLength, textRun, Flags.Ghost, settings.Formatter, pixelsPerDip);
             }
 
             return run;
@@ -1591,7 +1605,8 @@ namespace MS.Internal.TextFormatting
         static private SimpleRun CreateSimpleRunForTab(
             FormatSettings settings,
             TextRun textRun,
-            int idealRunOffsetUnRounded
+            int idealRunOffsetUnRounded,
+            double pixelsPerDip
             )
         {
             if (settings == null || textRun == null || textRun.Properties == null || textRun.Properties.Typeface == null)
@@ -1619,11 +1634,12 @@ namespace MS.Internal.TextFormatting
             // a complex character, we need to do the same thing as the full shaping path and draw a space for each tab.
             TextRun modifedTextRun = new TextCharacters(" ", textRun.Properties);
             CharacterBufferRange characterBufferRange = new CharacterBufferRange(modifedTextRun);
-            SimpleRun run = new SimpleRun(1, modifedTextRun, Flags.Tab, settings.Formatter);
+            SimpleRun run = new SimpleRun(1, modifedTextRun, Flags.Tab, settings.Formatter, pixelsPerDip);
             run.CharBufferReference = characterBufferRange.CharacterBufferReference;
             run.TextRun.Properties.Typeface.GetCharacterNominalWidthsAndIdealWidth(
                     characterBufferRange,
                     run.EmSize,
+                    (float)pixelsPerDip,
                     TextFormatterImp.ToIdeal,
                     settings.Formatter.TextFormattingMode,
                     false,
@@ -1663,20 +1679,22 @@ namespace MS.Internal.TextFormatting
             TextFormatterImp        formatter,
             int                     widthLeft,
             bool                    emergencyWrap,
-            bool                    breakOnTabs
+            bool                    breakOnTabs,
+            double                  pixelsPerDip
             )
         {
             Invariant.Assert(textRun is TextCharacters);
 
-            SimpleRun run = new SimpleRun(formatter);
+            SimpleRun run = new SimpleRun(formatter, pixelsPerDip);
             run.CharBufferReference = charBufferRange.CharacterBufferReference;
             run.TextRun = textRun;
 
             if (!run.TextRun.Properties.Typeface.CheckFastPathNominalGlyphs(
                 charBufferRange,
                 run.EmSize,
+                (float)pixelsPerDip,
                 1.0,
-                formatter.IdealToReal(widthLeft),
+                formatter.IdealToReal(widthLeft, pixelsPerDip),
                 !emergencyWrap,
                 false,
                 CultureMapper.GetSpecificCulture(run.TextRun.Properties.CultureInfo),
@@ -1695,6 +1713,7 @@ namespace MS.Internal.TextFormatting
             run.TextRun.Properties.Typeface.GetCharacterNominalWidthsAndIdealWidth(
                 new CharacterBufferRange(run.CharBufferReference, run.Length),
                 run.EmSize,
+                (float)pixelsPerDip,
                 TextFormatterImp.ToIdeal,
                 formatter.TextFormattingMode,
                 false,
@@ -1717,13 +1736,15 @@ namespace MS.Internal.TextFormatting
             int              length,
             TextRun          textRun,
             Flags            flags,
-            TextFormatterImp textFormatterImp
+            TextFormatterImp textFormatterImp,
+            double pixelsPerDip
             )
         {
             Length = length;
             TextRun = textRun;
             RunFlags = flags;
             _textFormatterImp = textFormatterImp;
+            _pixelsPerDip = pixelsPerDip;
         }
 
 
@@ -1770,7 +1791,7 @@ namespace MS.Internal.TextFormatting
                 for (int i = 0; i < displayGlyphAdvances.Count; i++)
                 {
                     // convert ideal glyph advance width to real width for displaying.
-                    displayGlyphAdvances[i] = _textFormatterImp.IdealToReal(NominalAdvances[i]);
+                    displayGlyphAdvances[i] = _textFormatterImp.IdealToReal(NominalAdvances[i], _pixelsPerDip);
                 }
             }
             else
@@ -1779,7 +1800,7 @@ namespace MS.Internal.TextFormatting
                 for (int i = 0; i < NominalAdvances.Length; i++)
                 {
                     // convert ideal glyph advance width to real width for displaying.
-                    displayGlyphAdvances.Add(_textFormatterImp.IdealToReal(NominalAdvances[i]));
+                    displayGlyphAdvances.Add(_textFormatterImp.IdealToReal(NominalAdvances[i], _pixelsPerDip));
                 }
             }
 
@@ -1793,6 +1814,7 @@ namespace MS.Internal.TextFormatting
                 charBufferRange,
                 displayGlyphAdvances,
                 EmSize,
+                (float)_pixelsPerDip,
                 TextRun.Properties.FontHintingEmSize,
                 Typeface.NullFont,
                 CultureMapper.GetSpecificCulture(TextRun.Properties.CultureInfo),
@@ -1843,7 +1865,7 @@ namespace MS.Internal.TextFormatting
                     double dxUnderline = 0;
                     for (int i = 0; i < underlineLength; ++i)
                     {
-                        dxUnderline += _textFormatterImp.IdealToReal(NominalAdvances[i]);
+                        dxUnderline += _textFormatterImp.IdealToReal(NominalAdvances[i], _pixelsPerDip);
                     }
 
                     // We know only TextDecoration.Underline will be handled in Simple Path.

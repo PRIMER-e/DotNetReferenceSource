@@ -3,7 +3,7 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 //
@@ -886,6 +886,7 @@ namespace System.Security.Cryptography.Xml
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.XmlResolver = null;
             settings.MaxCharactersFromEntities = Utils.GetMaxCharactersFromEntities();
+            settings.MaxCharactersInDocument = Utils.GetMaxCharactersInDocument();
             using (StringReader sr = new StringReader(_xslFragment)) {
                 XmlReader readerXsl = XmlReader.Create(sr, settings, (string)null);
                 xslt.Load(readerXsl, XsltSettings.Default, null);

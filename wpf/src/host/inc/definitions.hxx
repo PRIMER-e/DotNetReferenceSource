@@ -6,9 +6,9 @@
 //     Contains miscellaneous global definitions
 //
 //  History
-//      2005/10/06-[....]
+//      2005/10/06-Microsoft
 //          Created
-//      2007/09/20-[....]
+//      2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

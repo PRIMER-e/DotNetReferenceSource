@@ -6,7 +6,7 @@
 // Class used for deserializing EntityPropertyMappingAttribute content.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Common

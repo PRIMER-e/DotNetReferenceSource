@@ -7,7 +7,7 @@
 //      up of bunch of segments, each segment is seperated by '/' character)
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

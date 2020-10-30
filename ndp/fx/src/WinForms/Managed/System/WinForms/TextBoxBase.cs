@@ -976,8 +976,8 @@ namespace System.Windows.Forms {
             proposedConstraints -= bordersAndPadding;
 
             // Fit the text to the remaining space
-            // Fix for Dev10 bug 590621: 
-            // in text box, we don't interpret ampersand (&) as a directive to underscore the character that follows.
+            // Fix for Dev10 
+
             TextFormatFlags format = TextFormatFlags.NoPrefix;
             if(!Multiline) {
                 format |= TextFormatFlags.SingleLine;
@@ -1251,7 +1251,7 @@ namespace System.Windows.Forms {
         [Browsable(false)]
         public virtual int TextLength {
             get {
-                // Note: Currently [....] does not fully support surrogates - VSW#327396.  If 
+                // Note: Currently Microsoft does not fully support surrogates - VSW#327396.  If 
                 // the text contains surrogate characters this property may return incorrect values.
 
                 if (IsHandleCreated && Marshal.SystemDefaultCharSize == 2) {

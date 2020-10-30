@@ -3,8 +3,8 @@
 //      Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //
-// @owner  [....]
-// @backupOwner [....]
+// @owner  Microsoft
+// @backupOwner Microsoft
 //---------------------------------------------------------------------
 
 //using System.Diagnostics; // Please use PlanCompiler.Assert instead of Debug.Assert in this class...
@@ -33,6 +33,7 @@ namespace System.Data.Query.PlanCompiler
     using System.Data.Common.CommandTrees.ExpressionBuilder;
     using System.Data.Common.Utils;
     using System.Data.Entity;
+    using System.Data.Entity.Util;
     using System.Data.Metadata.Edm;
     using System.Data.Query.InternalTrees;
     using System.Linq;
@@ -1425,14 +1426,18 @@ namespace System.Data.Query.PlanCompiler
             Node limitNode = VisitExprAsScalar(expression.Limit);
 
             Node retNode;
-            if(OpType.Project == inputNode.Op.OpType)
+            if (OpType.Project == inputNode.Op.OpType
+                && (!AppSettings.SimplifyLimitOperations
+                    || (OpType.Sort == inputNode.Child0.Op.OpType
+                        || OpType.ConstrainedSort == inputNode.Child0.Op.OpType)))
             {
                 //
                 // If the input to the DbLimitExpression is a projection, then apply the Limit operation to the
                 // input to the ProjectOp instead. This allows  Limit(Project(Skip(x))) and Limit(Project(Sort(x)))
                 // to be treated in the same way as Limit(Skip(x)) and Limit(Sort(x)).
                 // Note that even if the input to the projection is not a ConstrainedSortOp or SortOp, the
-                // Limit operation is still pushed under the Project.
+                // Limit operation is still pushed under the Project when the SimplifyLimitOperations AppSetting
+                // is set to false. SimplifyLimitOperations is false by default.
                 //
                 inputNode.Child0 = CreateLimitNode(inputNode.Child0, limitNode, expression.WithTies);
                 retNode = inputNode;

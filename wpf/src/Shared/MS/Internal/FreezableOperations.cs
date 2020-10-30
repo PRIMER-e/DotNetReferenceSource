@@ -7,7 +7,7 @@
 // Description: FreezableOperations class definition.
 //
 // History:
-//  2005/02/02 : [....] - Created
+//  2005/02/02 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

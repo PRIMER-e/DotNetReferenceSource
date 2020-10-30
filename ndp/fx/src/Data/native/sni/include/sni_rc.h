@@ -127,7 +127,13 @@ __inline DWORD SniErrorIdFromStringId (DWORD dwErrorId)
 #define SNIE_55						(SNI_STRING_ERROR_BASE + 55)
 #define SNIE_56						(SNI_STRING_ERROR_BASE + 56)
 #define SNIE_57						(SNI_STRING_ERROR_BASE + 57)
-#define SNIE_MAX					SNIE_57
+
+#define SNIE_58						(SNI_STRING_ERROR_BASE + 58)
+#define SNIE_59						(SNI_STRING_ERROR_BASE + 59)
+#define SNIE_60						(SNI_STRING_ERROR_BASE + 60)
+#define SNIE_61						(SNI_STRING_ERROR_BASE + 61)
+
+#define SNIE_MAX					SNIE_61
 
 #define SNI_STRING_IS_SYSTEM_ERROR(dwErrorId)	(dwErrorId == SNIE_SYSTEM)
 

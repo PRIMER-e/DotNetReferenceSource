@@ -489,8 +489,8 @@ namespace MS.Internal.TextFormatting
                 else
                 {
                     Typeface typeface = store.Pap.DefaultTypeface;
-                    lstTextMetrics.dvAscent = (int)Math.Round(typeface.Baseline(store.Pap.EmSize, Constants.DefaultIdealToReal, Util.PixelsPerDip, fullText.TextFormattingMode));
-                    lstTextMetrics.dvMultiLineHeight = (int)Math.Round(typeface.LineSpacing(store.Pap.EmSize, Constants.DefaultIdealToReal, Util.PixelsPerDip, fullText.TextFormattingMode));
+                    lstTextMetrics.dvAscent = (int)Math.Round(typeface.Baseline(store.Pap.EmSize, Constants.DefaultIdealToReal, store.Settings.TextSource.PixelsPerDip, fullText.TextFormattingMode));
+                    lstTextMetrics.dvMultiLineHeight = (int)Math.Round(typeface.LineSpacing(store.Pap.EmSize, Constants.DefaultIdealToReal, store.Settings.TextSource.PixelsPerDip, fullText.TextFormattingMode));
                 }
 
                 lstTextMetrics.dvDescent = lstTextMetrics.dvMultiLineHeight - lstTextMetrics.dvAscent;
@@ -1342,11 +1342,11 @@ namespace MS.Internal.TextFormatting
             {
                 case TextDecorationUnit.FontRecommended:
 
-                    penThickness = currentLine.Formatter.IdealToReal(ulThickness * penThickness);
+                    penThickness = currentLine.Formatter.IdealToReal(ulThickness * penThickness, currentLine.PixelsPerDip);
                     break;
 
                 case TextDecorationUnit.FontRenderingEmSize:
-                    penThickness = currentLine.Formatter.IdealToReal(penThickness * lsrun.EmSize);
+                    penThickness = currentLine.Formatter.IdealToReal(penThickness * lsrun.EmSize, currentLine.PixelsPerDip);
                     break;
 
                 case TextDecorationUnit.Pixel:
@@ -1373,7 +1373,7 @@ namespace MS.Internal.TextFormatting
                     break;
 
                 case TextDecorationUnit.FontRenderingEmSize:
-                    unitValue = currentLine.Formatter.IdealToReal(lsrun.EmSize);
+                    unitValue = currentLine.Formatter.IdealToReal(lsrun.EmSize, currentLine.PixelsPerDip);
                     break;
 
                 case TextDecorationUnit.Pixel:
@@ -1386,7 +1386,7 @@ namespace MS.Internal.TextFormatting
             }
 
 
-            double lineLength = currentLine.Formatter.IdealToReal(ulLength);
+            double lineLength = currentLine.Formatter.IdealToReal(ulLength, currentLine.PixelsPerDip);
 
             DrawingContext drawingContext = Draw.DrawingContext;
 
@@ -1855,7 +1855,7 @@ namespace MS.Internal.TextFormatting
                     fontFeatureRanges,
                     FullText.TextFormattingMode,
                     lsrunFirst.Shapeable.ItemProps,
-                    Util.PixelsPerDip,
+                    (float)FullText.StoreFrom(lsrunFirst.Type).Settings.TextSource.PixelsPerDip,
                     piGlyphAdvances,
                     out glyphOffset
                     );
@@ -2654,8 +2654,8 @@ namespace MS.Internal.TextFormatting
 
 
                 Point baselineOrigin = new Point(
-                    currentLine.Formatter.IdealToReal(currentLine.LSLineUToParagraphU(lsrunOrigin.x))+ Draw.VectorToLineOrigin.X,
-                    currentLine.Formatter.IdealToReal((lsrunOrigin.y + lsrun.BaselineMoveOffset)) + Draw.VectorToLineOrigin.Y
+                    currentLine.Formatter.IdealToReal(currentLine.LSLineUToParagraphU(lsrunOrigin.x), currentLine.PixelsPerDip)+ Draw.VectorToLineOrigin.X,
+                    currentLine.Formatter.IdealToReal((lsrunOrigin.y + lsrun.BaselineMoveOffset), currentLine.PixelsPerDip) + Draw.VectorToLineOrigin.Y
                     );
 
 
@@ -3014,9 +3014,9 @@ namespace MS.Internal.TextFormatting
 
 
 
-        private static double RoundDipForDisplayModeJustifiedText(double value)
+        private static double RoundDipForDisplayModeJustifiedText(double value, double pixelsPerDip)
         {
-            return TextFormatterImp.RoundDipForDisplayModeJustifiedText(value);
+            return TextFormatterImp.RoundDipForDisplayModeJustifiedText(value, pixelsPerDip);
         }
 
 
@@ -3053,14 +3053,15 @@ namespace MS.Internal.TextFormatting
             bool              isRightToLeft,
             int               idealBaselineOriginX,
             int               idealBaselineOriginY,
+            double            pixelsPerDip,
             out Point         baselineOrigin,
             out IList<double> adjustedAdvanceWidths
             )
         {
             adjustedAdvanceWidths = new double[glyphCount];
 
-            baselineOrigin = new Point(RoundDipForDisplayModeJustifiedText(IdealToRealWithNoRounding(idealBaselineOriginX)),
-                                       RoundDipForDisplayModeJustifiedText(IdealToRealWithNoRounding(idealBaselineOriginY)));
+            baselineOrigin = new Point(RoundDipForDisplayModeJustifiedText(IdealToRealWithNoRounding(idealBaselineOriginX), pixelsPerDip),
+                                       RoundDipForDisplayModeJustifiedText(IdealToRealWithNoRounding(idealBaselineOriginY), pixelsPerDip));
 
             int idealRoundedBaselineOriginX = RealToIdeal(baselineOrigin.X);
             
@@ -3100,7 +3101,7 @@ namespace MS.Internal.TextFormatting
                     realAccumulatedAdvanceWidth         = IdealToRealWithNoRounding(idealAccumulatedAdvanceWidth);
 
                     realAdvanceWidth                    = IdealToRealWithNoRounding(piGlyphAdvances[i]);
-                    realRoundedAdvanceWidth             = RoundDipForDisplayModeJustifiedText(realAdvanceWidth);
+                    realRoundedAdvanceWidth             = RoundDipForDisplayModeJustifiedText(realAdvanceWidth, pixelsPerDip);
                     realAccumulatedRoundedAdvanceWidth += realRoundedAdvanceWidth;
 
 
@@ -3137,7 +3138,8 @@ namespace MS.Internal.TextFormatting
 
                     error += RoundDipForDisplayModeJustifiedText(
                                         realAccumulatedRoundedAdvanceWidth 
-                                        - RoundDipForDisplayModeJustifiedText(realAccumulatedAdvanceWidth)
+                                        - RoundDipForDisplayModeJustifiedText(realAccumulatedAdvanceWidth, pixelsPerDip),
+                                        pixelsPerDip
                                         );
 
                     adjustedAdvanceWidths[i] = realRoundedAdvanceWidth;
@@ -3169,14 +3171,15 @@ namespace MS.Internal.TextFormatting
                         realAccumulatedAdvanceWidth         = IdealToRealWithNoRounding(idealAccumulatedAdvanceWidth);
 
                         realAdvanceWidth                    = IdealToRealWithNoRounding(piGlyphAdvances[i]);
-                        realRoundedAdvanceWidth             = RoundDipForDisplayModeJustifiedText(realAdvanceWidth);
+                        realRoundedAdvanceWidth             = RoundDipForDisplayModeJustifiedText(realAdvanceWidth, pixelsPerDip);
                         realAccumulatedRoundedAdvanceWidth += realRoundedAdvanceWidth;
 
 
 
                         error = RoundDipForDisplayModeJustifiedText(
                                         realAccumulatedRoundedAdvanceWidth
-                                        - RoundDipForDisplayModeJustifiedText(realAccumulatedAdvanceWidth)
+                                        - RoundDipForDisplayModeJustifiedText(realAccumulatedAdvanceWidth, pixelsPerDip),
+                                        pixelsPerDip
                                         );
                         adjustedAdvanceWidths[i]            = realRoundedAdvanceWidth - error;
                         realAccumulatedRoundedAdvanceWidth -= error;
@@ -3268,16 +3271,16 @@ namespace MS.Internal.TextFormatting
 
             if (textFormatterImp.TextFormattingMode == TextFormattingMode.Ideal)
             {
-                glyphAdvances = new ThousandthOfEmRealDoubles(textFormatterImp.IdealToReal(lsrun.EmSize), glyphCount);
-                glyphOffsets = new ThousandthOfEmRealPoints(textFormatterImp.IdealToReal(lsrun.EmSize), glyphCount);
+                glyphAdvances = new ThousandthOfEmRealDoubles(textFormatterImp.IdealToReal(lsrun.EmSize, currentLine.PixelsPerDip), glyphCount);
+                glyphOffsets = new ThousandthOfEmRealPoints(textFormatterImp.IdealToReal(lsrun.EmSize, currentLine.PixelsPerDip), glyphCount);
 
                 for (int i = 0; i < glyphCount; i++)
                 {
                     glyphIndices[i] = puGlyphs[i];
-                    glyphAdvances[i] = textFormatterImp.IdealToReal(piJustifiedGlyphAdvances[i]);
+                    glyphAdvances[i] = textFormatterImp.IdealToReal(piJustifiedGlyphAdvances[i], currentLine.PixelsPerDip);
                     glyphOffsets[i] = new Point(
-                        textFormatterImp.IdealToReal(piiGlyphOffsets[i].du),
-                        textFormatterImp.IdealToReal(piiGlyphOffsets[i].dv)
+                        textFormatterImp.IdealToReal(piiGlyphOffsets[i].du, currentLine.PixelsPerDip),
+                        textFormatterImp.IdealToReal(piiGlyphOffsets[i].dv, currentLine.PixelsPerDip)
                         );
                 }
             }
@@ -3292,6 +3295,7 @@ namespace MS.Internal.TextFormatting
                         isRightToLeft,
                         nominalX,
                         nominalY,
+                        currentLine.PixelsPerDip,
                         out runOrigin,
                         out glyphAdvances
                         );
@@ -3301,7 +3305,7 @@ namespace MS.Internal.TextFormatting
                     glyphAdvances = new List<double>(glyphCount);
                     for (int i = 0; i < glyphCount; i++)
                     {
-                        glyphAdvances.Add(textFormatterImp.IdealToReal(piJustifiedGlyphAdvances[i]));
+                        glyphAdvances.Add(textFormatterImp.IdealToReal(piJustifiedGlyphAdvances[i], currentLine.PixelsPerDip));
                     }
                 }
                 glyphOffsets  = new List<Point>(glyphCount);
@@ -3309,8 +3313,8 @@ namespace MS.Internal.TextFormatting
                 {
                     glyphIndices[i] = puGlyphs[i];
                     glyphOffsets.Add(new Point(
-                            textFormatterImp.IdealToReal(piiGlyphOffsets[i].du),
-                            textFormatterImp.IdealToReal(piiGlyphOffsets[i].dv)
+                            textFormatterImp.IdealToReal(piiGlyphOffsets[i].du, currentLine.PixelsPerDip),
+                            textFormatterImp.IdealToReal(piiGlyphOffsets[i].dv, currentLine.PixelsPerDip)
                             ));
                 }
             }
@@ -3415,11 +3419,11 @@ namespace MS.Internal.TextFormatting
 
                 if (textFormatterImp.TextFormattingMode == TextFormattingMode.Ideal)
                 {
-                    charWidths = new ThousandthOfEmRealDoubles(textFormatterImp.IdealToReal(lsrun.EmSize), cchText);
+                    charWidths = new ThousandthOfEmRealDoubles(textFormatterImp.IdealToReal(lsrun.EmSize, Draw.CurrentLine.PixelsPerDip), cchText);
                     for (int i = 0; i < cchText; i++)
                     {
                         charString[i] = pwchText[i];
-                        charWidths[i] = textFormatterImp.IdealToReal(piCharAdvances[i]);
+                        charWidths[i] = textFormatterImp.IdealToReal(piCharAdvances[i], Draw.CurrentLine.PixelsPerDip);
                     }
                 }
                 else
@@ -3433,6 +3437,7 @@ namespace MS.Internal.TextFormatting
                             isRightToLeft,
                             nominalX,
                             nominalY,
+                            Draw.CurrentLine.PixelsPerDip,
                             out runOrigin,
                             out charWidths
                             );
@@ -3442,7 +3447,7 @@ namespace MS.Internal.TextFormatting
                         charWidths = new List<double>(cchText);
                         for (int i = 0; i < cchText; i++)
                         {
-                            charWidths.Add(textFormatterImp.IdealToReal(piCharAdvances[i]));
+                            charWidths.Add(textFormatterImp.IdealToReal(piCharAdvances[i], Draw.CurrentLine.PixelsPerDip));
                         }
                     }
                     for (int i = 0; i < cchText; i++)

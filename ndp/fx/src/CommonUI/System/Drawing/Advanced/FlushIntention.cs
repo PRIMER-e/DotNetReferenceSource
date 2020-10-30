@@ -32,7 +32,7 @@ namespace System.Drawing.Drawing2D {
         Flush = 0,
 
         // Flush all batched rendering operations and wait for them to complete
-        /// <include file='doc\FlushIntention.uex' path='docs/doc[@for="FlushIntention.[....]"]/*' />
+        /// <include file='doc\FlushIntention.uex' path='docs/doc[@for="FlushIntention.Sync"]/*' />
         /// <devdoc>
         ///    <para>
         ///       Specifies that all graphics operations on the stack are execyted as soon as

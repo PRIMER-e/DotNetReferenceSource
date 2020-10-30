@@ -215,14 +215,14 @@ void SNI_ServiceBindings::Release()
 //----------------------------------------------------------------------------
 // See comments in header file
 //----------------------------------------------------------------------------
-DWORD SNI_ServiceBindings::SetClusterAddresses(__in ADDRINFO *paiClusterAddresses)
+DWORD SNI_ServiceBindings::SetClusterAddresses(__in ADDRINFOW *paiwClusterAddresses)
 {
-	BidxScopeAutoSNI1( SNIAPI_TAG _T("paiClusterAddresses: %p{ADDRINFO*}\n"), 
-					paiClusterAddresses );
+	BidxScopeAutoSNI1( SNIAPI_TAG _T("paiwClusterAddresses: %p{ADDRINFOW*}\n"), 
+					paiwClusterAddresses );
 
 #ifndef SNIX
 
-	Assert( NULL != paiClusterAddresses );
+	Assert( NULL != paiwClusterAddresses );
 	
 	DWORD dwRet = ERROR_SUCCESS;
 	
@@ -248,11 +248,11 @@ DWORD SNI_ServiceBindings::SetClusterAddresses(__in ADDRINFO *paiClusterAddresse
 
 	// Set the cluster IP addresses.
 	
-	ADDRINFO *pAI;
+	ADDRINFOW *pAIW;
 	// SNI_ServiceBindings doesn't own these ADDRINFO allocations, so count...
-	for( pAI = paiClusterAddresses; pAI; pAI = pAI->ai_next )
+	for( pAIW = paiwClusterAddresses; pAIW; pAIW = pAIW->ai_next )
 	{
-		switch( pAI->ai_family )
+		switch( pAIW->ai_family )
 		{
 			case AF_INET:
 				s_dwcIPv4Address++;
@@ -299,18 +299,18 @@ DWORD SNI_ServiceBindings::SetClusterAddresses(__in ADDRINFO *paiClusterAddresse
 	// and assign
 	DWORD dwIPv4 = 0;
 	DWORD dwIPv6 = 0;
-	for( pAI = paiClusterAddresses; NULL != pAI; pAI = pAI->ai_next )
+	for( pAIW = paiwClusterAddresses; NULL != pAIW; pAIW = pAIW->ai_next )
 	{
-		switch( pAI->ai_family )
+		switch( pAIW->ai_family )
 		{
 			case AF_INET:
 				OACR_WARNING_SUPPRESS(IPV6_ADDRESS_STRUCTURE_IPV4_SPECIFIC , "Separate path for handling IPv4-specific data - see case AF_INET6 below for IPv6-specific path");
-				memcpy(& s_piaIPv4Address[dwIPv4], & ((PSOCKADDR_IN)pAI->ai_addr)->sin_addr, sizeof(struct in_addr) );
+				memcpy(& s_piaIPv4Address[dwIPv4], & ((PSOCKADDR_IN)pAIW->ai_addr)->sin_addr, sizeof(struct in_addr) );
 				BidTraceAddedIPv4Address(& s_piaIPv4Address[dwIPv4]);
 				dwIPv4++;
 				break;
 			case AF_INET6:
-				memcpy(& s_pi6aIPv6Address[dwIPv6], & ((PSOCKADDR_IN6)pAI->ai_addr)->sin6_addr, sizeof(struct in6_addr));
+				memcpy(& s_pi6aIPv6Address[dwIPv6], & ((PSOCKADDR_IN6)pAIW->ai_addr)->sin6_addr, sizeof(struct in6_addr));
 				BidTraceAddedIPv6Address(& s_pi6aIPv6Address[dwIPv6]);
 				dwIPv6++;
 				break;
@@ -345,15 +345,15 @@ Exit:
 //----------------------------------------------------------------------------
 // See comments in header file
 //----------------------------------------------------------------------------
-DWORD SNI_ServiceBindings::SetClusterNames(__in_z LPSTR szClusterHostName)
+DWORD SNI_ServiceBindings::SetClusterNames(__in_z LPWSTR wszClusterHostName)
 {
-	BidxScopeAutoSNI1( SNIAPI_TAG _T("szClusterHostName: \"%hs\"{LPCSTR}\n"), 
-					szClusterHostName );
+	BidxScopeAutoSNI1( SNIAPI_TAG _T("wszClusterHostName: \"%s\"{LPCWSTR}\n"), 
+					wszClusterHostName );
 
 #ifndef SNIX
 
-	Assert( NULL != szClusterHostName );
-	Assert( '\0' != szClusterHostName[0] );
+	Assert( NULL != wszClusterHostName );
+	Assert( L'\0' != wszClusterHostName[0] );
 	DWORD dwRet = ERROR_SUCCESS;
 	
 	s_fClusterHostNamesInitialized = true;
@@ -377,24 +377,15 @@ DWORD SNI_ServiceBindings::SetClusterNames(__in_z LPSTR szClusterHostName)
 		goto Exit;
 	}
 	
-	// Repack the MBCS cluster DNS host name into a WCHAR DNS host name
-	dwRet = RepackSzIntoWsz(szClusterHostName);
-	if( ERROR_SUCCESS != dwRet )
-	{
-		goto Exit;
-	}
+	
+	DWORD cchClusterHostName = wcslen(wszClusterHostName);
+	wmemcpy(s_pwszHostNames[s_dwcHostNames], wszClusterHostName, cchClusterHostName);
+	s_pwszHostNames[s_dwcHostNames][cchClusterHostName] = L'\0';	
 	s_dwcHostNames++;
 
 	// Retrieve the FQDN. 
-	char szClusterFQDN[NI_MAXHOST];
-	dwRet = Tcp::GetDnsName(szClusterHostName, szClusterFQDN, sizeof(szClusterFQDN));
-	if( ERROR_SUCCESS != dwRet )
-	{
-		goto Exit;
-	}
-	
-	// Repack the MBCS cluster FQDN into a WCHAR FQDN
-	dwRet = RepackSzIntoWsz(szClusterFQDN);
+	WCHAR wszClusterFQDN[NI_MAXHOST];
+	dwRet = Tcp::GetDnsName(wszClusterHostName, wszClusterFQDN, ARRAYSIZE(wszClusterFQDN));
 	if( ERROR_SUCCESS != dwRet )
 	{
 		goto Exit;

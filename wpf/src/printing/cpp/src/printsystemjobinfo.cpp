@@ -224,7 +224,7 @@ PrintSystemJobInfo(
 
             FixedDocumentSequence^  documentSequence  = xpsDocument->GetFixedDocumentSequence();
 
-            writer->BeginPrintFixedDocumentSequence(documentSequence, /* by ref */ printJobIdentifier);
+            writer->BeginPrintFixedDocumentSequence(documentSequence, printTicket, /* by ref */ printJobIdentifier);
 
             JobIdentifier = printJobIdentifier;
 

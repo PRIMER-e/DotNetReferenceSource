@@ -8,7 +8,7 @@
 // Description: SynchronizedInput pattern provider wrapper for WCP
 //
 // History:  
-//  11/10/2008 : Added by [....]
+//  11/10/2008 : Added by Microsoft
 //
 //---------------------------------------------------------------------------
 

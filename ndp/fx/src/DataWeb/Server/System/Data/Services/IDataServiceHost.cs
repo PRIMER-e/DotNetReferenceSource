@@ -6,7 +6,7 @@
 //      Provides the interface definition for DataService hosts.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

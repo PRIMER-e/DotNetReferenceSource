@@ -290,7 +290,8 @@ CONST uint16 usCharListCount,      /* count of list of chars to keep */
 uint8 *puchKeepGlyphList, /* pointer to an array of chars representing glyphs 0-usGlyphListCount. */
 CONST uint16 usGlyphListCount, /* count of puchKeepGlyphList array */
 uint16 *pusMaxGlyphIndexUsed,
-uint16 *pusGlyphKeepCount
+uint16 *pusGlyphKeepCount,
+ttBoolean bAddRelatedGlyphs /*whether to add related glyphs from GSUB, GPOS, JSTF and BASE*/
 )
 {
 uint16 i,j;
@@ -346,12 +347,15 @@ CMAP_SUBHEADER_GEN CmapSubHeader;
 
     /* fill in array of glyphs to keep.  Glyph 0 is the missing chr glyph,
         glyph 1 is the NULL glyph. Don't violate the array */
-    if (usGlyphListCount > 0)
-        puchKeepGlyphList[ 0 ] = 1;
-    if (usGlyphListCount > 1)
-        puchKeepGlyphList[ 1 ] = 1;
-    if (usGlyphListCount > 2)
-        puchKeepGlyphList[ 2 ] = 1;
+    if( bAddRelatedGlyphs )
+    {
+        if (usGlyphListCount > 0)
+            puchKeepGlyphList[ 0 ] = 1;
+        if (usGlyphListCount > 1)
+            puchKeepGlyphList[ 1 ] = 1;
+        if (usGlyphListCount > 2)
+            puchKeepGlyphList[ 2 ] = 1;
+    }
 
     if (usListType == TTFDELTA_GLYPHLIST)
     {
@@ -526,13 +530,15 @@ CMAP_SUBHEADER_GEN CmapSubHeader;
         if (!usGlyphKeepCount) /* we didn't find any more */
             break;
 
-        /* Now gather up any glyphs referenced by GSUB, GPOS, JSTF or BASE tables */
-        if ((errCode = TTOAutoMap(pInputBufferInfo, puchKeepGlyphList, usGlyphListCount, fKeepFlag)) != NO_ERROR)  /* Add to the list of KeepGlyphs based on data from GSUB, BASE and JSTF table */
-            break;
+        if( bAddRelatedGlyphs )
+        {
+            /* Now gather up any glyphs referenced by GSUB, GPOS, JSTF or BASE tables */
+            if ((errCode = TTOAutoMap(pInputBufferInfo, puchKeepGlyphList, usGlyphListCount, fKeepFlag)) != NO_ERROR)  /* Add to the list of KeepGlyphs based on data from GSUB, BASE and JSTF table */
+                break;
 
-        if ((errCode = MortAutoMap(pInputBufferInfo, puchKeepGlyphList, usGlyphListCount, fKeepFlag)) != NO_ERROR)  /* Add to the list of KeepGlyphs based on data from Mort table */
-            break;
-
+            if ((errCode = MortAutoMap(pInputBufferInfo, puchKeepGlyphList, usGlyphListCount, fKeepFlag)) != NO_ERROR)  /* Add to the list of KeepGlyphs based on data from Mort table */
+                break;
+        }
     }
     Mem_Free(pausComponents);
     

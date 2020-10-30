@@ -18,13 +18,13 @@
 //      private class of SafeNativeCompoundfileMethods.
 //
 // History:
-//  02/01/2006: [....]: Seperated from NativeCompoundFileAPIs.cs
+//  02/01/2006: Microsoft: Seperated from NativeCompoundFileAPIs.cs
 //                  This file holds all unsafe APIs and interfaces
 //      05/10/2002: RogerCh: Initial creation.
 //      07/31/2002: RogerCh: Add LockBytes support, suppress unmanaged code security.
 //      05/20/2003: RogerCh: Ported to WCP tree.
 //      05/28/2003: RogerCh: Removed name checks - now handled by LongNameManager
-//      02/10/2006: [....]: Added the security suppressed CF interfaces and APIs
+//      02/10/2006: Microsoft: Added the security suppressed CF interfaces and APIs
 //
 //-----------------------------------------------------------------------------
 

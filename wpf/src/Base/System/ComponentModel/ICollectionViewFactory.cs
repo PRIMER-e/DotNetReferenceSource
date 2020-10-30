@@ -10,7 +10,7 @@
 // See spec at http://avalon/connecteddata/Specs/CollectionView.mht
 // 
 // History:  
-//  05/29/2003 : [....] - Created
+//  05/29/2003 : davidjen - Created
 //
 //---------------------------------------------------------------------------
 

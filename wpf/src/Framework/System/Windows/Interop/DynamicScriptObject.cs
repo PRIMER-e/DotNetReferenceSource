@@ -10,8 +10,8 @@
 //      also supported in Visual Basic.
 //
 // History
-//  04/29/09    [....]      Created
-//  06/30/09    [....]      Changed to use IDispatchEx where possible
+//  04/29/09    Microsoft      Created
+//  06/30/09    Microsoft      Changed to use IDispatchEx where possible
 //------------------------------------------------------------------------------
 
 using System;
@@ -394,7 +394,7 @@ namespace System.Windows.Interop
                     args = (object[])args.Clone();
 
                     // Reverse the argument order so that parameters read naturally after IDispatch.
-                    // This code was initially ported from [....], see [....] bug 187662.
+                    // This code was initially ported from Microsoft, see Microsoft 
                     Array.Reverse(args);
 
                     // Unwrap arguments that were already promoted to DynamicScriptObject. This can happen

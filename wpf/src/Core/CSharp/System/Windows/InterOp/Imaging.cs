@@ -46,7 +46,7 @@ namespace System.Windows.Interop
         {
             SecurityHelper.DemandUnmanagedCode();
 
-            // CR: [....] (1681459)
+            // CR: Microsoft (1681459)
             return CriticalCreateBitmapSourceFromHBitmap(bitmap, palette, sourceRect, sizeOptions, WICBitmapAlphaChannelOption.WICBitmapUseAlpha);
         }
 

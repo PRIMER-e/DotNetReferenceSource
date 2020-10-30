@@ -1334,7 +1334,7 @@ namespace System.Windows.Documents
                             // This is because -- unfortunately -- when layout is valid we use ITextView.IsAtCaretUnitBoundary
                             // to normalize unicode offsets, but when layout is dirty we use a different code path
                             // that ignores the current font and simply checks Unicode values for surrogates and
-                            // combining marks.  See bug 1683515 for an example.
+                            // combining marks.  See 
                             explicitInsertPosition = thisRange.Start;
                         }
 
@@ -1420,7 +1420,7 @@ namespace System.Windows.Documents
                                     // the following Paragraph.
                                     insertionPosition = insertionPosition.InsertParagraphBreak();
                                 }
-                                // Keep newEnd in [....] with the paragraph break.
+                                // Keep newEnd in sync with the paragraph break.
                                 // We can't rely on LogicalDirection alone for
                                 // anything other than simple text inserts.
                                 newEnd = insertionPosition;

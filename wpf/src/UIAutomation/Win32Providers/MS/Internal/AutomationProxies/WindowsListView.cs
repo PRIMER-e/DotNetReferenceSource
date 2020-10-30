@@ -653,10 +653,10 @@ namespace MS.Internal.AutomationProxies
                     fScrollSuccess = Scroll(_hwnd, (IntPtr)dx, (IntPtr)dy);
 
                     // On occasion in the listview control the new position of the scroll bar is off by
-                    // one column/row. To deal with that bug in listview, we query the value we just set.
-                    // If it differs then we try a second time to scroll the content. It is a scroll by
-                    // just one column and this always succeeds.
-                    // It is done both on hz and vt as a safety measure.
+                    // one column/row. To deal with that 
+
+
+
                     if (fScrollSuccess && (((int)horizontalPercent != (int)ScrollPattern.NoScroll && (int)horizontalPercent != (int)WindowScroll.GetPropertyScroll(ScrollPattern.HorizontalScrollPercentProperty, _hwnd))
                     || ((int)verticalPercent != (int)ScrollPattern.NoScroll && (int)verticalPercent != (int)WindowScroll.GetPropertyScroll(ScrollPattern.VerticalScrollPercentProperty, _hwnd))))
                     {
@@ -1043,9 +1043,9 @@ namespace MS.Internal.AutomationProxies
             // as soon as pt.x is changed we know we jump to the different column and hence we know the number of rows
             // This is true except:
             // If user had Groups shown, and than changed to the List mode (List mode does not have groups)
-            // the List will not be snaking anymore (Windows Explorer LV bug on XP), hence after we come to the end of the first column
-            // the GetItemNext(,,LVNI_BELOW) will return -1. all other case list will snake
-            // Lucky for us at this point rowCount will contain the number of rows
+            // the List will not be snaking anymore (Windows Explorer LV 
+
+
             int columnCount = GetColumnCountOtherModes (hwnd);
 
             if (columnCount == 1)
@@ -1917,7 +1917,7 @@ namespace MS.Internal.AutomationProxies
                 // then receiving EventObjectSelectionRemove events at the wrong time. If two items are selected
                 // in a listview and the user clicks on one of them the only event winevent we get is a remove so
                 // we have to convert removed winevent to selected event or we would miss an event.  So it better
-                // to have multiple events in some case than none when there should be ([....] 9/8/2004).
+                // to have multiple events in some case than none when there should be (Microsoft 9/8/2004).
                 //
                 if (eventId == NativeMethods.EventObjectSelectionRemove && GetSelectedItemCount(hwnd) == 1)
                 {

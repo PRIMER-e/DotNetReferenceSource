@@ -6,7 +6,7 @@
 //      Provides a utility class to help in processing HTTP requests.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 #if ASTORIA_CLIENT

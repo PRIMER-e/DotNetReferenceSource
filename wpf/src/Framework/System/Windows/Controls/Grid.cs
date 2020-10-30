@@ -659,7 +659,7 @@ namespace System.Windows.Controls
                                 // dependency case described above. We now repeatedly
                                 // measure Group3 and Group2 until their sizes settle. We
                                 // also use a count heuristic to break a loop in case of one.
-                                // Please see Dev11 bug# 26662 that inspired this fix.
+                                // Please see Dev11 
 
                                 bool hasDesiredSizeUChanged = false;
                                 int cnt=0;
@@ -1807,7 +1807,8 @@ namespace System.Windows.Controls
 
             if (useLayoutRounding)
             {
-                dpi = columns ? FrameworkElement.DpiScaleX : FrameworkElement.DpiScaleY;
+                DpiScale dpiScale = GetDpi();
+                dpi = columns ? dpiScale.DpiScaleX : dpiScale.DpiScaleY;
                 roundingErrors = RoundingErrors;
             }
 

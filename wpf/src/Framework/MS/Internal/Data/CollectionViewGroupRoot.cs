@@ -97,7 +97,7 @@ namespace MS.Internal.Data
         }
 
         /// <summary>
-        /// Culture to use during sorting.
+        /// Culture to use when comparing group name with item property value.
         /// </summary>
         internal CultureInfo Culture
         {
@@ -108,6 +108,11 @@ namespace MS.Internal.Data
         {
             get { return _isDataInGroupOrder; }
             set { _isDataInGroupOrder = value; }
+        }
+
+        internal CollectionView View
+        {
+            get { return _view; }
         }
 
 #endregion Internal Events and Properties
@@ -425,7 +430,7 @@ namespace MS.Internal.Data
             {
                 for (int k=0, n=explicitNames.Count;  k<n;  ++k)
                 {
-                    CollectionViewGroupInternal subgroup = new CollectionViewGroupInternal(explicitNames[k], group);
+                    CollectionViewGroupInternal subgroup = new CollectionViewGroupInternal(explicitNames[k], group, isExplicit:true);
                     InitializeGroup(subgroup, groupDescription, level+1);
                     group.Add(subgroup);
                 }

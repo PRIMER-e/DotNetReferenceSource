@@ -758,7 +758,6 @@ namespace System.Windows.Forms.Layout {
             element.Properties.SetObject(_layoutInfoProperty, value);
         }
 
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         internal override void InitLayoutCore(IArrangedElement element, BoundsSpecified specified) {
             Debug.Assert(specified == BoundsSpecified.None || GetCachedBounds(element) == element.Bounds,
                 "Attempt to InitLayout while element has active cached bounds.");

@@ -9,7 +9,7 @@
 // mime type + stream into objects.
 //
 // History:
-//  11/11/2004: [....]: Initial creation.
+//  11/11/2004: Microsoft: Initial creation.
 //
 //-----------------------------------------------------------------------------
 

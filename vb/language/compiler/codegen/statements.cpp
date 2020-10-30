@@ -428,8 +428,8 @@ ILTree::PILNode ptreeStmt
         // Setup the on error try block if required for the instance constructor. By default setting
         // the try block is delayed for the instance constructors because the MyBase.New, MyClass.New
         // and initobj statements should be emitted outside the try block. MyBase.New or MyClass.New
-        // if emitted inside the try block will result in unverifiable code. Bug VSWhidbey 204996
-        //
+        // if emitted inside the try block will result in unverifiable code. 
+
         if (HasFlag32(ptreeStmtCur->AsStatement(), SLF_INIT_ME))
         {
             VSASSERT(m_pproc->IsInstanceConstructor(), "SLF_INIT_ME unexpected outside of an instance constructor!!!");
@@ -1058,8 +1058,8 @@ ILTree::PILNode ptreeStmt
     {
         // The "nop" at the end of "Try" wil be mapped to the "Finally" statement. The "Leave" needs to be hidden
         // for ENC remap scenarios and hence the requirement for the "nop", else the "Leave" itself could have been
-        // mapped to the "Finally" statement. Bug VSWhidbey 380886.
-        // VSWhidbey[532615] This should only be generated if Finally is hidden such as in ForEach, Using and SyncLock
+        // mapped to the "Finally" statement. 
+
         UpdateLineTable(ptreeStmt->AsTryBlock().FinallyTree);
         InsertNOP();
     }
@@ -1193,7 +1193,7 @@ CodeGenerator::GenerateCatchFilter
         if (!g_CompilingTheVBRuntime)
         {
             // generated when we have a When clause in the catch statement.
-            GenerateRTSetErrorMember(&ptreeCatch->Loc, Error);  // Bug #178026 - DevDiv Bugs: log an error
+            GenerateRTSetErrorMember(&ptreeCatch->Loc, Error);  // 
         }
     }
 
@@ -1304,7 +1304,7 @@ CodeGenerator::GenerateCatch
                 BCSYM* pTypeOnTopOfStack = m_stackTypes.Peek();
                 EmitOpcode(CEE_DUP, pTypeOnTopOfStack);
                 // catch ex as exception comes through here.
-                GenerateRTSetErrorMember(&ptreeCatch->Loc, Error);  // Bug #178026 - DevDiv Bugs: log an error
+                GenerateRTSetErrorMember(&ptreeCatch->Loc, Error);  // 
             }
 
             // For generic param catch type, the boxed form is on the stack. So in order to store it into the generic param
@@ -1361,7 +1361,7 @@ CodeGenerator::GenerateCatch
         // If there is one, the filter will have already set the Err object
         if (HasNoFilter && !g_CompilingTheVBRuntime)
         {   // for plain catch (with no expression) statements
-            GenerateRTSetErrorMember(&ptreeCatch->Loc, Error);   // Bug #178026 - DevDiv Bugs: log an error
+            GenerateRTSetErrorMember(&ptreeCatch->Loc, Error);   // 
         }
         // If the Err object has already been set and we have no local, then we have no need for
         // the exception on the stack
@@ -1440,7 +1440,7 @@ ILTree::PILNode ptreeStmtCur
 
     GenerateBlockStatementList(ptreeStmtCur->AsFinallyBlock());
 
-    // Bug VSWhidbey 365232. Need to generate a hidden sequence point for the "endfinally".
+    // 
     StartHiddenIL();
 
     EndCodeBuffer(CEE_ENDFINALLY);

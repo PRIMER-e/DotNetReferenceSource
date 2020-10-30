@@ -989,7 +989,7 @@ namespace System.Management
                     {
                         // The locator cannot be marshalled accross apartments, so we must create the locator
                         // and get the IWbemServices from an MTA thread
-                        if(!MTAHelper.IsNoContextMTA())  // Bug#110141 - Checking for MTA is not enough.  We need to make sure we are not in a COM+ Context
+                        if(!MTAHelper.IsNoContextMTA())  // 
                         {
                             //
                             // [marioh, RAID: 111108]

@@ -647,9 +647,9 @@ namespace System.Windows.Input
         /// </summary>
         private void ValidateInputDevices(object sender, EventArgs e)
         {
-            // This null check was necessary as a fix for Dev10 bug #453002. It turns out that 
-            // somehow we get here after the DispatcherOperation has been dispatched and we 
-            // need to no-op on that.
+            // This null check was necessary as a fix for Dev10 
+
+
             
             if (_hitTestInvalidatedAsyncOperation != null)
             {

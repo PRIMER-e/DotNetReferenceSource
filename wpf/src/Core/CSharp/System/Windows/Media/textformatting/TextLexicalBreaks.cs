@@ -41,7 +41,7 @@ namespace System.Windows.Media.TextFormatting
 
 
         /// <summary>
-        /// TextFormatter to get the break position after the character identified by the cha----r index.
+        /// TextFormatter to get the break position after the character identified by the characer index.
         /// </summary>
         /// <remarks>A break after the speicfied character is identified by the index of that character plus one.</remarks>
         /// <param name="currentIndex">current character index</param>
@@ -50,7 +50,7 @@ namespace System.Windows.Media.TextFormatting
 
 
         /// <summary>
-        /// TextFormatter to get the break position before the character identified by the cha----r index.
+        /// TextFormatter to get the break position before the character identified by the characer index.
         /// </summary>
         /// <remarks>A break before the speicfied character is identified by the index of that character.</remarks>
         /// <param name="currentIndex">current character index</param>

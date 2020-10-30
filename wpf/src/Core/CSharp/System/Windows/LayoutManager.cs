@@ -179,7 +179,7 @@ namespace System.Windows
         /// Used before accessing services off Visual.
         /// </summary>
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         internal void UpdateLayout()
         {
             VerifyAccess();
@@ -317,10 +317,10 @@ namespace System.Windows
                             if(currentElement == null) break; //exit if no more Measure candidates
                             
                             currentElement.Measure(currentElement.PreviousConstraint);
-//dmitryt, bug 1150880: not clear why this is needed, remove for now
-//if the parent was just computed, the chidlren should be clean. If they are not clean and in the queue
-//that means that there is cross-tree dependency and they most likely shodul be updated by themselves.
-//                            MeasureQueue.RemoveOrphans(currentElement);
+//dmitryt, 
+
+
+
                         }
 
                         if (etwTracingEnabled)
@@ -387,10 +387,10 @@ namespace System.Windows
                             Rect finalRect = getProperArrangeRect(currentElement);
 
                             currentElement.Arrange(finalRect);
-//dmitryt, bug 1150880: not clear why this is needed, remove for now
-//if the parent was just computed, the chidlren should be clean. If they are not clean and in the queue
-//that means that there is cross-tree dependency and they most likely shodul be updated by themselves.
-//                            ArrangeQueue.RemoveOrphans(currentElement);
+//dmitryt, 
+
+
+
                         }
 
                         if (etwTracingEnabled)
@@ -411,7 +411,7 @@ namespace System.Windows
 
                         //let LayoutUpdated handlers to call UpdateLayout
                         //note that it means we can get reentrancy into UpdateLayout past this point,
-                        //if any of event handlers call UpdateLayout [....]. Need to protect from reentrancy
+                        //if any of event handlers call UpdateLayout sync. Need to protect from reentrancy
                         //in the firing methods below.
                         _isInUpdateLayout = false;
 
@@ -785,8 +785,8 @@ namespace System.Windows
         }
 
         //this is used to prevent using automation roots in AutomationPeer when there are
-        //[....] updates of AutomationPeers on the stack. It is here because LayoutManager is
-        //a Dispatcher-wide object and [....] updates are per-dispatcher. Basically,
+        //sync updates of AutomationPeers on the stack. It is here because LayoutManager is
+        //a Dispatcher-wide object and sync updates are per-dispatcher. Basically,
         //it is here to avoid creating AutomationManager to track Dispatcher scope.
         internal int AutomationSyncUpdateCounter
         {
@@ -823,7 +823,7 @@ namespace System.Windows
         private static DispatcherOperationCallback _updateLayoutBackground = new DispatcherOperationCallback(UpdateLayoutBackground);
         private EventHandler _shutdownHandler;
 
-        internal static int s_LayoutRecursionLimit = UIElement.MAX_ELEMENTS_IN_ROUTE; //to keep these two constants in [....]
+        internal static int s_LayoutRecursionLimit = UIElement.MAX_ELEMENTS_IN_ROUTE; //to keep these two constants in sync
         private int _arrangesOnStack;
         private int _measuresOnStack;
         private int _automationSyncUpdateCounter;

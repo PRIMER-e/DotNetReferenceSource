@@ -26,7 +26,7 @@ namespace System.Windows.Media.Effects
     public enum KernelType
     {
         /// <summary>
-        ///     Gaussian - Use a Gu----ian filter
+        ///     Gaussian - Use a Guassian filter
         /// </summary>
         Gaussian = 0,
 

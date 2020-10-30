@@ -22,7 +22,7 @@
 #include "nlregc.h"
 #endif
 
-extern char gszComputerName[];
+extern WCHAR gwszComputerName[];
 
 LONG gdwNumConns = 0;
 Via * gpViaConns[MAX_VIA_CONNS];
@@ -117,8 +117,8 @@ public:
 		}
 	}
 
-	DWORD LoadViaLibrary(__in LPCSTR szVendor, __in LPCSTR szDll);
-	DWORD Setup(__in LPCSTR szVendor, __in LPCSTR szDll);
+	DWORD LoadViaLibrary(__in LPCWSTR wszVendor, __in LPCSTR szDll);
+	DWORD Setup(__in LPCWSTR wszVendor, __in LPCSTR szDll);
 	void TerminateWorkers();
 
 };
@@ -404,10 +404,10 @@ public:
 	}
 };
 
-DWORD ViaInitObj::LoadViaLibrary(__in LPCSTR szVendor, __in LPCSTR szDll)
+DWORD ViaInitObj::LoadViaLibrary(__in LPCWSTR wszVendor, __in LPCSTR szDll)
 {
-	BidxScopeAutoSNI2( SNIAPI_TAG _T("szVendor: \"%hs\", szDll: \"%hs\"\n"), 
-					szVendor, szDll );
+	BidxScopeAutoSNI2( SNIAPI_TAG _T("wszVendor: \"%s\", szDll: \"%hs\"\n"), 
+					wszVendor, szDll );
 	
 	DWORD dwRet = ERROR_SUCCESS;
 
@@ -418,13 +418,13 @@ DWORD ViaInitObj::LoadViaLibrary(__in LPCSTR szVendor, __in LPCSTR szDll)
 	if( m_fLibraryLoaded )
 		goto ErrorExit;
 
-	if( !szVendor || !szDll )
+	if( !wszVendor || !szDll )
 	{
 		dwRet = ERROR_INVALID_PARAMETER;
 		goto ErrorExit;
 	}
 
-	else if( !_stricmp_l(szVendor, "QLogic", GetDefaultLocale()) )
+	else if( !_wcsicmp_l(wszVendor, L"QLogic", GetDefaultLocale()) )
 		m_Vendor = QLogic;
 
 	else
@@ -466,10 +466,10 @@ ErrorExit:
 	return dwRet;
 }
 
-DWORD ViaInitObj::Setup(__in LPCSTR szVendor, __in LPCSTR szDll)
+DWORD ViaInitObj::Setup(__in LPCWSTR wszVendor, __in LPCSTR szDll)
 {
-	BidxScopeAutoSNI2( SNIAPI_TAG _T("szVendor: \"%hs\", szDll: \"%hs\"\n"), 
-					szVendor, szDll );
+	BidxScopeAutoSNI2( SNIAPI_TAG _T("wszVendor: \"%s\", szDll: \"%hs\"\n"), 
+					wszVendor, szDll );
 	
 	DWORD dwRet = ERROR_SUCCESS;
 
@@ -480,7 +480,7 @@ DWORD ViaInitObj::Setup(__in LPCSTR szVendor, __in LPCSTR szDll)
 	if( m_fSetup )
 		goto ErrorExit;
 
-	dwRet = LoadViaLibrary( szVendor, szDll);
+	dwRet = LoadViaLibrary( wszVendor, szDll);
 
 	if( dwRet != ERROR_SUCCESS )
 	{
@@ -705,14 +705,14 @@ public:
 		
 		CHAR szNic[128];
 
-		m_ViaListenInfo.szVendor[MAX_NAME_SIZE] = '\0';
+		m_ViaListenInfo.wszVendor[MAX_NAME_SIZE] = L'\0';
 		m_ViaListenInfo.szVendorDll[MAX_NAME_SIZE] = '\0';
 		m_ViaListenInfo.szDiscriminator[MAX_NAME_SIZE] = '\0';
 		
-		if( (FAILED(StringCchPrintf_lA( m_ViaListenInfo.szVendor,
-					 CCH_ANSI_STRING(m_ViaListenInfo.szVendor),
-					 "%s", GetDefaultLocale(),
-					 pListenInfo->szVendor))) ||
+		if( (FAILED(StringCchPrintf_lW( m_ViaListenInfo.wszVendor,
+					 ARRAYSIZE(m_ViaListenInfo.wszVendor),
+					 L"%s", GetDefaultLocale(),
+					 pListenInfo->wszVendor))) ||
 			(FAILED(StringCchPrintf_lA( m_ViaListenInfo.szVendorDll,
 					 CCH_ANSI_STRING(m_ViaListenInfo.szVendorDll),
 					 "%s", GetDefaultLocale(),
@@ -816,14 +816,14 @@ public:
 
 		memcpy((char *)m_pLocalAddress->HostAddress, nicAttr.LocalNicAddress, nicAttr.NicAddressLen);
 
-		DWORD len = (DWORD) strlen(gszComputerName);
+		DWORD len = (DWORD) wcslen(gwszComputerName);
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-		DWORD cch = LCMapStringA(LOCALE_SYSTEM_DEFAULT,
+		DWORD cch = LCMapStringW(LOCALE_SYSTEM_DEFAULT,
 				LCMAP_UPPERCASE,
-				gszComputerName,
+				gwszComputerName,
 				-1,
-				gszComputerName,
+				gwszComputerName,
 				len+1);
 OACR_WARNING_POP
 		
@@ -834,16 +834,16 @@ OACR_WARNING_POP
 			SNI_SET_LAST_ERROR(VIA_PROV, SNIE_ARGUMENT, dwRet);
 			goto ErrorExit;
 		}
-		gszComputerName[len] = 0;
+		gwszComputerName[len] = 0;
 			
-		DWORD cszComputerName = Hash(gszComputerName);
+		DWORD cszComputerName = Hash(gwszComputerName);
 		
 		memcpy((char *)m_pLocalAddress->HostAddress + nicAttr.NicAddressLen, &cszComputerName, sizeof(DWORD));
 
 		memcpy((char *)m_pLocalAddress->HostAddress + nicAttr.NicAddressLen+sizeof(DWORD), &dwPort, sizeof(dwPort));
 
 
-		scierrlog(26032, m_ViaListenInfo.szVendor, dwPort);		
+		scierrlog(26032, m_ViaListenInfo.wszVendor, dwPort);		
 		return ERROR_SUCCESS;
 		
 	ErrorExit:
@@ -1267,7 +1267,7 @@ DWORD Via::InitializeListener(HANDLE hSNIListener, ViaListenInfo * pListenInfo, 
 		goto ErrorExit;
 	}
 
-	dwRet = gpViaInitObj->LoadViaLibrary(pListenInfo->szVendor, pListenInfo->szVendorDll);
+	dwRet = gpViaInitObj->LoadViaLibrary(pListenInfo->wszVendor, pListenInfo->szVendorDll);
 
 	if( ERROR_SUCCESS != dwRet )
 	{
@@ -1365,7 +1365,7 @@ LONG gdwConnCount = 0;
 
     }
 #else
-DWORD GetViaSettings(__out_bcount(dwcbVendor) LPSTR szVendor, DWORD dwcbVendor,  __out_bcount(dwcbVendorDll) LPSTR szVendorDll, DWORD dwcbVendorDll)
+DWORD GetViaSettings(__out_ecount(dwcchVendor) LPWSTR wszVendor, DWORD dwcchVendor,  __out_bcount(dwcbVendorDll) LPSTR szVendorDll, DWORD dwcbVendorDll)
 {
 	//	
 
@@ -1375,7 +1375,7 @@ DWORD GetViaSettings(__out_bcount(dwcbVendor) LPSTR szVendor, DWORD dwcbVendor, 
 	DWORD dwRet = ERROR_SUCCESS;
 
 
-	if( dwcbVendor ==0 || dwcbVendor > MAX_NAME_SIZE+1 || dwcbVendorDll ==0 || dwcbVendorDll > MAX_NAME_SIZE+1 )
+	if( dwcchVendor ==0 || dwcchVendor > MAX_NAME_SIZE+1 || dwcbVendorDll ==0 || dwcbVendorDll > MAX_NAME_SIZE+1 )
 	{
 		dwRet = ERROR_INVALID_DATA;
 		goto Exit;
@@ -1401,14 +1401,14 @@ DWORD GetViaSettings(__out_bcount(dwcbVendor) LPSTR szVendor, DWORD dwcbVendor, 
 	}
 
 	if( propertyViaDefaultServerPort.PropertyValue.szStringValue[0] 
-	&& strchr(propertyViaDefaultServerPort.PropertyValue.szStringValue, ':'))
+	&& wcschr(propertyViaDefaultServerPort.PropertyValue.szStringValue, L':'))
 	{
-		LPSTR szTmp = strchr(propertyViaDefaultServerPort.PropertyValue.szStringValue, ':');
-		gdwSvrPortNum = _atoi_l(szTmp+1, GetDefaultLocale());
+		LPWSTR wszTmp = wcschr(propertyViaDefaultServerPort.PropertyValue.szStringValue, L':');
+		gdwSvrPortNum = _wtoi_l(wszTmp+1, GetDefaultLocale());
 
-		szTmp[0] = '\0';
+		wszTmp[0] = L'\0';
 		
-		gdwSvrNic = _atoi_l(propertyViaDefaultServerPort.PropertyValue.szStringValue, GetDefaultLocale());
+		gdwSvrNic = _wtoi_l(propertyViaDefaultServerPort.PropertyValue.szStringValue, GetDefaultLocale());
 	}
 
 
@@ -1419,15 +1419,15 @@ DWORD GetViaSettings(__out_bcount(dwcbVendor) LPSTR szVendor, DWORD dwcbVendor, 
 	//
 
 
-	if( FAILED(StringCchCopy( szVendor, 
-						dwcbVendor, 
+	if( FAILED(StringCchCopyW( wszVendor, 
+						dwcchVendor, 
 						CS_VALUE_VIA_VENDOR_NAME_QLOGIC )) )
 	{
 		dwRet = ERROR_BUFFER_OVERFLOW; 
 		goto Exit; 
 	}
 
-	szVendor[dwcbVendor-1] = 0x00; 
+	wszVendor[dwcchVendor-1] = 0x00; 
 
 
 	CS_PROTOCOL_PROPERTY propertyViaVendorDll; 
@@ -1444,7 +1444,7 @@ DWORD GetViaSettings(__out_bcount(dwcbVendor) LPSTR szVendor, DWORD dwcbVendor, 
 	if( ERROR_SUCCESS != dwRet || REG_SZ != propertyViaVendorDll.dwPropertyType )
 	{
 		//Regitry is not set, load default DLL.
-		if( FAILED (StringCchCopy( szVendorDll, 
+		if( FAILED (StringCchCopyA( szVendorDll, 
 								dwcbVendorDll, 
 								CS_VALUE_VIA_VENDOR_DLL_QLOGIC )) )
 		{
@@ -1457,12 +1457,26 @@ DWORD GetViaSettings(__out_bcount(dwcbVendor) LPSTR szVendor, DWORD dwcbVendor, 
 	}
 	else
 	{
-		if( FAILED (StringCchCopy( szVendorDll, 
+	
+		char szmbStringValue[MAX_NAME_SIZE + 1];
+		int ccbStringValue = WideCharToMultiByte(CP_ACP,0,
+													propertyViaVendorDll.PropertyValue.szStringValue, 
+													ARRAYSIZE(propertyViaVendorDll.PropertyValue.szStringValue),
+													szmbStringValue,
+													CCH_ANSI_STRING(szmbStringValue),
+													NULL,
+													NULL);
+		if (ccbStringValue == 0)
+		{
+			dwRet = GetLastError();
+			goto Exit;
+		}
+		if( FAILED (StringCchCopyA( szVendorDll, 
 								dwcbVendorDll, 
-								propertyViaVendorDll.PropertyValue.szStringValue)) )
+								szmbStringValue)) )
 		{
 			// Try to load with default DLL whenever possible.
-			if( FAILED (StringCchCopy( szVendorDll, 
+			if( FAILED (StringCchCopyA( szVendorDll, 
 									dwcbVendorDll, 
 									CS_VALUE_VIA_VENDOR_DLL_QLOGIC )) )
 			{
@@ -1497,7 +1511,7 @@ DWORD Via::Open( 	SNI_Conn 		* pConn,
 	
 	DWORD dwRet = ERROR_FAIL;
 	Via *pVia = NULL;
-	char szVendor[MAX_NAME_SIZE+1];
+	WCHAR wszVendor[MAX_NAME_SIZE+1];
 	char szVendorDll[MAX_NAME_SIZE+1];
 
 	// If Via::Initialize() failed before, return fail
@@ -1509,13 +1523,13 @@ DWORD Via::Open( 	SNI_Conn 		* pConn,
 		goto ErrorExit;
 	}
 
-	if( ERROR_SUCCESS != (dwRet = GetViaSettings(szVendor,sizeof(szVendor),  szVendorDll, sizeof(szVendorDll))))
+	if( ERROR_SUCCESS != (dwRet = GetViaSettings(wszVendor,ARRAYSIZE(wszVendor),  szVendorDll, sizeof(szVendorDll))))
 		goto ErrorExit;
 
 	// Check if the NICs have been initialized
 	// Note: This needs to be done only once, so if Via::InitlializeListener is called
 	// multiple times, we need to verify that they were called for the same vendor
-	if( ERROR_SUCCESS != (dwRet = gpViaInitObj->Setup(szVendor, szVendorDll)) )
+	if( ERROR_SUCCESS != (dwRet = gpViaInitObj->Setup(wszVendor, szVendorDll)) )
 		goto ErrorExit;	
 
 	if(NULL == (pVia = NewNoX(gpmo) Via(pConn)))
@@ -1575,7 +1589,7 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 	DWORD dwErr = ERROR_SUCCESS;
 	VIP_NET_ADDRESS * rAddr = (VIP_NET_ADDRESS*)rAddrBuf;
 	VIP_VI_ATTRIBUTES remote_attribs;
-	char szError[256];
+	WCHAR wszError[256];
 	VIP_VI_ATTRIBUTES vi_attribs ={ VIP_SERVICE_RELIABLE_DELIVERY, /* Reliability level */
 	                     32768,     /* MTU */
 	                     0,	    /* QOS is unused */
@@ -1592,15 +1606,15 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 	// Defaults for server nic, server portnum
 	DWORD dwSvrNic = gdwSvrNic;
 	DWORD dwSvrPortNum = gdwSvrPortNum;
-	LPSTR szSvr = NULL;
-	LPSTR szClusterName = NULL;
-	char szSvrInfo[1024];
+	LPWSTR wszSvr = NULL;
+	LPWSTR wszClusterName = NULL;
+	WCHAR wszSvrInfo[1024];
 	DWORD cSvrName = 1023;
-	LPSTR szTmp = NULL;
+	LPWSTR wszTmp = NULL;
 	DWORD dwHash;
 	BOOL fLastNic = FALSE;
 	BOOL fAddr = FALSE;
-	char *pszPort = NULL;
+	WCHAR *pwszPort = NULL;
 	DWORD dwNic = 0; //
 	DWORD dwTimeStart = GetTickCount();
 	DWORD dwCurrent = dwTimeStart;
@@ -1609,9 +1623,9 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 	Assert(pProtElem->GetProviderNum() == VIA_PROV);
 	Assert(pProtElem->Via.Host[0]);
 
-	//strcpy(szSvrInfo, pProtElem->m_Params.Via.Host);
-	szSvr = pProtElem->Via.Host;
-	(void)StringCchCopyA(szSvrInfo, CCH_ANSI_STRING(szSvrInfo), pProtElem->Via.Param);
+	//strcpy(wszSvrInfo, pProtElem->m_Params.Via.Host);
+	wszSvr = pProtElem->Via.Host;
+	(void)StringCchCopyW(wszSvrInfo, ARRAYSIZE(wszSvrInfo), pProtElem->Via.Param);
 
 	//hClntNic = s_rgNicInfo[dwNic].hNic; //temporary. parse this from the user connection string
 	// The connect string can be of the form,
@@ -1619,66 +1633,66 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 	// ServerAddress,SvrPort,SvrNic (Note: In this case, the SvrNic param is irrelevant)
 
 	// Check if there is a nic:port specified
-	if( strchr(szSvrInfo, ',') )
-	//if(szSvrInfo[0] != '\0')
+	if( wcschr(wszSvrInfo, L',') )
+	//if(wszSvrInfo[0] != '\0')
 	{
 
-		LPSTR szTmp2;
-		LPSTR szPort = NULL;
+		LPWSTR wszTmp2;
+		LPWSTR wszPort = NULL;
 		//first one is the server name
-		//szSvr = strtok(szSvrInfo, ",");
+		//wszSvr = strtok(wszSvrInfo, ",");
 		//get the remaining string
-		//szTmp = szSvrInfo + strlen(szSvrInfo) + 1;
-		szTmp = szSvrInfo;
+		//wszTmp = wszSvrInfo + strlen(wszSvrInfo) + 1;
+		wszTmp = wszSvrInfo;
 
 		// See if cluster name exists (as in server:cluster) - and this is not an address(by making sure that there are no more :s)
-		if( (NULL != (szTmp2 = strchr(szSvr, ':'))) && (NULL == strchr((szTmp2+1), ':')) )
+		if( (NULL != (wszTmp2 = wcschr(wszSvr, L':'))) && (NULL == wcschr((wszTmp2+1), L':')) )
 		{
-			char * tokContextSvr = NULL; 
-			szSvr = strtok_s(szSvr, ":", &tokContextSvr);
-			szClusterName = strtok_s(NULL, "\0", &tokContextSvr);
+			WCHAR * tokContextSvr = NULL; 
+			wszSvr = wcstok_s(wszSvr, L":", &tokContextSvr);
+			wszClusterName = wcstok_s(NULL, L"\0", &tokContextSvr);
 		}
 
 		// Otherwise ClusterName is same as server
 		else
-			szClusterName = szSvr;
+			wszClusterName = wszSvr;
 
 		// Keep the connect string lying around - it may contain additional
 		// port,nic combinations. If we can't connect to the first combo, try others
 		// before giving up. 
-		// Note: See MDAC bug 62905
-		// Get the server nic and port num
-		char * tokContextSvrInfoPort = NULL;
-		szPort = strtok_s(szTmp, ",", &tokContextSvrInfoPort);
-		if(!szPort)
+		// Note: See MDAC 
+
+		WCHAR * tokContextSvrInfoPort = NULL;
+		wszPort = wcstok_s(wszTmp, L",", &tokContextSvrInfoPort);
+		if(!wszPort)
 		{
 			dwErr = ERROR_INVALID_PARAMETER;
 			SNI_SET_LAST_ERROR(VIA_PROV, SNIE_ARGUMENT, dwErr);
 			goto ErrorExit;
 		}
-		dwSvrPortNum = _atoi_l(szPort, GetDefaultLocale());
-		szTmp += (int) strlen(szTmp) + 1;
+		dwSvrPortNum = _wtoi_l(wszPort, GetDefaultLocale());
+		wszTmp += (int) wcslen(wszTmp) + 1;
 		// Extract the NIC. Also take note if this is the last nic/port combo
-		if( NULL == strstr(szTmp, ",") )
+		if( NULL == wcsstr(wszTmp, L",") )
 		{
-			dwSvrNic = _atoi_l(szTmp, GetDefaultLocale());
+			dwSvrNic = _wtoi_l(wszTmp, GetDefaultLocale());
 			fLastNic = TRUE;
 		}
 		else
 		{
-			char * tokContextSvrInfoNic = NULL;
-			dwSvrNic = _atoi_l(strtok_s(szTmp, ",", &tokContextSvrInfoNic), GetDefaultLocale());
+			WCHAR * tokContextSvrInfoNic = NULL;
+			dwSvrNic = _wtoi_l(wcstok_s(wszTmp, L",", &tokContextSvrInfoNic), GetDefaultLocale());
 		}
-		szTmp += (int) strlen(szTmp) + 1;
+		wszTmp += (int) wcslen(wszTmp) + 1;
 	}
 	else
 	{
 		if(pProtElem->Via.Port != 0)
 			dwSvrPortNum = pProtElem->Via.Port ;
-		szClusterName = szSvr;
+		wszClusterName = wszSvr;
 		//since user hasnt specified any nic:port pairs, assume this is the last pair we will try
 		//
-		szTmp = NULL;
+		wszTmp = NULL;
 		fLastNic = TRUE;
 	}
 
@@ -1705,7 +1719,7 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 	//			VIP_UINT16 DiscriminatorLen;
 	//			VIP_UINT8 HostAddress[1];
 	//			} VIP_NET_ADDRESS;
-	//and we will set tailing data including NicAddress and one dwHash of szClusterName and one dwSvrPortNum.
+	//and we will set tailing data including NicAddress and one dwHash of wszClusterName and one dwSvrPortNum.
 	//
 	//Thus,  the size of the buff  should be longer than nicAttr.NicAddressLen + 2*sizeof(VIP_UITN16)+2*sizeof(DWORD)
 	//
@@ -1717,7 +1731,7 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 		// Check if this is a valid name
 		// ServerNic index is always hardcoded to 0, since giganet clients can only see
 		// one Nic for a particular server
-		if( (status = VipNSGetHostByName(pNic->m_pViaNic->GetNicHandle(), szSvr, rAddr, 0)) != VIP_SUCCESS)
+		if( (status = VipNSGetHostByName(pNic->m_pViaNic->GetNicHandle(), wszSvr, rAddr, 0)) != VIP_SUCCESS)
 		{
 			dwTimeElapsed = GetTickCount()-dwStart;
 
@@ -1741,11 +1755,11 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 
     vi_attribs.Ptag = pNic->m_pViaNic->GetPTagHandle();
 
-	// Create a VI. Dont associate the send queue with CQ in [....] case. 
+	// Create a VI. Dont associate the send queue with CQ in sync case. 
 	if( VIP_SUCCESS != (status = VipCreateVi(pNic->m_pViaNic->GetNicHandle(), &vi_attribs, fSync?NULL:pNic->m_pViaWorker->m_hCQ, pNic->m_pViaWorker->m_hCQ, &m_hVi)) )
 	{
 		m_hVi = NULL;
-		(void) StringCchCopyA(szError, CCH_ANSI_STRING(szError), "VipCreateVi");
+		(void) StringCchCopyW(wszError, ARRAYSIZE(wszError), L"VipCreateVi");
 		goto ErrorExit;
 	}
 
@@ -1779,17 +1793,17 @@ DWORD  Via::ConnectionOpen( 	bool fSync, __in ProtElem *pProtElem)
 	memcpy((char *)(lAddr->HostAddress + nicAttr.NicAddressLen + sizeof(DWORD)), &dwThread, sizeof(DWORD));
 	memcpy((char *)(lAddr->HostAddress + nicAttr.NicAddressLen + 2*sizeof(DWORD)), &dwCount, sizeof(DWORD));
 
-	// The remote address is in the form of Hash(szClusterName) followed by PortNum
+	// The remote address is in the form of Hash(wszClusterName) followed by PortNum
 	// Note: For now, Hash is just an sqlloc_atoi of the string
 
-	DWORD len = (DWORD) strlen(szClusterName);
+	DWORD len = (DWORD) wcslen(wszClusterName);
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-	DWORD cch = LCMapStringA(LOCALE_SYSTEM_DEFAULT,
+	DWORD cch = LCMapStringW(LOCALE_SYSTEM_DEFAULT,
 							LCMAP_UPPERCASE,
-							szClusterName,
+							wszClusterName,
 							-1,
-							szClusterName,
+							wszClusterName,
 							len+1);
 OACR_WARNING_POP
 	Assert(cch <= len+1);
@@ -1799,9 +1813,9 @@ OACR_WARNING_POP
 		SNI_SET_LAST_ERROR(VIA_PROV, SNIE_ARGUMENT, dwErr);
 		goto ErrorExit;
 	}
-	szClusterName[len] = 0;
+	wszClusterName[len] = 0;
 
-	dwHash = Hash(szClusterName);
+	dwHash = Hash(wszClusterName);
 	memcpy((char *)(rAddr->HostAddress + nicAttr.NicAddressLen), &dwHash, sizeof(DWORD));
 
 
@@ -1821,32 +1835,32 @@ ReDo:
 			if( !fLastNic )
 			{
 				// Get the port
-				char * tokContextPort = NULL; 
-				pszPort = strtok_s(szTmp, ",", &tokContextPort);
-				if(!pszPort)
+				WCHAR * tokContextPort = NULL; 
+				pwszPort = wcstok_s(wszTmp, L",", &tokContextPort);
+				if(!pwszPort)
 				{
 					fLastNic = TRUE;
 					goto ErrorExit;
 				}
 
-				dwSvrPortNum = _atoi_l(pszPort, GetDefaultLocale());
-				szTmp += (int) strlen(szTmp) + 1;
+				dwSvrPortNum = _wtoi_l(pwszPort, GetDefaultLocale());
+				wszTmp += (int) wcslen(wszTmp) + 1;
 				// Get the nic
 				// Is this is the last nic/port combo
-				if( NULL == strstr(szTmp, ",") )
+				if( NULL == wcsstr(wszTmp, L",") )
 				{
-					char * tokContextNic = NULL; 
-					dwSvrNic = _atoi_l(strtok_s(szTmp, "\0", &tokContextNic), GetDefaultLocale());
+					WCHAR * tokContextNic = NULL; 
+					dwSvrNic = _wtoi_l(wcstok_s(wszTmp, L"\0", &tokContextNic), GetDefaultLocale());
 					fLastNic = TRUE;
 				} 
 
 				else
 				{
-					char * tokContextNic = NULL; 
-					dwSvrNic = _atoi_l(strtok_s(szTmp, ",", &tokContextNic), GetDefaultLocale());
+					WCHAR * tokContextNic = NULL; 
+					dwSvrNic = _wtoi_l(wcstok_s(wszTmp, L",", &tokContextNic), GetDefaultLocale());
 				}
 	
-				szTmp += (int) strlen(szTmp) + 1;
+				wszTmp += (int) wcslen(wszTmp) + 1;
 
 				// Try again
 				goto ReDo;
@@ -1875,9 +1889,9 @@ ReDo:
 	if( !fAddr )
 	{
 		// Note: The size of szConnect is 256 - it is passed in from the SuperSock netlib
-		//	if( 0 >  _snprintf(pProtElem->m_Params.Via.Host, 255, "%s:%s,%d,%d", szSvr, szClusterName, dwSvrPortNum, dwSvrNic) )
+		//	if( 0 >  _snprintf(pProtElem->m_Params.Via.Host, 255, "%s:%s,%d,%d", wszSvr, wszClusterName, dwSvrPortNum, dwSvrNic) )
 		//	goto ErrorExit;
-		pProtElem->Via.Host[255] = '\0';
+		pProtElem->Via.Host[255] = L'\0';
 
 	}
 
@@ -2348,14 +2362,14 @@ DWORD Via::AcceptDone( SNI_Conn * pConn,
 	
 	pListenObject->m_AcceptDoneEvent.Signal();
 
-	pConn->m_pEPInfo->viaInfo.szVendor[MAX_NAME_SIZE] = '\0';
+	pConn->m_pEPInfo->viaInfo.wszVendor[MAX_NAME_SIZE] = L'\0';
 	pConn->m_pEPInfo->viaInfo.szVendorDll[MAX_NAME_SIZE] = '\0';
 	pConn->m_pEPInfo->viaInfo.szDiscriminator[MAX_NAME_SIZE] = '\0';
 		
-	if( (FAILED(StringCchPrintf_lA( pConn->m_pEPInfo->viaInfo.szVendor,
-					 CCH_ANSI_STRING(pConn->m_pEPInfo->viaInfo.szVendor),
-					 "%s", GetDefaultLocale(),
-					 pListenObject->m_ViaListenInfo.szVendor))) ||
+	if( (FAILED(StringCchPrintf_lW( pConn->m_pEPInfo->viaInfo.wszVendor,
+					 ARRAYSIZE(pConn->m_pEPInfo->viaInfo.wszVendor),
+					 L"%s", GetDefaultLocale(),
+					 pListenObject->m_ViaListenInfo.wszVendor))) ||
 		(FAILED(StringCchPrintf_lA( pConn->m_pEPInfo->viaInfo.szVendorDll,
 					 CCH_ANSI_STRING(pConn->m_pEPInfo->viaInfo.szVendorDll),
 					 "%s", GetDefaultLocale(),

@@ -190,7 +190,7 @@ namespace MS.Internal.Shaping
             
             for(int i = 0; i < glyphCount; i++)
             {
-                // [....] up inside the list up to the minimal lookup requested
+                // Sync up inside the list up to the minimal lookup requested
                 // No additional boundary checks are necessary, because every list terminates with 0xffff
                 while(cachePointers[i] < firstLookupIndex) cachePointers[i]++;
                 //Now we know that our index is higher or equal than firstLookup index

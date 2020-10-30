@@ -178,7 +178,6 @@ namespace System.Drawing {
         ///    objects are unequal.
         /// </para>
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static bool operator !=(Point left, Point right) {
             return !(left == right);
         }
@@ -240,7 +239,7 @@ namespace System.Drawing {
             if (!(obj is Point)) return false;
             Point comp = (Point)obj;
             // Note value types can't have derived classes, so we don't need 
-            // to check the types of the objects here.  -- [....], 2/21/2001
+            // to check the types of the objects here.  -- Microsoft, 2/21/2001
             return comp.X == this.X && comp.Y == this.Y;
         }
 
@@ -261,7 +260,6 @@ namespace System.Drawing {
         /// <devdoc>
         ///    Translates this <see cref='System.Drawing.Point'/> by the specified amount.
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public void Offset(int dx, int dy) {
             X += dx;
             Y += dy;

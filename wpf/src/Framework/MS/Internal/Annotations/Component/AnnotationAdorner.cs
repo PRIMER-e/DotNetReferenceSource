@@ -75,8 +75,8 @@ namespace MS.Internal.Annotations.Component
             GeneralTransform compTransform = _annotationComponent.GetDesiredTransform(transform);
  
             //ToDo. if the annotated element is null this component must be unloaded.
-            //Temporary return null until the PageViewer Load/Unload bug is fixed
-            //Convert it to an exception after that.
+            //Temporary return null until the PageViewer Load/Unload 
+
             if (_annotationComponent.AnnotatedElement == null)
                 return null;
 

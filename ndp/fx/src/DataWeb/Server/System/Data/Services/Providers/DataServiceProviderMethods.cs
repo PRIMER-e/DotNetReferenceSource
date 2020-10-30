@@ -6,7 +6,7 @@
 //      DataServiceProvider methods used for queries over IDSP providers.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

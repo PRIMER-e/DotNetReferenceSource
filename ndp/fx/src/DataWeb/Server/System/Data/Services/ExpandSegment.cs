@@ -7,7 +7,7 @@
 //      for a WCF Data Service.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

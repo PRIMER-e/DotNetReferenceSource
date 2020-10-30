@@ -168,8 +168,8 @@ namespace System.Windows.Forms {
                 }
                 if (ShowDropDownArrow) {
                     ToolStripDropDownButton.ToolStripDropDownButtonInternalLayout layout = InternalLayout as ToolStripDropDownButtonInternalLayout;
-                    Rectangle dropDownArrowRect = (layout != null) ? layout.DropDownArrowRect :Rectangle.Empty; 
-                    
+                    Rectangle dropDownArrowRect = (layout != null) ? layout.DropDownArrowRect :Rectangle.Empty;
+
                     Color arrowColor =  Enabled ? SystemColors.ControlText : SystemColors.ControlDark;
                     renderer.DrawArrow(new ToolStripArrowRenderEventArgs(g, this,dropDownArrowRect, arrowColor, ArrowDirection.Down)); 
                 }
@@ -194,11 +194,26 @@ namespace System.Windows.Forms {
 
         internal class ToolStripDropDownButtonInternalLayout : ToolStripItemInternalLayout {
             private ToolStripDropDownButton    ownerItem;
-            private static Size             dropDownArrowSize       = new Size(5,3);
-            private static Padding          dropDownArrowPadding    = new Padding(2);
-            private Rectangle               dropDownArrowRect       = Rectangle.Empty;
+            private static bool                isScalingInitialized = false;
+            private static readonly Size       dropDownArrowSizeUnscaled = new Size(5, 3);
+            private static Size                dropDownArrowSize = dropDownArrowSizeUnscaled;
+            private const int                  DROP_DOWN_ARROW_PADDING = 2;
+            private static Padding             dropDownArrowPadding = new Padding(DROP_DOWN_ARROW_PADDING);
+            private Rectangle                  dropDownArrowRect    = Rectangle.Empty;
             
             public ToolStripDropDownButtonInternalLayout(ToolStripDropDownButton ownerItem) : base(ownerItem) {
+                if (!isScalingInitialized) {
+                    if (DpiHelper.IsScalingRequired) {
+                        // these 2 values are used to calculate size of the clickable drop down button
+                        // on the right of the image/text
+                        dropDownArrowSize = DpiHelper.LogicalToDeviceUnits(dropDownArrowSizeUnscaled);
+                        dropDownArrowPadding = new Padding(DpiHelper.LogicalToDeviceUnitsX(DROP_DOWN_ARROW_PADDING),
+                                                           DpiHelper.LogicalToDeviceUnitsY(DROP_DOWN_ARROW_PADDING),
+                                                           DpiHelper.LogicalToDeviceUnitsX(DROP_DOWN_ARROW_PADDING),
+                                                           DpiHelper.LogicalToDeviceUnitsY(DROP_DOWN_ARROW_PADDING));
+                    }
+                    isScalingInitialized = true;
+                }
                 this.ownerItem = ownerItem;    
             }
 

@@ -2,9 +2,9 @@
 // <copyright file="SniManagedWrapper.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
-// <owner current="true" primary="true">[....]</owner>
-// <owner current="true" primary="false">[....]</owner>
-// <owner current="true" primary="false">[....]</owner>
+// <owner current="true" primary="true">Microsoft</owner>
+// <owner current="true" primary="false">Microsoft</owner>
+// <owner current="true" primary="false">Microsoft</owner>
 //------------------------------------------------------------------------------
 
 #using   <mscorlib.dll>
@@ -296,26 +296,26 @@ void UnmanagedWriteCallback(LPVOID ConsKey, SNI_Packet * pPacket, DWORD dwError)
 {
     SNI_ConnWrapper* pConn = (SNI_ConnWrapper*)ConsKey;
 
-	 if (!pConn->m_fSyncOverAsyncWrite) {
-		pConn->m_fnWriteComp(pConn->m_ConsumerKey, pPacket, dwError);
-	 }
-	 else {
-		if (dwError == ERROR_SUCCESS) {
-			pConn->m_WriteError.dwNativeError = ERROR_SUCCESS;
-		}
-		else {
-			SNIGetLastError(&pConn->m_WriteError);
-			// SNIGetLastError strips SNI_STRING_ERROR_BASE out of the code
-			pConn->m_WriteError.dwSNIError += SNI_STRING_ERROR_BASE;
-			assert(pConn->m_WriteError.dwNativeError != ERROR_SUCCESS);
-		}
+     if (!pConn->m_fSyncOverAsyncWrite) {
+        pConn->m_fnWriteComp(pConn->m_ConsumerKey, pPacket, dwError);
+     }
+     else {
+        if (dwError == ERROR_SUCCESS) {
+            pConn->m_WriteError.dwNativeError = ERROR_SUCCESS;
+        }
+        else {
+            SNIGetLastError(&pConn->m_WriteError);
+            // SNIGetLastError strips SNI_STRING_ERROR_BASE out of the code
+            pConn->m_WriteError.dwSNIError += SNI_STRING_ERROR_BASE;
+            assert(pConn->m_WriteError.dwNativeError != ERROR_SUCCESS);
+        }
 
         ::ReleaseSemaphore(pConn->m_WriteResponseReady, 1, NULL);
-	 }
+     }
 }
 
 DWORD SNIOpenWrapper( __in SNI_CONSUMER_INFO * pConsumerInfo,
-                       __inout_opt LPSTR szConnect,
+                       __inout_opt LPWSTR wszConnect,
                        __in LPVOID pOpenInfo,
                        __out SNI_ConnWrapper ** ppConn,
                        __in BOOL fSync)
@@ -335,7 +335,7 @@ DWORD SNIOpenWrapper( __in SNI_CONSUMER_INFO * pConsumerInfo,
     pConsumerInfo->fnWriteComp = UnmanagedWriteCallback;
     pConsumerInfo->ConsumerKey = pConnWrapper;
 
-    dwError = SNIOpen(pConsumerInfo, szConnect, pOpenInfo, &pConn, fSync);
+    dwError = SNIOpen(pConsumerInfo, wszConnect, pOpenInfo, &pConn, fSync);
     if (dwError != ERROR_SUCCESS) {
         goto ErrorExit;
     }
@@ -343,7 +343,7 @@ DWORD SNIOpenWrapper( __in SNI_CONSUMER_INFO * pConsumerInfo,
     pConnWrapper->m_pConn = pConn;
 
     BOOL fSupportsSyncOverAsync;
-    dwError = SNIGetInfo(pConn, SNI_QUERY_CONN_SUPPORTS_[....]_OVER_ASYNC, &fSupportsSyncOverAsync);
+    dwError = SNIGetInfo(pConn, SNI_QUERY_CONN_SUPPORTS_SYNC_OVER_ASYNC, &fSupportsSyncOverAsync);
     assert(dwError == ERROR_SUCCESS); // SNIGetInfo cannot fail with this QType
 
     // convert BOOL to bool
@@ -384,7 +384,7 @@ DWORD SNIOpenSyncExWrapper( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerIn
     pConnWrapper->m_pConn = pConn;
 
     BOOL fSupportsSyncOverAsync;
-    dwError = SNIGetInfo(pConn, SNI_QUERY_CONN_SUPPORTS_[....]_OVER_ASYNC, &fSupportsSyncOverAsync);
+    dwError = SNIGetInfo(pConn, SNI_QUERY_CONN_SUPPORTS_SYNC_OVER_ASYNC, &fSupportsSyncOverAsync);
     assert(dwError == ERROR_SUCCESS); // SNIGetInfo cannot fail with this QType
 
     // convert BOOL to bool
@@ -496,6 +496,7 @@ ref class  SNINativeMethodWrapper
             SNI_QUERY_CONN_CONSUMERCONNID    = ::SNI_QUERY_CONN_CONSUMERCONNID,
             SNI_QUERY_CONN_SNIUCI        = ::SNI_QUERY_CONN_SNIUCI,
             SNI_QUERY_LOCALDB_HMODULE        = ::SNI_QUERY_LOCALDB_HMODULE,
+            SNI_QUERY_TCP_SKIP_IO_COMPLETION_ON_SUCCESS = ::SNI_QUERY_TCP_SKIP_IO_COMPLETION_ON_SUCCESS,
 
         };
 
@@ -567,7 +568,6 @@ ref class  SNINativeMethodWrapper
              MultiSubnetFailoverWithMoreThan64IPs = (SNIE_47 - SNI_STRING_ERROR_BASE),
              MultiSubnetFailoverWithInstanceSpecified = (SNIE_48 - SNI_STRING_ERROR_BASE),
              MultiSubnetFailoverWithNonTcpProtocol = (SNIE_49 - SNI_STRING_ERROR_BASE),
-
 
              // max error code value
              MaxErrorValue = SNIE_MAX
@@ -665,7 +665,9 @@ internal:
         System::Boolean fOverrideCache,
         System::Boolean fSync,
         System::Int32 timeout,
-        System::Boolean fParallel)
+        System::Boolean fParallel,
+        System::Int32 transparentNetworkResolutionStateNo,
+        System::Int32 totalTimeout)
     {
         ::SNI_CLIENT_CONSUMER_INFO clientConsumerInfo;  // native SNI_CLIENT_CONSUMER_INFO
 
@@ -683,7 +685,7 @@ internal:
 
         if (spnBuffer != nullptr) 
         {
-            clientConsumerInfo.szSPN = reinterpret_cast<LPSTR>(pin_spnBuffer);
+            clientConsumerInfo.wszSPN = reinterpret_cast<LPWSTR>(pin_spnBuffer);
             clientConsumerInfo.cchSPN =  spnBuffer->Length;
         }
         // else leave null (SQL Auth)
@@ -694,6 +696,19 @@ internal:
         clientConsumerInfo.fSynchronousConnection = fSync;
         clientConsumerInfo.timeout = timeout;
         clientConsumerInfo.fParallel = fParallel;
+        switch (transparentNetworkResolutionStateNo)
+        {
+        case (0):
+            clientConsumerInfo.transparentNetworkResolution = DisabledMode;
+            break;
+        case (1):
+            clientConsumerInfo.transparentNetworkResolution = SequentialMode;
+            break;
+        case (2):
+            clientConsumerInfo.transparentNetworkResolution = ParallelMode;
+            break;
+        };
+        clientConsumerInfo.totalTimeout = totalTimeout;
 
         System::UInt32 ret  =  ::SNIOpenSyncExWrapper (&clientConsumerInfo, &local_pConn);
         pConn =  static_cast<System::IntPtr>(local_pConn);
@@ -711,7 +726,7 @@ internal:
     {
         System::UInt32 ret = 0;
         ::SNI_CONSUMER_INFO native_consumerInfo;
-		char szMarsConString[] = "session:";
+        WCHAR wszMarsConString[] = L"session:";
 
         // initialize consumer info for MARS
         MarshalConsumerInfo(consumerInfo, native_consumerInfo);
@@ -727,7 +742,7 @@ internal:
             Debug::Assert (mustRelease,"AddRef Failed!");
 
             ret = ::SNIOpenWrapper( &native_consumerInfo,
-                             szMarsConString,
+                             wszMarsConString,
                              static_cast<SNI_ConnWrapper*>(parent->DangerousGetHandle().ToPointer())->m_pConn,
                              &local_pConn,
                              fSync);
@@ -779,7 +794,7 @@ internal:
                 }
             }     
     }
-	
+    
         // further optimization - peek and avoid call
         [ResourceExposure(ResourceScope::None)]
         static System::UInt32 SNIPacketGetData (System::IntPtr packet, 
@@ -962,7 +977,7 @@ internal:
             DWORD _qType = static_cast<DWORD>(qType);
 
             // we should not be calling this method with SNI_QUERY_CERTIFICATE or unsupported qType
-            Debug::Assert(_qType == SNI_QUERY_CLIENT_ENCRYPT_POSSIBLE || _qType == SNI_QUERY_SERVER_ENCRYPT_POSSIBLE, "qType is unsupported or unknown");
+            Debug::Assert(_qType == SNI_QUERY_CLIENT_ENCRYPT_POSSIBLE || _qType == SNI_QUERY_SERVER_ENCRYPT_POSSIBLE || _qType == SNI_QUERY_TCP_SKIP_IO_COMPLETION_ON_SUCCESS, "qType is unsupported or unknown");
             int result=::SNIQueryInfo ( _qType,  &_qInfo);
             qInfo = _qInfo;
             return result;
@@ -1143,7 +1158,7 @@ internal:
         [ResourceExposure(ResourceScope::None)]
         static System::UInt32 SNIWritePacket (SafeHandle^  pConn,
                                              SafeHandle^  packet,
-                                             bool [....])
+                                             bool sync)
         {
             System::UInt32 ret;
 
@@ -1162,7 +1177,7 @@ internal:
                 SNI_ConnWrapper*  local_pConn =    static_cast<SNI_ConnWrapper*>(pConn->DangerousGetHandle().ToPointer ());
                 SNI_Packet*  local_packet =  static_cast<SNI_Packet*>(packet->DangerousGetHandle().ToPointer ());
 
-                if ([....]) {
+                if (sync) {
                     // Need to call SyncOverAsync via PInvoke (instead of a pointer) such that the CLR notifies our hoster (e.g. SQLCLR) that we are doing a managed\native transition
                     return ::SNIWriteSyncOverAsync(local_pConn, local_packet);
                 }
@@ -1206,9 +1221,9 @@ internal:
 
                 if (ret == ERROR_SUCCESS) 
                 {
-                    // added a provider, need to requery for [....] over async support
+                    // added a provider, need to requery for sync over async support
                     BOOL fSupportsSyncOverAsync;
-                    ret = SNIGetInfo(local_pConn->m_pConn, SNI_QUERY_CONN_SUPPORTS_[....]_OVER_ASYNC, &fSupportsSyncOverAsync);
+                    ret = SNIGetInfo(local_pConn->m_pConn, SNI_QUERY_CONN_SUPPORTS_SYNC_OVER_ASYNC, &fSupportsSyncOverAsync);
                     Debug::Assert(ret == ERROR_SUCCESS, "SNIGetInfo cannot fail with this QType");
 
                     // convert BOOL to bool
@@ -1260,10 +1275,10 @@ internal:
                ::SNI_ERROR   local_error;
                ::SNIGetLastError (&local_error);
 
-               const int SizeOfReturnErrorMsg = sizeof (local_error.pszErrorMessage);
+               const int SizeOfReturnErrorMsg = ARRAYSIZE (local_error.pszErrorMessage);
 
                // Verrify that the size of the mananged buffer is at least as big as we think it should be
-               COMPILE_TIME_ASSERT (sizeof (local_error.pszErrorMessage) >= MAX_PATH+1);
+               COMPILE_TIME_ASSERT (ARRAYSIZE (local_error.pszErrorMessage) >= MAX_PATH+1);
                error->provider = static_cast<ProviderEnum>(local_error.Provider);
                error->errorMessage = gcnew cli::array<System::Char>(SizeOfReturnErrorMsg);
                for (int x = 0; x < MAX_PATH+1; ++x)
@@ -1320,7 +1335,7 @@ internal:
                                                  pin_outBuff,
                                                  &local_outBuffLen,
                                                  &local_fDone,                                                 
-                                                 reinterpret_cast<char*>(pin_serverUserName),
+                                                 reinterpret_cast<WCHAR*>(pin_serverUserName),
                                                  serverUserName == nullptr ? 0 : serverUserName->Length,   //cbServerInfo,
                                                  NULL,
                                                  NULL);
@@ -1414,7 +1429,7 @@ private:
                COMPILE_TIME_ASSERT (sizeof(void*) == sizeof(SniClientConsumerInfo.ConsumerInfo.fnWriteComp));
 
                COMPILE_TIME_ASSERT (sizeof(void*) == sizeof(SniClientConsumerInfo.wszConnectionString));
-               COMPILE_TIME_ASSERT (sizeof(void*) == sizeof(SniClientConsumerInfo.szSPN));
+               COMPILE_TIME_ASSERT (sizeof(void*) == sizeof(SniClientConsumerInfo.wszSPN));
                COMPILE_TIME_ASSERT (sizeof(int) == sizeof(SniClientConsumerInfo.cchSPN));
                COMPILE_TIME_ASSERT (sizeof(void*) == sizeof(SniClientConsumerInfo.szInstanceName));
                COMPILE_TIME_ASSERT (sizeof(int) == sizeof(SniClientConsumerInfo.cchInstanceName));
@@ -1422,6 +1437,8 @@ private:
                COMPILE_TIME_ASSERT (sizeof(BOOL) == sizeof(SniClientConsumerInfo.fSynchronousConnection));
                COMPILE_TIME_ASSERT (sizeof(int) == sizeof(SniClientConsumerInfo.timeout));
                COMPILE_TIME_ASSERT (sizeof(BOOL) == sizeof(SniClientConsumerInfo.fParallel));
+               COMPILE_TIME_ASSERT(sizeof(BYTE) == sizeof(SniClientConsumerInfo.transparentNetworkResolution));
+               COMPILE_TIME_ASSERT (sizeof(int) == sizeof(SniClientConsumerInfo.totalTimeout));
            }
 
            // This check makes sure that nothing was added
@@ -1517,7 +1534,7 @@ ref class  NativeOledbWrapper
             hr = unknown->QueryInterface(IID_ITransactionLocal, reinterpret_cast<void**>(&transaction));
             if (NULL != transaction)
             {
-                hr = transaction->Commit(FALSE, XACTTC_[....]_PHASETWO, 0);
+                hr = transaction->Commit(FALSE, XACTTC_SYNC_PHASETWO, 0);
                 transaction->Release();
             }
         }
@@ -1606,3 +1623,243 @@ ref class  NativeOledbWrapper
 #endif
 };
 
+ref class AdalException : public System::Exception
+{
+private:
+    // Internal Adal error category used in retry logic and building error message in managed code
+    initonly unsigned int _category;
+    // Public facin failing status returned from Adal APIs in SNISecADALGetAccessToken
+    initonly unsigned int _status;
+    // Internal last Adal API called in SNISecADALGetAccessToken for troubleshooting
+    initonly unsigned int _state;
+
+internal:
+    AdalException(String^ message, unsigned int category, unsigned int status, unsigned int state) : System::Exception(message)
+    {
+        _category = category;
+        _status = status;
+        _state = state;
+    }
+
+    unsigned int GetCategory() 
+    { 
+        return _category; 
+    }
+
+    unsigned int GetStatus() 
+    { 
+        return _status; 
+    }
+
+    unsigned int GetState()
+    {
+        return _state;
+    }
+};
+
+ref class ADALNativeWrapper
+{
+private:
+    static inline
+    GUID ToGUID(System::Guid^ guid) // This is from msdn http://msdn.microsoft.com/en-us/library/wb8scw8f.aspx.
+    {
+        array<Byte>^ guidData = guid->ToByteArray();
+        pin_ptr<Byte> data = &(guidData[0]);
+
+        return *(GUID *)data;
+    }
+
+internal:
+    static int ADALInitialize()
+    {
+        return SNISecADALInitialize();
+    }
+
+    static array<byte>^ ADALGetAccessToken( String^ username,
+                                            SecureString^ password,
+                                            String^ stsURL,
+                                            String^ servicePrincipalName,
+                                            System::Guid^ correlationId,
+                                            String^ clientId,
+                                            System::Int64% fileTime)
+    {
+        Debug::Assert(password != nullptr, "Password from SecureString is null.");
+
+        IntPtr clearPassword = IntPtr::Zero;
+
+        try
+        {
+            clearPassword = Marshal::SecureStringToGlobalAllocUnicode(password);
+            Debug::Assert(clearPassword != IntPtr::Zero, "clearPassword is Intptr::Zero.");
+
+            array<byte>^ result = ADALGetAccessToken( username,
+                                                      clearPassword,
+                                                      stsURL,
+                                                      servicePrincipalName,
+                                                      correlationId,
+                                                      clientId,
+                                                      false /*fWindowsIntegrated*/,
+                                                      fileTime);
+
+            return result;
+        }
+        finally 
+        {
+            if (clearPassword != IntPtr::Zero) 
+            {
+                Marshal::ZeroFreeGlobalAllocUnicode(clearPassword);
+            }
+        }
+    }
+
+    static array<byte>^ ADALGetAccessToken( String^ username,
+                                            String^ password,
+                                            String^ stsURL,
+                                            String^ servicePrincipalName,
+                                            System::Guid^ correlationId,
+                                            String^ clientId,
+                                            System::Int64% fileTime)
+    {
+        Debug::Assert(password != nullptr, "Password is null.");
+
+        IntPtr clearPassword = IntPtr::Zero;
+
+        try 
+        {
+            clearPassword = Marshal::StringToHGlobalUni(password);
+
+            array<byte>^ result = ADALGetAccessToken( username,
+                                                      clearPassword,
+                                                      stsURL,
+                                                      servicePrincipalName,
+                                                      correlationId,
+                                                      clientId,
+                                                      false /*fWindowsIntegrated*/,
+                                                      fileTime);
+
+            return result;
+        }
+        finally 
+        {
+            if (clearPassword != IntPtr::Zero) 
+            {
+                Marshal::FreeHGlobal(clearPassword);
+            }
+        }
+    }
+
+    // The version of API that performs windows integrated authentication.
+    static array<byte>^ ADALGetAccessTokenForWindowsIntegrated( String^ stsURL,
+                                                                String^ servicePrincipalName,
+                                                                System::Guid^ correlationId,
+                                                                String^ clientId,
+                                                                System::Int64% fileTime)
+    {
+        return ADALGetAccessToken( nullptr /*username*/,
+                                   IntPtr::Zero /*password*/,
+                                   stsURL,
+                                   servicePrincipalName,
+                                   correlationId,
+                                   clientId,
+                                   true /*fWindowsIntegrated*/,
+                                   fileTime);
+    }
+
+private:
+    static array<byte>^ ADALGetAccessToken( String^ username,
+                                            IntPtr password,
+                                            String^ stsURL,
+                                            String^ servicePrincipalName,
+                                            System::Guid^ correlationId,
+                                            String^ clientId,
+                                            const bool& fWindowsIntegrated,
+                                            System::Int64% fileTime)
+    {
+        Debug::Assert(username != nullptr || fWindowsIntegrated, "User name is null and its not windows integrated authentication.");
+        Debug::Assert(password != IntPtr::Zero || fWindowsIntegrated, "Password is null and its not windows integrated authentication.");
+        Debug::Assert(stsURL != nullptr, "stsURL is null.");
+        
+        Debug::Assert(servicePrincipalName != nullptr, "ServicePrincipalName is null.");
+        Debug::Assert(clientId != nullptr, "Ado ClientId is null.");
+        
+        Debug::Assert(correlationId != Guid::Empty, "CorrelationId is Guid::Empty.");
+
+        pin_ptr<const wchar_t> pUsername = nullptr; 
+        const wchar_t* pPassword = nullptr;
+
+        if (!fWindowsIntegrated)
+        {
+            pUsername = PtrToStringChars(username);
+            pPassword = static_cast<wchar_t*>(password.ToPointer());
+        }
+
+        pin_ptr<const wchar_t> pStsURL = PtrToStringChars(stsURL);
+        pin_ptr<const wchar_t> pServicePrincipalName = PtrToStringChars(servicePrincipalName);
+        pin_ptr<const wchar_t> pClientId = PtrToStringChars(clientId);
+        
+        LPWSTR pToken = nullptr;
+        LPWSTR pErrorDescription = nullptr;
+        DWORD cbToken = 0, errorDescriptionLength = 0;
+        DWORD adalStatus = ERROR_SUCCESS;
+        DWORD errorState = 0;
+        _FILETIME fileTimeLocal = {0};
+
+        GUID correlationIdGUID = ToGUID(correlationId);
+        try
+        {
+            DWORD statusCategory = SNISecADALGetAccessToken(pUsername,
+                                                            pPassword,
+                                                            pStsURL,
+                                                            pServicePrincipalName,
+                                                            correlationIdGUID,
+                                                            pClientId,
+                                                            fWindowsIntegrated,
+                                                            &pToken,
+                                                            cbToken,
+                                                            &pErrorDescription,
+                                                            errorDescriptionLength,
+                                                            adalStatus,
+                                                            errorState,
+                                                            fileTimeLocal);
+
+            if (statusCategory == 0)
+            {
+                Debug::Assert(pToken != nullptr, "pToken is null.");
+                Debug::Assert(cbToken > 0, "token length is less than or equal to 0.");
+                Debug::Assert(pErrorDescription == nullptr, "pErrorDescription is not null");
+                Debug::Assert(errorDescriptionLength == 0, "ErrorDescription length is not 0.");
+
+                IntPtr ptrToken = (IntPtr)pToken;
+
+                array<byte>^ result = gcnew array<byte>(cbToken);
+                Marshal::Copy(ptrToken, result, 0, cbToken);
+
+                fileTime = (((ULONGLONG)fileTimeLocal.dwHighDateTime) << 32) + fileTimeLocal.dwLowDateTime;
+                return result;
+            }
+            else
+            {
+                Debug::Assert(pToken == nullptr, "pToken is not null in error case.");
+                Debug::Assert(cbToken == 0, "Token length is not 0 in error case.");
+
+                String^ errorString = String::Empty;
+                if (pErrorDescription != nullptr && errorDescriptionLength >= 0)
+                {
+                    errorString = Marshal::PtrToStringUni((IntPtr)pErrorDescription, errorDescriptionLength);
+                }
+                throw gcnew AdalException(errorString, statusCategory, adalStatus, errorState);
+            }
+        }
+        finally 
+        {
+            if (pToken != nullptr) 
+            {
+                delete[] pToken;
+            }
+            if (pErrorDescription != nullptr)
+            {
+                delete[] pErrorDescription;
+            }
+        }
+    }
+};

@@ -281,7 +281,7 @@ namespace System.Windows.Markup
             internal FigureUnitType UnitType;
         };
 
-        //  Note: keep this array in [....] with the FigureUnitType enum
+        //  Note: keep this array in sync with the FigureUnitType enum
         static private FigureUnitTypeStringConvert[] UnitStrings =
         {
             new FigureUnitTypeStringConvert("auto",    FigureUnitType.Auto),

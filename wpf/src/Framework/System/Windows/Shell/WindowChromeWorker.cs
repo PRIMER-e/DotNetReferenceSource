@@ -63,7 +63,7 @@ namespace Microsoft.Windows.Shell
         private WindowChrome _chromeInfo;
 
         // Keep track of this so we can detect when we need to apply changes.  Tracking these separately
-        // as I've seen using just one cause things to get enough out of [....] that occasionally the caption will redraw.
+        // as I've seen using just one cause things to get enough out of sync that occasionally the caption will redraw.
         private WindowState _lastRoundingState;
         private WindowState _lastMenuState;
         private bool _isGlassEnabled;
@@ -409,11 +409,12 @@ namespace Microsoft.Windows.Shell
 
             if (Utility.IsPresentationFrameworkVersionLessThan4)
             {
+                DpiScale dpi = _window.GetDpi();
                 RECT rcWindow = NativeMethods.GetWindowRect(_hwnd);
                 RECT rcAdjustedClient = _GetAdjustedWindowRect(rcWindow);
 
-                Rect rcLogicalWindow = DpiHelper.DeviceRectToLogical(new Rect(rcWindow.Left, rcWindow.Top, rcWindow.Width, rcWindow.Height));
-                Rect rcLogicalClient = DpiHelper.DeviceRectToLogical(new Rect(rcAdjustedClient.Left, rcAdjustedClient.Top, rcAdjustedClient.Width, rcAdjustedClient.Height));
+                Rect rcLogicalWindow = DpiHelper.DeviceRectToLogical(new Rect(rcWindow.Left, rcWindow.Top, rcWindow.Width, rcWindow.Height), dpi.DpiScaleX, dpi.DpiScaleY);
+                Rect rcLogicalClient = DpiHelper.DeviceRectToLogical(new Rect(rcAdjustedClient.Left, rcAdjustedClient.Top, rcAdjustedClient.Width, rcAdjustedClient.Height), dpi.DpiScaleX, dpi.DpiScaleY);
 
                 if (!Utility.IsFlagSet((int)_chromeInfo.NonClientFrameEdges, (int)NonClientFrameEdges.Left))
                 {
@@ -511,6 +512,7 @@ namespace Microsoft.Windows.Shell
                 // try to undo what WPF did after it has done its thing.
                 if (_hasUserMovedWindow)
                 {
+                    DpiScale dpi = _window.GetDpi();
                     _hasUserMovedWindow = false;
                     WINDOWPLACEMENT wp = NativeMethods.GetWindowPlacement(_hwnd);
 
@@ -518,7 +520,9 @@ namespace Microsoft.Windows.Shell
                     Point adjustedTopLeft = DpiHelper.DevicePixelsToLogical(
                         new Point(
                             wp.rcNormalPosition.Left - adjustedDeviceRc.Left,
-                            wp.rcNormalPosition.Top - adjustedDeviceRc.Top));
+                            wp.rcNormalPosition.Top - adjustedDeviceRc.Top),
+                        dpi.DpiScaleX,
+                        dpi.DpiScaleY);
 
                     _window.Top = adjustedTopLeft.Y;
                     _window.Left = adjustedTopLeft.X;
@@ -563,9 +567,11 @@ namespace Microsoft.Windows.Shell
                     return false;
                 }
 
+                DpiScale dpi = _window.GetDpi();
+
                 RECT adjustedOffset = _GetAdjustedWindowRect(new RECT { Bottom = 100, Right = 100 });
                 Point windowTopLeft = new Point(_window.Left, _window.Top);
-                windowTopLeft -= (Vector)DpiHelper.DevicePixelsToLogical(new Point(adjustedOffset.Left, adjustedOffset.Top));
+                windowTopLeft -= (Vector)DpiHelper.DevicePixelsToLogical(new Point(adjustedOffset.Left, adjustedOffset.Top), dpi.DpiScaleX, dpi.DpiScaleY);
 
                 return _window.RestoreBounds.Location != windowTopLeft;
             }
@@ -652,10 +658,11 @@ namespace Microsoft.Windows.Shell
 
             if (_chromeInfo.NonClientFrameEdges != NonClientFrameEdges.None)
             {
+                DpiScale dpi = _window.GetDpi();
 #if RIBBON_IN_FRAMEWORK
-                Thickness windowResizeBorderThicknessDevice = DpiHelper.LogicalThicknessToDevice(SystemParameters.WindowResizeBorderThickness);
+                Thickness windowResizeBorderThicknessDevice = DpiHelper.LogicalThicknessToDevice(SystemParameters.WindowResizeBorderThickness, dpi.DpiScaleX, dpi.DpiScaleY);
 #else
-                Thickness windowResizeBorderThicknessDevice = DpiHelper.LogicalThicknessToDevice(SystemParameters2.Current.WindowResizeBorderThickness);
+                Thickness windowResizeBorderThicknessDevice = DpiHelper.LogicalThicknessToDevice(SystemParameters2.Current.WindowResizeBorderThickness, dpi.DpiScaleX, dpi.DpiScaleY);
 #endif
                 var rcClientArea = (RECT)Marshal.PtrToStructure(lParam, typeof(RECT));
                 if (Utility.IsFlagSet((int)_chromeInfo.NonClientFrameEdges, (int)NonClientFrameEdges.Top))
@@ -680,9 +687,19 @@ namespace Microsoft.Windows.Shell
 
             handled = true;
 
-            // Using the combination of WVR.VALIDRECTS and WVR.REDRAW gives the smoothest
-            // resize behavior we can achieve here.
-            return new IntPtr((int)(WVR.VALIDRECTS | WVR.REDRAW));
+            // Per MSDN for NCCALCSIZE, always return 0 when wParam == FALSE
+            // 
+            // Returning 0 when wParam == TRUE is not appropriate - it will preserve
+            // the old client area and align it with the upper-left corner of the new 
+            // client area. So we simply ask for a redraw (WVR_REDRAW)
+
+            IntPtr retVal = IntPtr.Zero;
+            if (wParam.ToInt32() != 0) // wParam == TRUE
+            {
+                retVal = new IntPtr((int) (WVR.REDRAW));
+            }
+
+            return retVal; 
         }
 
         private HT _GetHTFromResizeGripDirection(ResizeGripDirection direction)
@@ -717,13 +734,15 @@ namespace Microsoft.Windows.Shell
         [SecurityCritical]
         private IntPtr _HandleNCHitTest(WM uMsg, IntPtr wParam, IntPtr lParam, out bool handled)
         {
+            DpiScale dpi = _window.GetDpi();
+
             // Let the system know if we consider the mouse to be in our effective non-client area.
             var mousePosScreen = new Point(Utility.GET_X_LPARAM(lParam), Utility.GET_Y_LPARAM(lParam));
             Rect windowPosition = _GetWindowRect();
 
             Point mousePosWindow = mousePosScreen;
             mousePosWindow.Offset(-windowPosition.X, -windowPosition.Y);
-            mousePosWindow = DpiHelper.DevicePixelsToLogical(mousePosWindow);
+            mousePosWindow = DpiHelper.DevicePixelsToLogical(mousePosWindow, dpi.DpiScaleX, dpi.DpiScaleY);
 
             // If the app is asking for content to be treated as client then that takes precedence over _everything_, even DWM caption buttons.
             // This allows apps to set the glass frame to be non-empty, still cover it with WPF content to hide all the glass,
@@ -763,8 +782,8 @@ namespace Microsoft.Windows.Shell
             }
 
             HT ht = _HitTestNca(
-                DpiHelper.DeviceRectToLogical(windowPosition),
-                DpiHelper.DevicePixelsToLogical(mousePosScreen));
+                DpiHelper.DeviceRectToLogical(windowPosition, dpi.DpiScaleX, dpi.DpiScaleY),
+                DpiHelper.DevicePixelsToLogical(mousePosScreen, dpi.DpiScaleX, dpi.DpiScaleY));
 
             handled = true;
             return new IntPtr((int)ht);
@@ -894,8 +913,8 @@ namespace Microsoft.Windows.Shell
                     _windowPosAtStartOfUserMove = new Point(_window.Left, _window.Top);
                 }
                 // Realistically we also don't want to update the start position when moving from one docked state to another (or to and from maximized),
-                // but it's tricky to detect and this is already a workaround for a bug that's fixed in newer versions of the framework.
-                // Not going to try to handle all cases.
+                // but it's tricky to detect and this is already a workaround for a 
+
             }
 
             handled = false;
@@ -1173,9 +1192,11 @@ namespace Microsoft.Windows.Shell
                 IntPtr hrgn = IntPtr.Zero;
                 try
                 {
+                    DpiScale dpi = _window.GetDpi();
+
                     double shortestDimension = Math.Min(windowSize.Width, windowSize.Height);
 
-                    double topLeftRadius = DpiHelper.LogicalPixelsToDevice(new Point(_chromeInfo.CornerRadius.TopLeft, 0)).X;
+                    double topLeftRadius = DpiHelper.LogicalPixelsToDevice(new Point(_chromeInfo.CornerRadius.TopLeft, 0), dpi.DpiScaleX, dpi.DpiScaleY).X;
                     topLeftRadius = Math.Min(topLeftRadius, shortestDimension / 2);
 
                     if (_IsUniform(_chromeInfo.CornerRadius))
@@ -1191,7 +1212,7 @@ namespace Microsoft.Windows.Shell
                         // of the window.
                         hrgn = _CreateRoundRectRgn(new Rect(0, 0, windowSize.Width / 2 + topLeftRadius, windowSize.Height / 2 + topLeftRadius), topLeftRadius);
 
-                        double topRightRadius = DpiHelper.LogicalPixelsToDevice(new Point(_chromeInfo.CornerRadius.TopRight, 0)).X;
+                        double topRightRadius = DpiHelper.LogicalPixelsToDevice(new Point(_chromeInfo.CornerRadius.TopRight, 0), dpi.DpiScaleX, dpi.DpiScaleY).X;
                         topRightRadius = Math.Min(topRightRadius, shortestDimension / 2);
                         Rect topRightRegionRect = new Rect(0, 0, windowSize.Width / 2 + topRightRadius, windowSize.Height / 2 + topRightRadius);
                         topRightRegionRect.Offset(windowSize.Width / 2 - topRightRadius, 0);
@@ -1199,7 +1220,7 @@ namespace Microsoft.Windows.Shell
 
                         _CreateAndCombineRoundRectRgn(hrgn, topRightRegionRect, topRightRadius);
 
-                        double bottomLeftRadius = DpiHelper.LogicalPixelsToDevice(new Point(_chromeInfo.CornerRadius.BottomLeft, 0)).X;
+                        double bottomLeftRadius = DpiHelper.LogicalPixelsToDevice(new Point(_chromeInfo.CornerRadius.BottomLeft, 0), dpi.DpiScaleX, dpi.DpiScaleY).X;
                         bottomLeftRadius = Math.Min(bottomLeftRadius, shortestDimension / 2);
                         Rect bottomLeftRegionRect = new Rect(0, 0, windowSize.Width / 2 + bottomLeftRadius, windowSize.Height / 2 + bottomLeftRadius);
                         bottomLeftRegionRect.Offset(0, windowSize.Height / 2 - bottomLeftRadius);
@@ -1207,7 +1228,7 @@ namespace Microsoft.Windows.Shell
 
                         _CreateAndCombineRoundRectRgn(hrgn, bottomLeftRegionRect, bottomLeftRadius);
 
-                        double bottomRightRadius = DpiHelper.LogicalPixelsToDevice(new Point(_chromeInfo.CornerRadius.BottomRight, 0)).X;
+                        double bottomRightRadius = DpiHelper.LogicalPixelsToDevice(new Point(_chromeInfo.CornerRadius.BottomRight, 0), dpi.DpiScaleX, dpi.DpiScaleY).X;
                         bottomRightRadius = Math.Min(bottomRightRadius, shortestDimension / 2);
                         Rect bottomRightRegionRect = new Rect(0, 0, windowSize.Width / 2 + bottomRightRadius, windowSize.Height / 2 + bottomRightRadius);
                         bottomRightRegionRect.Offset(windowSize.Width / 2 - bottomRightRadius, windowSize.Height / 2 - bottomRightRadius);
@@ -1327,6 +1348,8 @@ namespace Microsoft.Windows.Shell
             }
             else
             {
+                DpiScale dpi = _window.GetDpi();
+
                 // This makes the glass visible at a Win32 level so long as nothing else is covering it.
                 // The Window's Background needs to be changed independent of this.
 
@@ -1334,14 +1357,14 @@ namespace Microsoft.Windows.Shell
                 _hwndSource.CompositionTarget.BackgroundColor = Colors.Transparent;
 
                 // Thickness is going to be DIPs, need to convert to system coordinates.
-                Thickness deviceGlassThickness = DpiHelper.LogicalThicknessToDevice(_chromeInfo.GlassFrameThickness);
+                Thickness deviceGlassThickness = DpiHelper.LogicalThicknessToDevice(_chromeInfo.GlassFrameThickness, dpi.DpiScaleX, dpi.DpiScaleY);
 
                 if (_chromeInfo.NonClientFrameEdges != NonClientFrameEdges.None)
                 {
 #if RIBBON_IN_FRAMEWORK
-                    Thickness windowResizeBorderThicknessDevice = DpiHelper.LogicalThicknessToDevice(SystemParameters.WindowResizeBorderThickness);
+                    Thickness windowResizeBorderThicknessDevice = DpiHelper.LogicalThicknessToDevice(SystemParameters.WindowResizeBorderThickness, dpi.DpiScaleX, dpi.DpiScaleY);
 #else
-                    Thickness windowResizeBorderThicknessDevice = DpiHelper.LogicalThicknessToDevice(SystemParameters2.Current.WindowResizeBorderThickness);
+                    Thickness windowResizeBorderThicknessDevice = DpiHelper.LogicalThicknessToDevice(SystemParameters2.Current.WindowResizeBorderThickness, dpi.DpiScaleX, dpi.DpiScaleY);
 #endif
                     if (Utility.IsFlagSet((int)_chromeInfo.NonClientFrameEdges, (int)NonClientFrameEdges.Top))
                     {
@@ -1484,7 +1507,7 @@ namespace Microsoft.Windows.Shell
             rootElement.Margin = new Thickness();
 
             // This margin is only necessary if the client rect is going to be calculated incorrectly by WPF.
-            // This bug was fixed in V4 of the framework.
+            // This 
             if (Utility.IsPresentationFrameworkVersionLessThan4)
             {
                 Assert.IsTrue(_isFixedUp);

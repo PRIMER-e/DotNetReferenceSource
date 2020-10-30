@@ -8,7 +8,7 @@
 //  History:
 //     06/19/2002-murrayw
 //          Created
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -26,7 +26,7 @@
 //
 //IMPORTANT: IMPORTANT: IMPORTANT
 //Start with 8001, the enum defined on the managed world starts with 8001 as well
-//KEEP THESE IN [....]
+//KEEP THESE IN SYNC
 //The ApplicationCommands enums in wcp\host\inc\hostservices.idl and IBrowserHostServices.cs 
 //and the menuIDs wcp\host\docobj\resource.hxx and resources.rc
 //

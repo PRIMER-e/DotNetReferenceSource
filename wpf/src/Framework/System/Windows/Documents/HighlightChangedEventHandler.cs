@@ -8,7 +8,7 @@
 // Description: HighlightLayer.Changed event handler.
 //
 // History:  
-//  07/01/2004 : [....] - Created
+//  07/01/2004 : benwest - Created
 //
 //---------------------------------------------------------------------------
 

@@ -149,7 +149,7 @@ public:
     // the arena may be left with no used pages. In that case it can be freed,
     // returning address space to the process. Call this to release any unsued arenas.
     void FreeUnusedArenas();
-    // [....] this call first decommits unused pages and then frees unused arenas.
+    // Microsoft this call first decommits unused pages and then frees unused arenas.
     void ShrinkUnusedResources();
 
     static size_t pageSize;         // The system page size.

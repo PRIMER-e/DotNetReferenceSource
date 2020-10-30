@@ -5,7 +5,7 @@
 // Description: FloaterParagraph class provides a wrapper floater objects.
 //
 // History:  
-//  11/04/2004 : [....] - created.
+//  11/04/2004 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 #pragma warning disable 1634, 1691  // avoid generating warnings about unknown 
@@ -234,7 +234,7 @@ namespace MS.Internal.PtsHost
                 // Initialize the subpage size. PTS subpage margin is always set to 0 for Floaters.
                 // If width on floater is specified, use the specified value.
                 // Margin, border and padding of the floater is extracted from available subpage height
-                mbp = MbpInfo.FromElement(Element);
+                mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
                 
                 // We do not mirror margin as it's used to dist text left and right, and is unnecessary.
                 // Clip Floater.Width to available width
@@ -428,7 +428,7 @@ namespace MS.Internal.PtsHost
                 // Initialize the subpage size. PTS subpage margin is always set to 0 for Floaters.
                 // If width on floater is specified, use the specified value.
                 // Margin, border and padding of the floater is extracted from available subpage width.
-                mbp = MbpInfo.FromElement(Element);
+                mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
 
                 specifiedWidth = CalculateWidth(TextDpi.FromTextDpi(durAvailable));
                 AdjustDurAvailable(specifiedWidth, ref durAvailable, out subpageWidth);
@@ -669,8 +669,8 @@ namespace MS.Internal.PtsHost
         {
             // If width on floater is specified, use the specified value.
             // Use page size from current format context to limit MBP
-            MbpInfo mbp = MbpInfo.FromElement(Element);            
-            if (!Double.IsNaN(specifiedWidth))           
+            MbpInfo mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);
+            if (!Double.IsNaN(specifiedWidth))
             {
                 TextDpi.EnsureValidPageWidth(ref specifiedWidth);
                 // If specified width is greater than available width, do not exceed available width

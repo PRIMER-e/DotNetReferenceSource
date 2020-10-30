@@ -319,7 +319,7 @@ void SourceFile::RegisterFileSubType()
 
         // We always pass 0 for the ClassID (not the line number for the class) because the Designer
         // uses this information as a ClassID, so it should be changing as code moves around. ) indicates the
-        // first class in the file. (see bug 160102)
+        // first class in the file. (see 
         pMsg = new RegisterDesignViewAttributeMessage(this, 0, m_pstrLastSubTypeCategory);
         GetCompilerSharedState()->GetMessages()->RegisterDesignViewAttribute(pMsg);
     }
@@ -2654,11 +2654,11 @@ long SourceFile::GetMappedLineInfo(
     {
         unsigned LowerBound = 0, UpperBound = m_NumMappedEntries - 1;
         // Do a binary search on the array ( the range pairs in the array are assumed to be in sorted order )
-        // VSWhidbey#56614,[....]: Changed the while loop from true to UpperBound >= LowerBound
+        // VSWhidbey#56614,Microsoft: Changed the while loop from true to UpperBound >= LowerBound
         //    This is doing a binary search and the code below does not check that LowerBound is less
-        //    than UpperBound.  This bug ran into a situation where LowerBound was greater than UpperBound
-        //    and thus we were accessing the array with a rather large index.  On x86 we have been "lucky"
-        //    and have been able to access the memory location.  But, on 64-bit we explode with an AV.
+        //    than UpperBound.  This 
+
+
         while ( UpperBound >= LowerBound )
         {
             unsigned TryThisIdx = LowerBound + ( UpperBound - LowerBound ) / 2;
@@ -3707,7 +3707,7 @@ void SourceFile::BreakModeCommit(bool fCommitOtherFiles)
     if (GetProject() && GetProject()->GetENCBuilder())  // VSWhidbey 175661 Only do ENC check if project supports ENC
     {
         //Check if we have any ENC errors (rude edit error)
-        //VERIFY:[....],10/2001,do we modify an active statement. If so, generate an ENC error
+        //VERIFY:Microsoft,10/2001,do we modify an active statement. If so, generate an ENC error
         //compare parse trees to figure out which edits are allow to continue.
         VSASSERT(m_pENCProcessor,"Why do we not have a EnC Processor?");
         if (m_pENCProcessor)
@@ -3747,7 +3747,7 @@ void SourceFile::BreakModeCommit(bool fCommitOtherFiles)
     }
     else
     {
-        //Consider:[....],10/2001,how to handle ENC without a vb project
+        //Consider:Microsoft,10/2001,how to handle ENC without a vb project
     }
 }
 
@@ -3796,7 +3796,7 @@ void SourceFile::SetENCChange(DBGMODE dbgmode)
 // parameter is used to differentiate between the two events.  In the case of an exti of an ENC session,
 // the ENC_BREAKSTATE_REASON will be ENC_BREAK_NORMAL.
 //
-// NOTE:[....],10/2001,it should be called at the begin/end of ENC session
+// NOTE:Microsoft,10/2001,it should be called at the begin/end of ENC session
 //-------------------------------------------------------------------------------------------------
 void SourceFile::ResetENCState(ENC_BREAKSTATE_REASON encBreakReason, bool isEnter)
 {
@@ -3806,7 +3806,7 @@ void SourceFile::ResetENCState(ENC_BREAKSTATE_REASON encBreakReason, bool isEnte
         // However for this to work, we must be notified if the file changes in any way outside of the Editor,
         // because we would lose opportunity to cache the old parse tree.
         //
-        // [....]: I can't make heads or tails of the above comment.  It mentions specifically
+        // Microsoft: I can't make heads or tails of the above comment.  It mentions specifically
         // about entering an ENC session but the original state of the below code didn't 
         // differentiate between entering and leaving an ENC session.  The differientation was added
         // by me along with this comment

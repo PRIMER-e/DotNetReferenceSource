@@ -6,7 +6,7 @@
 *          parsing Template
 *
 * History:
-*    11/22/04:    [....]      Created
+*    11/22/04:    Microsoft      Created
 *
 * Copyright (C) 2004 by Microsoft Corporation.  All rights reserved.
 *
@@ -194,8 +194,8 @@ namespace System.Windows.Markup
 #endif
                 // It can be a fairly common error for,
                 // <ControlTemplate.Triggers>, <DataTemplate.Triggers>, or <TableTemplate.Triggers>
-                // to be specified at the wrong nesting level (See Windows bug 966137).  Detect
-                // these cases to give more meaningful error messages.
+                // to be specified at the wrong nesting level (See Windows 
+
                 if (xamlUnknownTagStartNode.Value == XamlTemplateSerializer.ControlTemplateTriggersFullPropertyName ||
                     xamlUnknownTagStartNode.Value == XamlTemplateSerializer.DataTemplateTriggersFullPropertyName ||
                     xamlUnknownTagStartNode.Value == XamlTemplateSerializer.HierarchicalDataTemplateTriggersFullPropertyName ||
@@ -1523,7 +1523,7 @@ namespace System.Windows.Markup
                 else if (xamlPropertyNode.PropName == XamlTemplateSerializer.SetterPropertyAttributeName)
                 {
                     // Property names should be trimmed since whitespace is not significant
-                    // and can affect name resolution (See Windows bug 1035621)
+                    // and can affect name resolution (See Windows 
                     xamlPropertyNode.SetValue(xamlPropertyNode.Value.Trim());
                     _setterOrTriggerPropertyNode = xamlPropertyNode;
 
@@ -1561,7 +1561,7 @@ namespace System.Windows.Markup
                 else if (xamlPropertyNode.PropName == XamlTemplateSerializer.PropertyTriggerPropertyName)
                 {
                     // Property names should be trimmed since whitespace is not significant
-                    // and can affect name resolution (See Windows bug 1035621)
+                    // and can affect name resolution (See Windows 
                     xamlPropertyNode.SetValue(xamlPropertyNode.Value.Trim());
                     _setterOrTriggerPropertyNode = xamlPropertyNode;
 

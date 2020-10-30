@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{85a14887-5a1d-4414-81b9-16673c563c1d}</ProjectGuid>
+    <ProjectGuid>{f50bc490-9025-4723-ae4c-61d781ea162d}</ProjectGuid>
     <OutputPath>.</OutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Data.DataSetExtensions</AssemblyName>
@@ -12,31 +12,31 @@
     <NoStdLib>True</NoStdLib>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <DefineConstants>CODE_ANALYSIS_BASELINE;FEATURE_LEGACYSURFACEAREA;FEATURE_UTF32;FEATURE_UTF7;FEATURE_SERIALIZATION;SYSTEM_DATA_ENTITY;TRACE;RETAIL;WIN32</DefineConstants>
+    <DefineConstants>CODE_ANALYSIS_BASELINE;FEATURE_LEGACYSURFACEAREA;FEATURE_UTF32;FEATURE_UTF7;SYSTEM_DATA_ENTITY;TRACE;RETAIL;WIN32</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " >
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\clr\src\BCL\mscorlib.csproj">
-      <Project>{a72657be-225c-4239-956e-ee2a30893b41}</Project>
+    <ProjectReference Include="..\..\..\clr\src\bcl\mscorlib.csproj">
+      <Project>{20f34c38-8c60-44e7-b703-0e341d274957}</Project>
       <Name>mscorlib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Core\System.Core.csproj">
-      <Project>{4514f831-ec02-41cd-a45f-0bfc17e6a086}</Project>
-      <Name>System.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Data.csproj">
-      <Project>{b7cf7b06-93cb-4212-8b4c-b3ae4bdf1408}</Project>
-      <Name>System.Data</Name>
-    </ProjectReference>
     <ProjectReference Include="..\System.csproj">
-      <Project>{20c75c70-c8b6-4dfb-a4e5-16d09099776d}</Project>
+      <Project>{85716da4-9fb2-4f44-9c4d-b7431fdf1b20}</Project>
       <Name>System</Name>
     </ProjectReference>
-    <ProjectReference Include="..\System.Xml.csproj">
-      <Project>{328d1889-8b13-460e-908d-cbb168675ec2}</Project>
+    <ProjectReference Include="..\Core\System.Core.csproj">
+      <Project>{1d8f39aa-9297-49e4-8f18-cea8f165d7c4}</Project>
+      <Name>System.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\data\System.Data.csproj">
+      <Project>{6c5dd4f8-ed35-4f22-b8dc-4489d2c3dfaa}</Project>
+      <Name>System.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Xml\System.Xml.csproj">
+      <Project>{6f992f82-1c90-4388-ab60-15c653aeeca5}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>
   </ItemGroup>
@@ -44,16 +44,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="System\Data\ShippingAssemblyAttribute.cs" />
     <Compile Include="System\Data\DataRowComparer.cs" />
+    <Compile Include="System\Data\DataRowExtensions.cs" />
     <Compile Include="System\Data\DataSetUtil.cs" />
     <Compile Include="System\Data\DataTableExtensions.cs" />
     <Compile Include="System\Data\EnumerableRowCollection.cs" />
-    <Compile Include="System\Data\OrderedEnumerableRowCollection.cs" />
     <Compile Include="System\Data\EnumerableRowCollectionExtensions.cs" />
     <Compile Include="System\Data\LinqDataView.cs" />
+    <Compile Include="System\Data\OrderedEnumerableRowCollection.cs" />
+    <Compile Include="System\Data\ShippingAssemblyAttribute.cs" />
     <Compile Include="System\Data\SortExpressionBuilder.cs" />
-    <Compile Include="System\Data\DataRowExtensions.cs" />
     <Compile Include="System\Data\TypedTableBase.cs" />
     <Compile Include="System\Data\TypedTableBaseExtensions.cs" />
   </ItemGroup>

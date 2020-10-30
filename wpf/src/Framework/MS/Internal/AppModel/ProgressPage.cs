@@ -7,7 +7,7 @@
 //      the managed one from up to v3.5. See Host\DLL\ProgressPage.hxx for details.
 //
 //  History:
-//      2007/12/xx   [....]     Created
+//      2007/12/xx   Microsoft     Created
 //
 //------------------------------------------------------------------------
 

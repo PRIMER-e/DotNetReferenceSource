@@ -81,7 +81,7 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1341052
 // Developer: LGolding
-// Reason: By Design, approved by [....], for reasons explained in the bug and its attached e-mail thread.
+// Reason: By Design, approved by andren, for reasons explained in the bug and its attached e-mail thread.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope="member", Target="MS.Internal.Interop.PROPSPECunion.name")]
 
@@ -95,7 +95,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1133992
-// Developer: [....]
+// Developer: DavidJen
 // Reason: It is safe to exclude a message from this rule if the field type is immutable.
 //         The field's value EmptySortDescriptionCollection is an immutable collection.
 //***************************************************************************************************************************
@@ -104,7 +104,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: Private run
-// Developer: [....]
+// Developer: andren
 // Reason: partial trust security team has reviewed all of these
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.MSInternal", "CA900:AptcaAssembliesShouldBeReviewed")]
@@ -243,12 +243,12 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage", Scope="member", Target="MS.Win32.UnsafeNativeMethods.WaitForMultipleObjectsEx(System.Int32,System.IntPtr[],System.Boolean,System.Int32,System.Boolean):System.Int32")]
 
 // *** added 3/24/05:
-//[....]:
+//dwaynen:
 [module: SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage", Scope="member", Target="MS.Win32.UnsafeNativeMethods.IntMsgWaitForMultipleObjectsEx(System.Int32,System.IntPtr[],System.Int32,System.Int32,System.Int32):System.Int32")]
 [module: SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage", Scope="member", Target="MS.Win32.UnsafeNativeMethods.IntGetMessageW(System.Windows.Interop.MSG&,System.Runtime.InteropServices.HandleRef,System.Int32,System.Int32):System.Int32")]
 [module: SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage", Scope="member", Target="MS.Win32.UnsafeNativeMethods.IntSetFocus(System.Runtime.InteropServices.HandleRef):System.IntPtr")]
 [module: SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage", Scope="member", Target="MS.Win32.UnsafeNativeMethods.IntRegisterClassEx(MS.Win32.NativeMethods+WNDCLASSEX_D):System.UInt16")]
-//[....]:
+//prasadt:
 [module: SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage", Scope="member", Target="MS.Win32.UnsafeNativeMethods.UnhookWinEvent(System.IntPtr):System.Boolean")]
 
 // *** added 3/25/05:
@@ -603,7 +603,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //*********************************************************************************************************************************
 // Bug ID: 1571473
-// Developer: [....]
+// Developer: benwest
 // Reason: All of these callers are SecurityCritical -- it is acceptable for them to call link demanded methods.
 //*********************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "MS.Win32.NativeMethods+VARIANT.Clear():System.Void")]
@@ -645,7 +645,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: 1641130, 1641131
-// Developer: [....]
+// Developer: benwest
 // Reason: All of these callers are SecurityCritical -- it is acceptable for them to call link demanded methods.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "MS.Win32.SafeNativeMethods.DestroyCaret():System.Boolean")]
@@ -654,14 +654,14 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: 1653882
-// Developer: [....]
+// Developer: SamBent
 // Reason: This call is SecurityCritical -- it is acceptable to call link demanded methods.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="MS.Win32.UnsafeNativeMethods.GetWindowLongWndProc(System.Runtime.InteropServices.HandleRef):MS.Win32.NativeMethods+WndProc")]
 
 //*********************************************************************************************************************************
 // Bug ID:    1533743
-// Developer: [....]
+// Developer: bchapman
 // Reason: In the designer senario we need to load the user's code behind DLL over and over
 //         is the user makes changes.  We can't unload the old assemblies so we need a way to
 //         load the new ones even though we have an assemblies already  loaded with exactly that idenity.
@@ -707,7 +707,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: 140708
-// Developer: [....]
+// Developer: SamBent
 // Reason: This call is SecurityCritical -- it is acceptable to call link demanded methods.
 //*************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope="member", Target="MS.Internal.ShutDownListener.#StopListening()")]

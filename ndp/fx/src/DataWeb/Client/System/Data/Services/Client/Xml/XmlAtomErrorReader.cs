@@ -6,7 +6,7 @@
 //      Provides a wrapping XmlReader that can detect in-line errors.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client.Xml

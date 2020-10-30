@@ -119,7 +119,7 @@ namespace MS.Internal.Data
             // Need to check for nullable types first, since NullableConverter is a bit over-eager;
             // TypeConverter for Nullable can convert e.g. Nullable<DateTime> to string
             // but it ends up doing a different conversion than the TypeConverter for the
-            // generic's inner type, e.g. bug 1361977
+            // generic's inner type, e.g. 
             innerType = Nullable.GetUnderlyingType(sourceType);
             if (innerType != null)
             {
@@ -198,7 +198,7 @@ namespace MS.Internal.Data
 
         // some types have Parse methods that are more successful than their
         // type converters at converting strings.
-        // [This code is lifted from [....] - formatter.cs]
+        // [This code is lifted from Microsoft - formatter.cs]
         internal static object TryParse(object o, Type targetType, CultureInfo culture)
         {
             object result = DependencyProperty.UnsetValue;

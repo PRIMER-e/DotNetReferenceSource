@@ -199,8 +199,8 @@ namespace MS.Internal.AutomationProxies
                 }
             }
 
-            // bug# 11147, Text/edit box should not enter more characters than what is allowed through keyboard.
-            // Determine the max number of chars this editbox accepts
+            // 
+
 
             int result = Misc.ProxySendMessageInt(_hwnd, NativeMethods.EM_GETLIMITTEXT, IntPtr.Zero, IntPtr.Zero);
             if (result < str.Length)
@@ -391,8 +391,8 @@ namespace MS.Internal.AutomationProxies
             // expand it to fill the window.
             range.Expand(TomUnit.tomWindow);
 
-            // There is a bug with RichEdit 3.0.  The expand to tomWindow may gets 0 as the range's cpBegin (Start).
-            // So need to trim off what is outside of the window.
+            // There is a 
+
             int start = range.Start;
             // The ITextRange::SetRange method sets this range’s Start = min(cp1, cp2) and End = max(cp1, cp2).
             // If the range is a nondegenerate selection, cp2 is the active end; if it’s a degenerate selection,
@@ -422,10 +422,10 @@ namespace MS.Internal.AutomationProxies
                 }
             }
 
-            // There is a bug with RichEdit 3.0.  The expand to tomWindow gets the last cp of the bottom
-            // line in the window as the range's cpLim (End).  The cpLim may be passed the right side of
-            // the window.
-            // So need to trim off what is on the right side of the window.
+            // There is a 
+
+
+
             int end = range.End;
             gotPoint = WindowsRichEditRange.RangeGetPoint(range, TomGetPoint.TA_RIGHT, out x, out y);
             while (!gotPoint || !Misc.PtInRect(ref rect, x, y))

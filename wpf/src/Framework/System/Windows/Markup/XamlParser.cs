@@ -47,7 +47,7 @@ namespace System.Windows.Markup
     #region enums
 
     /// <summary>
-    /// Parser modes. indicates if the Xaml should be parsed [....] or async.
+    /// Parser modes. indicates if the Xaml should be parsed sync or async.
     /// currently public so test can set these values.
     /// </summary>
     internal enum XamlParseMode
@@ -58,7 +58,7 @@ namespace System.Windows.Markup
         Uninitialized,
 
         /// <summary>
-        /// [....]
+        /// Sync
         /// </summary>
         Synchronous,
 
@@ -1134,7 +1134,7 @@ namespace System.Windows.Markup
                     {
                         documentParseMode = XamlParseMode.Asynchronous;
                     }
-                    else if (attributeValue.Equals("[....]"))
+                    else if (attributeValue.Equals("Sync"))
                     {
                         documentParseMode = XamlParseMode.Synchronous;
                     }

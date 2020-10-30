@@ -173,7 +173,7 @@ namespace System.Windows.Forms {
         ///    </para>
         /// </devdoc>
         Pause          = 0x13,
-        /// <include file='doc\Keys.uex' path='docs/doc[@for="Keys.----"]/*' />
+        /// <include file='doc\Keys.uex' path='docs/doc[@for="Keys.Capital"]/*' />
         /// <devdoc>
         ///    <para>
         ///       The CAPS LOCK key.

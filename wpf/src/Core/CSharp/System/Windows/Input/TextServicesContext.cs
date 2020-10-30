@@ -7,7 +7,7 @@
 // Description: Manages Text Services Framework state.
 //
 // History:
-//  07/16/2003 : [....] - Ported from .net tree.
+//  07/16/2003 : Microsoft - Ported from .net tree.
 //
 //---------------------------------------------------------------------------
 

@@ -10,7 +10,7 @@
 //
 // History:
 //  ??        ??            Created
-//  11/14/05: [....]       "Island Frame" implementation: Frame can have its own Journal/JournalNavigationScope.
+//  11/14/05: Microsoft       "Island Frame" implementation: Frame can have its own Journal/JournalNavigationScope.
 //
 //---------------------------------------------------------------------------
 
@@ -622,7 +622,7 @@ namespace System.Windows.Controls
             }
         }
 
-        /// <remarks> Keep this method in [....] with Window.PostContentRendered(). </remarks>
+        /// <remarks> Keep this method in sync with Window.PostContentRendered(). </remarks>
         private void PostContentRendered()
         {
             // Post the firing of ContentRendered as Input priority work item so

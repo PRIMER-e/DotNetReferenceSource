@@ -6,7 +6,7 @@
 //      CLR attribute to annotate that an Entity Type has a default stream property.
 // </summary>
 //
-// @owner  [....]
+// @owner  jli
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Common

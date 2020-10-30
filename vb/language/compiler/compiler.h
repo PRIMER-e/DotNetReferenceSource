@@ -418,9 +418,9 @@ private:
     {
         if (0 <= Member && Member < _countof(m_RuntimeCallRemapTable))
         {
-            // Check for NULL - Watson bug DevDiv #91626.  Probably happens when they compile without the fx setup correctly.
-            // But it is also goodness for compiler agility because this gets called by the symbol remapper, and who knows if the
-            // targeted runtime has the old helpers.
+            // Check for NULL - Watson 
+
+
             if ( Symbol != NULL)
             {
                 VSASSERT(Symbol->IsProc() == true, "You can't send a non-proc into SetRuntimeCall()");

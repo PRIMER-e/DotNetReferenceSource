@@ -7,7 +7,7 @@
 //
 // History:  
 //  11/10/2005 : mleonov - Started integration from a prototype application created by DBrown.
-//   1/21/2009 : [....] - removed unused code.
+//   1/21/2009 : Microsoft - removed unused code.
 //
 //---------------------------------------------------------------------------
 

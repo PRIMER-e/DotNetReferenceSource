@@ -264,7 +264,7 @@ namespace System.Windows
             get
             {
                 // When this flag is true we treat it as a hint rather than a guarantee and update
-                // it if is out of [....]. When the flag is false, however we expect it to guarantee
+                // it if is out of sync. When the flag is false, however we expect it to guarantee
                 // that the value isn't a DeferredReference.
 
                 bool isDeferredReference = ReadPrivateFlag(FullValueSource.IsPotentiallyADeferredReference);
@@ -421,7 +421,7 @@ namespace System.Windows
                 entry.Value = expressionValue;
             }
 
-            Debug.Assert(entry.IsDeferredReference == (entry.Value is DeferredReference), "Value and DeferredReference flag should be in [....]; hitting this may mean that it's time to divide the DeferredReference flag into a set of flags, one for each modifier");
+            Debug.Assert(entry.IsDeferredReference == (entry.Value is DeferredReference), "Value and DeferredReference flag should be in sync; hitting this may mean that it's time to divide the DeferredReference flag into a set of flags, one for each modifier");
 
             return entry;
         }

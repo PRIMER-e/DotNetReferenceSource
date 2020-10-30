@@ -740,7 +740,7 @@ namespace System.IO.Packaging
             {
                 try
                 {
-                    // Prevent recursion - this [....]-protected member is safe to set in a CachedResponse
+                    // Prevent recursion - this sync-protected member is safe to set in a CachedResponse
                     // mode because we have no other thread in operation.
                     _parent._disposed = true;
                     if (_parent._responseStream != null)

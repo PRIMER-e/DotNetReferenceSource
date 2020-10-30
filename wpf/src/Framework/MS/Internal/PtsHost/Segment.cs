@@ -7,7 +7,7 @@
 // Description: Interface representing PTS segment. 
 //
 // History:  
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : grzegorz - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 

@@ -6,7 +6,7 @@
 //      Provides a class to cache metadata information.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Caching

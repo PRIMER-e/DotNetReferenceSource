@@ -6,7 +6,7 @@
 //      Provides a BodyWriter that invokes a callback on writing.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

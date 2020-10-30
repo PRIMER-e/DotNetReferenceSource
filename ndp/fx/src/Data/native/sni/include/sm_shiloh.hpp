@@ -46,7 +46,7 @@ typedef enum
 
 typedef USHORT (__cdecl * NLSIZE_FN)( void );
 typedef int (__cdecl * NLOPEN_FN)( void *,
-                                CHAR *,
+                                WCHAR *,
                                 LONG UNALIGNED * );
 typedef USHORT (__cdecl * NLREAD_FN)( void *,
                                   BYTE *,

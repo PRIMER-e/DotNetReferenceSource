@@ -8,7 +8,7 @@
 //  History:
 //     2002/06/19-murrayw
 //          Created
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -18,7 +18,7 @@
 #include "HostShim.hxx"
 #include "Version.hxx"
 
-// This macro will keep the types in [....] between the LoadHistoryHelper and SaveHistoryHelper methods.
+// This macro will keep the types in sync between the LoadHistoryHelper and SaveHistoryHelper methods.
 #define STARTUP_URI_LENGTH_TYPE ULONG
 
 /******************************************************************************

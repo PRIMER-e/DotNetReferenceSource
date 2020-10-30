@@ -84,7 +84,7 @@ namespace System.Windows.Markup
         /// </summary>
         /// <param name="stream">input as stream</param>
         /// <returns>object root generated after xml parsed</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         public static object Load(Stream stream)
         {
             if (stream == null)
@@ -101,7 +101,7 @@ namespace System.Windows.Markup
         /// </summary>
         /// <param name="reader">Reader of xml content.</param>
         /// <returns>object root generated after xml parsed</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         public static object Load(XmlReader reader)
         {
             if (reader == null)
@@ -119,7 +119,7 @@ namespace System.Windows.Markup
         /// <param name="stream">input as stream</param>
         /// <param name="parserContext">parser context</param>
         /// <returns>object root generated after xml parsed</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         public static object Load(Stream stream, ParserContext parserContext)
         {
             if (stream == null)
@@ -630,7 +630,7 @@ namespace System.Windows.Markup
         }
 
         /// <summary>
-        /// This event is fired when either a [....] or an async load operation has completed
+        /// This event is fired when either a sync or an async load operation has completed
         /// or when an async load operation is aborted.
         /// </summary>
         public event AsyncCompletedEventHandler LoadCompleted;
@@ -654,6 +654,7 @@ namespace System.Windows.Markup
                 owSettings.SkipDuplicatePropertyCheck = parentSettings.SkipDuplicatePropertyCheck;
                 owSettings.AccessLevel = parentSettings.AccessLevel;
                 owSettings.SkipProvideValueOnRoot = parentSettings.SkipProvideValueOnRoot;
+                owSettings.SourceBamlUri = parentSettings.SourceBamlUri;
             }
             return owSettings;
         }
@@ -887,7 +888,7 @@ namespace System.Windows.Markup
         ///            SecurityCritical, but treated as safe.
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         internal static object LoadBaml(
             Stream stream,
             ParserContext parserContext,

@@ -595,7 +595,7 @@ namespace MS.Internal.IO.Packaging
         /// IMPORTANT NOTE:
         /// 1. In the XmlDigitalSignatureProcessor.IsValidXmlCanonicalizationTransform method, 
         /// we have similar logic regarding these two transforms.So both these methods must be updated
-        /// in [....].
+        /// in sync.
         /// </remarks>
         [SecurityCritical, SecurityTreatAsSafe]
         private static Transform StringToTransform(String transformName)
@@ -622,7 +622,7 @@ namespace MS.Internal.IO.Packaging
         // we also take advantage of the fact that both of them are XML canonicalization transforms
         // IMPORTANT NOTE:
         // 1. In the XmlDigitalSignatureProcessor.StringToTransform method, we have similar logic
-        // regarding these two transforms.So both these methods must be updated in [....].
+        // regarding these two transforms.So both these methods must be updated in sync.
         // 2. If ever this method is updated to add other transforms, careful review must be done to 
         // make sure that methods calling this method are updated as required.
         internal static bool IsValidXmlCanonicalizationTransform(String transformName)
@@ -793,14 +793,12 @@ namespace MS.Internal.IO.Packaging
 
             // we only release this key if we obtain it
             AsymmetricAlgorithm key = null;
-            bool ownKey = false;
             if (signer.HasPrivateKey)
             {
-                key = signer.PrivateKey;
+                key = GetPrivateKey(signer);
             }
             else
             {
-                ownKey = true;
                 key = GetPrivateKeyForSigning(signer);
             }
 
@@ -854,13 +852,41 @@ namespace MS.Internal.IO.Packaging
             }
             finally
             {
-                if (key != null && ownKey)
+                if (key != null)
                     ((IDisposable)key).Dispose();
             }
 
             // create the PackageDigitalSignature object
             _signature = new PackageDigitalSignature(_manager, this);
             return _signature;
+        }
+
+        /// <summary>
+        /// Extracts the private key from the X509Certificate2 certificate
+        /// </summary>
+        /// <param name="cert">certificate for which we are looking for the private key</param>
+        /// <returns>returns the private key</returns>
+        private static AsymmetricAlgorithm GetPrivateKey(X509Certificate2 cert)
+        {
+            // DDVSO: 194333 Adding support for CNG certificates. The default certificate template in Windows Server 2008+ is CNG
+            // Get[Algorithm]PrivateKey methods returns unique object while PrivateKey property returns shared one
+            // Make sure to dispose the key if it is from Get[Algorithm]PrivateKey methods
+            AsymmetricAlgorithm key = CngLightup.GetRSAPrivateKey(cert);
+            if (key != null)
+                return key;
+
+            key = CngLightup.GetDSAPrivateKey(cert);
+            if (key != null)
+                return key;
+
+            key = CngLightup.GetECDsaPrivateKey(cert);
+            if (key != null)
+                return key;
+
+            // Get[Algorithm]PrivateKey methods would always have returned the private key if the PrivateKey property would
+            // But Get[Algorithm]PrivateKey methods never throw but returns null in case of error during cryptographic operations
+            // But we want exception to be thrown when an error occurs during a cryptographic operation so that we can revert the changes
+            return cert.PrivateKey;
         }
 
         /// <summary>
@@ -1150,7 +1176,7 @@ namespace MS.Internal.IO.Packaging
             }
 
             // get the corresponding AsymmetricAlgorithm
-            return signer.PrivateKey;
+            return GetPrivateKey(signer);
         }
         
         

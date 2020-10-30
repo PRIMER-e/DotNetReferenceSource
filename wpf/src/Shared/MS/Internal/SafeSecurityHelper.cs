@@ -160,6 +160,9 @@ namespace System.Xaml
         static object syncObject = new object();
         static bool _isGCCallbackPending;
 
+        // PERF: Cache delegate for CleanupCollectedAssemblies to avoid allocating it each time.
+        static readonly WaitCallback _cleanupCollectedAssemblies = CleanupCollectedAssemblies;
+
         /// <summary>
         ///     This function iterates through the assemblies loaded in the current
         ///     AppDomain and finds one that has the same assembly name passed in.
@@ -230,7 +233,7 @@ namespace System.Xaml
                 if (assembly.IsDynamic && !_isGCCallbackPending)
                 {
                     // Make sure we clean up the cache if/when this dynamic assembly is GCed
-                    GCNotificationToken.RegisterCallback(CleanupCollectedAssemblies, null);
+                    GCNotificationToken.RegisterCallback(_cleanupCollectedAssemblies, null);
                     _isGCCallbackPending  = true;
                 }
                 return result;
@@ -275,7 +278,7 @@ namespace System.Xaml
                 }
                 if (foundLiveDynamicAssemblies)
                 {
-                    GCNotificationToken.RegisterCallback(CleanupCollectedAssemblies, null);
+                    GCNotificationToken.RegisterCallback(_cleanupCollectedAssemblies, null);
                 }
                 else
                 {
@@ -424,13 +427,13 @@ namespace System.Xaml
 
         /// <summary>
         ///     This function is a wrapper for CultureInfo.GetCultureInfoByIetfLanguageTag().
-        ///     The wrapper works around a bug in that routine, which causes it to throw
-        ///     a SecurityException in Partial Trust.  VSWhidbey bug #572162.
-        /// </summary>
-        /// <SecurityNote>
-        ///   Critical: This code elevates to access registry
-        ///   TreatAsSafe: The information it exposes is safe to give out and all it does is read a specific key
-        /// </SecurityNote>
+        ///     The wrapper works around a 
+
+
+
+
+
+
         [SecurityCritical,SecurityTreatAsSafe]
         static internal CultureInfo GetCultureInfoByIetfLanguageTag(string languageTag)
         {

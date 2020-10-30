@@ -445,7 +445,7 @@ namespace ParseTree
     // ;HiddenBlockStatement
     // HiddenBlockStatements are the only BlockStatements that do not 
     // require a End Construct. They are also not included into a StatementList.
-    // [....]: Consider, this seems poorly named.  There are assumptions in the
+    // Microsoft: Consider, this seems poorly named.  There are assumptions in the
     // parser that only a multi-line lambda can use these (e.g. LinkStatement())
     // Therefore this should probably be called MultiLineLambdaBlockStatement...
     struct HiddenBlockStatement : BlockStatement

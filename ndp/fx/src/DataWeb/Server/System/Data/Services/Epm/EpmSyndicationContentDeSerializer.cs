@@ -6,7 +6,7 @@
 //      Deserializer for the EPM content on the server
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Common

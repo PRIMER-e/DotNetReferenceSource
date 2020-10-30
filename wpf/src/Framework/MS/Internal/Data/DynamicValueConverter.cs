@@ -115,7 +115,7 @@ namespace MS.Internal.Data
                 {
                     // if either type is null, no conversion is possible.
                     // Don't ask GetDefaultValueConverter - it will use null as a
-                    // hashtable key, and crash (bug 110859).
+                    // hashtable key, and crash (
                     _converter = null;
                 }
 

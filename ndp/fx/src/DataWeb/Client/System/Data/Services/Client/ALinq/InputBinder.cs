@@ -8,7 +8,7 @@
 //      will contain InputReferenceExpressions instead of these parameter or parameter and property references.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

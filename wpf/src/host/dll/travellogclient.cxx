@@ -8,7 +8,7 @@
 // History:
 //      2001/09/05-michdav          Created
 //      2005/01/19-kusumav          Changed from CHtmlWindow to CTravelLogClient
-//      2007/09/20-[....]          Ported Windows->DevDiv. See SourcesHistory.txt.
+//      2007/09/20-Microsoft          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
 

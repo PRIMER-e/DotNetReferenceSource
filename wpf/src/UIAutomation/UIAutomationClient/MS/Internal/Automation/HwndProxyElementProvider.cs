@@ -763,7 +763,7 @@ namespace MS.Internal.Automation
                 }
 
                 // check to make sure SetWindowPlacement has not changed the size of our window
-                // There may be a bug in SetWindowPlacement.
+                // There may be a 
                 int currentHeight = currentRect.bottom - currentRect.top;
                 int currentWidth = currentRect.right - currentRect.left;
 
@@ -1104,7 +1104,7 @@ namespace MS.Internal.Automation
             int[] id = new int[2];
 
             // WCTL #32188 : We need a helper method in UIAutomationCore that takes an hwnd and returns a RuntimeId.
-            // For now the first number in the runtime Id has to stay in [....] with what is in Automation\UnmanagedCore\UiaNode.cpp.
+            // For now the first number in the runtime Id has to stay in sync with what is in Automation\UnmanagedCore\UiaNode.cpp.
             // Symptom of this being broken is that WindowPattern.WindowClosed events don't appear to work anymore (because
             // code that tracks Window closes needs to do so using RuntimeId cached from the WindowOpened event).
             id[0] = UiaCoreApi.UiaHwndRuntimeIdBase;

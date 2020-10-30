@@ -9,7 +9,7 @@
 #define GDI_FONT_CACHE_TRACK
 #endif
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -30,7 +30,7 @@ namespace System.Experimental.Gdi
     ///     Created to improve performance of TextRenderer.MeasureText methods that don't receive a WindowsGraphics.
     ///     This class mantains a cache of MRU WindowsFont objects in the process. (See VSWhidbey#301492).
     /// </devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -47,7 +47,7 @@ namespace System.Experimental.Gdi
         internal static void AddDeviceContext(DeviceContext dc) {
             if (activeDeviceContexts == null) {
                 activeDeviceContexts = new ClientUtils.WeakRefCollection();
-                activeDeviceContexts.RefCheckThreshold = 20; // See DevDiv#82664 (the repro app attached to this bug was used to determine this number).
+                activeDeviceContexts.RefCheckThreshold = 20; // See DevDiv#82664 (the repro app attached to this 
             }
 
             if (!activeDeviceContexts.Contains(dc)) {

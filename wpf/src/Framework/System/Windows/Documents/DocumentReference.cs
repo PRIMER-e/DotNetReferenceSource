@@ -278,7 +278,7 @@ namespace System.Windows.Documents
         }
 
 
-        // [....] load a document
+        // sync load a document
        ///<SecurityNote>
        /// Critical as it access the base uri through _resolveUri
        /// TreatAsSafe since it does not disclose this

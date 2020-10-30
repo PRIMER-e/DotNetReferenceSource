@@ -25,7 +25,7 @@ namespace System.Windows
     /// GridUnitType enum is used to indicate what kind of value the 
     /// GridLength is holding.
     /// </summary>
-    // Note: Keep the GridUnitType enum in [....] with the string representation 
+    // Note: Keep the GridUnitType enum in sync with the string representation 
     //       of units (GridLengthConverter._unitString). 
     public enum GridUnitType 
     {

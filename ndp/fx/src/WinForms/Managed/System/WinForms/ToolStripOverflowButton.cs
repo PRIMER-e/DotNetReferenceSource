@@ -20,12 +20,29 @@ namespace System.Windows.Forms {
     [ToolStripItemDesignerAvailability(ToolStripItemDesignerAvailability.None)]
     public class ToolStripOverflowButton : ToolStripDropDownButton {
 
-       // we need to cache this away as the Parent property gets reset a lot.
-       private ToolStrip parentToolStrip;
+        // we need to cache this away as the Parent property gets reset a lot.
+        private ToolStrip parentToolStrip;
        
+        private static bool isScalingInitialized = false;
+        private const int MAX_WIDTH = 16;
+        private const int MAX_HEIGHT = 16;
+        private static int maxWidth = MAX_WIDTH;
+        private static int maxHeight = MAX_HEIGHT;
+        
         /// <include file='doc\ToolStripOverflowButton.uex' path='docs/doc[@for="ToolStripOverflowButton.ToolStripOverflowButton"]/*' />
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+	    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         internal ToolStripOverflowButton(ToolStrip parentToolStrip) {
+            if (!isScalingInitialized)
+            {
+                if (DpiHelper.IsScalingRequired)
+                {
+                    maxWidth = DpiHelper.LogicalToDeviceUnitsX(MAX_WIDTH);
+                    maxHeight = DpiHelper.LogicalToDeviceUnitsY(MAX_HEIGHT);
+                }
+
+                isScalingInitialized = true;
+            }
+
             SupportsItemClick = false;
             this.parentToolStrip = parentToolStrip;
         }
@@ -90,10 +107,10 @@ namespace System.Windows.Forms {
             Size preferredSize = constrainingSize;
             if (this.ParentInternal != null)  {
               if (this.ParentInternal.Orientation == Orientation.Horizontal) {
-                preferredSize.Width = Math.Min(constrainingSize.Width, 16);
+                  preferredSize.Width = Math.Min(constrainingSize.Width, maxWidth);
               }
               else {
-                preferredSize.Height = Math.Min(constrainingSize.Height, 16);
+                  preferredSize.Height = Math.Min(constrainingSize.Height, maxHeight);
               }                
             }
             return preferredSize + this.Padding.Size;

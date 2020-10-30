@@ -75,6 +75,9 @@ namespace System.Windows.Forms {
         // Indicates whether we have doubleClicked
         private bool doubleClickFired = false;
 
+        private static bool isScalingInitialized = false;
+        private static int defaultButtonsWidth = DefaultButtonsWidth;
+
         /// <include file='doc\UpDownBase.uex' path='docs/doc[@for="UpDownBase.UpDownBase"]/*' />
         /// <devdoc>
         ///    <para>
@@ -83,6 +86,13 @@ namespace System.Windows.Forms {
         ///    </para>
         /// </devdoc>
         public UpDownBase() {
+
+            if (!isScalingInitialized) {
+                if (DpiHelper.IsScalingRequired) {
+                    defaultButtonsWidth = DpiHelper.LogicalToDeviceUnitsX(DefaultButtonsWidth);
+                }
+                isScalingInitialized = true;
+            }
 
             upDownButtons = new UpDownButtons(this);
             upDownEdit = new UpDownEdit(this);
@@ -94,7 +104,7 @@ namespace System.Windows.Forms {
             upDownEdit.LostFocus += new EventHandler(this.OnTextBoxLostFocus);
             upDownEdit.Resize += new EventHandler(this.OnTextBoxResize);
             upDownButtons.TabStop = false;
-            upDownButtons.Size = new Size(DefaultButtonsWidth, PreferredHeight);
+            upDownButtons.Size = new Size(defaultButtonsWidth, PreferredHeight);
             upDownButtons.UpDown += new UpDownEventHandler(this.OnUpDown);
 
             Controls.AddRange(new Control[] { upDownButtons, upDownEdit} );
@@ -584,7 +594,7 @@ namespace System.Windows.Forms {
                 upDownEdit.Text = value;
                 // The text changed event will at this point be triggered.
                 // After returning, the value of UserEdit will reflect
-                // whether or not the current upDownEditbox text is in [....]
+                // whether or not the current upDownEditbox text is in sync
                 // with any internally stored values. If UserEdit is true,
                 // we must validate the text the user typed or set.
 
@@ -1067,7 +1077,7 @@ namespace System.Windows.Forms {
             //
             if (upDownEdit != null) {
                 upDownEditBounds = clientArea;
-                upDownEditBounds.Size = new Size(clientArea.Width - DefaultButtonsWidth, clientArea.Height);
+                upDownEditBounds.Size = new Size(clientArea.Width - defaultButtonsWidth, clientArea.Height);
             }
 
             // Reposition and resize the updown buttons
@@ -1077,9 +1087,9 @@ namespace System.Windows.Forms {
                 if (borderStyle == BorderStyle.None) {
                     borderFixup = 0;
                 }
-                upDownButtonsBounds = new Rectangle(/*x*/clientArea.Right - DefaultButtonsWidth+borderFixup,
+                upDownButtonsBounds = new Rectangle(/*x*/clientArea.Right - defaultButtonsWidth+borderFixup,
                                                     /*y*/clientArea.Top-borderFixup,
-                                                    /*w*/DefaultButtonsWidth,
+                                                    /*w*/defaultButtonsWidth,
                                                     /*h*/clientArea.Height+(borderFixup*2));
             }
 
@@ -1304,7 +1314,7 @@ namespace System.Windows.Forms {
                 parent.OnLostFocus(e);
             }
 
-            // [....]: Focus fixes. The XXXUpDown control will
+            // Microsoft: Focus fixes. The XXXUpDown control will
             //         also fire a Leave event. We don't want
             //         to fire two of them.
             // protected override void OnLeave(EventArgs e) {
@@ -1653,7 +1663,7 @@ namespace System.Windows.Forms {
                         vsr.SetParameters(VisualStyleElement.Spin.Up.Pressed);
                     }
 
-                    vsr.DrawBackground(e.Graphics, new Rectangle(0, 0, DefaultButtonsWidth, half_height));
+                    vsr.DrawBackground(e.Graphics, new Rectangle(0, 0, defaultButtonsWidth, half_height));
 
                     if (!Enabled) {
                         vsr.SetParameters(VisualStyleElement.Spin.Down.Disabled);
@@ -1665,16 +1675,16 @@ namespace System.Windows.Forms {
                         vsr.SetParameters(mouseOver == ButtonID.Down ? VisualStyleElement.Spin.Down.Hot : VisualStyleElement.Spin.Down.Normal);
                     }
 
-                    vsr.DrawBackground(e.Graphics, new Rectangle(0, half_height, DefaultButtonsWidth, half_height));
+                    vsr.DrawBackground(e.Graphics, new Rectangle(0, half_height, defaultButtonsWidth, half_height));
                 }
                 else {
                     ControlPaint.DrawScrollButton(e.Graphics,
-                                                  new Rectangle(0, 0, DefaultButtonsWidth, half_height),
+                                                  new Rectangle(0, 0, defaultButtonsWidth, half_height),
                                                   ScrollButton.Up,
                                                   pushed == ButtonID.Up ? ButtonState.Pushed : (Enabled ? ButtonState.Normal : ButtonState.Inactive));
 
                     ControlPaint.DrawScrollButton(e.Graphics,
-                                                  new Rectangle(0, half_height, DefaultButtonsWidth, half_height),
+                                                  new Rectangle(0, half_height, defaultButtonsWidth, half_height),
                                                   ScrollButton.Down,
                                                   pushed == ButtonID.Down ? ButtonState.Pushed : (Enabled ? ButtonState.Normal : ButtonState.Inactive));
                 }
@@ -1742,18 +1752,21 @@ namespace System.Windows.Forms {
                     return;
                 }
 
+                // onUpDown method calls customer's ValueCHanged event handler which might enter the message loop and 
+                // process the mouse button up event, which results in timer being disposed 
                 OnUpDown(new UpDownEventArgs((int)pushed));
 
-                // Accelerate timer.
-                this.timerInterval *= 7;
-                this.timerInterval /= 10;
+                if (timer != null) {
+                    // Accelerate timer.
+                    this.timerInterval *= 7;
+                    this.timerInterval /= 10;
 
-                if (this.timerInterval < 1)
-                {
-                    this.timerInterval = 1;
-                }
+                    if (this.timerInterval < 1) {
+                        this.timerInterval = 1;
+                    }
 
-                timer.Interval = this.timerInterval;
+                    timer.Interval = this.timerInterval;
+                } 
             }
 
             internal class UpDownButtonsAccessibleObject : ControlAccessibleObject {

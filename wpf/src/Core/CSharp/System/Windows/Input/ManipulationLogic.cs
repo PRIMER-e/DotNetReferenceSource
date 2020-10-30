@@ -13,6 +13,7 @@ using System.Windows.Interop;
 using System.Windows.Input.Manipulations;
 using System.Windows.Media;
 using System.Windows.Threading;
+using MS.Win32;
 using MS.Internal;
 using MS.Internal.PresentationCore;
 
@@ -398,7 +399,11 @@ namespace System.Windows.Input
         internal void ReportFrame(ICollection<IManipulator> manipulators)
         {
             Int64 timestamp = GetCurrentTimestamp();
-            LastTimestamp = (int)timestamp; // InputEventArgs timestamps are Int32 while the processors take Int64
+
+            // InputEventArgs timestamps are Int32 while the processors take Int64
+            // GetMessageTime() is used for all other InputEventArgs, such as mouse and keyboard input.
+            // And it does not match QueryPerformanceCounter(), my experiments show GetMessageTime() is ~ 120ms ahead.
+            LastTimestamp = SafeNativeMethods.GetMessageTime(); 
 
             int numManipulators = manipulators.Count;
             if (IsInertiaActive && (numManipulators > 0))

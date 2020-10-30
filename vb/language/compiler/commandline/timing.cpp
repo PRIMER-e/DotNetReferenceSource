@@ -10,9 +10,9 @@
 // information for the compiler. This is sort of a built-in mini-profiler
 // that is always available. This allows anyone to do a quick investigation of
 // performance problems and try to pinpoint where things have changed.
-// <STRIP>
-// Particularly useful in pointing the finger at the CLR EE group. </STRIP>
-// ===========================================================================
+// <
+
+
 
 #include "stdafx.h"
 
@@ -215,7 +215,7 @@ void DoTimerStop(TIMERID timerId)
     {
         --stackPtr;
     }
-    ASSERT(stackPtr >= 0 && g_timeridStack[stackPtr] == timerId, "in timing.cpp");  // if this is hit, we never found our timer id. Probably logic bug.
+    ASSERT(stackPtr >= 0 && g_timeridStack[stackPtr] == timerId, "in timing.cpp");  // if this is hit, we never found our timer id. Probably logic 
     --stackPtr;
 
     // Record the amount of time so far in the current section, if any.

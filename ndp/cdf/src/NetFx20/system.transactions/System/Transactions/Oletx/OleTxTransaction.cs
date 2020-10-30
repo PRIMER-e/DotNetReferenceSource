@@ -89,6 +89,20 @@ namespace System.Transactions.Oletx
             }
         }
 
+        internal Guid DistributedTxId
+        {
+            get
+            {
+                Guid returnValue = Guid.Empty;
+
+                if (this.realOletxTransaction != null && this.realOletxTransaction.InternalTransaction != null)
+                {
+                    returnValue = this.realOletxTransaction.InternalTransaction.DistributedTxId;
+                }
+                return returnValue;
+            }
+        }
+
         internal System.Transactions.TransactionStatus Status
         {
             get
@@ -288,8 +302,8 @@ namespace System.Transactions.Oletx
 
             if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
             {
-                throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ),
-                    SR.GetString( SR.TooLate ), null );
+                throw TransactionException.Create(SR.GetString(SR.TraceSourceOletx),
+                    SR.GetString(SR.TooLate), null, this.DistributedTxId);
             }
 
             IPromotedEnlistment enlistment = realOletxTransaction.EnlistVolatile(
@@ -324,8 +338,8 @@ namespace System.Transactions.Oletx
 
             if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
             {
-                throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ),
-                    SR.GetString( SR.TooLate ), null );
+                throw TransactionException.Create(SR.GetString(SR.TraceSourceOletx),
+                    SR.GetString(SR.TooLate), null, this.DistributedTxId);
             }
 
             IPromotedEnlistment enlistment = realOletxTransaction.EnlistVolatile(
@@ -362,7 +376,7 @@ namespace System.Transactions.Oletx
             if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
             {
                 throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ),
-                    SR.GetString( SR.TooLate ), null );
+                    SR.GetString( SR.TooLate ), null, this.DistributedTxId);
             }
 
             // get the Oletx TM from the real class
@@ -406,15 +420,15 @@ namespace System.Transactions.Oletx
 
             if (TransactionStatus.Aborted == Status)
             {
-                throw TransactionAbortedException.Create( SR.GetString( SR.TraceSourceOletx), realOletxTransaction.innerException );
+                throw TransactionAbortedException.Create(SR.GetString(SR.TraceSourceOletx), SR.GetString(SR.TransactionAborted), realOletxTransaction.innerException, this.DistributedTxId);
             }
             if (TransactionStatus.InDoubt == Status)
             {
-                throw TransactionInDoubtException.Create( SR.GetString( SR.TraceSourceOletx), realOletxTransaction.innerException );
+                throw TransactionInDoubtException.Create(SR.GetString(SR.TraceSourceOletx), SR.GetString(SR.TransactionIndoubt), realOletxTransaction.innerException, this.DistributedTxId);
             }
             if (TransactionStatus.Active != Status)
             {
-                throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString( SR.TransactionAlreadyOver ), null );
+                throw TransactionException.Create(SR.GetString(SR.TraceSourceOletx), SR.GetString(SR.TransactionAlreadyOver), null, this.DistributedTxId);
             }
 
             dependentClone = new OletxDependentTransaction( realOletxTransaction, delayCommit );
@@ -630,6 +644,20 @@ namespace System.Transactions.Oletx
             }
         }
 
+        internal Guid DistributedTxId
+        {
+            get
+            {
+                Guid returnValue = Guid.Empty;
+
+                if (this.InternalTransaction != null)
+                {
+                    returnValue = this.InternalTransaction.DistributedTxId;
+                }
+                return returnValue;
+            }
+        }
+
         internal IsolationLevel TransactionIsolationLevel
         {
             get
@@ -705,7 +733,7 @@ namespace System.Transactions.Oletx
                 ITransactionShim shim = this.transactionShim;
                 if ( null == shim )
                 {
-                    throw TransactionInDoubtException.Create( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionInDoubtException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString(SR.TransactionIndoubt), null, this.DistributedTxId );
                 }
 
                 return shim;
@@ -1233,7 +1261,9 @@ namespace System.Transactions.Oletx
                     throw TransactionException.Create(
                         SR.GetString( SR.TraceSourceOletx ),
                         SR.GetString( SR.TransactionAlreadyOver ),
-                        null );
+                        null,
+                        this.DistributedTxId
+                        );
                 }
 
                 // If the transaciton is already aborted, we can get out now.  Calling Rollback on an already aborted transaction
@@ -1257,7 +1287,9 @@ namespace System.Transactions.Oletx
                     throw TransactionException.Create(
                         SR.GetString( SR.TraceSourceOletx ),
                         SR.GetString( SR.TransactionAlreadyOver ),
-                        null );
+                        null,
+                        this.DistributedTxId
+                        );
                 }
 
                 // Tell the volatile enlistment containers to vote no now if they have outstanding
@@ -1299,7 +1331,8 @@ namespace System.Transactions.Oletx
                     {
                         throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ),
                             SR.GetString( SR.TransactionAlreadyOver ),
-                            comException
+                            comException,
+                            this.DistributedTxId
                             );
                     }
                 }

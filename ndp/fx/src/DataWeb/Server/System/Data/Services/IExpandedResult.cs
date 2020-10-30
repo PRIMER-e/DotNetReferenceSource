@@ -7,7 +7,7 @@
 //      for associated $expand segments.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

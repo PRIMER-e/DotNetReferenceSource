@@ -1448,6 +1448,16 @@ AddJob(
 {
     VerifyAccess();
 
+    // Get the UserPrintTicket.  We don't need it, but fetching it has a side-effect
+    // of initializing the PrinterThunkHandler.  In some cases (e.g. Win7 printing
+    // to XPS printer), this doesn't happen any other way so calling this method
+    // would get NullReferenceException (Dev11 780899).
+    PrintTicket ^userPrintTicket = UserPrintTicket;
+    if (userPrintTicket == nullptr)     // keep the compiler from optimizing away the previous call
+    {
+        userPrintTicket = printTicket;  // no real effect
+    }
+
     // Note: in the other overloads of AddJob we defaulted to either the
     // UserTicket or the DefaultTicket.  We intentionally do not fallback to
     // using those tickets if the caller passed in a null ticket to allow the
@@ -1499,6 +1509,16 @@ AddJob(
     )
 {
     VerifyAccess();
+
+    // Get the UserPrintTicket.  We don't need it, but fetching it has a side-effect
+    // of initializing the PrinterThunkHandler.  In some cases (e.g. Win7 printing
+    // to XPS printer), this doesn't happen any other way so calling this method
+    // would get NullReferenceException (Dev11 780899).
+    PrintTicket ^userPrintTicket = UserPrintTicket;
+    if (userPrintTicket == nullptr)     // keep the compiler from optimizing away the previous call
+    {
+        userPrintTicket = printTicket;  // no real effect
+    }
 
     // Note: in the other overloads of AddJob we defaulted to either the
     // UserTicket or the DefaultTicket.  We intentionally do not fallback to
@@ -4423,6 +4443,32 @@ CreateSerializationManager(
     bool    mustSetJobIdentifier
     )
 {
+    return CreateSerializationManager(isBatchMode, mustSetJobIdentifier, nullptr);
+}
+
+/*++
+
+    Function Name:
+        CreateSerializationManager
+
+    Description:
+        Creates the appropriate Synchronous serialization manager to serialize and print the document objects.
+
+    Parameters:
+        None
+
+    Return Value
+        PackageSerializationManager
+
+--*/
+PackageSerializationManager^
+PrintQueue::
+CreateSerializationManager(
+    bool    isBatchMode,
+    bool    mustSetJobIdentifier,
+    PrintTicket^ printTicket
+    )
+{
     PackageSerializationManager^ serializationManager = nullptr;
 
     printingIsCancelled = false;
@@ -4446,7 +4492,7 @@ CreateSerializationManager(
             printJobName = defaultXpsJobName;
         }
 
-        PrintQueueStream^ printStream = gcnew PrintQueueStream(this, printJobName);
+        PrintQueueStream^ printStream = gcnew PrintQueueStream(this, printJobName, false, printTicket);
 
         #pragma warning ( disable:4691 )
         XpsDocument^    reachPackage = XpsDocument::CreateXpsDocument(printStream);

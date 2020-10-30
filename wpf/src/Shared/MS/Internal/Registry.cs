@@ -6,7 +6,7 @@ using System.Security.Permissions;
 using Microsoft.Win32;
 
 //****** 
-// Keep in [....] with host\Inc\Registry.hxx
+// Keep in sync with host\Inc\Registry.hxx
 
 namespace MS.Internal
 {

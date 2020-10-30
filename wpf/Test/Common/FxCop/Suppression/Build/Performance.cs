@@ -79,7 +79,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1640625
-// Developer: [....] - Function for use by derived classes.   There are no derived classes yet.
+// Developer: bchapman - Function for use by derived classes.   There are no derived classes yet.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.Markup.BamlOptimizedStaticResourceRecord.get_LastFlagsSection():System.Collections.Specialized.BitVector32+Section")]
 
@@ -90,7 +90,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 832936
-// Developer: [....] - Code file is linked by both PresentationFramework and PresentationBuildTasks, but the private code is 
+// Developer: jezhan - Code file is linked by both PresentationFramework and PresentationBuildTasks, but the private code is 
 // 					   only used by PresentationFramework.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Performance","CA1811:AvoidUncalledPrivateCode", Scope="member", Target="MS.Internal.Markup.XamlParseException.#.ctor(System.String,System.Int32,System.Int32,System.Uri,System.Exception)")]

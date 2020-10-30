@@ -401,7 +401,7 @@ namespace System.Windows.Forms
         private MouseClickInfo lastMouseClickInfo;
 
 #if DEBUG
-        // set to false when the grid is not in [....] with the underlying data store
+        // set to false when the grid is not in sync with the underlying data store
         // in virtual mode, and OnCellValueNeeded cannot be called.
 // disable csharp compiler warning #0414: field assigned unused value
 #pragma warning disable 0414
@@ -3074,7 +3074,7 @@ namespace System.Windows.Forms
                                 false /*forCurrentCellChange*/, false /*forCurrentRowChange*/))
                 {
                     // Could not commit edited cell value - return silently
-                    // [....]: should we throw an error here?
+                    // Microsoft: should we throw an error here?
                     return;
                 }
                 if (IsColumnOutOfBounds(value))
@@ -3150,7 +3150,7 @@ namespace System.Windows.Forms
                                 false /*forCurrentCellChange*/, false /*forCurrentRowChange*/))
                 {
                     // Could not commit edited cell value - return silently
-                    // [....]: should we throw an error here?
+                    // Microsoft: should we throw an error here?
                     return;
                 }
                 if (IsRowOutOfBounds(value))

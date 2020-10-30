@@ -1230,7 +1230,7 @@ public class Storyboard : ParallelTimeline
         //  is known to occur during app shutdown.  Since an app being shut down
         //  won't care about its Storyboards, we silently exit.
         // If we don't exit here, we'll need to catch and handle the "no time
-        //  manager" exception implemented for bug #1247862
+        //  manager" exception implemented for 
         if( MediaContext.CurrentMediaContext.TimeManager == null )
         {
             return;

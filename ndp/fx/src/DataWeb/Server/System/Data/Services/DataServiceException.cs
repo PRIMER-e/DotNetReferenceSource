@@ -6,7 +6,7 @@
 //      Base class for exceptions thrown by the web data services.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

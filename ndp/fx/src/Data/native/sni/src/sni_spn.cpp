@@ -48,7 +48,6 @@ typedef enum
 
 
 const char* DsFunctionNames[]={
-#ifndef SNI_BASED_CLIENT
 		"DsMakeSpnW",
 		"DsBindW",
 		"DsUnBindW",
@@ -61,25 +60,13 @@ const char* DsFunctionNames[]={
 		"GetComputerNameExW",
 		"GetComputerObjectNameW",
 		"GetUserNameExW"
-#else
-	 	"DsMakeSpnA",
-		"DsBindA",
-		"DsUnBindA",
-		"DsGetSpnA",
-		"DsFreeSpnArrayA",
-		"DsWriteAccountSpnA",
-		"DsFreeNameResultA",
-		"Ds----NamesA",
-		"DsGetDcNameA",
-		"GetComputerNameExA",
-		"GetComputerObjectNameA",
-		"GetUserNameExA"
-#endif
 };
 
 DWORD SNI_Spn::SpnInit()
 {		        
 	BidxScopeAutoSNI0( SNIAPI_TAG _T("\n") );
+
+    CPL_ASSERT(sizeof(WCHAR) == sizeof(TCHAR));
 	
 	const char * szntdsapiDll = "ntdsapi.dll";
 	ghSpnLib = SNILoadSystemLibraryA( szntdsapiDll );
@@ -251,23 +238,10 @@ DWORD SNI_Spn::MakeSpn(__in LPTSTR szServer, __in LPTSTR szInstName, USHORT usPo
 	CPL_ASSERT( sizeof(TCHAR) == sizeof(_TCHAR) );
 
 	WIN2K3_DEPENDENCY("Use Tcp::IsNumericAddress instead of searching for ':'")
-#ifdef SNI_BASED_CLIENT
-	CPL_ASSERT( sizeof(TCHAR) == sizeof(CHAR) ); 
 
-	// DEVNOTE: (see task 793488, Dev10) We are using the skinny/wide specialized functions 
-	// strchr/wcschr here explicitly instead of their corresponding _tcs* versions in an attempt to 
-	// minimize the ambiguity and the consequent bugs. The _tcs* functions below are preserved
-	// intact to prevent any possible chance of regressions.
-
-	// This flag indicates that we need to add [] around the szServer value
-	// which we can do if we compose the SPN ourselves as opposed to passing it
-	// to DsMakeSpn.
-	bool fNeedBrackets = (NULL != strchr(szServer, ':'));
-#else
 	CPL_ASSERT( sizeof(TCHAR) == sizeof(WCHAR) ); 
 
 	bool fNeedBrackets = (NULL != wcschr(szServer, L':'));
-#endif
 
 	// Make an instance name based SPN, i.e. MSSQLSvc/FQDN:instancename
 	//	
@@ -540,11 +514,7 @@ DWORD SNI_Spn::AddRemoveSpn(__in LPCTSTR pszInstanceSPN, DWORD dwPortNum, BOOL f
 	// will not be correct!  Changes will be needed there as well -- so don't do
 	// it.
 	//
-#ifdef SNI_BASED_CLIENT 
-	GetUserNameA( NULL, &dwUserNameLen);
-#else
 	GetUserNameW( NULL, &dwUserNameLen);
-#endif
 	{
 		dwError = GetLastError();
 
@@ -564,11 +534,7 @@ DWORD SNI_Spn::AddRemoveSpn(__in LPCTSTR pszInstanceSPN, DWORD dwPortNum, BOOL f
 				goto Exit;
 			}
 
-#ifdef SNI_BASED_CLIENT 
-			if( !GetUserNameA( wszUserName, &dwUserNameLen) )
-#else
 			if( !GetUserNameW( wszUserName, &dwUserNameLen) )
-#endif
 			{
 				dwError = GetLastError();
 				

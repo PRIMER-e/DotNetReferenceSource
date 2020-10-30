@@ -8,7 +8,7 @@
 //
 // History:  
 //
-// 04/29/2003 : [....] - Created it.
+// 04/29/2003 : Microsoft - Created it.
 // 01/19/2005 : timothyc - Removed SizeViewboxToContent.  Moved UpdateResource
 //              to the generated file.
 //---------------------------------------------------------------------------

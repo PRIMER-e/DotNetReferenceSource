@@ -22,7 +22,7 @@ public:
     // ForceTerminate: Execute the cleanup functions.  This function should be called before the
     // compiler allocators are destroyed because parts of the elements inside the module were
     // allocated with the compiler alloctors.  We cannot wait until the module is terminated
-    // because the compiler is gone by that point. (see bug VS#546896 concerning ATL CComTypeInfoHolder Class).
+    // because the compiler is gone by that point. (see 
     void ForceTerminate()
     {
         EnterCriticalSection(&m_csStaticDataInit);

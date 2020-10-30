@@ -205,7 +205,7 @@ namespace System.Windows.Media.Composition
     }
 
     // This is a copy of what is in milcore.h
-    // That file needs to be kept in [....] with this one!
+    // That file needs to be kept in sync with this one!
 
     internal static partial class MilCoreApi
     {

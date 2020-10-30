@@ -7,7 +7,7 @@
 // Description: Dirty text range describes change in the TextContainer. 
 //
 // History:  
-//  06/06/2003 : [....] - created.
+//  06/06/2003 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 

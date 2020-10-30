@@ -6,8 +6,8 @@
 //      Helpers for hosting HTMLDocument ("Trident"). See .hxx.
 //
 //  History:
-//      2007/12/xx   [....]     Created, stuff mostly factored out of ErrorPage.cxx
-//      2009/08/07   [....]     Implemented IInternetSecurityManager to enable running script under
+//      2007/12/xx   Microsoft     Created, stuff mostly factored out of ErrorPage.cxx
+//      2009/08/07   Microsoft     Implemented IInternetSecurityManager to enable running script under
 //                                  Enhanced Security Configuration.
 //
 //------------------------------------------------------------------------

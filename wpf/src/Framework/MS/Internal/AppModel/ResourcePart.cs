@@ -8,7 +8,7 @@
 // ResourcePart is an implementation of the abstract PackagePart class. It contains an override for GetStreamCore.
 //
 // History:
-//  10/04/2004: [....]: Initial creation.
+//  10/04/2004: Microsoft: Initial creation.
 //
 //-----------------------------------------------------------------------------
 

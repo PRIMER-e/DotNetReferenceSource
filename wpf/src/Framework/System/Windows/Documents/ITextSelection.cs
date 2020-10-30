@@ -90,7 +90,7 @@ namespace System.Windows.Documents
         //
         //......................................................
 
-        // 
+        // TODO: This section must go away when TextEditor merged with TextSelection)
 
         // Called by TextEditor.OnDetach, when the behavior is shut down.
         void OnDetach();

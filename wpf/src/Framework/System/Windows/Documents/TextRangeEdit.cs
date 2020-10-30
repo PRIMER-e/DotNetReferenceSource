@@ -814,12 +814,16 @@ namespace System.Windows.Documents
                     // Special cases for applying paragraph properties to Lists
                     if (property == Block.FlowDirectionProperty)
                     {
-                        // Set FlowDirection property on List
-                        SetPropertyValue(block, property, /*currentValue:*/block.GetValue(property), /*newValue:*/value);
+                        object currentValue = block.GetValue(property);
 
-                        // For flow direction command, we also swap Left and Right margins of the list.
-                        // This ensures indentation is mirrored correctly.
-                        SwapBlockLeftAndRightMargins(block);
+                        // Set FlowDirection property on List
+                        SetPropertyValue(block, property, currentValue:currentValue, newValue:value);
+
+                        // Only swap Left and Right margins of the list when FlowDirection changes. This ensures indentation is mirrored correctly.
+                        if (!Object.Equals(currentValue, value))
+                        {
+                            SwapBlockLeftAndRightMargins(block);
+                        }
                     }
 
                     // Go to end position, normalize forward.
@@ -895,9 +899,11 @@ namespace System.Windows.Documents
 
             if (property == Block.FlowDirectionProperty)
             {
-                // For flow direction command, we also swap Left and Right margins of the paragraph.
-                // This ensures indentation is mirrored correctly.
-                SwapBlockLeftAndRightMargins(block);
+                // Only swap Left and Right margins of the paragraph when FlowDirection changes. This ensures indentation is mirrored correctly.
+                if (!Object.Equals(currentValue, newValue))
+                {
+                    SwapBlockLeftAndRightMargins(block);
+                }
             }
         }
 

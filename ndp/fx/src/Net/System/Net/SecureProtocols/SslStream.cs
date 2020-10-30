@@ -112,10 +112,21 @@ using System.Net.Configuration;
             else
                 return _userCertificateValidationCallback(this, certificate, chain, sslPolicyErrors);
         }
-
+        
         private X509Certificate userCertSelectionCallbackWrapper(string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
         {
             return _userCertificateSelectionCallback(this, targetHost, localCertificates, remoteCertificate, acceptableIssuers);
+        }
+
+        private SslProtocols DefaultProtocols()
+        {
+            SslProtocols protocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
+            if (ServicePointManager.DisableStrongCrypto)
+            {
+                protocols = SslProtocols.Tls | SslProtocols.Ssl3;
+            }
+
+            return protocols;
         }
 
         //
@@ -123,7 +134,7 @@ using System.Net.Configuration;
         //
         public virtual void AuthenticateAsClient(string targetHost)
         {
-            AuthenticateAsClient(targetHost, new X509CertificateCollection(), SslProtocols.Default, false);
+            AuthenticateAsClient(targetHost, new X509CertificateCollection(), DefaultProtocols(), false);
         }
         //
         public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
@@ -137,7 +148,7 @@ using System.Net.Configuration;
         [HostProtection(ExternalThreading=true)]
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, AsyncCallback asyncCallback, object asyncState)
         {
-            return BeginAuthenticateAsClient(targetHost, new X509CertificateCollection(), SslProtocols.Default, false,
+            return BeginAuthenticateAsClient(targetHost, new X509CertificateCollection(), DefaultProtocols(), false,
                                            asyncCallback, asyncState);
         }
         //
@@ -168,7 +179,7 @@ using System.Net.Configuration;
         //
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
         {
-            AuthenticateAsServer(serverCertificate, false, SslProtocols.Default, false);
+            AuthenticateAsServer(serverCertificate, false, DefaultProtocols(), false);
         }
         //
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
@@ -182,8 +193,8 @@ using System.Net.Configuration;
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, AsyncCallback asyncCallback, object asyncState)
 
         {
-           
-            return BeginAuthenticateAsServer(serverCertificate, false, SslProtocols.Default, false,
+
+            return BeginAuthenticateAsServer(serverCertificate, false, DefaultProtocols(), false,
                                                           asyncCallback,
                                                             asyncState);
         }

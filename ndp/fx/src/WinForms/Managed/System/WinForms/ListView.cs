@@ -1714,9 +1714,9 @@ namespace System.Windows.Forms {
                 EnsureVisible(value.Index);
                 ListViewItem topItem = TopItem;
 
-                if ((topItem == null) && (topIndex == Items.Count)) // HACK ALERT! VSWhidbey bug 154094/Windows OS Bugs bug 872012
-                {                                                   // There's a bug in the common controls when the listview window is too small to fully display
-                    topItem = value;                                // a single item.  Result of the bug is that the return value from a LVM_GETTOPINDEX
+                if ((topItem == null) && (topIndex == Items.Count)) // HACK ALERT! VSWhidbey 
+                {                                                   // There's a 
+                    topItem = value;                                // a single item.  Result of the 
                     if (Scrollable)                                 // message is the number of items in the list rather than an index of an item in the list.
                     {                                               // This causes TopItem to return null.  A side issue is that EnsureVisible doesn't do too well
                         EnsureVisible(0);                           // here either, because it causes the listview to go blank rather than displaying anything useful.
@@ -2337,7 +2337,7 @@ namespace System.Windows.Forms {
                 for (int i = 0; i <= this.bkImgFileNamesCount; i ++) {
                     fi = new System.IO.FileInfo(this.bkImgFileNames[i]);
                     if (fi.Exists) {
-                        // [....]: vsWhidbey 417804.
+                        // Microsoft: vsWhidbey 417804.
                         // ComCtl ListView uses COM objects to manipulate the bitmap we send it to them.
                         // I could not find any resources which explain in detail when the IImgCtx objects
                         // release the temporary file. So if we get a FileIO when we delete the temporary file
@@ -2881,7 +2881,7 @@ namespace System.Windows.Forms {
                 try {
                     System.IO.FileInfo fi = new System.IO.FileInfo(fileName);
                     if (fi.Exists) {
-                        // [....]: vsWhidbey 417804.
+                        // Microsoft: vsWhidbey 417804.
                         // ComCtl ListView uses COM objects to manipulate the bitmap we send it to them.
                         // I could not find any resources which explain in detail when the IImgCtx objects
                         // release the temporary file. So if we get a FileIO when we delete the temporary file
@@ -2986,7 +2986,7 @@ namespace System.Windows.Forms {
                         if (!String.IsNullOrEmpty(this.backgroundImageFileName)) {
                             fi = new System.IO.FileInfo(this.backgroundImageFileName);
                             Debug.Assert(fi.Exists, "who deleted our temp file?");
-                            // [....]: vsWhidbey 417804.
+                            // Microsoft: vsWhidbey 417804.
                             // ComCtl ListView uses COM objects to manipulate the bitmap we send it to them.
                             // I could not find any resources which explain in detail when the IImgCtx objects
                             // release the temporary file. So if we get a FileIO when we delete the temporary file
@@ -2999,7 +2999,7 @@ namespace System.Windows.Forms {
                         for (int i = 0; i <= this.bkImgFileNamesCount; i++) {
                             fi = new System.IO.FileInfo(this.bkImgFileNames[i]);
                             Debug.Assert(fi.Exists, "who deleted our temp file?");
-                            // [....]: vsWhidbey 417804.
+                            // Microsoft: vsWhidbey 417804.
                             // ComCtl ListView uses COM objects to manipulate the bitmap we send it to them.
                             // I could not find any resources which explain in detail when the IImgCtx objects
                             // release the temporary file. So if we get a FileIO when we delete the temporary file
@@ -3111,7 +3111,7 @@ namespace System.Windows.Forms {
             // the win32 ListView::FindNearestItem does some pretty weird things to determine the nearest item.
             // simply passing the (x,y) coordinates will cause problems when we call FindNearestItem for a point inside an item.
             // so we have to do some special processing when (x,y) falls inside an item;
-            // take a look at VSWHIDBEY bug 178646 and the attached ListView_IFindNearestItem.c file for a complete story.
+            // take a look at VSWHIDBEY 
             ListViewItem lvi = this.GetItemAt(x,y);
 
             if (lvi != null) {
@@ -3827,7 +3827,7 @@ namespace System.Windows.Forms {
             Invalidate();
             ArrangeIcons(alignStyle);
 
-            // [....]:  this is bad for perf...I don't think we need this here.
+            // Microsoft:  this is bad for perf...I don't think we need this here.
             // Any newly added items shoul dhave the correct location.
             // UpdateListViewItemsLocations();
 
@@ -4248,10 +4248,10 @@ namespace System.Windows.Forms {
             this.FlipViewToLargeIconAndSmallIcon = false;
 
             base.OnHandleCreated(e);
-            //ComCtl 5 has some bug fixes that, to enable, require us to send the control
-            //a CCM_SETVERSION with 5 as the version. The one we want in particular is
-            //the fix for the node clipping issue when a font is set by means of CDRF_NEWFONT.
-            //The fix is not perfect, but the behavior is better than before.
+            //ComCtl 5 has some 
+
+
+
             int version = unchecked((int)(long)SendMessage(NativeMethods.CCM_GETVERSION, 0, 0));
             if (version < 5) {
                 SendMessage(NativeMethods.CCM_SETVERSION, 5, 0);
@@ -5109,8 +5109,8 @@ namespace System.Windows.Forms {
 
             Debug.Assert(IsHandleCreated, "SetItemText with no handle");
 
-            // bug 185563 : a listView in list mode will not increase the item width if the length of the item's text increases
-            // We have to make sure that the width of the "column" contains the string
+            // 
+
             if (this.View == View.List && subItemIndex == 0) {
                 int colWidth = unchecked( (int) (long)UnsafeNativeMethods.SendMessage(new HandleRef(this, this.Handle), NativeMethods.LVM_GETCOLUMNWIDTH, 0, 0));
 
@@ -5593,7 +5593,7 @@ namespace System.Windows.Forms {
 
                 ISite site = Site;
 
-                // [....], this seems like a really wierd place to annouce this change...
+                // Microsoft, this seems like a really wierd place to annouce this change...
                 if (site != null) {
                     IComponentChangeService cs = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
                     if (cs != null) {
@@ -5612,7 +5612,7 @@ namespace System.Windows.Forms {
 
             if (nmhdr->code == NativeMethods.HDN_ENDTRACKA || 
                 nmhdr->code == NativeMethods.HDN_ENDTRACKW) {
-                Debug.Assert(this.listViewState[LISTVIEWSTATE_headerControlTracking], "HDN_ENDTRACK and HDN_BEGINTRACK are out of [....]...");
+                Debug.Assert(this.listViewState[LISTVIEWSTATE_headerControlTracking], "HDN_ENDTRACK and HDN_BEGINTRACK are out of sync...");
                 this.listViewState[LISTVIEWSTATE_headerControlTracking] = false;
                 if (this.listViewState1[LISTVIEWSTATE1_cancelledColumnWidthChanging]) {
                     m.Result = (IntPtr) 1;
@@ -6017,7 +6017,7 @@ namespace System.Windows.Forms {
                     if (nmhdr->code == NativeMethods.LVN_GETDISPINFO) {
                         // we use the LVN_GETDISPINFO message only in virtual mode
                         if (this.VirtualMode && m.LParam != IntPtr.Zero) {
-                            // we HAVE to use unsafe code because of a bug in the CLR: WHIDBEY bug 20313
+                            // we HAVE to use unsafe code because of a 
                             NativeMethods.NMLVDISPINFO_NOTEXT dispInfo= (NativeMethods.NMLVDISPINFO_NOTEXT) m.GetLParam(typeof(NativeMethods.NMLVDISPINFO_NOTEXT));
 
                             RetrieveVirtualItemEventArgs rVI = new RetrieveVirtualItemEventArgs(dispInfo.item.iItem);
@@ -6066,7 +6066,7 @@ namespace System.Windows.Forms {
                                 dispInfo.item.iIndent = lvItem.IndentCount;
                             }
 
-                            /* [....]: Couldn't make this work. The dispInfo.item.iSubItem received for the subitems' text
+                            /* Microsoft: Couldn't make this work. The dispInfo.item.iSubItem received for the subitems' text
                                        are invalid
                             if ((dispInfo.item.mask & NativeMethods.LVIF_COLUMNS) != 0) {
                                 int cColumns = this.columnHeaders != null ? this.columnHeaders.Length : 0;
@@ -6082,7 +6082,7 @@ namespace System.Windows.Forms {
                             }
                             */
 
-                            /* [....]: VirtualMode and grouping seem to be incompatible.
+                            /* Microsoft: VirtualMode and grouping seem to be incompatible.
                                        dispInfo.item.mask never includes NativeMethods.LVIF_GROUPID.
                                        Besides, trying to send LVM_ENABLEGROUPVIEW to the listview fails in virtual mode.
                             if (this.GroupsEnabled && (dispInfo.item.mask & NativeMethods.LVIF_GROUPID) != 0)
@@ -6322,7 +6322,7 @@ namespace System.Windows.Forms {
                     if (!this.RecreatingHandle && !this.ListViewHandleDestroyed) {
                         // This means that we get a WM_SETFOCUS on the hWnd that was destroyed.
                         // Don't do anything because the information on the previous hWnd is most likely
-                        // out of [....] w/ the information in our ListView wrapper.
+                        // out of sync w/ the information in our ListView wrapper.
                         // See comment in vsw 451268.
 
                         // We should set focus to the first item,
@@ -7779,7 +7779,7 @@ namespace System.Windows.Forms {
         /// A caching mechanism for key accessor
         /// We use an index here rather than control so that we don't have lifetime
         /// issues by holding on to extra references.
-        /// Note this is not Thread Safe - but [....] has to be run in a STA anyways.
+        /// Note this is not Thread Safe - but Microsoft has to be run in a STA anyways.
         private int lastAccessedIndex = -1;
 
 

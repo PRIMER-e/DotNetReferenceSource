@@ -47,7 +47,7 @@ typedef struct
 	bool		 fLocal;
 	bool		 fPendingAccept;
 	bool		 fTerminated;
-	CHAR         szPipeName[MAX_PATH+1];	// Named-Pipe name...
+	WCHAR         wszPipeName[MAX_PATH+1];	// Named-Pipe name...
 	NpSecurityInfo * pSecInfo;
 	ProviderNum	 prot;
 	DWORD        dwNetworkSize;
@@ -173,7 +173,7 @@ private:
 	// Returns a Windows error code otherwise.
 	DWORD DWSetSkipCompletionPortOnSuccess();
 	
-	// Sets parameters on the SNI_Packet to allow it to be used for a [....] Overlapped operation.
+	// Sets parameters on the SNI_Packet to allow it to be used for a sync Overlapped operation.
 	void PrepareForSyncCall(SNI_Packet *pPacket);
 	
 	// Sets parameters on the SNI_Packet to allow it to be used for an Async Overlapped operation.
@@ -191,7 +191,7 @@ private:
 
 	BOOL FCloseRefHandle(); 
 
-	DWORD OpenPipe( __in LPSTR szPipeName, __in DWORD dwTimeout );
+	DWORD OpenPipe( __in LPWSTR wszPipeName, __in DWORD dwTimeout );
 
 	DWORD PostReadAsync( SNI_Packet *pPacket ); 
 

@@ -228,7 +228,7 @@ bool InitDWSyncObjects(LPDWSYNCOBJECTS pDWSyncObjects, LPEXCEPTION_POINTERS pExc
 
     pDWSyncObjects->pDWSharedMem = pDWSharedMem;
 
-    // get [....] objects
+    // get sync objects
     pDWSyncObjects->hEventAlive = CreateEvent(&SecurityAttributes, FALSE, FALSE, NULL);
     pDWSyncObjects->hEventDone = CreateEvent(&SecurityAttributes, FALSE, FALSE, NULL);
     pDWSyncObjects->hMutex = CreateMutex(&SecurityAttributes, FALSE, NULL);
@@ -543,14 +543,14 @@ LONG WINAPI WatsonFilter(EXCEPTION_POINTERS * pExceptionPointers)
     if (ERROR_SUCCESS == LoadWerDll ())
     {
         HRESULT hr = E_FAIL;
-        DWORD dwReportingFlags = 0; //[....] figure out what these should be set to. m_pDWSharedMem->bfDWRFlags;
+        DWORD dwReportingFlags = 0; //Microsoft figure out what these should be set to. m_pDWSharedMem->bfDWRFlags;
         WER_SUBMIT_RESULT wer_result;
 
         hr = CreateAndSubmitReport (&wer_result, pExceptionPointers, g_wszAdditionalFiles, g_WatsonType);
 
         if (SUCCEEDED(hr) && (wer_result == WerReportDebug))
         {
-            //[....] change this so that our outer filter will know to
+            //Microsoft change this so that our outer filter will know to
             //return CONTINUE_SEARCH.
             pExceptionPointers->ExceptionRecord->ExceptionCode = EXCEPTION_BREAKPOINT;
             return EXCEPTION_CONTINUE_SEARCH;
@@ -589,7 +589,7 @@ LONG WINAPI WatsonFilter(EXCEPTION_POINTERS * pExceptionPointers)
     }
     else
     {
-        // If they want to debug, don't ---- the exception.
+        // If they want to debug, don't swallow the exception.
         return EXCEPTION_CONTINUE_SEARCH;
     }
 }

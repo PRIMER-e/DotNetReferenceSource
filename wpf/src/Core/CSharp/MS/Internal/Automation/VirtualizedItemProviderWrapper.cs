@@ -8,7 +8,7 @@
 // Description: Virtualized Item pattern provider wrapper for WPF
 //
 // History:  
-//  10/22/2008 : [....] - created
+//  10/22/2008 : Microsoft - created
 //
 //---------------------------------------------------------------------------
 

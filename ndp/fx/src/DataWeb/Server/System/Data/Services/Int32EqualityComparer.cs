@@ -6,7 +6,7 @@
 //      Non-default-based implementation of IEqualityComparer&lt;int&gt;.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

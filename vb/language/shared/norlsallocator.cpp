@@ -497,7 +497,7 @@ NorlsPage * NorlsAllocator::NewPage(size_t sz)
     newPage->sentinalEnd = DEBUGSENTINAL;
 #endif
 
-    // [....] 'AllocPages' throws if it cannot fulfill the request.
+    // Microsoft 'AllocPages' throws if it cannot fulfill the request.
     VSASSERT (newPage, "Invalid");
     // Initialize the new page.
     newPage->next = NULL;

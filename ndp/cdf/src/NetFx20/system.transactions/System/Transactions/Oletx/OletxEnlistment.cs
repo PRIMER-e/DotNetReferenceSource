@@ -214,7 +214,7 @@ namespace System.Transactions.Oletx
                             );
                     }
 
-                    throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString( SR.OletxEnlistmentUnexpectedTransactionStatus ), null );
+                    throw TransactionException.Create(SR.GetString(SR.TraceSourceOletx), SR.GetString(SR.OletxEnlistmentUnexpectedTransactionStatus), null, this.DistributedTxId);
                 }
             }
 
@@ -680,8 +680,8 @@ namespace System.Transactions.Oletx
             {
                 // We are dealing with the committable transaction.  If Commit or BeginCommit has NOT been
                 // called, then we are dealing with a situation where the TM went down and we are getting
-                // a bogus Phase0Request with abortHint = false (COMPlus bug 36760/36758).  This is an attempt
-                // to not send the app a Prepare request when we know the transaction is going to abort.
+                // a bogus Phase0Request with abortHint = false (COMPlus 
+
                 if (!committableTx.CommitCalled )
                 {
                     commitNotYetCalled = true;
@@ -709,8 +709,8 @@ namespace System.Transactions.Oletx
                             {
                                 this.phase0Shim.Phase0Done( false );
                             }
-                            // I am not going to check for XACT_E_PROTOCOL here because that check is a workaround for a bug
-                            // that only shows up if abortingHint is false.
+                            // I am not going to check for XACT_E_PROTOCOL here because that check is a workaround for a 
+
                             catch ( COMException ex )
                             {
                                 if ( DiagnosticTrace.Verbose )
@@ -875,7 +875,7 @@ namespace System.Transactions.Oletx
                 }
                 else
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
                 }
 
                 // If this.fabricateRollback is true, it means that we are fabricating this
@@ -921,7 +921,7 @@ namespace System.Transactions.Oletx
                     }
                     else
                     {
-                        throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                        throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
                     }
                 }
                 else if ( null != localPhase0Shim )
@@ -936,7 +936,7 @@ namespace System.Transactions.Oletx
                     }
                     else
                     {
-                        throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                        throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
                     }
                 }
 
@@ -1030,7 +1030,7 @@ namespace System.Transactions.Oletx
                 }
                 else
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
                 }
 
                 state = OletxEnlistmentState.Prepared;
@@ -1081,13 +1081,13 @@ namespace System.Transactions.Oletx
                             ex );
                     }
                 }
-                // In the case of Phase0, there is a bug in the proxy that causes an XACT_E_PROTOCOL
-                // error if the TM goes down while the enlistment is still active.  The Phase0Request is
-                // sent out with abortHint false, but the state of the proxy object is not changed, causing
-                // Phase0Done request to fail with XACT_E_PROTOCOL.
-                // For Prepared, we want to make sure the proxy aborts the transaction.  We don't need
-                // to drive the abort to the application here because the Phase1 enlistment will do that.
-                // In other words, treat this as if the proxy said Phase0Request( abortingHint = true ).
+                // In the case of Phase0, there is a 
+
+
+
+
+
+
                 else if ( NativeMethods.XACT_E_PROTOCOL == ex.ErrorCode )
                 {
                     this.Phase0EnlistmentShim = null;
@@ -1156,7 +1156,7 @@ namespace System.Transactions.Oletx
                 }
                 else
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
                 }
 
                 state = OletxEnlistmentState.Aborted;
@@ -1236,7 +1236,7 @@ namespace System.Transactions.Oletx
             {
                 if (!isSinglePhase || (OletxEnlistmentState.SinglePhaseCommitting != state))
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
                 }
                 state = OletxEnlistmentState.Committed;
                 localEnlistmentShim = this.EnlistmentShim;
@@ -1311,7 +1311,7 @@ namespace System.Transactions.Oletx
             {
                 if (!isSinglePhase || (OletxEnlistmentState.SinglePhaseCommitting != state))
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
                 }
                 state = OletxEnlistmentState.Aborted;
                 
@@ -1387,7 +1387,7 @@ namespace System.Transactions.Oletx
             {
                 if (!isSinglePhase || (OletxEnlistmentState.SinglePhaseCommitting != state))
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
                 }
                 state = OletxEnlistmentState.InDoubt;
                 localEnlistmentShim = this.EnlistmentShim;
@@ -1444,7 +1444,7 @@ namespace System.Transactions.Oletx
             if ( this.prepareInfoByteArray == null )
             {
                 Debug.Assert( false, string.Format( null, "this.prepareInfoByteArray == null in RecoveryInformation()" ));
-                throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                throw TransactionException.CreateEnlistmentStateException(SR.GetString(SR.TraceSourceOletx), null, this.DistributedTxId);
             }
             return this.prepareInfoByteArray;
         }

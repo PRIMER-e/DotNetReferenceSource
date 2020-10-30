@@ -843,7 +843,7 @@ int16 errCode;
 
 /* ---------------------------------------------------------------------- */
 /* Recursive!! */
-/* Bug Trackers: It is possible that this function could run out of stack */
+/* */
 /* if the font defines a VERY deep component tree. */
 /* ---------------------------------------------------------------------- */
 [System::Security::SecurityCritical]

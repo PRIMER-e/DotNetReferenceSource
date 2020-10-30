@@ -2,7 +2,7 @@
 //
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 //
-//  Page Heap management.  Ruthlessly stolen from the C# team.  Please notify [....] and [....]
+//  Page Heap management.  Ruthlessly stolen from the C# team.  Please notify Microsoft and Microsoft
 //  about any changes to this file.  It is likely the change will need to be mirrored in the C#
 //  implementation
 //

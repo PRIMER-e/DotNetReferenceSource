@@ -827,8 +827,8 @@ namespace System.Windows.Forms {
         private static string MakeFilterString(string s, bool dereferenceLinks) {
             if (s == null || s.Length == 0)
             {
-                // Workaround for Whidbey bug #5165
-                // Apply the workaround only when DereferenceLinks is true and OS is at least WinXP.
+                // Workaround for Whidbey 
+
                 if (dereferenceLinks && System.Environment.OSVersion.Version.Major >= 5)
                 {
                     s = " |*.*";
@@ -978,7 +978,7 @@ namespace System.Windows.Forms {
         /// </devdoc>
         /// <internalonly/>
         protected override bool RunDialog(IntPtr hWndOwner) {
-            // See VSWhidbey bug 107000. Shell APIs do not support multisthreaded apartment model.
+            // See VSWhidbey 
             if (Control.CheckForIllegalCrossThreadCalls && Application.OleRequired() != System.Threading.ApartmentState.STA) {
                 throw new System.Threading.ThreadStateException(SR.GetString(SR.DebuggingExceptionOnly, SR.GetString(SR.ThreadMustBeSTA)));
             }

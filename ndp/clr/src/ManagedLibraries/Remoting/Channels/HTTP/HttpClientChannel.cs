@@ -1025,7 +1025,7 @@ namespace System.Runtime.Remoting.Channels.Http
 
                     StreamHelper.BeginAsyncCopyStream(
                         sourceRequestStream, webRequestStream,
-                        false, true, // [....] read, async write
+                        false, true, // sync read, async write
                         false, true, // leave source open, close target
                         s_processAsyncCopyRequestStreamCompletionCallback, 
                         asyncRequestState);                    
@@ -1090,7 +1090,7 @@ namespace System.Runtime.Remoting.Channels.Http
 
                     StreamHelper.BeginAsyncCopyStream(
                         httpWebResponse.GetResponseStream(), responseStream, 
-                        true, false, // async read, [....] write
+                        true, false, // async read, sync write
                         true, false, // close source, leave target open
                         s_processAsyncCopyRequestStreamCompletion,
                         asyncRequestState);

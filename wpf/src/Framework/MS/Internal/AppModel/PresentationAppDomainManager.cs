@@ -98,7 +98,7 @@ namespace System.Windows.Interop
                 SWF.Form.ShowDialog() uses the active window as owner. Since the call to GetActiveWindow() 
                 occurs on a new thread, where there are no other windows, we couldn't just pre-set the owner
                 as the active window. So, we intercept the GetActiveWindow() call and return the browser's
-                top-level window. From that point on, everything in the [....] dialog works as if the owner
+                top-level window. From that point on, everything in the Microsoft dialog works as if the owner
                 was explicitly given. (And owner from a different thread or process is fully supported.)
                  
                 This condition is an optimization.
@@ -149,7 +149,7 @@ namespace System.Windows.Interop
                 //   - The ReadOnlyPermissionSet may have v2 and v3 assembly references--they are not 'unified'
                 //      to the current framework version. This might confuse code doing more involved permission
                 //      set comparisons or calculations.
-                // See bug Dev10.697110 for the longer story. Workaround is to copy the ROPS to a regular one.
+                // See 
                 if (permissions is ReadOnlyPermissionSet)
                 {
                     permissions = new PermissionSet(permissions); 

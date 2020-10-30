@@ -606,7 +606,7 @@ namespace System.Windows.Annotations
 
             if (excludeZeroLength)
             {
-                //remove 0 length segments - work around for a bug in MultiPageTextView
+                //remove 0 length segments - work around for a 
                 for (int i = orderedList.Count - 1; i >= 0; i--)
                 {
                     TextSegment segment = orderedList[i];

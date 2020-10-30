@@ -6,7 +6,7 @@
 //      Provides a type to represent a parsed token.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Parsing

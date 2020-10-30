@@ -7,7 +7,7 @@
 //      XML Schema.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Design.Xml

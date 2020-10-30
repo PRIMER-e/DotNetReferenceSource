@@ -189,6 +189,7 @@ namespace MS.Internal.Text
             {
                 _runProperties = runProperties;
                 _textDecorations = textDecorations;
+                PixelsPerDip = _runProperties.PixelsPerDip;
             }
 
             public override Typeface Typeface

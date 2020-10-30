@@ -424,9 +424,9 @@ namespace System.Windows.Input
                 {
                     // focus might be delegated (e.g. during PreviewGotKeyboardFocus)
                     // without actually changing, if it was already on the delegated
-                    // element (see bug 1794057).  We can't test for this directly,
-                    // but if focus is within the desired element we'll assume this
-                    // is what happened.
+                    // element (see 
+
+
                     IInputElement newFocusElement = newFocus as IInputElement;
                     if (newFocusElement == null || !newFocusElement.IsKeyboardFocusWithin)
                     {
@@ -767,7 +767,7 @@ namespace System.Windows.Input
 
                 // Activation
                 //
-                // MITIGATION: KEYBOARD_STATE_OUT_OF_[....]
+                // MITIGATION: KEYBOARD_STATE_OUT_OF_SYNC
                 //
                 // It is very important that we allow multiple activate events.
                 // This is how we deal with the fact that Win32 sometimes sends

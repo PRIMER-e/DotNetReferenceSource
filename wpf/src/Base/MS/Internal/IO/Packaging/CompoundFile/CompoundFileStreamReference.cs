@@ -10,10 +10,10 @@
 // History:
 //  03/27/2002: BruceMac: Initial implementation.
 //  05/20/2003: RogerCh:  Ported to WCP tree.
-//  08/11/2003: LGolding: Fix Bug 864168 (some of BruceMac's bug fixes were lost
-//                          in port to WCP tree).
-//
-//-----------------------------------------------------------------------------
+//  08/11/2003: LGolding: Fix 
+
+
+
 
 using System;
 using System.IO;

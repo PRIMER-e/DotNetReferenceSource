@@ -85,5 +85,44 @@ namespace System.Windows
                 Add(textDecoration);
             }                
         }
+        
+        /// <summary>
+        /// Remove a collection of text decorations from the current collection and return 
+        /// the resultant (new) collection. The current collection remains unchanged. If the collection
+        /// to be removed is not a subset of the current collection, then no element is removed. If 
+        /// the source collection has multiple instances of an item, then all intances of the item is
+        /// removed. 
+        /// </summary>
+        /// <param name="textDecorations">The collection to be removed</param>
+        /// <param name="result">
+        /// Out parameter containing the result. If no element was removed 
+        /// from the current collection, then result is a new (unfrozen) collection 
+        /// identical to the original one. 
+        /// </param>
+        /// <returns>True if at least one item was removed from the current collection, False otherwise</returns>
+        public bool TryRemove(IEnumerable<TextDecoration> textDecorations, out TextDecorationCollection result)
+        {
+            if (textDecorations == null)
+            {
+                throw new ArgumentNullException(nameof(textDecorations));
+            }
+
+            bool removed = false;
+            result = this.Clone(); //the current collection might be frozen, so clone it
+
+            foreach (TextDecoration textDecoration in textDecorations)
+            {
+                for (int i = result.Count -1; i >= 0; --i)
+                {
+                    if (result[i].ValueEquals(textDecoration))
+                    {
+                        result.RemoveAt(i);
+                        removed = true; 
+                    }
+                }
+            }
+
+            return removed; 
+        }
     }
 }

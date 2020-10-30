@@ -584,7 +584,7 @@ namespace System.Windows.Forms {
         /// <devdoc>
         ///     This private property is set by the TabPageCollection when the user calls "InsertItem".
         ///     The problem is when InsertItem is called then we add this item to the ControlsCollection (in addition to the TabPageCollection)
-        ///     to keep both the collections is [....]. But the controlCollection.Add is overriden to again ADD the item to the TabPageCollection.
+        ///     to keep both the collections is sync. But the controlCollection.Add is overriden to again ADD the item to the TabPageCollection.
         ///     So we keep this flag in order to aviod repeatd addition (only during insert)
         ///     When the Add ends ... we reset this flag.
         /// </devdoc>
@@ -1491,7 +1491,7 @@ namespace System.Windows.Forms {
         internal override void OnParentHandleRecreated()
         {
             // Avoid temporarily resizing the TabControl while the parent 
-            // recreates its handle to avoid bug VSWhidbey 543390.
+            // recreates its handle to avoid 
             this.skipUpdateSize = true;
             try {
                 base.OnParentHandleRecreated();

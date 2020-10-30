@@ -6,7 +6,7 @@
 //      Simple couple of classes to keep association descriptions
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

@@ -114,6 +114,9 @@ namespace System.Windows
                 UIElement.ManipulationInertiaStartingEvent,
                 new EventHandler<ManipulationInertiaStartingEventArgs>(OnStaticManipulationInertiaStarting),
                 /*handledEventsToo*/ true);
+
+            Window.DpiChangedEvent = EventManager.RegisterRoutedEvent("DpiChanged", RoutingStrategy.Bubble,
+                typeof (System.Windows.DpiChangedEventHandler), typeof (Window));
         }
 
         /// <summary>
@@ -633,6 +636,11 @@ namespace System.Windows
                 null,
                 (d, e) => ((Window)d).OnTaskbarItemInfoChanged(e),
                 VerifyAccessCoercion));
+
+        /// <summary>
+        /// RoutedEvent for when DPI of the screen the Window is on, changes.
+        /// </summary>
+        public static readonly RoutedEvent DpiChangedEvent;
 
         /// <summary>
         /// Get or set the TaskbarItemInfo associated with this Window.
@@ -1336,9 +1344,9 @@ namespace System.Windows
 
                 // We should not do anything if the window is already closed and maybe throw exception.
                 // In Dev10, it is unknown whether we can begin to throw exceptions, because it is a BC.
-                // I opened DevDiv bug # 479775 to track the Window dispose behavior.
-                // In Dev10, we still update _ownerWindow after window is closed just so that the Owner getter
-                // returns the right value.
+                // I opened DevDiv 
+
+
                 if (_disposed)
                 {
                     return;
@@ -1429,8 +1437,8 @@ namespace System.Windows
                         // the window is in the closing state.  Thus, if we call
                         // Close() again from here we go into an infinite loop.
                         //
-                        // Note: Windows OS bug # 934500 Setting DialogResult
-                        // on the Closing EventHandler of a Dialog causes StackOverFlowException
+                        // Note: Windows OS 
+
 
                         if(_isClosing == false)
                         {
@@ -1681,6 +1689,15 @@ namespace System.Windows
         }
 
         /// <summary>
+        ///     This event is raised after the DPI of the screen on which the Window is displayed, changes.
+        /// </summary>
+        public event DpiChangedEventHandler DpiChanged
+        {
+            add { AddHandler(Window.DpiChangedEvent, value); }
+            remove { RemoveHandler(Window.DpiChangedEvent, value); }
+        }
+
+        /// <summary>
         ///     This event is raised when the window is activated
         /// </summary>
         public event EventHandler Activated
@@ -1763,6 +1780,14 @@ namespace System.Windows
         protected override AutomationPeer OnCreateAutomationPeer()
         {
             return new WindowAutomationPeer(this);
+        }
+
+        /// <summary>
+        /// OnDpiChanged is called when the DPI at which this Window is rendered, changes.
+        /// </summary>
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            RaiseEvent(new DpiChangedEventArgs(oldDpi, newDpi, Window.DpiChangedEvent, this));
         }
 
         /// <summary>
@@ -1884,7 +1909,7 @@ namespace System.Windows
                     // height = 28!!!  Here, we will take the max of zero and the difference b/w the
                     // hwnd size and the frame size
                     //
-                    // PS Windows OS Bug: 955861
+                    // PS Windows OS 
 
                     Size childArrangeBounds = new Size();
                     childArrangeBounds.Width = Math.Max(0.0, arrangeBounds.Width - frameSize.Width);
@@ -1892,12 +1917,12 @@ namespace System.Windows
 
                     child.Arrange(new Rect(childArrangeBounds));
 
-                    // Windows OS bug # 928719, 953458
-                    // The default impl of FlowDirection is that it adds a transform on the element
-                    // on whom the FlowDirection property is RlTb.  However, transforms work only if
-                    // there is a parent visual.  In the window case, we are the root and thus this
-                    // does not work.  Thus, we add the same transform to our child, if our
-                    // FlowDireciton = Rltb.
+                    // Windows OS 
+
+
+
+
+
                     if (FlowDirection == FlowDirection.RightToLeft)
                     {
                         InternalSetLayoutTransform(child, new MatrixTransform(-1.0, 0.0, 0.0, 1.0, childArrangeBounds.Width, 0.0));
@@ -2357,8 +2382,8 @@ namespace System.Windows
             _disposed = true;
 
             // UpdateWindowLists here instead of in WM_CLOSE for 2 reasons.
-            // 1. WM_CLOSE is not fired for child window. An example would be RootBrowserWindow (bug 1754467).
-            // 2. It is not fired as a result of calling Dispose directly on HwndSource (HwndSource distroy the window).
+            // 1. WM_CLOSE is not fired for child window. An example would be RootBrowserWindow (
+
             UpdateWindowListsOnClose();
 
 #if DISPOSE
@@ -2619,9 +2644,9 @@ namespace System.Windows
             // remove WS_CAPTION from the hwnd.
             //
             // We should really be using WS_POPUP for borderless windows, but
-            // there's a bug with default sizing where user creates the popup
-            // window with 0,0 size.
-            //
+            // there's a 
+
+
 
             using (HwndStyleManager sm = HwndStyleManager.StartManaging(this, StyleFromHwnd, StyleExFromHwnd))
             {
@@ -2649,7 +2674,7 @@ namespace System.Windows
         [SecurityCritical]
         internal virtual void SetupInitialState(double requestedTop, double requestedLeft, double requestedWidth, double requestedHeight)
         {
-            // Push the current SizeToContent value to HwndSource after it's created. Initial [....] up.
+            // Push the current SizeToContent value to HwndSource after it's created. Initial sync up.
             HwndSourceSizeToContent = (SizeToContent) GetValue(SizeToContentProperty);
             UpdateIcon();
 
@@ -2660,7 +2685,7 @@ namespace System.Windows
 
             bool updateHwndPlacement = false;
 
-            // This code is absolutely necessary here.  This is the initial [....] up
+            // This code is absolutely necessary here.  This is the initial sync up
             // for Left/Top.  We don't do this in WM_MOVE if sourceWindow is
             // null (it is null b/c the call to create HwndSource has not returned at the point)
             // and we are not listening to WM_CREATE either.  The reasons for not
@@ -3398,7 +3423,7 @@ namespace System.Windows
                     // height = 28!!!  Here, we will take the max of zero and the difference b/w the
                     // hwnd size and the frame size
                     //
-                    // PS Windows OS Bug: 955861
+                    // PS Windows OS 
                     Size childConstraint = new Size();
                     childConstraint.Width = ((constraint.Width == Double.PositiveInfinity) ? Double.PositiveInfinity : Math.Max(0.0, (constraint.Width - frameSize.Width)));
                     childConstraint.Height = ((constraint.Height == Double.PositiveInfinity) ? Double.PositiveInfinity : Math.Max(0.0, (constraint.Height - frameSize.Height)));
@@ -3509,7 +3534,7 @@ namespace System.Windows
             }
         }
 
-        /// <remarks> Keep this method in [....] with Frame.PostContentRendered(). </remarks>
+        /// <remarks> Keep this method in sync with Frame.PostContentRendered(). </remarks>
         private void PostContentRendered()
         {
             // Post the firing of ContentRendered as Input priority work item so
@@ -3782,18 +3807,18 @@ namespace System.Windows
                     break;
                 case WindowStartupLocation.CenterScreen:
                     // NOTE: hamidm 05/19/04
-                    // Bug (Windows OS Bugs) # 843790 -- Which screen to center the
-                    // window on?
-                    //
-                    // If Window has a parent handle, then center the Window on the
-                    // same monitor as the parent hwnd.  If theres no parent hwnd,
-                    // center the Window on the monitor where the mouse is currently
-                    // on.
-                    //
-                    // The exception to this rule is when ShowInTaskbar is set to false
-                    // and we parent to window to achieve that.  That's the reason for
-                    // having the extra condition in the if statement below
-                    //
+                    // 
+
+
+
+
+
+
+
+
+
+
+
 
                     IntPtr hMonitor = IntPtr.Zero;
                     if ((_ownerHandle == IntPtr.Zero) ||
@@ -3861,8 +3886,8 @@ namespace System.Windows
                         leftDeviceUnits = ownerRectDeviceUnits.X + ((ownerRectDeviceUnits.Width - currentSizeDeviceUnits.Width) / 2);
                         topDeviceUnits = ownerRectDeviceUnits.Y + ((ownerRectDeviceUnits.Height - currentSizeDeviceUnits.Height) / 2);
 
-                        // Check the screen rect to make sure the window is shown on screen. Details in Dev10 bug 452051.
-                        // It is the same as [....]' behavior.
+                        // Check the screen rect to make sure the window is shown on screen. Details in Dev10 
+
                         NativeMethods.RECT workAreaRectDeviceUnits = WorkAreaBoundsForHwnd(_ownerHandle);
                         leftDeviceUnits = Math.Min(leftDeviceUnits, workAreaRectDeviceUnits.right - currentSizeDeviceUnits.Width);
                         leftDeviceUnits = Math.Max(leftDeviceUnits, workAreaRectDeviceUnits.left);
@@ -4104,8 +4129,8 @@ namespace System.Windows
         private void UpdateIcon()
         {
 
-            // NOTE: hamidm -- bug 963275 AppModel: Set Window.Icon = null
-            // causes NullReferenceException
+            // NOTE: hamidm -- 
+
 
             // if _icon is null, set _defaultLargeIconHandle and _defaultSmallIconHandle
             //  to the app icon (embedded in the exe).  _icon is used as window icon if it
@@ -4143,7 +4168,7 @@ namespace System.Windows
 
             // One of the steps necessary to hide a Window's taskbar button is to parent it off another HWND.
             // On XP when this is done the Window's alt-tab icon takes on the icon of the parent.  If we've created
-            // a hidden parent window for the sake of ShowInTaskbar=false, then we need to keep its icon in [....]
+            // a hidden parent window for the sake of ShowInTaskbar=false, then we need to keep its icon in sync
             // with the Window's.
             // On Vista this isn't necessary.
 
@@ -4222,7 +4247,7 @@ namespace System.Windows
 
             // If this call is removing the owner then we possibly need to reparent it with
             // the hidden window (ShowInTaskbar==false)
-            // Once the hidden window is created we keep its icon in [....] with the Window's.
+            // Once the hidden window is created we keep its icon in sync with the Window's.
             _ownerHandle = (IntPtr.Zero == ownerHandle && !ShowInTaskbar)
                 ? EnsureHiddenWindow().Handle
                 : ownerHandle;
@@ -4427,8 +4452,8 @@ namespace System.Windows
             // should not call Close() from DialogResult.set and thus
             // we have this variable.
             //
-            // Note: Windows OS bug # 934500 Setting DialogResult
-            // on the Closing EventHandler of a Dialog causes StackOverFlowException
+            // Note: Windows OS 
+
             _isClosing = true;
 
             // Event handler exception continuality: if exception occurs in Closing event handler, the
@@ -4478,8 +4503,8 @@ namespace System.Windows
             ClearRootVisual();
 
             // We should also ClearHiddenWindow here, because in InternalDispose the window handle could be null if the dispose happens as
-            // a result of HwndSource dispose. Our InternalDispose has been changed to handle reantrance, so the issue (bug 953988) described in
-            // ClearHiddenWindowIfAny should not happen any more.
+            // a result of HwndSource dispose. Our InternalDispose has been changed to handle reantrance, so the issue (
+
             ClearHiddenWindowIfAny();
         }
 
@@ -4507,7 +4532,7 @@ namespace System.Windows
             //The scenario is: When showing the window as a modal dialog, the window Activated event is fired
             //before _dispatcherFrame is instantiated. In the Activated handler, if user closes the
             //window (setting DialogResult fires the WM_CLOSE event), the _dispatcherFrame is still null.
-            //Bug 874463 addressed this.
+            //
             if (_dispatcherFrame != null)
             {
                 // un block the push frame call
@@ -4547,11 +4572,11 @@ namespace System.Windows
             EnableThreadWindows(true);
 
             // if dialog that is closing was active window and there was a previously active window,
-            // set the active window.  The owner window may not be the previously active window. See DevDiv bug 122467 for details.
-            // Furthermore, verify that _dialogPreviousActiveHandle is still a window b/c it
-            // could have been destroyed by now by some other thread/codepath etc.
-            // WOSB 1098573 (BVT BLOCKER: System.ComponentModel.Win32Exception thrown when
-            // trying to shutdown app inside a Dialog Window)
+            // set the active window.  The owner window may not be the previously active window. See DevDiv 
+
+
+
+
             if ((wasActive == true) &&
                 (_dialogPreviousActiveHandle != IntPtr.Zero) &&
                 (UnsafeNativeMethods.IsWindow(new HandleRef(this, _dialogPreviousActiveHandle)) == true))
@@ -4724,7 +4749,8 @@ namespace System.Windows
             }
 
             NativeMethods.RECT rc = WindowBounds;
-            Point ptLogicalUnits = DeviceToLogicalUnits(new Point(rc.right - rc.left, rc.bottom - rc.top));
+            Point windowSize = new Point(rc.right - rc.left, rc.bottom - rc.top);
+            Point ptLogicalUnits = DeviceToLogicalUnits(windowSize);
 
             try
             {
@@ -4754,17 +4780,17 @@ namespace System.Windows
                 // OnStateChanged should be fired. However, We were comparing that to WindowState.Normal.
                 // The value in property engine had been updated to Normal in the CLR setter, so OnStateChanged
                 // was never fired.
-                // This is addressed in bug 937458.
-                //
-                // Another reason for remembering the previous state is that
-                // WM_SIZE is sent when the client area size of the hwnd changes.
-                // Thus, if the hwnd is maximized, and the border style changes,
-                // WM_SIZE is sent.  In such cases, we don't want to fire
-                // StateChanged since the previous state was maximized too.
-                // See WOSB 1097658 (NullReferenceException thrown when changing ResizeMode from CanMinimize
-                // to CanResizeWithGrip inside StateChanged event handler).
-                //
-                // There are two places we update _previousWindowState.
+                // This is addressed in 
+
+
+
+
+
+
+
+
+
+
 
                 // WindowState can be changed as a result of the following two passes
                 // 1. User interaction changes WindowState
@@ -4798,6 +4824,12 @@ namespace System.Windows
                             }
                             WindowState = WindowState.Maximized;
                         }
+                        // DDVSO: 104034. The maximizing size we get from WM_GETMINMAXINFO is only valid for the primary monitor, if the primary monitor 
+                        // happens to be smaller than the secondary monitor, we may end up not maximizing correctly in the secondary monitor.
+                        // Here we are sure that this size value is coming from the OS so it is safe to update our maximizing size.
+                        _windowMaxWidthDeviceUnits = Math.Max(_windowMaxWidthDeviceUnits, windowSize.X);
+                        _windowMaxHeightDeviceUnits = Math.Max(_windowMaxHeightDeviceUnits, windowSize.Y);
+                        
                         _previousWindowState = WindowState.Maximized;
                         OnStateChanged(EventArgs.Empty);
                     }
@@ -4951,20 +4983,20 @@ namespace System.Windows
             NativeMethods.MINMAXINFO mmi = (NativeMethods.MINMAXINFO)UnsafeNativeMethods.PtrToStructure( lParam, typeof(NativeMethods.MINMAXINFO));
 
             //
-            // For Bug 1380569: Window SizeToContent does not work after changing Max size properties
-            //
-            // When Min/Max size is changed in this Window instance, we want to make sure the correct
-            // final Min/Max size is used to measure the window layout and notify the Win32 of the required
-            // Min/Max size.
-            //
-            // This method is responsible to notify Win32 of the new Min/Max size.
-            // MeasureOverride( ) is responisble to use the right Min/Max size to calculate the desired layout size.
-            //
-            // But only this method knows the Win32 restricted Min/Max value for the HWND when it responds to WM_GETMINMAXINFO message.
-            //
-            // To generate the right final Min/Max size value in both places ( here and MeasureOverride), we should
-            // cache the Win32 restricted size here.
-            //
+            // For 
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
             // hamidm -- 10/27/2005
@@ -5232,8 +5264,8 @@ namespace System.Windows
             if ( IsSourceWindowNull == false && IsCompositionTargetInvalid == false)
             {
                 bool fHideWindow = false;
-                // Win32 bug. For ShowInTaskbar to change dynamically, we need to hide then show the window.
-                // It is recommended to hide the window, chnage the style bits and then show it again.
+                // Win32 
+
                 if (_isVisible)
                 {
                     UnsafeNativeMethods.SetWindowPos(new HandleRef(this, CriticalHandle), NativeMethods.NullHandleRef, 0, 0, 0, 0,
@@ -5625,7 +5657,7 @@ namespace System.Windows
             // Window.Show after setting Visibility=Hidden)
 
             // We should optimize for when visibilityValue == _isVisible only in ShowHelper
-            // since this is called from a [....] and async call.  We cannot optimize it there
+            // since this is called from a sync and async call.  We cannot optimize it there
             // since _isVisible may not reflect the exact state requested by the OM call.
             if (_isVisible == value)
             {
@@ -5668,8 +5700,8 @@ namespace System.Windows
             if ( IsSourceWindowNull == false )
             {
                 // NOTE: hamidm 08/24/04
-                // PS Windows OS bug # 950580 Specifying an Avalon app to start
-                // maximized from a shortcut does not work.
+                // PS Windows OS 
+
 
                 // ShowWindow MSDN documentation says that the first time ShowWindow
                 // is called, nCmd passed in STARTUPINFO is used instead of the one
@@ -5728,12 +5760,12 @@ namespace System.Windows
             if ((_showingAsDialog == true) && (_isVisible == true))
             {
                 // hamidm -- 07/07/04
-                // PS Bug # 992107, 935429
-                //
-                // Since we exited the Context, we need to make sure
-                // we enter it before returning even if there is an
-                // exception
-                //
+                // PS 
+
+
+
+
+
                 Debug.Assert(_dispatcherFrame == null, "_dispatcherFrame must be null here");
 
                 try
@@ -6223,28 +6255,28 @@ namespace System.Windows
         //                  i. We should always update with the win32 default position when it is Nan.
         //                  ii. If WindowState is maxmized, we should always return from the hwnd (_actualTop/Left),
         //                  but update the hwnd restorebounds. So setting Top/Left WindowState to to Maxmized before show would
-        //                  work for restorebounds (details in bug 1217802).
-        //          b. If Top/Left is set and/or WindowStartupLocation is effective.
-        //                  WindowState must be normal here because it takes precedence over WindowStartupLocation and Top/Left.
-        //                  Since WindowStartupLocation only works the first time shown, we have a flag (_updateStartupLocation)
-        //                  to help indicating that.
-        //                  If StartupLocation is effective, we should return from the hwnd (_actualTop/Left).
-        //          c. If SizeToContent is set and WindowStartupLocation is effective.
-        //                  Same as b.
-        //
-        // 3.   After show
-        //      a. User moves the Window.
-        //          If user resize, we set local value (SetValue).
-        //      b. User maximizes or minimizes. Or WindowState is changed programmtically
-        //          We coerce Top and Left's value when WindowState is changed no matter whether it is
-        //          from user action or programmtically.
-        //      c. SetValue
-        //
-        //      For b and c, when WindowState is max or min, the hwnd value should always be returned.
-        //      The new value should be set as restorebounds. Otherwise update with the new value.
-        //
-        // Note: as we can see from above logic, _actualTop/Left should always be updated with the current hwnd position before we
-        // coerce Top and Left after hwnd is created.
+        //                  work for restorebounds (details in 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         private static object CoerceTop(DependencyObject d, object value)
         {
             Window w = d as Window;
@@ -6863,7 +6895,7 @@ namespace System.Windows
                 return HRESULT.S_FALSE;
             }
 
-            // Don't count on Window properties being in [....] at the time of this call.
+            // Don't count on Window properties being in sync at the time of this call.
             // Just use native methods to check
             if (UnsafeNativeMethods.IsIconic(CriticalHandle))
             {
@@ -7088,21 +7120,21 @@ namespace System.Windows
         internal void Flush()
         {
             // hamidm - 07/13/2005: WOSB 1178019 (A NullReferenceException occurs when animating
-            // the WindowStyle enum via a custom animation).  This bug contains details of
-            // why we were seeing the null ref.
-            //
-            // Sometimes, the SetWindowPos call below results in sending certain window messages
-            // like (WM_SIZE) and their handling leads to setting some property on the Window leading
-            // to a call to HwndStyleManager.StartManaging.  Thus, we end up calling
-            // dispose on the "new" usage of the Manager before we complete this run of Flush method.
-            // This resulted in null ref in setting the Dirty bit below since we were not using
-            // a local copy and the window member copy was already set to null by the "new" usage
-            // of Manager.  To fix this bug, we do the following two things:
-            //
-            // 1) Keep a local copy of HwndStyleManager in this method to make it re-entrant.
-            // 2) null out _window.Manager in HwndStyleMangager.Dispose only if _window.Manager is
-            //    this instance of the Manager.
-            //
+            // the WindowStyle enum via a custom animation).  This 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             HwndStyleManager manager = Manager;
             if (manager.Dirty && CriticalHandle != IntPtr.Zero)
             {
@@ -7178,10 +7210,10 @@ namespace System.Windows
             // If there is a hiddenWindow and it's the owner of the current one as the result of setting ShowInTaskbar,
             // we need to unparent it. Because when we dipose the hiddenWindow, if it's still the parent
             // of the current window, the current Window will get a second WM_DESTORY because its owner being distoried.
-            // See detail in bug 953988.
-            // Unparent it in WM_CLOSE because when we get to WM_DESTROY, _sourceWindow.Handle could be IntPtr.Zero;
-            // InternalDispose() is where _hiddenWindow is disposed. It could be called from two places: 1. WmDestroy 2. OnSourceWindowDisposed.
-            // When it's called from OnSourceWindowDisposed, _sourceWindow.Handle could have been set to IntPtr.Zero.
+            // See detail in 
+
+
+
             if ((_hiddenWindow != null) && (_hiddenWindow.Handle == _ownerHandle))
             {
                 SetOwnerHandle(IntPtr.Zero);
@@ -8158,7 +8190,7 @@ namespace System.Windows
                     _window._Style    =  Style;
                     _window._StyleEx  = StyleEx;
 
-                    // Dirty ==> _style and hwnd are out of [....]. Since we just got
+                    // Dirty ==> _style and hwnd are out of sync. Since we just got
                     // the style from hwnd, it obviously is not Dirty.
                     Dirty = false;
                 }
@@ -8170,18 +8202,18 @@ namespace System.Windows
                 _refCount--;
 
                 // hamidm - 07/13/2005: WOSB 1178019 (A NullReferenceException occurs when animating
-                // the WindowStyle enum via a custom animation).  This bug contains details of
-                // why we were seeing the null ref.
-                //
-                // Sometimes, the Flush call below results in sending certain window messages
-                // and their handling leads to setting some property on the Window leading
-                // to a call to HwndStyleManager.StartManaging.  Thus, we end up calling
-                // dispose on that before we complete this run of the Dispose method.  This
-                // resulted in null ref in Flush.  To fix this bug, we do the following two things:
-                //
-                // 1) Keep a local copy of HwndStyleManager in Flush to make it re-entrant
-                // 2) null out _window.Manager below only if _window.Manager is this instance
-                //    of the Manager.
+                // the WindowStyle enum via a custom animation).  This 
+
+
+
+
+
+
+
+
+
+
+
 
                 if (_refCount == 0)
                 {

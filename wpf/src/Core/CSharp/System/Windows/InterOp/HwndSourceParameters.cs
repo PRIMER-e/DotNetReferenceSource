@@ -9,6 +9,9 @@ using MS.Win32;
 using System.Windows.Media;
 using System.Windows.Input;
 
+using SR = MS.Internal.PresentationCore.SR;
+using SRID = MS.Internal.PresentationCore.SRID;
+
 namespace System.Windows.Interop
 {
     /// <summary>
@@ -232,11 +235,26 @@ namespace System.Windows.Interop
         /// </summary>
         /// <remarks>
         ///     By enabling per-pixel opacity, the system will no longer draw the non-client area.
+        ///     This property is deprecated: UsesPerPixelTransparency should be used instead.
         /// </remarks>
         public bool UsesPerPixelOpacity
         {
             get {return _usesPerPixelOpacity;}
-            set {_usesPerPixelOpacity = value;}
+            set { _usesPerPixelOpacity = value; }
+        }
+        /// <summary>
+        ///     Specifies whether or not the per-pixel transparency of the window content
+        ///     is respected.
+        /// </summary>
+        /// <remarks>
+        ///     By enabling per-pixel transparency, the system will no longer draw the non-client area.
+        ///     On Windows 7, this property can only be set for toplevel Windows
+        ///     On Windows 8, this property can be set also for child Windows
+        /// </remarks>
+        public bool UsesPerPixelTransparency
+        {
+            get { return _usesPerPixelTransparency; }
+            set { _usesPerPixelTransparency = value; }
         }
 
         /// <summary>
@@ -266,6 +284,39 @@ namespace System.Windows.Interop
         {
             get { return _treatAsInputRoot ?? ((uint)_styleBits & NativeMethods.WS_CHILD) == 0; }
             set { _treatAsInputRoot = value; }
+        }
+
+        /// <summary>
+        /// Returns the effective per pixel opacity property given the style and the underlying platform
+        /// </summary>
+        /// <remarks>
+        /// Before Windows 8, Layered child windows were not possible and UsesPerPixelOpacity was ignored when
+        /// WS_CHILD was used. For compatibility reasons:
+        ///   - we introduce UsesPerPixelTransparency which can be set for WS_CHILD windows
+        ///   - we mark as deprecated but still honor UsesPerPixelOpacity
+        /// </remarks>
+        internal bool EffectivePerPixelOpacity
+        {
+            get
+            {
+                if (_usesPerPixelTransparency)
+                {
+                    // Applications aware of the new property should not set the old one too
+                    if (_usesPerPixelOpacity)
+                    {
+                        throw new InvalidOperationException(SR.Get(SRID.UsesPerPixelOpacityIsObsolete));
+                    }
+
+                    // If not running on Windows 8, we must clear the parameter for child windows
+                    return PlatformSupportsTransparentChildWindows || ((WindowStyle & NativeMethods.WS_CHILD) == 0);
+                }
+                else
+                {
+                    // Application does not want transparency or else uses old API
+                    // In the second case, we do not support WS_CHILD
+                    return _usesPerPixelOpacity && ((WindowStyle & NativeMethods.WS_CHILD) == 0);
+                }
+            }
         }
 
         /// <summary>
@@ -328,6 +379,7 @@ namespace System.Windows.Interop
                  // && (this._opacity == obj._opacity)
                  // && (this._opacitySpecified == obj._opacitySpecified)
                  && (this._usesPerPixelOpacity == obj._usesPerPixelOpacity)
+                 && (this._usesPerPixelTransparency == obj._usesPerPixelTransparency)
                   );
         }
 
@@ -348,10 +400,35 @@ namespace System.Windows.Interop
         // private double _opacity;
         // private bool _opacitySpecified; // default value for opacity needs to be 1.0
         private bool _usesPerPixelOpacity;
+        private bool _usesPerPixelTransparency;
         private bool? _treatAsInputRoot;
         private bool _treatAncestorsAsNonClientArea;
         private RestoreFocusMode? _restoreFocusMode;
         private bool? _acquireHwndFocusInMenuMode;
 
+        private static bool _platformSupportsTransparentChildWindows = MS.Internal.Utilities.IsOSWindows8OrNewer;
+        /// <summary>
+        /// Transparent Child Windows are only supported on Windows 8 or later
+        /// </summary>
+        internal static bool PlatformSupportsTransparentChildWindows
+        {
+            get
+            {
+                return _platformSupportsTransparentChildWindows;
+            }
+        }
+
+        /// <summary>
+        /// Only used in HwndSourceParameters tests to simulate old platforms behavior
+        /// </summary>
+        /// <param name="value">boolean indicating which support to emulate</param>
+        /// <remarks>Not intended to be tested outside test code</remarks>
+        internal static void SetPlatformSupportsTransparentChildWindowsForTestingOnly(bool value)
+        {
+            if (string.Compare(System.Reflection.Assembly.GetEntryAssembly().GetName().Name, "drthwndsource", true) == 0)
+            {
+                _platformSupportsTransparentChildWindows = value;
+            }
+        }
     }
 }

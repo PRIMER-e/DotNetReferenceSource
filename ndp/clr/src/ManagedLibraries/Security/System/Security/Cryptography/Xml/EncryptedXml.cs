@@ -3,7 +3,7 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 //
@@ -24,6 +24,23 @@ namespace System.Security.Cryptography.Xml
     using System.Security.Policy;
     using System.Text;
     using System.Xml;
+
+    /// <summary>
+    /// This exception helps catch the signed XML recursion limit error.
+    /// This is being caught in the SignedXml class while computing the
+    /// hash. ComputeHash can throw different kind of exceptions.
+    /// This unique exception helps catch the recursion limit issue.
+    /// </summary>
+    [Serializable]
+    internal class CryptoSignedXmlRecursionException : XmlException {
+        public CryptoSignedXmlRecursionException() : base() { }
+        public CryptoSignedXmlRecursionException(string message) : base(message) { }
+        public CryptoSignedXmlRecursionException(string message, System.Exception inner) : base(message, inner) { }
+        // A constructor is needed for serialization when an 
+        // exception propagates from a remoting server to the client.  
+        protected CryptoSignedXmlRecursionException(System.Runtime.Serialization.SerializationInfo info,
+        System.Runtime.Serialization.StreamingContext context) { }
+    }
 
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
     public class EncryptedXml {
@@ -85,11 +102,12 @@ namespace System.Security.Cryptography.Xml
         private CipherMode m_mode;
         private Encoding m_encoding;
         private string m_recipient;
+        private int m_xmlDsigSearchDepthCounter = 0;
+        private int m_xmlDsigSearchDepth;
 
         //
         // public constructors
         //
-
         public EncryptedXml () : this (new XmlDocument()) {}
 
         public EncryptedXml (XmlDocument document) : this (document, null) {}
@@ -105,6 +123,31 @@ namespace System.Security.Cryptography.Xml
             // By default the encoding is going to be UTF8
             m_encoding = Encoding.UTF8;
             m_keyNameMapping = new Hashtable(m_capacity);
+            m_xmlDsigSearchDepth = Utils.GetXmlDsigSearchDepth();
+        }
+
+        /// <summary>
+        /// This mentod validates the m_xmlDsigSearchDepthCounter counter
+        /// if the counter is over the limit defined by admin or developer.
+        /// </summary>
+        /// <returns>returns true if the limit has reached otherwise false</returns>
+        private bool IsOverXmlDsigRecursionLimit() {
+            if (m_xmlDsigSearchDepthCounter > XmlDSigSearchDepth) {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets / Sets the max limit for recursive search of encryption key in signed XML
+        /// </summary>
+        public int XmlDSigSearchDepth {
+            get {
+                return m_xmlDsigSearchDepth;
+            }
+            set {
+                m_xmlDsigSearchDepth = value;
+            }
         }
 
         //
@@ -233,23 +276,7 @@ namespace System.Security.Cryptography.Xml
 
         // This describes how the application wants to associate id references to elements
         public virtual XmlElement GetIdElement (XmlDocument document, string idValue) {
-            if (document == null)
-                return null;
-            XmlElement elem = null;
-
-            // Get the element with idValue
-            elem = document.GetElementById(idValue);
-            if (elem != null)
-                return elem;
-            elem = document.SelectSingleNode("//*[@Id=\"" + idValue + "\"]") as XmlElement;
-            if (elem != null)
-                return elem;
-            elem = document.SelectSingleNode("//*[@id=\"" + idValue + "\"]") as XmlElement;
-            if (elem != null)
-                return elem;
-            elem = document.SelectSingleNode("//*[@ID=\"" + idValue + "\"]") as XmlElement;
-
-            return elem;
+            return SignedXml.DefaultGetIdElement(document, idValue);
         }
 
         // default behaviour is to look for the IV in the CipherValue
@@ -392,10 +419,11 @@ namespace System.Security.Cryptography.Xml
                 if (kiX509Data != null) {
                     X509Certificate2Collection collection = Utils.BuildBagOfCerts(kiX509Data, CertUsageType.Decryption);
                     foreach (X509Certificate2 certificate in collection) {
-                        RSA privateKey = certificate.PrivateKey as RSA;
-                        if (privateKey != null) {
-                            fOAEP = (encryptedKey.EncryptionMethod != null && encryptedKey.EncryptionMethod.KeyAlgorithm == EncryptedXml.XmlEncRSAOAEPUrl);
-                            return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, privateKey, fOAEP);
+                        using (RSA privateKey = certificate.GetRSAPrivateKey()) {
+                            if (privateKey != null) {
+                                fOAEP = (encryptedKey.EncryptionMethod != null && encryptedKey.EncryptionMethod.KeyAlgorithm == EncryptedXml.XmlEncRSAOAEPUrl);
+                                return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, privateKey, fOAEP);
+                            }
                         }
                     }
                     break;
@@ -405,7 +433,21 @@ namespace System.Security.Cryptography.Xml
                     string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri);
                     ek = new EncryptedKey();
                     ek.LoadXml(GetIdElement(m_document, idref));
-                    return DecryptEncryptedKey(ek);
+                    try {
+                        //Following checks if XML dsig processing is in loop and within the limit defined by machine
+                        // admin or developer. Once the recursion depth crosses the defined limit it will throw exception.
+                        m_xmlDsigSearchDepthCounter++;
+                        if (IsOverXmlDsigRecursionLimit()) {
+                            //Throw exception once recursion limit is hit. 
+                            throw new CryptoSignedXmlRecursionException();
+                        }
+                        else {
+                            return DecryptEncryptedKey(ek);
+                        }
+                    }
+                    finally {
+                        m_xmlDsigSearchDepthCounter--;
+                    }
                 }
                 kiEncKey = keyInfoEnum.Current as KeyInfoEncryptedKey;
                 if (kiEncKey != null) {
@@ -452,29 +494,31 @@ namespace System.Security.Cryptography.Xml
             if (certificate == null)
                 throw new ArgumentNullException("certificate");
 
-            if (X509Utils.OidToAlgId(certificate.PublicKey.Oid.Value) != CAPI.CALG_RSA_KEYX)
-                throw new NotSupportedException(SecurityResources.GetResourceString("NotSupported_KeyAlgorithm"));
-
-            // Create the EncryptedData object, using an AES-256 session key by default.
-            EncryptedData ed = new EncryptedData();
-            ed.Type = EncryptedXml.XmlEncElementUrl;
-            ed.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
-
-            // Include the certificate in the EncryptedKey KeyInfo.
-            EncryptedKey ek = new EncryptedKey();
-            ek.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncRSA15Url);
-            ek.KeyInfo.AddClause(new KeyInfoX509Data(certificate));
-
-            // Create a random AES session key and encrypt it with the public key associated with the certificate.
-            RijndaelManaged rijn = new RijndaelManaged();
-            ek.CipherData.CipherValue = EncryptedXml.EncryptKey(rijn.Key, certificate.PublicKey.Key as RSA, false);
-
-            // Encrypt the input element with the random session key that we've created above.
-            KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
-            ed.KeyInfo.AddClause(kek);
-            ed.CipherData.CipherValue = EncryptData(inputElement, rijn, false);
-
-            return ed;
+            using (RSA rsaPublicKey = certificate.GetRSAPublicKey()) {
+                if (rsaPublicKey == null)
+                    throw new NotSupportedException(SecurityResources.GetResourceString("NotSupported_KeyAlgorithm"));
+    
+                // Create the EncryptedData object, using an AES-256 session key by default.
+                EncryptedData ed = new EncryptedData();
+                ed.Type = EncryptedXml.XmlEncElementUrl;
+                ed.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
+    
+                // Include the certificate in the EncryptedKey KeyInfo.
+                EncryptedKey ek = new EncryptedKey();
+                ek.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncRSA15Url);
+                ek.KeyInfo.AddClause(new KeyInfoX509Data(certificate));
+    
+                // Create a random AES session key and encrypt it with the public key associated with the certificate.
+                RijndaelManaged rijn = new RijndaelManaged();
+                ek.CipherData.CipherValue = EncryptedXml.EncryptKey(rijn.Key, rsaPublicKey, false);
+    
+                // Encrypt the input element with the random session key that we've created above.
+                KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
+                ed.KeyInfo.AddClause(kek);
+                ed.CipherData.CipherValue = EncryptData(inputElement, rijn, false);
+    
+                return ed;
+            }
         }
 
         // Encrypts the given element with the key name specified. A corresponding key name mapping 

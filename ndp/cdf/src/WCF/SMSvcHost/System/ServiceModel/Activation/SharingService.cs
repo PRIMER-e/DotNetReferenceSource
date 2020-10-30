@@ -201,7 +201,7 @@ namespace System.ServiceModel.Activation
 
                 MessageQueue.CloseAll(transportType);
             }
-#pragma warning suppress 56500 // [....], catch block unconditionally fails fast
+#pragma warning suppress 56500 // Microsoft, catch block unconditionally fails fast
             catch (Exception exception)
             {
                 if (DiagnosticUtility.ShouldTraceError)

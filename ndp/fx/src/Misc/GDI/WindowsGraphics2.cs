@@ -7,7 +7,7 @@
 // THIS PARTIAL CLASS CONTAINS THE BASE METHODS FOR DRAWING WITH A WINDOWSGRAPHICS.
 // (Compiled in System.Windows.Forms but not in System.Drawing).
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -28,7 +28,7 @@ namespace System.Experimental.Gdi
     /// <devdoc>
     ///     See notes on WindowsGraphics.cs file.
     ///</devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -600,7 +600,7 @@ namespace System.Experimental.Gdi
             }
 
             IntUnsafeNativeMethods.SelectObject(hdc, new HandleRef(null, IntUnsafeNativeMethods.GetStockObject(IntNativeMethods.HOLLOW_BRUSH)));
-            // [....] 
+            // Microsoft 
 
             IntUnsafeNativeMethods.Rectangle(hdc, x, y, x + width , y + height );
             
@@ -627,7 +627,7 @@ namespace System.Experimental.Gdi
             IntPtr hBrush  = brush.HBrush;  // We don't delete this handle since we didn't create it.   
             IntNativeMethods.RECT rect = new IntNativeMethods.RECT(x, y, x + width, y + height );
 
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             if (brush is WindowsHatchBrush)
             { 
                 int clr = ColorTranslator.ToWin32(((WindowsHatchBrush)brush).BackGroundColor);

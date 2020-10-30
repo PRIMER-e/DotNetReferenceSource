@@ -868,6 +868,7 @@ namespace System.Windows.Controls
             Debug.Assert(_resizeData != null, "_resizeData should not be null when calling MoveSplitter");
 
             double delta;
+            DpiScale dpi = GetDpi();
 
             // Calculate the offset to adjust the splitter.  If layout rounding is enabled, we
             // need to round to an integer physical pixel value to avoid round-ups of children that
@@ -880,7 +881,7 @@ namespace System.Windows.Controls
                 delta = horizontalChange;
                 if (this.UseLayoutRounding)
                 {
-                    delta = UIElement.RoundLayoutValue(delta, FrameworkElement.DpiScaleX);
+                    delta = UIElement.RoundLayoutValue(delta, dpi.DpiScaleX);
                 }
             }
             else
@@ -888,7 +889,7 @@ namespace System.Windows.Controls
                 delta = verticalChange;
                 if (this.UseLayoutRounding)
                 {
-                    delta = UIElement.RoundLayoutValue(delta, FrameworkElement.DpiScaleY);
+                    delta = UIElement.RoundLayoutValue(delta, dpi.DpiScaleY);
                 }
             }
 
@@ -927,7 +928,7 @@ namespace System.Windows.Controls
                 // (actualLength1 + actualLength2). This can cause a problem in the subsequent drag iteration where 
                 // this will be interpreted as the cancellation of the resize operation. To avoid this imprecision we use 
                 // make definition2LengthNew be a function of definition1LengthNew so that the precision or the loss 
-                // thereof can be counterbalanced. See DevDiv bug#140228 for a manifestation of this problem.
+                // thereof can be counterbalanced. See DevDiv 
                 
                 double definition1LengthNew = actualLength1 + delta;
                 //double definition2LengthNew = actualLength2 - delta;

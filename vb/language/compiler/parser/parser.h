@@ -1789,7 +1789,7 @@ private:
         _In_ Token *StartOfEndConstruct
     );
 
-    // ISSUE [....]. These template methods are not necessarily appropriate as inline
+    // ISSUE Microsoft. These template methods are not necessarily appropriate as inline
     // methods, but VC does not allow non-inline definitions of template member functions.
 
     // Lists are right heavy and parsed iteratively, so the end location info
@@ -1850,7 +1850,7 @@ private:
 
             if (validEnd)
             {
-                // [....]:Consider - it is strange that we can have zero-width tokens yet we subract one from them anyway,
+                // Microsoft:Consider - it is strange that we can have zero-width tokens yet we subract one from them anyway,
                 // e.g. ListElement->TextSpan.m_lEndColumn == LastTokenOfList->m_StartColumn + LastTokenOfList->m_Width - 1
                 // I tried patching this up but the IDE apparently has a number of places that accomodates this wierdness and
                 // fixing it broke suites.  I have elected to leave it alone given that we are late in beta2.  For posterity, what I tried 

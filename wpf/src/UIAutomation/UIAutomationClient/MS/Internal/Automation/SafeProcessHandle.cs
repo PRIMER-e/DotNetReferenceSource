@@ -7,7 +7,7 @@
 // Description:
 //              
 // History:  
-//  10/04/2003 : [....]    Created
+//  10/04/2003 : Microsoft    Created
 //---------------------------------------------------------------------------
 
 // PRESHARP: In order to avoid generating warnings about unkown message numbers and unknown pragmas.

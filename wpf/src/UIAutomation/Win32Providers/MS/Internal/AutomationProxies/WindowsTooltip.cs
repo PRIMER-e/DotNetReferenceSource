@@ -217,8 +217,8 @@ namespace MS.Internal.AutomationProxies
         // Tooltips for titlebar parts requires figuring out what titlebar part the mouse is over and returning
         // a string defined in this dll that represents the part.  The hittesting technique is sensitive to the
         // desktop theme and composition.  The following method uses one technique for composition and another
-        // for all other cases.  Fix for WinOS Bug #1656292 (punted to Vienna) will allow using the technique 
-        // used in GetTitleBarToolTipTextForDWMEnabled on Vista regardless of themes.
+        // for all other cases.  Fix for WinOS 
+
         private string GetTitleBarToolTipText()
         {
             if (System.Environment.OSVersion.Version.Major >= 6)
@@ -241,7 +241,7 @@ namespace MS.Internal.AutomationProxies
                     return GetTitleBarToolTipTextForDWMEnabled();
             }
 
-            // But until WinOS Bug #1656292 is fixed, hittesting where the cursor is works
+            // But until WinOS 
             return GetTitleBarToolTipTextHitTest();
         }
 

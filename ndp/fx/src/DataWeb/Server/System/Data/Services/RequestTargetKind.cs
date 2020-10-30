@@ -7,7 +7,7 @@
 //      targetted by a client request.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

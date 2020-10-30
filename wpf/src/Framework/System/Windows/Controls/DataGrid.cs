@@ -22,6 +22,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using MS.Internal;
 using MS.Internal.Data;
+using MS.Internal.Telemetry.PresentationFramework;
 
 namespace System.Windows.Controls
 {
@@ -73,6 +74,8 @@ namespace System.Windows.Controls
             CommandManager.RegisterClassCommandBinding(typeof(DataGrid), new CommandBinding(ApplicationCommands.Copy, new ExecutedRoutedEventHandler(OnExecutedCopy), new CanExecuteRoutedEventHandler(OnCanExecuteCopy)));
 
             EventManager.RegisterClassHandler(typeof(DataGrid), MouseUpEvent, new MouseButtonEventHandler(OnAnyMouseUpThunk), true);
+
+            DataGridTraceLogger.LogUsageDetails();
         }
 
         /// <summary>
@@ -334,6 +337,40 @@ namespace System.Windows.Controls
                 }
             }
 
+            return false;
+        }
+
+        private static readonly UncommonField<int> BringColumnIntoViewRetryCountField
+            = new UncommonField<int>(0);
+        const int MaxBringColumnIntoViewRetries = 4;
+
+        /// <summary>
+        ///     Called from DataGridCellsPanel.BringIndexIntoView to request a
+        ///     retry, to handle column width changes due to deferred data binding.
+        ///     To prevent infinite loops, simply give up after a fixed number
+        ///     of retries, leaving the desired column possibly out of view.
+        ///     (One retry was enough to bring the column into view
+        ///     in all the cases we tested - two if you include the "layout demoted"
+        ///     scenario described in BringIndexIntoView.  More complex data could
+        ///     need more retries.  In theory there is no upper bound, but in practice
+        ///     the max declared here should suffice.)
+        /// </summary>
+        internal bool RetryBringColumnIntoView(bool retryRequested)
+        {
+            if (retryRequested)
+            {
+                // if the number of retries hasn't exceeded the limit,
+                // update the count and allow the retry
+                int retries = BringColumnIntoViewRetryCountField.GetValue(this);
+                if (retries < MaxBringColumnIntoViewRetries)
+                {
+                    BringColumnIntoViewRetryCountField.SetValue(this, retries+1);
+                    return true;
+                }
+            }
+
+            // we're not going to retry
+            BringColumnIntoViewRetryCountField.ClearValue(this);
             return false;
         }
 
@@ -3160,9 +3197,17 @@ namespace System.Windows.Controls
                         // When editing the NewItemPlaceHolder row the place holder row gets
                         // replaced with a real row and thus causes a new cellContainer to be
                         // generated. So we should be checking the new cellContainer to decide
-                        // if this operation succeeded. Please see Dev11 bug 329417 for details.
+                        // if this operation succeeded. Please see Dev11 
 
                         cellContainer = CurrentCellContainer;
+
+                        // the BeginEditCommand may move focus off this DataGrid,
+                        // which sets CurrentCellContainer to null.  In that case,
+                        // return false.  (Dev11 715113)
+                        if (cellContainer == null)
+                        {
+                            return false;
+                        }
                     }
 
                     return cellContainer.IsEditing;
@@ -4625,6 +4670,13 @@ namespace System.Windows.Controls
             int columnCount = _columns.Count;
             if (columnCount > 0)
             {
+                if (!isSelected && _pendingInfos != null)
+                {
+                    // deselecting an item - remove it from the pending list
+                    // regardless of whether its index is known
+                    _pendingInfos.Remove(rowInfo);
+                }
+
                 int rowIndex = rowInfo.Index;
                 if (rowIndex >= 0)
                 {
@@ -4640,14 +4692,10 @@ namespace System.Windows.Controls
                 else
                 {
                     // the index isn't known yet.  Mark the ItemInfo as pending
-                    EnsurePendingInfos();
                     if (isSelected)
                     {
+                        EnsurePendingInfos();
                         _pendingInfos.Add(rowInfo);
-                    }
-                    else
-                    {
-                        _pendingInfos.Remove(rowInfo);
                     }
                 }
             }
@@ -4792,13 +4840,13 @@ namespace System.Windows.Controls
         ///     - Extending selection to the row
         /// </summary>
         /// <remarks>
-        ///     ADO.Net has a bug (#524977) where if the row is in edit mode
-        ///     and atleast one of the cells are edited and committed without
-        ///     commiting the row itself, DataView.IndexOf for that row returns -1
-        ///     and DataView.Contains returns false. The Workaround to this problem
-        ///     is to try to use the previously computed row index if the operations
-        ///     are in the same row scope.
-        /// </remarks>
+        ///     ADO.Net has a 
+
+
+
+
+
+
         private void MakeFullRowSelection(ItemInfo info, bool allowsExtendSelect, bool allowsMinimalSelect)
         {
             bool extendSelection = allowsExtendSelect && ShouldExtendSelection;
@@ -4956,7 +5004,7 @@ namespace System.Windows.Controls
 
                             if (_editingRowInfo == info)
                             {
-                                // ADO.Net bug workaround, see remarks.
+                                // ADO.Net 
                                 int numColumns = _columns.Count;
                                 if (numColumns > 0)
                                 {
@@ -4994,13 +5042,13 @@ namespace System.Windows.Controls
         ///     - Extending selection to the cell
         /// </summary>
         /// <remarks>
-        ///     ADO.Net has a bug (#524977) where if the row is in edit mode
-        ///     and atleast one of the cells are edited and committed without
-        ///     commiting the row itself, DataView.IndexOf for that row returns -1
-        ///     and DataView.Contains returns false. The Workaround to this problem
-        ///     is to try to use the previously computed row index if the operations
-        ///     are in the same row scope.
-        /// </remarks>
+        ///     ADO.Net has a 
+
+
+
+
+
+
         private void MakeCellSelection(DataGridCellInfo cellInfo, bool allowsExtendSelect, bool allowsMinimalSelect)
         {
             bool extendSelection = allowsExtendSelect && ShouldExtendSelection;
@@ -5099,7 +5147,7 @@ namespace System.Windows.Controls
                     if (!selectedCellsContainsCellInfo &&
                         singleRowOperation)
                     {
-                        // ADO.Net bug workaround, see remarks.
+                        // ADO.Net 
                         selectedCellsContainsCellInfo = _selectedCells.Contains(_editingRowInfo.Index, cellInfoColumnIndex);
                     }
 
@@ -5108,7 +5156,7 @@ namespace System.Windows.Controls
                         // Unselect the one cell
                         if (singleRowOperation)
                         {
-                            // ADO.Net bug workaround, see remarks.
+                            // ADO.Net 
                             _selectedCells.RemoveRegion(_editingRowInfo.Index, cellInfoColumnIndex, 1, 1);
                         }
                         else
@@ -5139,7 +5187,7 @@ namespace System.Windows.Controls
 
                         if (singleRowOperation)
                         {
-                            // ADO.Net bug workaround, see remarks.
+                            // ADO.Net 
                             _selectedCells.AddRegion(_editingRowInfo.Index, cellInfoColumnIndex, 1, 1);
                         }
                         else
@@ -5526,13 +5574,13 @@ namespace System.Windows.Controls
         ///     Helper method which handles the arrow key down
         /// </summary>
         /// <remarks>
-        ///     ADO.Net has a bug (#524977) where if the row is in edit mode
-        ///     and atleast one of the cells are edited and committed without
-        ///     commiting the row itself, DataView.IndexOf for that row returns -1
-        ///     and DataView.Contains returns false. The Workaround to this problem
-        ///     is to try to use the previously computed row index if the operations
-        ///     are in the same row scope.
-        /// </remarks>
+        ///     ADO.Net has a 
+
+
+
+
+
+
         private void OnArrowKeyDown(KeyEventArgs e)
         {
             DataGridCell currentCellContainer = CurrentCellContainer;
@@ -5908,14 +5956,14 @@ namespace System.Windows.Controls
                             if (newCell != null &&
                                 newCell.RowDataItem == currentCellContainer.RowDataItem)
                             {
-                                DataGridCell realNewCell = TryFindCell(ItemInfoFromContainer(newCell.RowOwner), newCell.Column);
+                                DataGridCell realNewCell = TryFindCell(newCell.RowDataItem, newCell.Column);
 
                                 // Forcing an UpdateLayout since the generation of the new row
                                 // container which was removed earlier is done in measure.
                                 if (realNewCell == null)
                                 {
                                     UpdateLayout();
-                                    realNewCell = TryFindCell(ItemInfoFromContainer(newCell.RowOwner), newCell.Column);
+                                    realNewCell = TryFindCell(newCell.RowDataItem, newCell.Column);
                                 }
                                 if (realNewCell != null && realNewCell != newCell)
                                 {
@@ -6355,7 +6403,7 @@ namespace System.Windows.Controls
             if (rowHeader != null)
             {
                 DataGridRow parentRow = rowHeader.ParentRow;
-                if (parentRow != null)
+                if (parentRow != null && !parentRow.IsSelected)
                 {
                     HandleSelectionForRowHeaderAndDetailsInput(parentRow, /* startDragging = */ false);
                 }
@@ -7232,7 +7280,7 @@ namespace System.Windows.Controls
 
         /// <summary>
         /// SortDescription collection changed listener. Ensures that GroupingSortDescriptionIndices
-        /// is in [....] with SortDescriptions.
+        /// is in sync with SortDescriptions.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -7607,7 +7655,7 @@ namespace System.Windows.Controls
             using (UpdateSelectedCells())
             {
                 // Selector will try to maintain the previous row selection.
-                // Keep SelectedCells in [....].
+                // Keep SelectedCells in sync.
                 List<Tuple<int,int>> ranges = new List<Tuple<int, int>>();
                 LocateSelectedItems(ranges);
                 _selectedCells.RestoreOnlyFullRows(ranges);
@@ -8022,7 +8070,7 @@ namespace System.Windows.Controls
 
         /// <summary>
         ///     Property changed callback for EnableRowVirtualization.
-        ///     Keeps VirtualizingPanel.IsVirtualizingProperty in [....].
+        ///     Keeps VirtualizingPanel.IsVirtualizingProperty in sync.
         /// </summary>
         private static void OnEnableRowVirtualizationChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -8071,7 +8119,7 @@ namespace System.Windows.Controls
         /// <summary>
         ///     Property changed callback for EnableColumnVirtualization.
         ///     Gets VirtualizingPanel.IsVirtualizingProperty for cells presenter and
-        ///     headers presenter in [....].
+        ///     headers presenter in sync.
         /// </summary>
         private static void OnEnableColumnVirtualizationChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {

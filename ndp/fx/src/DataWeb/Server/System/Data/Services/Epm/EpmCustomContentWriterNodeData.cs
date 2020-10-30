@@ -7,7 +7,7 @@
 // by the EpmCustomContentWriter visitor
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Common

@@ -10,12 +10,12 @@
 //      Performance measurements showed that using a global heap mechanism
 //      is fastest on Win 9x.
 //
-//      When the dll is loaded, a counter is set to 1. For each instance 
-//      creation/destruction, the counter is is incremented/decremented. 
-//      When the dll is released, the counter gets to zero and the static 
+//      When the dll is loaded, a counter is set to 1. For each instance
+//      creation/destruction, the counter is is incremented/decremented.
+//      When the dll is released, the counter gets to zero and the static
 //      heap on Win 9x is destroyed.
-//              
-// History:  
+//
+// History:
 //  07/01/2003 : a-jeanp    Created
 //---------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ namespace MS.Internal.AutomationProxies
             SetHandle(Misc.VirtualAllocEx(_processHandle, IntPtr.Zero, new UIntPtr((uint)cbSize), UnsafeNativeMethods.MEM_COMMIT, UnsafeNativeMethods.PAGE_READWRITE));
         }
 
-        // Uncomment this if & only if we need a constructor 
+        // Uncomment this if & only if we need a constructor
         // that takes a handle from external code
         //internal RemoteMemoryBlock(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         //{
@@ -77,7 +77,7 @@ namespace MS.Internal.AutomationProxies
         // Internal Methods
         //
         // ------------------------------------------------------
-        
+
         #region Internal Methods
 
         internal IntPtr Address
@@ -90,24 +90,24 @@ namespace MS.Internal.AutomationProxies
 
         internal void WriteTo(IntPtr sourceAddress, IntPtr cbSize)
         {
-            int count;
+            IntPtr count;
             Misc.WriteProcessMemory(_processHandle, handle, sourceAddress, cbSize, out count);
         }
 
         internal void ReadFrom(IntPtr remoteAddress, IntPtr destAddress, IntPtr cbSize)
         {
-            int count;
+            IntPtr count;
             Misc.ReadProcessMemory(_processHandle, remoteAddress, destAddress, cbSize, out count);
         }
 
         internal void ReadFrom(SafeCoTaskMem destAddress, IntPtr cbSize)
         {
-            int count;
+            IntPtr count;
             Misc.ReadProcessMemory(_processHandle, handle, destAddress, cbSize, out count);
         }
         internal void ReadFrom(IntPtr destAddress, IntPtr cbSize)
         {
-            int count;
+            IntPtr count;
             Misc.ReadProcessMemory(_processHandle, handle, destAddress, cbSize, out count);
         }
 

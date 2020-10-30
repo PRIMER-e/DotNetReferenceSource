@@ -341,7 +341,7 @@ namespace MS.Internal.TextFormatting
 
             if (line.RightToLeft)
             {
-                xy = new Point(line.Formatter.IdealToReal(line.ParagraphWidth) - vectorToOrigin.X - u + origin.X, v + origin.Y);
+                xy = new Point(line.Formatter.IdealToReal(line.ParagraphWidth, line.PixelsPerDip) - vectorToOrigin.X - u + origin.X, v + origin.Y);
             }
             else
             {
@@ -374,11 +374,11 @@ namespace MS.Internal.TextFormatting
 
             if (line.RightToLeft)
             {
-                xy = new Point(line.Formatter.IdealToReal(line.ParagraphWidth - u) - vectorToOrigin.X + origin.X, line.Formatter.IdealToReal(v) + origin.Y);
+                xy = new Point(line.Formatter.IdealToReal(line.ParagraphWidth - u, line.PixelsPerDip) - vectorToOrigin.X + origin.X, line.Formatter.IdealToReal(v, line.PixelsPerDip) + origin.Y);
             }
             else
             {
-                xy = new Point(line.Formatter.IdealToReal(u) + vectorToOrigin.X + origin.X, line.Formatter.IdealToReal(v) + origin.Y);
+                xy = new Point(line.Formatter.IdealToReal(u, line.PixelsPerDip) + vectorToOrigin.X + origin.X, line.Formatter.IdealToReal(v, line.PixelsPerDip) + origin.Y);
             }
 
             return xy;
@@ -440,8 +440,8 @@ namespace MS.Internal.TextFormatting
             }
 
             Rect rect = new Rect(
-                new Point(line.Formatter.IdealToReal(topLeft.x), line.Formatter.IdealToReal(topLeft.y)),
-                new Point(line.Formatter.IdealToReal(bottomRight.x), line.Formatter.IdealToReal(bottomRight.y))
+                new Point(line.Formatter.IdealToReal(topLeft.x, line.PixelsPerDip), line.Formatter.IdealToReal(topLeft.y, line.PixelsPerDip)),
+                new Point(line.Formatter.IdealToReal(bottomRight.x, line.PixelsPerDip), line.Formatter.IdealToReal(bottomRight.y, line.PixelsPerDip))
                 );
 
             if(DoubleUtil.AreClose(rect.TopLeft.X, rect.BottomRight.X))

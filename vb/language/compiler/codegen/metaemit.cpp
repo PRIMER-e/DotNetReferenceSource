@@ -426,10 +426,10 @@ mdTypeRef MetaEmit::DefineTypeRefByContainer
 
                     if (IsNilToken(tkContainer))
                     {
-                        // HACK: [....] This is an arbitrary token value. It is just as arbitrary as returning the token
+                        // HACK: Microsoft This is an arbitrary token value. It is just as arbitrary as returning the token
                         // for Sytem.Object like we did before, but it keeps us from entering an infinite recursion.
                         // We should consider going through the compiler sources and handling mdTokenNil
-                        // gracefully, as it is a value that we can get back line in the above bug.
+                        // gracefully, as it is a value that we can get back line in the above 
                         tr = mdTypeRefNil + 1;
 
                         goto GotToken;
@@ -815,7 +815,7 @@ mdTypeRef *MetaEmit::DefineImplements
         // Devdiv 35011:
         // Should not emit the Re-implemented interfaces in order for the CLR interface layout
         // algorithm to provide VB semantics with respect to interface implementation.
-        // Unless all members are reimplemented (Bug #104767 - DevDiv Bugs)
+        // Unless all members are reimplemented (
         if (----l->IsRedundantImplements() ||
             (----l->IsReimplementingInterface() && !----l->AreAllMembersReimplemented()))
         {
@@ -865,7 +865,7 @@ mdTypeRef *MetaEmit::DefineImplements
         // Devdiv 35011:
         // Should not emit the Re-implemented interfaces in order for the CLR interface layout
         // algorithm to provide VB semantics with respect to interface implementation.
-        // Unless all members are reimplemented (Bug #104767 - DevDiv Bugs)
+        // Unless all members are reimplemented (
         if (----l->IsRedundantImplements() ||
             (----l->IsReimplementingInterface() && !----l->AreAllMembersReimplemented()))
         {
@@ -2685,8 +2685,8 @@ mdMemberRef MetaEmit::DefineMemberRefByName
 {
     mdMemberRef *pmrFound = NULL;
 
-    //disable caching for static locals  (bug DevDiv 44120).
-    //Consider to implement a caching mechanism based on the munged name
+    //disable caching for static locals  (
+
     if(psymNamed && !(psymNamed->IsStaticLocalBackingField()))
     {
         pmrFound = (mdMemberRef *)m_pBuilder->m_ProjectHashTable.FindWithSize(pmmr, cbSizeRef);
@@ -2790,8 +2790,8 @@ mdMemberRef MetaEmit::DefineMemberRefByName
                                                    &mr));
         }
 
-        //disable caching for static locals  (bug DevDiv 44120).
-        //Consider to implement a caching mechanism based on the munged name
+        //disable caching for static locals  (
+
         if(psymNamed && !(psymNamed->IsStaticLocalBackingField()))
         {
             m_pBuilder->m_ProjectHashTable.AddWithSize(pmmr, cbSizeRef, mr);
@@ -4317,7 +4317,7 @@ HRESULT MetaEmit::DefineCustomAttribute
 {
     HRESULT hr;
 
-    // Do not remove this Assert Bug 56115 - DevDiv Bugs
+    // Do not remove this Assert 
     VSASSERT(TypeFromToken(tkObj) != mdtAssembly, "Assembly attributes must be emitted via ALink!");
 
     hr = m_pmdEmit->DefineCustomAttribute(
@@ -5196,7 +5196,7 @@ static void ValidateAssemblyLink
 {
     // See whether the referenced assembly exists on our list of linked items.
     // If so, this indirect reference will cause our link to fail, because we'll end up with a
-    // reference to the linked item anyway. This is related to bug #480600.
+    // reference to the linked item anyway. This is related to 
     for (unsigned int iList = 0; iList < list.Count(); iList++)
     {
         AssemblyComparisonResult acr = AssemblyIdentity::CompareAssemblies(
@@ -5362,7 +5362,7 @@ void MetaEmit::ALinkImportReferences()
                 // assembly, and we can count on the existing check for ERRID_IndirectUnreferencedAssembly to ensure
                 // that all of an assembly's references have been included in the list. The only case we need to check
                 // for is the one where a non-linked assembly has an indirect reference to a linked assembly. 
-                // This was Dev10 bug #616590.
+                // This was Dev10 
                 ValidateAssemblyLinks(pCompilerProject, linkedProjectList, m_pCompiler, m_pBuilder->m_pErrorTable);
             }
             VSASSERT(spMetaDataImport != NULL, "Ouch. What happened to the metadata import for this project?");
@@ -5492,7 +5492,7 @@ mdToken MetaEmit::ALinkEmitProjectRef
 
     if (SUCCEEDED(hr))
     {
-        // START HACK:[....] - alink hack blessed by [....]
+        // START HACK:Microsoft - alink hack blessed by Microsoft
         //
         // Set the PE kind to "not a PE" and machine to unknown so that ALink will not check this
         // import later on for platform mismatches.
@@ -5916,7 +5916,7 @@ void MetaEmit::ALinkEmitAssemblyAttributes()
                                                                 NULL
                                                         ) ;
 
-            // Use ALink to emit the attribute (Bug #56115 - DevDiv Bugs)
+            // Use ALink to emit the attribute (
             HRESULT hr1 =
 
                                     m_pALink->EmitAssemblyCustomAttribute(
@@ -6050,7 +6050,7 @@ void MetaEmit::ALinkEmitAssemblyAttributes()
                 // All assembly-level attributes are emitted through ALink
                 //
 
-                // [....]:
+                // Microsoft:
                 // If we have both file and name, emit only the file attribute.
                 // Otherwise, ALINK gets confused.
 
@@ -6246,7 +6246,7 @@ void MetaEmit::ALinkSetAssemblyProps()
                 break;
 
             case optAssemKeyName:             // String
-                // [....]: If we have both a file and name, we prefer the file.
+                // Microsoft: If we have both a file and name, we prefer the file.
                 if (pCompilerProject->GetKeyContainerName() && pCompilerProject->GetKeyFileName() == NULL)
                 {
                     ccomvariant = pCompilerProject->GetKeyContainerName();
@@ -6608,7 +6608,7 @@ void MetaEmit::GetALinkHelper()
 
         // We play a game here with ALink by passing AssemblyIsUBM.  We do this
         // because we don't want ALink to create a manifest (at least not yet).
-        // [....] has blessed this hack.
+        // Microsoft has blessed this hack.
         m_mdAssemblyOrModule = AssemblyIsUBM;
 
         IfFailThrow(m_pALink->AddFile(

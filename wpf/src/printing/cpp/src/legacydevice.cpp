@@ -70,7 +70,7 @@ using namespace System::Printing::Activation;
 #include <SetDataThunkObject.hpp>
 #endif
 
-
+using namespace Microsoft::Internal;
 
 using namespace System::Windows;
 using namespace System::Windows::Media;
@@ -83,5 +83,31 @@ using namespace System::Windows::Media;
 ILegacyDevice ^ PrintQueue::
 GetLegacyDevice()
 {
-    return gcnew Microsoft::Internal::GDIExporter::CGDIRenderTarget();
+    return gcnew GDIExporter::CGDIRenderTarget();
+}
+
+unsigned PrintQueue::
+GetDpiX(ILegacyDevice ^legacyDevice)
+{
+    unsigned dpiX = 96;
+
+    if (GDIExporter::CGDIRenderTarget ^cGDIRenderTarget = dynamic_cast<GDIExporter::CGDIRenderTarget ^>(legacyDevice))
+    {
+        dpiX = cGDIRenderTarget->GetDpiX();
+    }
+
+    return dpiX;
+}
+
+unsigned PrintQueue::
+GetDpiY(ILegacyDevice ^legacyDevice)
+{
+    unsigned dpiY = 96;
+
+    if (GDIExporter::CGDIRenderTarget ^cGDIRenderTarget = dynamic_cast<GDIExporter::CGDIRenderTarget ^>(legacyDevice))
+    {
+        dpiY = cGDIRenderTarget->GetDpiY();
+    }
+
+    return dpiY;
 }

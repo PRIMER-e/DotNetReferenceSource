@@ -905,7 +905,7 @@ namespace Standard
 
         USER = 0x0400,
 
-        // This is the hard-coded message value used by [....] for Shell_NotifyIcon.
+        // This is the hard-coded message value used by Microsoft for Shell_NotifyIcon.
         // It's relatively safe to reuse.
         TRAYMOUSEMESSAGE = 0x800, //WM_USER + 1024
         APP = 0x8000,

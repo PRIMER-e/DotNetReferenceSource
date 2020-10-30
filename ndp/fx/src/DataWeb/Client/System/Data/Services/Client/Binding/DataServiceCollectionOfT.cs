@@ -711,7 +711,7 @@ namespace System.Data.Services.Client
             Debug.Assert(!this.asyncOperationInProgress, "Trying to start a new LoadAsync while another is still in progress. We should have thrown.");
 
             // NOTE: this is Silverlight-only, use BackgroundWorker instead of Deployment.Current.Dispatcher
-            // to do this in [....]/WCF once we decide to add it there as well.
+            // to do this in Microsoft/WCF once we decide to add it there as well.
             // Note that we must mark the operation as in progress before we actually call Begin
             //   as the async operation might end immediately inside the Begin call and we have no control
             //   over the ordering between the End callback thread, the thread Begin is called from 

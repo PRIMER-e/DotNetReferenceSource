@@ -300,7 +300,7 @@ namespace MS.Internal.AutomationProxies
 
             // No popup present, so must be a special case...
             //
-            // For any of these, the item could be a menu itself or an item in a menu - 
+            // For any of these, the item could be a menu itself or an item in a menu -
             // most reliable approach is to pick an appropriate starting point (eg. sysmenu or menubar),
             // and follow the trail of focused items.
             if (Misc.IsBitSet(gui.dwFlags, NativeMethods.GUI_SYSTEMMENUMODE))
@@ -366,7 +366,7 @@ namespace MS.Internal.AutomationProxies
         {
             if (idProp == AutomationElement.NameProperty)
             {
-                // NOTE: It does not look like [....] support the AccessibleName for standard menus.
+                // NOTE: It does not look like Microsoft support the AccessibleName for standard menus.
                 // If MenuStrips are going to be supported by this proxy this code will need to be removed.
                 return LocalizedName;
             }
@@ -565,7 +565,7 @@ namespace MS.Internal.AutomationProxies
                 if (parentType == MenuType.Toplevel)
                 {
                     // Top Level Menu.
-                    // We need to have the parenthood defined in the same way as if it was done 
+                    // We need to have the parenthood defined in the same way as if it was done
                     // from the non client area code.
 
                     NonClientArea nonClientArea = new NonClientArea(hwndParent);
@@ -810,9 +810,9 @@ namespace MS.Internal.AutomationProxies
             {
                 case MenuType.System:
                     {
-                        // This is to take in count for a bug in GetMenuBarInfo().  It does not calculate the
-                        // rcBar correctly when the WS_EX_LAYOUTRTL extended style is set. GetMenuBarInfo()
-                        // assumes SYSMENU is always on the left of the title bar.
+                        // This is to take in count for a 
+
+
                         NativeMethods.MENUBARINFO mbi;
                         if (!GetMenuBarInfo(_hwnd, NativeMethods.OBJID_SYSMENU, 0, out mbi))
                         {
@@ -822,7 +822,7 @@ namespace MS.Internal.AutomationProxies
                         int leftEdge = mbi.rcBar.left;
                         int buttonWidth = mbi.rcBar.right - mbi.rcBar.left;
                         int buttonHeight = mbi.rcBar.bottom - mbi.rcBar.top;
-                        
+
                         //
                         // Builds prior to Vista 5359 failed to correctly account for RTL menu layouts.
                         //
@@ -891,8 +891,8 @@ namespace MS.Internal.AutomationProxies
 
             // Only the 2 bits are valid in the focusFlags field. Strip the other ones as sometimes
             // they are set to none zero value.
-            if (GetMenuBarInfo(hwnd, NativeMethods.OBJID_SYSMENU, 0, out mbi) && 
-                mbi.hMenu != IntPtr.Zero && 
+            if (GetMenuBarInfo(hwnd, NativeMethods.OBJID_SYSMENU, 0, out mbi) &&
+                mbi.hMenu != IntPtr.Zero &&
                 Misc.IsBitSet(mbi.focusFlags, 3))
             {
                 return UnsafeNativeMethods.GetSubMenu(mbi.hMenu, 0);
@@ -1089,7 +1089,7 @@ namespace MS.Internal.AutomationProxies
 
             return false;
         }
-            
+
         // Return menuItem object which is a hierarchical parent of the given menu (specified via hwnd)
         // return NULL in the case when menu does not have a parent (e.g. Context menu)
         // NOTE: this method should not be called for the menuItem that lives on the System or Menubar
@@ -1128,7 +1128,7 @@ namespace MS.Internal.AutomationProxies
 
         // Menu-specific events
         private readonly static WinEventTracker.EvtIdProperty [] _menuEvents = new WinEventTracker.EvtIdProperty [] {
-                new WinEventTracker.EvtIdProperty(NativeMethods.EventSystemMenuPopupStart, ExpandCollapsePattern.ExpandCollapseStateProperty), 
+                new WinEventTracker.EvtIdProperty(NativeMethods.EventSystemMenuPopupStart, ExpandCollapsePattern.ExpandCollapseStateProperty),
                 new WinEventTracker.EvtIdProperty(NativeMethods.EventSystemMenuPopupEnd, ExpandCollapsePattern.ExpandCollapseStateProperty),
                 new WinEventTracker.EvtIdProperty(NativeMethods.EventObjectInvoke, InvokePattern.InvokedEvent)
             };
@@ -1307,9 +1307,9 @@ namespace MS.Internal.AutomationProxies
             {
                 get
                 {
-                    // It does not look like [....] support the AccessibleName for standard menus or there items.
+                    // It does not look like Microsoft support the AccessibleName for standard menus or there items.
                     // If MenuStrips are going to be supported by this proxy, will need to added code to check
-                    // if this is [....] menu item and use the AccessibleName if it is set.
+                    // if this is Microsoft menu item and use the AccessibleName if it is set.
 
                     if (_menuType == WindowsMenu.MenuType.System)
                     {
@@ -1326,7 +1326,7 @@ namespace MS.Internal.AutomationProxies
                     // Get the full string with the & removed
                     menuRawText = Misc.StripMnemonic(menuRawText);
 
-                    // A tab, '\t', is usually used to separate the menu string from the accelerator.  If a 
+                    // A tab, '\t', is usually used to separate the menu string from the accelerator.  If a
                     // tab is found assume that the menu string is before the tab.
                     int pos = menuRawText.IndexOf('\t');
                     if (pos > 0)
@@ -1677,8 +1677,8 @@ namespace MS.Internal.AutomationProxies
 
             #region Invoke Pattern
 
-            // Select the desired menuItem.  This will expand a menu item as well as 
-            // invoke a menu item.  The enter key is used here to make sure in the 
+            // Select the desired menuItem.  This will expand a menu item as well as
+            // invoke a menu item.  The enter key is used here to make sure in the
             // case where we are not expanding that the menu get dissmissed properly.
             void IInvokeProvider.Invoke ()
             {
@@ -1892,7 +1892,7 @@ namespace MS.Internal.AutomationProxies
             //
             // Private Methods
             //
-            // ------------------------------------------------------        
+            // ------------------------------------------------------
 
             #region Private Methods
 
@@ -1936,20 +1936,20 @@ namespace MS.Internal.AutomationProxies
             private string[] GetKeywordsAccelerators()
             {
                 return new string[] {
-                    ST.Get(STID.KeyHome), 
-                    ST.Get(STID.KeyEnd), 
-                    ST.Get(STID.KeyDel), 
-                    ST.Get(STID.KeyDelete), 
-                    ST.Get(STID.KeyIns), 
-                    ST.Get(STID.KeyInsert), 
-                    ST.Get(STID.KeyPageUp), 
-                    ST.Get(STID.KeyPageDown), 
-                    ST.Get(STID.KeyEsc), 
-                    ST.Get(STID.KeyScrLk), 
-                    ST.Get(STID.KeyPause), 
-                    ST.Get(STID.KeySysRq), 
-                    ST.Get(STID.KeyPrtScn), 
-                    ST.Get(STID.KeyTab), 
+                    ST.Get(STID.KeyHome),
+                    ST.Get(STID.KeyEnd),
+                    ST.Get(STID.KeyDel),
+                    ST.Get(STID.KeyDelete),
+                    ST.Get(STID.KeyIns),
+                    ST.Get(STID.KeyInsert),
+                    ST.Get(STID.KeyPageUp),
+                    ST.Get(STID.KeyPageDown),
+                    ST.Get(STID.KeyEsc),
+                    ST.Get(STID.KeyScrLk),
+                    ST.Get(STID.KeyPause),
+                    ST.Get(STID.KeySysRq),
+                    ST.Get(STID.KeyPrtScn),
+                    ST.Get(STID.KeyTab),
                     ST.Get(STID.KeyHelp),
                 };
             }
@@ -1984,7 +1984,7 @@ namespace MS.Internal.AutomationProxies
                 return MenuItemType.Command; // Everything else
             }
 
-            // Detect if a submenu is collapsed (not expanded).            
+            // Detect if a submenu is collapsed (not expanded).
             private bool IsSubmenuCollapsed()
             {
                 // Not a submenu
@@ -2040,7 +2040,7 @@ namespace MS.Internal.AutomationProxies
                  if (!SafeNativeMethods.IsWindowVisible (_hwnd))
                  {
                      return false;
-                 }                 
+                 }
 
                 // In order to expand the submenu we will send a hotkey to the menuItem that shows it
                 // But before we can do this we need to make sure that there are no other submenus
@@ -2105,8 +2105,8 @@ namespace MS.Internal.AutomationProxies
                 // Submenus that were brough after us, are located before us in top-level windows hierarchy
                 int afterUsCounter = 0;
 
-                for (IntPtr hwndSubMenu = Misc.FindWindowEx(IntPtr.Zero, IntPtr.Zero, WindowsMenu.MenuClassName, null); 
-                     hwndSubMenu != _hwnd; 
+                for (IntPtr hwndSubMenu = Misc.FindWindowEx(IntPtr.Zero, IntPtr.Zero, WindowsMenu.MenuClassName, null);
+                     hwndSubMenu != _hwnd;
                      hwndSubMenu = Misc.FindWindowEx(IntPtr.Zero, hwndSubMenu, WindowsMenu.MenuClassName, null))
                 {
                     // At this point all that left is to bail out
@@ -2213,7 +2213,7 @@ namespace MS.Internal.AutomationProxies
                     int item = 0;
                     int cItems = Misc.GetMenuItemCount(_hmenu);
 
-                    // Loops on all the MenuItems 
+                    // Loops on all the MenuItems
                     for (item = 0; item < cItems && !Misc.IsBitSet(UnsafeNativeMethods.GetMenuState(_hmenu, item, NativeMethods.MF_BYPOSITION), NativeMethods.MF_HILITE); item++)
                     {
                     }
@@ -2388,7 +2388,7 @@ namespace MS.Internal.AutomationProxies
                         rMoves = 0;
                         pd = true;
                     }
-                    
+
                     if( i == _item )
                     {
                         cMoves = rMoves;
@@ -2448,7 +2448,7 @@ namespace MS.Internal.AutomationProxies
                 Input.SendKeyboardInput (Key.LeftAlt, false);
             }
 
-            // Search in a menu if the menu item string finishes with an accelerator 
+            // Search in a menu if the menu item string finishes with an accelerator
             // of the form Ctrl+Am Control+Shift+K.
             private static string AccelatorKeyCtrl(string sKeyword, string sCanonicalsKeyword, string menuText, string menuRawText, out int pos)
             {
@@ -2480,7 +2480,7 @@ namespace MS.Internal.AutomationProxies
                 return null;
             }
 
-            // Search in a menu if the menu item string finishes with an accelerator 
+            // Search in a menu if the menu item string finishes with an accelerator
             // of the form Fxx (F5, F12, etc)
             private static string AccelatorFxx (string menuText)
             {
@@ -2536,12 +2536,12 @@ namespace MS.Internal.AutomationProxies
             }
 
             #endregion
-            
+
             // ------------------------------------------------------
             //
             // Private Properties
             //
-            // ------------------------------------------------------        
+            // ------------------------------------------------------
 
             #region Private Properties
 
@@ -2612,7 +2612,7 @@ namespace MS.Internal.AutomationProxies
                     // Treat dwItemData as an address, and try to read a MSAAMENUINFO struct from there...
                     MSAAMENUINFO msaaMenuInfo = new MSAAMENUINFO();
                     int readSize = Marshal.SizeOf(msaaMenuInfo.GetType());
-                    int count;
+                    IntPtr count;
 
                     if (!Misc.ReadProcessMemory(hProcess, dwItemData, new IntPtr(&msaaMenuInfo), new IntPtr(readSize), out count))
                     {
@@ -2718,7 +2718,7 @@ namespace MS.Internal.AutomationProxies
                 }
             }
 
-            // retrieve a hotkey char if any. 
+            // retrieve a hotkey char if any.
             // Checks if there is an another menu prior to this menu item with the same accelerator
             private char HotKeyCheckNoDups
             {
@@ -2737,7 +2737,7 @@ namespace MS.Internal.AutomationProxies
                     return chHotKey;
                 }
             }
-            
+
             private string AcceleratorKey
             {
                 get
@@ -2751,7 +2751,7 @@ namespace MS.Internal.AutomationProxies
 
                     menuRawText = Misc.StripMnemonic(Text);
 
-                    // A tab, '\t', is usually used to separate the menu string from the accelerator.  If a 
+                    // A tab, '\t', is usually used to separate the menu string from the accelerator.  If a
                     // tab is found assume that the acceleraor is after the tab.
                     int pos = menuRawText.IndexOf('\t');
                     if (pos > 0)
@@ -2803,9 +2803,9 @@ namespace MS.Internal.AutomationProxies
                 }
             }
 
-            
+
             #endregion
-            
+
             // ------------------------------------------------------
             //
             // Private Fields and Types Declaration
@@ -2828,7 +2828,7 @@ namespace MS.Internal.AutomationProxies
             private const int MSAA_MENU_SIG = unchecked((int)0xAA0DF00D);
 
             // Menu's dwItemData should point to one of these structs:
-            // (or can point to an app-defined struct containing this as the first 
+            // (or can point to an app-defined struct containing this as the first
             // member)
             [StructLayout(LayoutKind.Sequential)]
             private struct MSAAMENUINFO
@@ -2936,7 +2936,7 @@ namespace MS.Internal.AutomationProxies
                 {
                     return ControlType.MenuItem.Id;
                 }
-                
+
                 if (idProp == AutomationElement.AutomationIdProperty)
                 {
                     return _sAutomationId.Length > 0 ? _sAutomationId : null;
@@ -2964,7 +2964,7 @@ namespace MS.Internal.AutomationProxies
 
 
             #region ProxyFragment Interface
-            // 
+            //
             // Throw ElementNotAvailable for any ProxyFragment implementation
             // since this element is quite dead.
             //

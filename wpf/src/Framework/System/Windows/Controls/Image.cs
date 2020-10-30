@@ -126,6 +126,11 @@ namespace System.Windows.Controls
                                 null),
                         null);
 
+        /// <summary>
+        /// RoutedEvent for when DPI of the screen the Image is on, changes.
+        /// </summary>
+        public static readonly RoutedEvent DpiChangedEvent;
+
 
         /// <summary>
         /// DependencyProperty for Stretch property.
@@ -162,6 +167,15 @@ namespace System.Windows.Controls
             remove { RemoveHandler(ImageFailedEvent, value); }
         }
 
+        /// <summary>
+        ///     This event is raised after the DPI of the screen on which the Image is displayed, changes.
+        /// </summary>
+        public event DpiChangedEventHandler DpiChanged
+        {
+            add { AddHandler(Image.DpiChangedEvent, value); }
+            remove { RemoveHandler(Image.DpiChangedEvent, value); }
+        }
+
         #endregion
 
         //-------------------------------------------------------------------
@@ -181,6 +195,15 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
+        /// OnDpiChanged is called when the DPI at which this Image is rendered, changes.
+        /// </summary>
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            _hasDpiChangedEverFired = true;
+            RaiseEvent(new DpiChangedEventArgs(oldDpi, newDpi, Image.DpiChangedEvent, this));
+        }
+
+        /// <summary>
         /// Updates DesiredSize of the Image.  Called by parent UIElement.  This is the first pass of layout.
         /// </summary>
         /// <remarks>
@@ -191,6 +214,21 @@ namespace System.Windows.Controls
         /// <returns>Image's desired size.</returns>
         protected override Size MeasureOverride(Size constraint)
         {
+            // A) Image element will fire the Image.DpiChanged event the first time a measure happens in order to support the app
+            // loading the best image for that DPI.
+            // B) When per-monitor DPI is enabled for an application and a DPI changes (due to moving to a new monitor, or changing the DPI of a monitor), the Image.DpiChanged event
+            // will be raised by a tree walk performed by the root visual.
+            // If the root visual has already raised this event on the image (B), then we don't want to raise it again in Measure (A).
+            // Developers can most efficiently load images for initial display by using BitmapCreateOption = DelayCreation when create a BitmapSource.
+            // This will enable only a single decode, instead of sometimes 2.
+            if (!_hasDpiChangedEverFired)
+            {
+                // Marking it true here as well as inside OnDpiChanged in case someone overrides OnDpiChanged but doesn't call base.OnDpiChanged
+                _hasDpiChangedEverFired = true;
+                DpiScale dpiInfo = GetDpi();
+                OnDpiChanged(dpiInfo, dpiInfo);
+            }
+            
             return MeasureArrangeHelper(constraint);
         }
 
@@ -332,6 +370,12 @@ namespace System.Windows.Controls
 
         private BitmapSource _bitmapSource;
 
+        // The DpiChanged event is raised in two situations:  
+        // (a) the first time the Image is measured, and (b) when the effective DPI changes.
+        // This allows the app to choose a bitmap matching (a) the initial DPI, or (b) the new DPI after a change.
+        // This boolean detects (a).
+        private bool _hasDpiChangedEverFired = false;
+
         #endregion Private Fields
 
 
@@ -368,6 +412,7 @@ namespace System.Windows.Controls
                     FrameworkPropertyMetadataOptions.AffectsMeasure
                     )
                 );
+            Image.DpiChangedEvent = Window.DpiChangedEvent.AddOwner(typeof(Image));
         }
 
         private static Style CreateDefaultStyles()

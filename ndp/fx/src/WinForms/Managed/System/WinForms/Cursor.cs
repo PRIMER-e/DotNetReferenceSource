@@ -632,7 +632,11 @@ namespace System.Windows.Forms {
                     
                     if (picture != null && picture.GetPictureType() == NativeMethods.Ole.PICTYPE_ICON) {
                         IntPtr cursorHandle = picture.GetHandle();
-                        Size picSize = GetIconSize(cursorHandle); 
+                        Size picSize = GetIconSize(cursorHandle);
+                        if (DpiHelper.IsScalingRequired) {
+                            picSize = DpiHelper.LogicalToDeviceUnits(picSize);
+                        }
+
                         handle = SafeNativeMethods.CopyImageAsCursor(new HandleRef(this, cursorHandle), NativeMethods.IMAGE_CURSOR,
                             picSize.Width, picSize.Height, 0);
                         ownHandle = true;

@@ -267,11 +267,11 @@ namespace System.Messaging.Interop
         public IntPtr GetIntPtr(int propertyId)
         {
             //
-            // Bug 379376: Property access might have been unsuccessful (e.g., getting Id of a private queue),
-            // in which case the object stored at objects[propertyId - basePropertyId] will be object{uint}
-            // instead of object{IntPtr}.
-            // We will return IntPtr.Zero in that case
-            //
+            // 
+
+
+
+
             object obj = objects[propertyId - basePropertyId];
             if (obj.GetType() == typeof(IntPtr))
                 return (IntPtr)obj;

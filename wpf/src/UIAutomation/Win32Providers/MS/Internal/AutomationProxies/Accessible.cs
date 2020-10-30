@@ -190,13 +190,13 @@ namespace MS.Internal.AutomationProxies
             }
             catch (InvalidCastException)
             {
-                // CLR remoting appears to be interfering in cases where the remote IAccessible is a [....] control -
+                // CLR remoting appears to be interfering in cases where the remote IAccessible is a Microsoft control -
                 // the object we get back is a __Transparent proxy, and casting that to IAccessible fails with an exception
-                // (which is caught and ignored here). See bug #1110719 for details.
-                // One way around this is to use AccessibleObjectFromWindow - that returns IAccessible instead of IUnknown - 
-                // in effect it does the case in unmanaged code, and seems to avoid this issue. Other [....] code in the
-                // proxies uses this approach. AccessibleObjectFromWindow will return an OLEACC proxy if one is available,
-                // however, so we can't use it here, as this code only wants to deal with native IAccessibles.
+                // (which is caught and ignored here). See 
+
+
+
+
                 return null;
             }
 
@@ -204,24 +204,24 @@ namespace MS.Internal.AutomationProxies
             // the local CLR will set up a CLR-Remoting-based connection instead and bypass COM - this causes problems
             // because CLR Remoting typically isn't initalized, so calls fail with a RemotingException: "This remoting
             // proxy has no channel sink which means either the server has no registered server channels that are listening,
-            // or this application has no suitable client channel to talk to the server." - see bug #1519030. The local CLR
-            // detects that the remote object is a managed impl by QI'ing for a specifc interface (IManagedObject?).
-            // We can prevent this from happening by dropping the IAccessible we've gotten back from ObjectFromLresult,
-            // and instead use AccessibleObjectFromWindow: AOFW wraps the real IAccessible in a DynamicAnnotation wrapper
-            // that passes through all IAccessible (and related interface) calls - but it doesn't pass through the
-            // IManagedObject interface, so the CLR treats it as a COM object, and continues to use plain COM to access it,
-            // avoiding the CLR Remoting issues.
-            //
-            // In effect, we're sending WM_GETOBJECT to the HWND to see if there's a native impl there, using ObjectFromLresult
-            // just to free that object, and then using AccessibleObjectFromWindow on the window to get the IAccessible
-            // that we actually use. (Can't just use AccessibleObjectFromWindow from the start, since that would return
-            // an oleacc proxy for hwnds that don't support IAccessible natively, and we only care about actual IAccessible
-            // impls here.)
-            //
-            // We used to do use AOFW below only if the acc we got back above was a managed object (checked using
-            // !Marshal.IsComObject()) - that only protects us from managed IAccessibles we get back directly; we could
-            // still hit the above issue if we get back a remote unmanaged impl that then returns a maanged impl via
-            // navigation (Media Center does this). So we now use AOFW all the time.
+            // or this application has no suitable client channel to talk to the server." - see 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             if(hr == NativeMethods.S_OK && acc != null)
             {
                 object obj = null;
@@ -769,7 +769,7 @@ namespace MS.Internal.AutomationProxies
                 }
                 catch (System.Security.SecurityException)
                 {
-                    // Workaround for Partial Trust [....] issue - they sometimes return
+                    // Workaround for Partial Trust Microsoft issue - they sometimes return
                     // a security error - use workaround to get a new IAccessible for the same
                     // object, and retry...
                     IAccessible accNew = WashPartialTrustWinformsAccessible(_acc);
@@ -1141,7 +1141,7 @@ namespace MS.Internal.AutomationProxies
                     }
                     catch (System.Security.SecurityException)
                     {
-                        // Workaround for Partial Trust [....] issue - they sometimes return
+                        // Workaround for Partial Trust Microsoft issue - they sometimes return
                         // a security error - use workaround to get a new IAccessible for the same
                         // object, and retry...
                         IAccessible accNew = WashPartialTrustWinformsAccessible(parent);
@@ -1365,7 +1365,7 @@ namespace MS.Internal.AutomationProxies
             {
                 // Media Player and some other badly-implemented IAccessibles can return the correponding 
                 // COM error code (E_POINTER).  This does not actually indicate a null dereference in this 
-                // process.  Corrects for bug #1340631.
+                // process.  Corrects for 
                 throw new ElementNotAvailableException(e);
             }
 
@@ -1451,7 +1451,7 @@ namespace MS.Internal.AutomationProxies
             }
             else if (e is System.Security.SecurityException)
             {
-                // [....] in partial trust returns these
+                // Microsoft in partial trust returns these
                 return true;
             }
             else
@@ -1464,16 +1464,16 @@ namespace MS.Internal.AutomationProxies
             return true;
         }
 
-        // IAccessibles that we get from [....] apps in partial trust return failure
+        // IAccessibles that we get from Microsoft apps in partial trust return failure
         // code for some methods - notably accNavigate and accChild. The operation will
         // succeed, however, if we first navigate up to the parent, and then back down
         // to the 'original' IAccessible - this navigation step seems to add or remove some
-        // wrapper object in the [....] impl that is otherwise blocking these operations.
+        // wrapper object in the Microsoft impl that is otherwise blocking these operations.
         //
-        // Since modifying the [....] code to fix it isn't a viable option (it's already
+        // Since modifying the Microsoft code to fix it isn't a viable option (it's already
         // released, so we need a way to work with the existing code anyway; and this error
-        // appears to be a side-effect of other security-related code in the [....] impl
-        // which [....] really do not want to modify), we use this workaround.
+        // appears to be a side-effect of other security-related code in the Microsoft impl
+        // which Microsoft really do not want to modify), we use this workaround.
         static IAccessible WashPartialTrustWinformsAccessible(IAccessible old)
         {
             // Basic alg: get the parent, get all its children, then check each

@@ -115,11 +115,11 @@ namespace System.Windows.Forms
             }
         }
 
-        // Instantiate and install a WF op [....] context, and save off the old one.
+        // Instantiate and install a WF op sync context, and save off the old one.
         internal static void InstallIfNeeded() {
             // Exit if we shouldn't auto-install, if we've already installed and we haven't uninstalled, 
             // or if we're being called recursively (creating the WF
-            // async op [....] context can create a parking window control).
+            // async op sync context can create a parking window control).
             if (!AutoInstall || inSyncContextInstallation) {
                 return;
             }
@@ -135,13 +135,13 @@ namespace System.Windows.Forms
             inSyncContextInstallation = true;
             try {
                 SynchronizationContext currentContext = AsyncOperationManager.SynchronizationContext;
-                //Make sure we either have no [....] context or that we have one of type SynchronizationContext
+                //Make sure we either have no sync context or that we have one of type SynchronizationContext
                 if (currentContext == null || currentContext.GetType() == typeof(SynchronizationContext)) {
                     previousSyncContext = currentContext;
 
                     // SECREVIEW : WindowsFormsSynchronizationContext.cctor generates a call to SetTopLevel on the MarshallingControl (hidden sycn hwnd), 
                     //             this call demands TopLevelWindow (UIPermissionWindow.SafeTopLevelWindows) so an assert for that permission is needed here.
-                    //             The assert is safe, we are creating a thread context and the [....] window is hidden.
+                    //             The assert is safe, we are creating a thread context and the sync window is hidden.
                     new PermissionSet(PermissionState.Unrestricted).Assert();
                     try {
                         AsyncOperationManager.SynchronizationContext = new WindowsFormsSynchronizationContext();

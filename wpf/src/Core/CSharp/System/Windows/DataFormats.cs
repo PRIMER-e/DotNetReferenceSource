@@ -398,7 +398,7 @@ namespace System.Windows
                     formatItem = (DataFormat)_formatList[n];
 
                     // OLE FORMATETC defined CLIPFORMAT as the unsigned short, so we should ignore
-                    // high 2bytes to find the matched CLIPFORMAT ID. (Reference bug#1026539)
+                    // high 2bytes to find the matched CLIPFORMAT ID. (Reference 
                     if ((formatItem.Id & 0x0000ffff) == (id & 0x0000ffff))
                     {
                         return formatItem;

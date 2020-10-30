@@ -23,7 +23,7 @@ namespace System.Windows.Documents
     using System.Security;
 
     /// <summary>
-    ///     TextRangeSerialization is a static class containing 
+    ///     TextRangeSerialization is a static class containing
     ///     an implementation for TextRange serialization functionality.
     ///     It is only used from TextRange.GetXml/AppendXml methods.
     /// </summary>
@@ -158,9 +158,9 @@ namespace System.Windows.Documents
             AdjustFragmentForTargetRange(fragment, range);
 
             // Delete current content of a range
-            if (!range.IsEmpty) 
-            { 
-                range.Text = String.Empty; 
+            if (!range.IsEmpty)
+            {
+                range.Text = String.Empty;
             }
             Invariant.Assert(range.IsEmpty, "range must be empty in the beginning of pasting");
 
@@ -193,9 +193,9 @@ namespace System.Windows.Documents
 
         /// <summary>
         /// This function serializes text segment formed by rangeStart and rangeEnd to valid xml using xmlWriter.
-        /// </summary>        
+        /// </summary>
         /// <SecurityNote>
-        /// To mask the security exception from XamlWriter.Save in partial trust case, 
+        /// To mask the security exception from XamlWriter.Save in partial trust case,
         /// this function checks if the current call stack has the all clipboard permission.
         /// </SecurityNote>
         private static void WriteXamlTextSegment(XmlWriter xmlWriter, ITextPointer rangeStart, ITextPointer rangeEnd, XamlTypeMapper xamlTypeMapper, ref int elementLevel, WpfPayload wpfPayload, bool ignoreWriteHyperlinkEnd, List<int> ignoreList, bool preserveTextElements)
@@ -245,7 +245,7 @@ namespace System.Windows.Documents
                         {
                             // 
 
-                            
+
                             TextElementEditingBehaviorAttribute att = (TextElementEditingBehaviorAttribute)Attribute.GetCustomAttribute(nextElement.GetType(), typeof(TextElementEditingBehaviorAttribute));
                             if (att != null && !att.IsTypographicOnly)
                             {
@@ -272,26 +272,29 @@ namespace System.Windows.Documents
                     case TextPointerContext.ElementEnd:
                         // Don't write Hyperlink end element if Hyperlink include the invalid
                         // in case of having a UiElement except Image or stated the range end
-                        // before the end position of the Hyperlink or Hyperlink opening tag is 
+                        // before the end position of the Hyperlink or Hyperlink opening tag is
                         // skipped from WriteOpeningTags by selecting of the partial of Hyperlink.
                         if (ignoreWriteHyperlinkEnd && (textReader.GetAdjacentElement(LogicalDirection.Forward) is Hyperlink))
                         {
                             // Reset the flag to keep walk up the next Hyperlink tag
                             ignoreWriteHyperlinkEnd = false;
                             textReader.MoveToNextContextPosition(LogicalDirection.Forward);
-                            
+
                             continue;
                         }
 
                         // Check the ignore list
-                        ITextPointer endPointer = textReader.CreatePointer();
-                        endPointer.MoveToElementEdge(ElementEdge.BeforeEnd);  // 
-                        if (ignoreList.Contains(endPointer.Offset))
+                        if (ignoreList.Count > 0)
                         {
-                            ignoreList.Remove(endPointer.Offset);
-                            textReader.MoveToNextContextPosition(LogicalDirection.Forward);
+                            ITextPointer endPointer = textReader.CreatePointer();
+                            endPointer.MoveToElementEdge(ElementEdge.BeforeEnd);  // 
+                            if (ignoreList.Contains(endPointer.Offset))
+                            {
+                                ignoreList.Remove(endPointer.Offset);
+                                textReader.MoveToNextContextPosition(LogicalDirection.Forward);
 
-                            continue;
+                                continue;
+                            }
                         }
 
                         elementLevel--;
@@ -367,7 +370,7 @@ namespace System.Windows.Documents
                     }
                     Invariant.Assert(typeof(TableRow).IsAssignableFrom(pointer.ParentType), "pointer must be in a scope of TableRow");
                     pointer.MoveToElementEdge(ElementEdge.BeforeStart);
-                    
+
                     ITextRange textRange = new TextRange(textSegment.Start, textSegment.End);
 
                     elementLevel += WriteOpeningTags(textRange, textSegment.Start, pointer, xmlWriter, xamlTypeMapper, /*reduceElement:*/wpfPayload == null, out ignoreWriteHyperlinkEnd, ref ignoreList, preserveTextElements);
@@ -503,7 +506,7 @@ namespace System.Windows.Documents
             }
             else
             {
-                // Write the opening tag 
+                // Write the opening tag
                 WriteStartXamlElement(range, thisElement, xmlWriter, xamlTypeMapper, reduceElement, preserveTextElements);
 
                 // Each opening tag adds one to the level count
@@ -559,7 +562,7 @@ namespace System.Windows.Documents
                     (blockUIContainer == null || !(blockUIContainer.Child is Image)))
                 {
                     // Even when we serialize for DataFormats.XamlPackage we strip out UIElement
-                    // different from Images. 
+                    // different from Images.
                     // Note that this condition is consistent with the one in WriteEmbeddedObject -
                     // so that when we reduce the element type fromm UIContainer to Run/Paragraph
                     // we also output just a space instead of the embedded object conntained in it.
@@ -665,9 +668,9 @@ namespace System.Windows.Documents
             else
             {
                 Type contextType = context.ParentType;
-                if (contextType == null || 
+                if (contextType == null ||
                     typeof(Paragraph).IsAssignableFrom(contextType) ||
-                    typeof(Inline).IsAssignableFrom(contextType) && !typeof(AnchoredBlock).IsAssignableFrom(contextType)) 
+                    typeof(Inline).IsAssignableFrom(contextType) && !typeof(AnchoredBlock).IsAssignableFrom(contextType))
                 {
                     rootType = typeof(Span);
                 }
@@ -799,7 +802,7 @@ namespace System.Windows.Documents
                 {
                     outerValue = outerContext.GetValue(property);
                 }
-                
+
                 // The property must appear in markup if the element
                 if (!onlyAffected ||  // all properties requested for saving context on root
                     !TextSchema.ValuesAreEqual(innerValue, outerValue)) // or the element really affects the property
@@ -862,9 +865,9 @@ namespace System.Windows.Documents
                     // Get property value from this element or from one of its ancestors (the latter in case of !onlyAffeted)
                     propertyValue = context.GetValue(property);
 
-                    // Get property value from its ancestors if the property is not set. 
-                    // TextDecorationCollection is special-cased as its default is empty collection, 
-                    // and its value source cannot be distinguished from ITextPointer. 
+                    // Get property value from its ancestors if the property is not set.
+                    // TextDecorationCollection is special-cased as its default is empty collection,
+                    // and its value source cannot be distinguished from ITextPointer.
                     if (propertyValue == null || TextDecorationCollection.Empty.ValueEquals(propertyValue as TextDecorationCollection))
                     {
                         if (property == Inline.BaselineAlignmentProperty || property == TextElement.TextEffectsProperty)
@@ -971,7 +974,7 @@ namespace System.Windows.Documents
             while (locallySetProperties.MoveNext())
             {
                 DependencyProperty locallySetProperty = (DependencyProperty)locallySetProperties.Current.Property;
-                
+
                 // Don't serialize read-only properties, or any properties registered or owned by a
                 // a class in the framework (we only want to serialize custom properties), to be
                 // consistent with our behavior for non-custom inlines.
@@ -1064,9 +1067,9 @@ namespace System.Windows.Documents
 
         /// <summary>
         /// Writes complex properties in form of child elements with compound names
-        /// </summary>        
+        /// </summary>
         /// <SecurityNote>
-        /// To mask the security exception from XamlWriter.Save in partial trust case, 
+        /// To mask the security exception from XamlWriter.Save in partial trust case,
         /// this function checks if the current call stack has unmanaged code permission.
         /// </SecurityNote>
         private static void WriteComplexProperties(XmlWriter xmlWriter, DependencyObject complexProperties, Type elementType)
@@ -1312,7 +1315,7 @@ namespace System.Windows.Documents
             // Paste text into our empty target range.
             // 
             range.Text = fragmentText;
-            
+
             // Select pasted content
             range.Select(range.Start, range.End);
         }
@@ -1461,7 +1464,7 @@ namespace System.Windows.Documents
                 insertionPosition = TextRangeEdit.InsertParagraphBreak(insertionPosition, /*moveIntoSecondParagraph:*/false);
             }
 
-            // When insertionPosition is inside a ListItem, then InsertParagraphBreak will 
+            // When insertionPosition is inside a ListItem, then InsertParagraphBreak will
             // split not only a parent Paragraph but also a ListItem and return a position
             // between ListItems. This position is not good for inserting Block elements,
             // so we also need to split parent List element.
@@ -1624,7 +1627,7 @@ namespace System.Windows.Documents
             {
                 return; // The property at insertion position is the same as it was in source context. Nothing to do.
             }
-            
+
             // Advance start pointer to enter pasted fragment
             start = start.GetNextContextPosition(LogicalDirection.Forward);
 
@@ -1775,7 +1778,7 @@ namespace System.Windows.Documents
         //
         // Unicode surrogates are 32 bit references to abstract chars.
         // A valid surrogate pair consists of a 16 bit code point (the
-        // high surrogate) in the range u+d800 - u+dbff, followed by a 
+        // high surrogate) in the range u+d800 - u+dbff, followed by a
         // second 16 bit code point (the low surrogate) in the range
         // u+dc00 - u+dfff.
         //
@@ -1860,9 +1863,9 @@ namespace System.Windows.Documents
 
         /// <summary>
         /// Return true if rangeEnd is not at the end of an element.
-        /// 
+        ///
         /// textReader must already be at the start of the element.
-        /// </summary>        
+        /// </summary>
         private static bool IsPartialNonTypographic(ITextPointer textReader, ITextPointer rangeEnd)
         {
             bool isPartial = false;
@@ -1890,7 +1893,7 @@ namespace System.Windows.Documents
         /// Hyperlink is invalid if it include a UiElement except Image or the range end position
         /// is stated before the end position of hyperlink.
         /// This must be called before Hyperlink start element position.
-        /// </summary>        
+        /// </summary>
         private static bool IsHyperlinkInvalid(ITextPointer textReader, ITextPointer rangeEnd)
         {
             // TextRead must be on the position before the element start position of Hyperlink
@@ -1958,7 +1961,7 @@ namespace System.Windows.Documents
         // 
         private static string FilterNaNStringValueForDoublePropertyType(string stringValue, Type propertyType)
         {
-            if (propertyType == typeof(double) && 
+            if (propertyType == typeof(double) &&
                 String.Compare(stringValue, "NaN", StringComparison.OrdinalIgnoreCase) == 0)
             {
                 return "Auto"; // convert NaN to Auto, to keep parser happy

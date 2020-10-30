@@ -6,7 +6,7 @@
 //     Wraps all the calls to IUpdatable interface.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services
@@ -388,15 +388,15 @@ namespace System.Data.Services
 
                 if (value != XmlConstants.NullLiteralInETag)
                 {
-                    // The reason we need to catch the Overflow Exception here is because of the Bug #679728.
-                    // In V1, when we didn't have IConcurrencyProvider interface, we always used to compute the
-                    // latest etag from the entity instance we got from IUpdatable.GetResource and then comparing
-                    // it with the If-Match request header. Hence all invalid cases always used to throw 
-                    // DataServiceException with 412, since the etags didn't match.
-                    // In V1.5, we have added the support for IConcurrencyProvider, which means we need to parse
-                    // the etag values and parse it to the provider, if it has implement this interface. To avoid
-                    // breaking changes, we need to catch all parsing errors and report them as 412 instead of 400
-                    // to avoid it from becoming a breaking change.
+                    // The reason we need to catch the Overflow Exception here is because of the 
+
+
+
+
+
+
+
+
                     try
                     {
                         success = System.Data.Services.Parsing.WebConvert.TryKeyStringToPrimitive(value, etagProperty.Type, out propertyValue);

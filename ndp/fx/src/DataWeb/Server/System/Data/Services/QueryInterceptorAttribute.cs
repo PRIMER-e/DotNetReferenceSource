@@ -6,7 +6,7 @@
 //      Provides a class to decorate query callback methods.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

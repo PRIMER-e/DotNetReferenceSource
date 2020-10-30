@@ -720,7 +720,7 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 		goto ErrorExit;
 	}
 		
-	LPSTR szListenInfo = pNpListenInfo->szPipeName;
+	LPWSTR wszListenInfo = pNpListenInfo->wszPipeName;
 	
 	pAcc = NewNoX(gpmo) NpAcceptStruct;
 	if( !pAcc )
@@ -772,7 +772,7 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 	// "pipename", e.g. "sql\query". 
 	//
 	
-	if( szListenInfo[0] == 0 )
+	if( wszListenInfo[0] == 0 )
 	{
 		dwError = ERROR_INVALID_PARAMETER;
 		SNI_SET_LAST_ERROR( prot, SNIE_5, dwError );
@@ -781,19 +781,18 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 
 	// Verify the pipe name format.  
 	//
-	Assert( sizeof("\\\\.\\pipe\\") <= sizeof(pNpListenInfo->szPipeName) ); 
-	if ( _strnicmp_l(
-		"\\\\.\\pipe\\", 
-		szListenInfo, 
-		(sizeof("\\\\.\\pipe\\") / sizeof(char)) - 1 , GetDefaultLocale()) )
+	Assert( ARRAYSIZE(L"\\\\.\\pipe\\") <= wcslen(pNpListenInfo->wszPipeName) ); 
+	if ( _wcsicmp_l(
+		L"\\\\.\\pipe\\", 
+		wszListenInfo, GetDefaultLocale()) )
 	{
 		dwError = ERROR_INVALID_PARAMETER;
 		SNI_SET_LAST_ERROR( prot, SNIE_5, dwError );
 		goto ErrorExit;
 	}
 
-	pAcc->szPipeName[MAX_PATH] = 0x00;
-	if( FAILED(StringCchPrintf_lA( pAcc->szPipeName, CCH_ANSI_STRING(pAcc->szPipeName), "%s", GetDefaultLocale(), szListenInfo )))
+	pAcc->wszPipeName[MAX_PATH] = L'\0';
+	if( FAILED(StringCchPrintf_lW( pAcc->wszPipeName, ARRAYSIZE(pAcc->wszPipeName), L"%s", GetDefaultLocale(), wszListenInfo )))
 	{
 		dwError = ERROR_INSUFFICIENT_BUFFER;
 		SNI_SET_LAST_ERROR( prot, SNIE_SYSTEM, dwError );
@@ -804,7 +803,7 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 	// See SQL BU DT bugs 346389 and 346383 for explanation why this
 	// check is insufficient.  
 	//
-	HANDLE hTmpPipe = CreateFileA( pAcc->szPipeName,
+	HANDLE hTmpPipe = CreateFileW( pAcc->wszPipeName,
 									GENERIC_READ | GENERIC_WRITE,
 									FILE_SHARE_READ,
 									NULL,
@@ -826,7 +825,7 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 	//
 	// Set up the pipe to accept connections
 	//
-	pAcc->hPipe	= CreateNamedPipe( pAcc->szPipeName,
+	pAcc->hPipe	= CreateNamedPipeW( pAcc->wszPipeName,
 									PIPE_ACCESS_DUPLEX
 									| FILE_FLAG_WRITE_THROUGH
 									| FILE_FLAG_OVERLAPPED,
@@ -844,12 +843,12 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 		goto ErrorExit;
 	}
 
-	// SQL BU DT bug 346383/346389/325380: to lower the chance of named pipe
-	// "name squatting" by another (malicious) process running under a 
-	// different account we check the ownership of the listening named pipe 
-	// we created, and fail if it does not match that of the account we are 
-	// running under.  
-	//
+	// SQL BU DT 
+
+
+
+
+
 	dwError = ValidateObjectOwner( pAcc->hPipe, 
 								   SE_KERNEL_OBJECT ); 
 
@@ -895,7 +894,7 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 
 	// create a pipe handle to prevent the pipe from being created by unauthorized ACLs.
 	// this handle will be opened until TerminateListener
-	pAcc->hHolderPipe	= CreateNamedPipe( pAcc->szPipeName,
+	pAcc->hHolderPipe	= CreateNamedPipeW( pAcc->wszPipeName,
 									PIPE_ACCESS_DUPLEX
 									| FILE_FLAG_WRITE_THROUGH
 									| FILE_FLAG_OVERLAPPED,
@@ -926,7 +925,7 @@ DWORD Np::InitializeListener( HANDLE   hSNIListener,
 	
 	*pListenHandle = pAcc;
 
-	scierrlog( ( fLocal ? 26048 : 26028 ), pAcc->szPipeName);
+	scierrlog( ( fLocal ? 26048 : 26028 ), pAcc->wszPipeName);
 	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_SUCCESS);
 
 
@@ -955,7 +954,7 @@ ErrorExit:
 
 	*pListenHandle = NULL;
 	if(pNpListenInfo )
-		scierrlog( ( fLocal ? 26049 : 26029 ), pNpListenInfo->szPipeName,dwError);
+		scierrlog( ( fLocal ? 26049 : 26029 ), pNpListenInfo->wszPipeName,dwError);
 	else
 		scierrlog( ( fLocal ? 26049 : 26029 ), "", dwError);
 	
@@ -1020,7 +1019,7 @@ DWORD Np::ResumePendingAccepts( __inout HANDLE hListener )
 		//
 		if (ERROR_SUCCESS == dwError)
 		{
-			scierrlog( ( pAcc->fLocal ? 26051 : 26045), pAcc->szPipeName);
+			scierrlog( ( pAcc->fLocal ? 26051 : 26045), pAcc->wszPipeName);
 
 		}
 		else
@@ -1064,20 +1063,20 @@ DWORD Np::PrepareForNextAccept( __inout NpAcceptStruct * pAcc)
 
 
 
-DWORD Np::OpenPipe( __in LPSTR szPipeName, __in DWORD dwTimeout )
+DWORD Np::OpenPipe( __in LPWSTR wszPipeName, __in DWORD dwTimeout )
 {
 	BidxScopeAutoSNI3( SNIAPI_TAG _T("%u#, ")
-							  _T( "szPipeName: '%hs', ")
+							  _T( "wszPipeName: '%s', ")
 							  _T("dwTimeout: %d\n"), 
 							  GetBidId(),
-							  szPipeName,
+							  wszPipeName,
 							  dwTimeout);
 	
 	DWORD dwRet = ERROR_SUCCESS;
 	DWORD dwStart;
 	DWORD dwTimeElapsed;
-	CHAR * pSrvStart = szPipeName; 
-	CHAR * pSrvEnd = NULL; 
+	WCHAR * pwSrvStart = wszPipeName; 
+	WCHAR * pwSrvEnd = NULL; 
 	
 	// Verify the pipe name format.  
 	//
@@ -1085,41 +1084,41 @@ DWORD Np::OpenPipe( __in LPSTR szPipeName, __in DWORD dwTimeout )
 
 	// Skip over first two backslashes
 	//
-	if( '\\' != *pSrvStart )
+	if( L'\\' != *pwSrvStart )
 	{
 		dwRet = ERROR_INVALID_PARAMETER;
 		SNI_SET_LAST_ERROR( m_ProtToReport, SNIE_5, dwRet );
 		goto Exit;
 	}
 
-	pSrvStart++;
+	pwSrvStart++;
 
-	if( '\\' != *pSrvStart )
+	if( L'\\' != *pwSrvStart )
 	{
 		dwRet = ERROR_INVALID_PARAMETER;
 		SNI_SET_LAST_ERROR( m_ProtToReport, SNIE_5, dwRet );
 		goto Exit;
 	}
 
-	pSrvStart++;
+	pwSrvStart++;
 	
 	// Skip over the server name.  
 	//
-	pSrvEnd = StrChrA_SYS(pSrvStart, (int) strlen(pSrvStart),'\\');
+	pwSrvEnd = StrChrW_SYS(pwSrvStart, (int) wcslen(pwSrvStart),L'\\');
 
-	if( !pSrvEnd )
+	if( !pwSrvEnd )
 	{
 		dwRet = ERROR_INVALID_PARAMETER;
 		SNI_SET_LAST_ERROR( m_ProtToReport, SNIE_5, dwRet );
 		goto Exit;
 	}
 
-    pSrvEnd++;
+    pwSrvEnd++;
 
-	if ( _strnicmp_l(
-		"pipe\\", 
-		pSrvEnd, 
-		(sizeof("pipe\\") / sizeof(char)) - 1 , GetDefaultLocale()) )
+	if ( _wcsnicmp_l(
+		L"pipe\\", 
+		pwSrvEnd, 
+		ARRAYSIZE(L"pipe\\") - 1 , GetDefaultLocale()) )
 	{
 		dwRet = ERROR_INVALID_PARAMETER;
 		SNI_SET_LAST_ERROR( m_ProtToReport, SNIE_5, dwRet );
@@ -1139,7 +1138,7 @@ DWORD Np::OpenPipe( __in LPSTR szPipeName, __in DWORD dwTimeout )
 		//
 		if( !gfIsWin9x )
 		{
-    		m_hPipe = CreateFileA( szPipeName,
+    		m_hPipe = CreateFileW( wszPipeName,
 							       GENERIC_READ
 							       | GENERIC_WRITE,
 							       0,
@@ -1151,7 +1150,7 @@ DWORD Np::OpenPipe( __in LPSTR szPipeName, __in DWORD dwTimeout )
 		}
 		else
 		{
-    		m_hPipe = CreateFileA( szPipeName,
+    		m_hPipe = CreateFileW( wszPipeName,
 							       GENERIC_READ
 							       | GENERIC_WRITE,
 							       0,
@@ -1175,7 +1174,7 @@ DWORD Np::OpenPipe( __in LPSTR szPipeName, __in DWORD dwTimeout )
 				return dwError;
 			}
 
-			if( !WaitNamedPipe( szPipeName, dwTimeout-dwTimeElapsed) )
+			if( !WaitNamedPipe( wszPipeName, dwTimeout-dwTimeElapsed) )
 			{
 				dwError = GetLastError();
 				SNI_SET_LAST_ERROR( m_ProtToReport, SNIE_40, dwError );
@@ -1256,7 +1255,7 @@ DWORD Np::Open( 	SNI_Conn 		* pConn,
 		goto ErrorExit;
 	}
 
-	Assert( strstr( pProtElem->Np.Pipe, "\\\\") );
+	Assert( wcsstr( pProtElem->Np.Pipe, L"\\\\") );
 
 	dwError = pNp->OpenPipe( pProtElem->Np.Pipe, NP_OPEN_TIMEOUT );
 
@@ -1333,7 +1332,7 @@ DWORD Np::CheckConnection( )
 	return dwError;
 }
 
-// [....] functions
+// Sync functions
 //
 DWORD Np::ReadSync( __out SNI_Packet ** ppNewPacket, 
 					int           iTimeOut )
@@ -1612,7 +1611,7 @@ DWORD Np::WriteSync( SNI_Packet   * pPacket,
 	{
 		PrepareForSyncCall(pPacket);
 		
-		// If the SNI Consumer (or SNI internally, though it currently doesn't do this directly...) is using both Async and [....] writes,
+		// If the SNI Consumer (or SNI internally, though it currently doesn't do this directly...) is using both Async and Sync writes,
 		// it must ensure that it has no pending Writes at the time it calls SNIWriteSync
 		
 		// Although these are normally checked under the CritSec, it shouldn't be necessary, since per contract there should be no 
@@ -1910,7 +1909,7 @@ DWORD Np::SendPacketAsync( SNI_Packet *pPacket, DWORD *pdwBytesWritten )
 
 	if( NULL != m_pSyncReadPacket )
 	{
-		Assert( 0 && "It is forbidden to call SNIReadAsync or SNIPartialReadAsync when there is a cached [....] Read packet.\n");
+		Assert( 0 && "It is forbidden to call SNIReadAsync or SNIPartialReadAsync when there is a cached Sync Read packet.\n");
 		dwError = ERROR_INVALID_STATE;
 		SNI_SET_LAST_ERROR( TCP_PROV, SNIE_0, dwError);
 		goto Exit;
@@ -1962,8 +1961,8 @@ Exit:
 	return dwError;
 }
 
-//named pipe implementation has a bug where multiple async writes causes message re-ordering
-//so we need to wait for completion of previous write before posting a new one
+//named pipe implementation has a 
+
 
 DWORD Np::WriteAsync( SNI_Packet   * pPacket, 
 					  SNI_ProvInfo * pInfo )
@@ -2151,11 +2150,11 @@ DWORD Np::AcceptDone( __in SNI_Conn      * pConn,
 
 	if( pConn && pNp )
 	{
-		pConn->m_pEPInfo->npInfo.szPipeName[MAX_PATH] = '\0';
-		if(FAILED(StringCchPrintf_lA( pConn->m_pEPInfo->npInfo.szPipeName,
-					 CCH_ANSI_STRING(pConn->m_pEPInfo->npInfo.szPipeName),
-					 "%s", GetDefaultLocale(),
-					 pAcc->szPipeName)))
+		pConn->m_pEPInfo->npInfo.wszPipeName[MAX_PATH] = L'\0';
+		if(FAILED(StringCchPrintf_lW( pConn->m_pEPInfo->npInfo.wszPipeName,
+					 ARRAYSIZE(pConn->m_pEPInfo->npInfo.wszPipeName),
+					 L"%s", GetDefaultLocale(),
+					 pAcc->wszPipeName)))
 		{
 			SNI_SET_LAST_ERROR( pAcc->prot, SNIE_SYSTEM, ERROR_INVALID_PARAMETER );
 
@@ -2206,7 +2205,7 @@ DWORD Np::AsyncAccept( __inout NpAcceptStruct * pAcc )
 
 	DWORD dwError = ERROR_SUCCESS;
 	
-   	pAcc->hPipe = CreateNamedPipe( pAcc->szPipeName,
+   	pAcc->hPipe = CreateNamedPipeW( pAcc->wszPipeName,
 										PIPE_ACCESS_DUPLEX
 										| FILE_FLAG_WRITE_THROUGH
 										| FILE_FLAG_OVERLAPPED,
@@ -2225,7 +2224,7 @@ DWORD Np::AsyncAccept( __inout NpAcceptStruct * pAcc )
 		//
 		if (!pAcc->fPendingAccept)
 		{
-			scierrlog ( ( pAcc->fLocal ? 26050 : 26044 ), pAcc->szPipeName, dwError, 1 /*state*/);
+			scierrlog ( ( pAcc->fLocal ? 26050 : 26044 ), pAcc->wszPipeName, dwError, 1 /*state*/);
 		}
 
 		SNI_SET_LAST_ERROR( pAcc->prot, SNIE_SYSTEM, dwError );
@@ -2239,7 +2238,7 @@ DWORD Np::AsyncAccept( __inout NpAcceptStruct * pAcc )
 	{
 		if (!pAcc->fPendingAccept)
 		{
-			scierrlog ( ( pAcc->fLocal ? 26050 : 26044 ), pAcc->szPipeName, dwError, 2 /*state*/);
+			scierrlog ( ( pAcc->fLocal ? 26050 : 26044 ), pAcc->wszPipeName, dwError, 2 /*state*/);
 		}
 
 		goto ErrorExit;
@@ -2263,7 +2262,7 @@ DWORD Np::AsyncAccept( __inout NpAcceptStruct * pAcc )
 				if (!pAcc->fPendingAccept)
 				{
 					scierrlog ( ( pAcc->fLocal ? 26050 : 26044 ), 
-						pAcc->szPipeName, dwError, 3 /*state*/);
+						pAcc->wszPipeName, dwError, 3 /*state*/);
 				}
 
 				goto ErrorExit;
@@ -2274,7 +2273,7 @@ DWORD Np::AsyncAccept( __inout NpAcceptStruct * pAcc )
 			if (!pAcc->fPendingAccept)
 			{
 				scierrlog ( ( pAcc->fLocal ? 26050 : 26044 ), 
-					pAcc->szPipeName, dwError, 4 /*state*/);
+					pAcc->wszPipeName, dwError, 4 /*state*/);
 			}
 
 			SNI_SET_LAST_ERROR( pAcc->prot, SNIE_SYSTEM, dwError );
@@ -2335,7 +2334,7 @@ DWORD Np::RepostAccept( __inout NpAcceptStruct * pAcc )
 				if (!pAcc->fPendingAccept)
 				{
 					scierrlog ( ( pAcc->fLocal ? 26050 : 26044 ), 
-						pAcc->szPipeName, dwError, 5 /*state*/);
+						pAcc->wszPipeName, dwError, 5 /*state*/);
 				}
 
 				goto ErrorExit;
@@ -2346,7 +2345,7 @@ DWORD Np::RepostAccept( __inout NpAcceptStruct * pAcc )
 			if (!pAcc->fPendingAccept)
 			{
 				scierrlog ( ( pAcc->fLocal ? 26050 : 26044 ), 
-					pAcc->szPipeName, dwError, 6 /*state*/);
+					pAcc->wszPipeName, dwError, 6 /*state*/);
 			}
 
 			SNI_SET_LAST_ERROR( pAcc->prot, SNIE_SYSTEM, dwError );
@@ -2604,7 +2603,7 @@ DWORD Np::Close()
 				// Wait with time-out in case the auto-event was consumed
 				// by another thread after we checked its status (this should
 				// not really happen since the access to the Np object should
-				// be serialized in [....] mode).  We will check the status in 
+				// be serialized in sync mode).  We will check the status in 
 				// the next iteration.  
 				DWORD dwRet = WaitForSingleObject(pOvl->hEvent, CLOSEIOWAIT);
 
@@ -2801,7 +2800,7 @@ ErrorExit:
 // Inform the OS not to enqueue IO Completions on successful
 // overlapped reads/writes.
 //
-// Returns ERROR_SUCCESS if OS call succeeds, or if connection is [....] (no need to make the call)
+// Returns ERROR_SUCCESS if OS call succeeds, or if connection is Sync (no need to make the call)
 // Returns a Windows error code otherwise.
 DWORD
 Np::DWSetSkipCompletionPortOnSuccess()

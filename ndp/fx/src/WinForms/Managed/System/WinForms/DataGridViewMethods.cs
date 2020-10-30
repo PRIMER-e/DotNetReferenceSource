@@ -3138,22 +3138,22 @@ namespace System.Windows.Forms
 
             if (this.IsCurrentCellInEditMode)
             {
-                /* Do not push original value back into the cell - VS Whidbey bug 328624
-                Exception exception;
-                if (!PushFormattedValue(ref dataGridViewCurrentCell, this.uneditedFormattedValue, out exception))
-                {
-                    Debug.Assert(dataGridViewCurrentCell.RowIndex > -1);
-                    DataGridViewDataErrorEventArgs dgvdee = new DataGridViewDataErrorEventArgs(exception, 
-                                                                                dataGridViewCurrentCell.ColumnIndex, 
-                                                                                dataGridViewCurrentCell.RowIndex, 
-                                                                                // dataGridViewCurrentCell.Value,
-                                                                                // this.uneditedFormattedValue,
-                                                                                context);
-                    dgvdee.Cancel = true;
-                    OnDataErrorInternal(dgvdee);
-                    return dgvdee;
-                }
-                */
+                /* Do not push original value back into the cell - VS Whidbey 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
                 if (this.editingControl != null)
                 {
                     ((IDataGridViewEditingControl)this.editingControl).EditingControlValueChanged = false;
@@ -3740,7 +3740,7 @@ namespace System.Windows.Forms
                 {
                     base.OnLeave(EventArgs.Empty);
 
-                    // [....]: can we be smarter about this? What if validating the current cell below forces a repaint on the cell?
+                    // Microsoft: can we be smarter about this? What if validating the current cell below forces a repaint on the cell?
                     // we would end up repainting the current cell twice.
                     //
                     // invalidate the current cell so the data grid view does not paint the focus rectangle any longer
@@ -4676,11 +4676,11 @@ namespace System.Windows.Forms
             int rowIndex;
 
             // when minimizing the dataGridView window, we will get negative values for the
-            // layout.Data.Width and layout.Data.Height ( is this a bug or not? if layout.Data.Height == 0 in that case,
-            // the old code would have worked )
-            //
-            // if this is the case, set numTotallyDisplayedFrozenRows = numDisplayedScrollingRows = numTotallyDisplayedScrollingRows = 0;
-            //
+            // layout.Data.Width and layout.Data.Height ( is this a 
+
+
+
+
             if (displayHeight <= 0 || nRows == 0)
             {
                 this.displayedBandsInfo.NumDisplayedFrozenRows = this.displayedBandsInfo.NumTotallyDisplayedFrozenRows =
@@ -9403,9 +9403,9 @@ namespace System.Windows.Forms
                 {
                     //hti.edge = DataGridViewHitTestTypeCloseEdge.Left;
                     DataGridViewColumn dataGridViewColumn = null;
-                    // VS Whidbey bug 317105 - Condition unnecessary
-                    //if (hti.col != this.displayedBandsInfo.FirstDisplayedScrollingCol || this.displayedBandsInfo.LastTotallyDisplayedScrollingCol >= 0)
-                    //{
+                    // VS Whidbey 
+
+
                     dataGridViewColumn = this.Columns.GetPreviousColumn(this.Columns[hti.col],
                                                                                  DataGridViewElementStates.Visible,
                                                                                  DataGridViewElementStates.None);
@@ -12821,7 +12821,7 @@ namespace System.Windows.Forms
                         }
                         bool success = SetCurrentCellAddressCore(hti.col, hti.row, !isShiftDown, false, true);
 
-                        // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                        // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                         // DataGridView changes.
                         // See vsWhidbey: 325296.
                         // Debug.Assert(success);
@@ -15136,7 +15136,7 @@ namespace System.Windows.Forms
                             {
                                 // Column of the current cell is made invisible. Trying to reset the current cell. May throw an exception.
                                 ResetCurrentCell();
-                                // [....]: Should the current cell be set to some cell after the operation?
+                                // Microsoft: Should the current cell be set to some cell after the operation?
                             }
                         }
                         if (elementState == DataGridViewElementStates.Frozen &&
@@ -15204,7 +15204,7 @@ namespace System.Windows.Forms
                                 }
                                 // Trying to reset the current cell. May throw an exception.
                                 ResetCurrentCell();
-                                // [....]: Should the current cell be set to some cell after the operation?
+                                // Microsoft: Should the current cell be set to some cell after the operation?
                             }
                             CorrectRowFrozenStates(dataGridViewRow, rowIndex, elementState == DataGridViewElementStates.Frozen);
                             break;
@@ -15419,6 +15419,10 @@ namespace System.Windows.Forms
             {
                 if (this.vertScrollBar != null && this.vertScrollBar.Visible)
                 {
+                    int totalVisibleHeight = this.Rows.GetRowsHeight(DataGridViewElementStates.Visible);
+                    int totalVisibleFrozenHeight = this.Rows.GetRowsHeight(DataGridViewElementStates.Visible | DataGridViewElementStates.Frozen);
+                    this.vertScrollBar.Maximum = totalVisibleHeight - totalVisibleFrozenHeight;
+
                     this.vertScrollBar.Enabled = true;
                 }
                 if (this.horizScrollBar != null && this.horizScrollBar.Visible)
@@ -16576,23 +16580,23 @@ namespace System.Windows.Forms
                 this.CursorInternal = Cursors.SizeNS;
                 return;
             }
-            /* Whidbey bug 156884 - no longer show hand cursor
-            if (this.dataGridViewOper[DATAGRIDVIEWOPER_trackColRelocation] &&
-                (hti.typeInternal == DataGridViewHitTestTypeInternal.ColumnResizeLeft ||
-                hti.typeInternal == DataGridViewHitTestTypeInternal.ColumnResizeRight ||
-                hti.typeInternal == DataGridViewHitTestTypeInternal.ColumnHeaderLeft ||
-                hti.typeInternal == DataGridViewHitTestTypeInternal.ColumnHeaderRight ||
-                hti.typeInternal == DataGridViewHitTestTypeInternal.FirstColumnHeaderLeft ||
-                hti.typeInternal == DataGridViewHitTestTypeInternal.TopLeftHeaderResizeRight))
-            {
-                if (!this.dataGridViewState1[DATAGRIDVIEWSTATE1_customCursorSet])
-                {
-                    this.dataGridViewState1[DATAGRIDVIEWSTATE1_customCursorSet] = true;
-                    this.oldCursor = this.Cursor;
-                }
-                this.CursorInternal = Cursors.Hand;
-                return;
-            }*/
+            /* Whidbey 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
             else if (this.dataGridViewState1[DATAGRIDVIEWSTATE1_customCursorSet])
             {
                 this.dataGridViewState1[DATAGRIDVIEWSTATE1_customCursorSet] = false;
@@ -16729,7 +16733,7 @@ namespace System.Windows.Forms
                     }
                     else if (hti.Type == DataGridViewHitTestType.None)
                     {
-                        // VS Whidbey bug 469429
+                        // VS Whidbey 
                         CorrectFocus(true /*onlyIfGridHasFocus*/);
                     }
                 }
@@ -16760,7 +16764,7 @@ namespace System.Windows.Forms
                         EndRowHeadersResize(e);
                     }
 
-                    // VS Whidbey bug 256893
+                    // VS Whidbey 
                     CorrectFocus(true /*onlyIfGridHasFocus*/);
 
                     // Updating the hit test info since the EndXXX operation above may have invalidated the previously
@@ -17340,7 +17344,7 @@ namespace System.Windows.Forms
                 }
                 else
                 {
-                    // Quit editing mode and set the current cell to its new location once everything is in [....] again.
+                    // Quit editing mode and set the current cell to its new location once everything is in sync again.
                     ResetCurrentCell();
                 }
             }
@@ -17548,7 +17552,7 @@ namespace System.Windows.Forms
                 }
                 else
                 {
-                    // Quit editing mode and set the current cell to its new location once everything is in [....] again.
+                    // Quit editing mode and set the current cell to its new location once everything is in sync again.
                     ResetCurrentCell();
                 }
             }
@@ -17928,7 +17932,7 @@ namespace System.Windows.Forms
                         #if DEBUG
                         else
                         {
-                            Debug.Assert(this.newRowIndex == -1, "newRowIndex and AllowUserToAddRowsInternal became out of [....]");
+                            Debug.Assert(this.newRowIndex == -1, "newRowIndex and AllowUserToAddRowsInternal became out of sync");
                         }
                         #endif // 
                     }
@@ -18488,7 +18492,10 @@ namespace System.Windows.Forms
                     PositionEditingControl(true, false, false);
                 }
 
-                UpdateMouseEnteredCell(null /*HitTestInfo*/, null /*MouseEventArgs*/);
+                if (this.IsHandleCreated)
+                {
+                    UpdateMouseEnteredCell(null /*HitTestInfo*/, null /*MouseEventArgs*/);
+                }
 
                 OnRowHeadersGlobalAutoSize(false /*expandingRows*/);
             }
@@ -19701,7 +19708,7 @@ namespace System.Windows.Forms
                     dgvabsEffective = AdjustColumnHeaderBorderStyle(this.AdvancedColumnHeadersBorderStyle, dataGridViewAdvancedBorderStylePlaceholder,
                                                                     isFirstDisplayedColumn, isLastVisibleColumn);
 
-                    // [....]: should paintSelectionBackground be dev-settable?
+                    // Microsoft: should paintSelectionBackground be dev-settable?
                     cell.PaintWork(g, 
                                    clipBounds, 
                                    cellBounds, 
@@ -19888,9 +19895,9 @@ namespace System.Windows.Forms
             {
                 rowBounds = boundingRect;
 
-                // Dev 10 Bug #434494 - DataGridView AutoSizeRowsMode does not work properly after column sort
-                // Should unshared the row and set the thickness to a perfect value 
-                // every time user scroll to display the specific row.
+                // Dev 10 
+
+
                 DataGridViewAutoSizeRowsModeInternal autoSizeRowsModeInternal = (DataGridViewAutoSizeRowsModeInternal)this.autoSizeRowsMode;
                 // Auto size row if needed
                 if (autoSizeRowsModeInternal != DataGridViewAutoSizeRowsModeInternal.None)
@@ -19940,9 +19947,9 @@ namespace System.Windows.Forms
                 {
                     rowBounds = boundingRect;
 
-                    // Dev 10 Bug #434494 - DataGridView AutoSizeRowsMode does not work properly after column sort
-                    // Should unshared the row and set the thickness to a perfect value 
-                    // every time user scroll to display the specific row.
+                    // Dev 10 
+
+
                     DataGridViewAutoSizeRowsModeInternal autoSizeRowsModeInternal = (DataGridViewAutoSizeRowsModeInternal)this.autoSizeRowsMode;
                     // Auto size row if needed
                     if (autoSizeRowsModeInternal != DataGridViewAutoSizeRowsModeInternal.None)
@@ -19994,7 +20001,7 @@ namespace System.Windows.Forms
                 Rectangle cellBounds = this.layout.TopLeftHeader;
                 cellBounds.Width = this.rowHeadersWidth;
                 cellBounds.Height = this.columnHeadersHeight;
-                // [....]: Should paintSelectionBackground be dev-settable?
+                // Microsoft: Should paintSelectionBackground be dev-settable?
                 cell.PaintWork(g, 
                                this.layout.TopLeftHeader, 
                                cellBounds, 
@@ -20268,7 +20275,7 @@ namespace System.Windows.Forms
                                             if (this.newRowIndex < rowCount)
                                             {
                                                 // the user did not type inside the 'add new row'
-                                                Debug.Assert(rowCount == dataGridViewRowsCount, "out of [....] in AddNewTransaction when the user did not type in the 'add new row'");
+                                                Debug.Assert(rowCount == dataGridViewRowsCount, "out of sync in AddNewTransaction when the user did not type in the 'add new row'");
                                             }
                                             else
                                             {
@@ -20276,7 +20283,7 @@ namespace System.Windows.Forms
                                             }
                                         }
 
-                                        Debug.Assert(rowCount == dataGridViewRowsCount, "out of [....]");
+                                        Debug.Assert(rowCount == dataGridViewRowsCount, "out of sync");
 #endif
                                             DataGridViewDataErrorEventArgs dgvdee = null;
                                             try
@@ -20511,7 +20518,7 @@ namespace System.Windows.Forms
                                     success = SetCurrentCellAddressCore(firstVisibleColumnIndex, lastVisibleRowIndex, true, false, false);
                                     if (!success)
                                     {
-                                        // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell
+                                        // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell
                                         // the list under the DataGridView changes.
                                         // In this case set moved to false so the users that call ProcessDownKey
                                         // will commit the data.
@@ -21366,7 +21373,7 @@ namespace System.Windows.Forms
                                 SetSelectedCellCore(lastVisibleColumnIndex, lastVisibleRowIndex, true);
                                 success = SetCurrentCellAddressCore(lastVisibleColumnIndex, lastVisibleRowIndex, true, false, false);
                             }
-                            // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                            // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                             // DataGridView changes.
                             // See vsWhidbey: 325296.
                             // Debug.Assert(success);
@@ -21612,10 +21619,10 @@ namespace System.Windows.Forms
         ]
         protected bool ProcessEnterKey(Keys keyData)
         {
-            // commitRow is commented out for Dev10 bug 473789.
-            // When Enter is pressed, no matter Ctrl is also pressed or not,
-            // changes in a cell should be commited.
-            // Therefore, commitRow should be always true, and useless here.
+            // commitRow is commented out for Dev10 
+
+
+
             bool moved = false, ret = true;//, commitRow = true;
             if ((keyData & Keys.Control) == 0)
             {
@@ -21798,7 +21805,7 @@ namespace System.Windows.Forms
                                 SetSelectedCellCore(firstVisibleColumnIndex, firstVisibleRowIndex, true);
                                 success = SetCurrentCellAddressCore(firstVisibleColumnIndex, firstVisibleRowIndex, true, false, false);
                             }
-                            // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                            // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                             // DataGridView changes.
                             // See vsWhidbey: 325296.
                             // Debug.Assert(success);
@@ -23034,7 +23041,7 @@ namespace System.Windows.Forms
                         return true;
                     }
                     success = SetCurrentCellAddressCore(firstVisibleColumnIndex, nextScreenVisibleRowIndex, true, false, false);
-                    // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                    // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                     // DataGridView changes.
                     // See vsWhidbey: 325296.
                     // Debug.Assert(success);
@@ -23410,7 +23417,7 @@ namespace System.Windows.Forms
                             return true;
                         }
                         success = SetCurrentCellAddressCore(this.ptCurrentCell.X, previousScreenVisibleRowIndex, true, false, false);
-                        // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                        // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                         // DataGridView changes.
                         // See vsWhidbey: 325296.
                         // Debug.Assert(success);
@@ -24472,7 +24479,7 @@ namespace System.Windows.Forms
                                         return true;
                                     }
                                     success = SetCurrentCellAddressCore(firstVisibleColumnIndex, firstVisibleRowIndex, true, false, false);
-                                    // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                                    // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                                     // DataGridView changes.
                                     // See vsWhidbey: 325296.
                                     // Debug.Assert(success);
@@ -26617,10 +26624,10 @@ namespace System.Windows.Forms
                         {
                             if (oldCurrentCellY != rowIndex)
                             {
-                                //Tentatively commenting out for bug #321924
-                                //this.ptCurrentCell.X = -1;
-                                //this.ptCurrentCell.Y = -1;
-                                //OnCurrentCellChanged(EventArgs.Empty);
+                                //Tentatively commenting out for 
+
+
+
                                 if (!IsInnerCellOutOfBounds(columnIndex, rowIndex))
                                 {
                                     OnRowEnter(ref dataGridViewCellTmp, columnIndex, rowIndex, true /*canCreateNewRow*/, false /*validationFailureOccurred*/);
@@ -28048,38 +28055,38 @@ namespace System.Windows.Forms
                 return;
             }
 
-            /* VS Whidbey bug 262445 - no more commit on scroll
-            if (this.ptCurrentCell.X >= 0)
-            {
-                if (this.dataGridViewOper[DATAGRIDVIEWOPER_cancelCommitWithinHScroll])
-                {
-                    this.dataGridViewOper[DATAGRIDVIEWOPER_cancelCommitWithinHScroll] = (se.Type == ScrollEventType.ThumbTrack || se.Type == ScrollEventType.ThumbPosition);
-                    se.NewValue = this.HorizontalOffset;
-                    return;
-                }
-                this.dataGridViewOper[DATAGRIDVIEWOPER_cancelCommitWithinHScroll] = (se.Type == ScrollEventType.ThumbTrack || se.Type == ScrollEventType.ThumbPosition);
-                this.horizScrollBar.Invalidate();
-                if (!CommitEdit(DataGridViewDataErrorContexts.Parsing | DataGridViewDataErrorContexts.Commit | DataGridViewDataErrorContexts.Scroll,
-                                false /*forCurrentCellChange-/, false /*forCurrentRowChange-/))
-                {
-                    se.NewValue = this.HorizontalOffset;
-                    if (se.Type == ScrollEventType.SmallIncrement || se.Type == ScrollEventType.SmallDecrement)
-                    {
-                        // Workaround for a pbm where the scrollbar ends up in a bad state after a validation failure dialog is displayed.
-                        this.horizScrollBar.RecreateScrollBarHandle();
-                    }
-                    else
-                    {
-                        this.horizScrollBar.Invalidate();
-                    }
-                    return;
-                }
-                else
-                {
-                    this.dataGridViewOper[DATAGRIDVIEWOPER_cancelCommitWithinHScroll] = false;
-                }
-            }
-            */
+            /* VS Whidbey 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
 
             if (se.Type == ScrollEventType.SmallIncrement ||
                 se.Type == ScrollEventType.SmallDecrement)
@@ -28101,38 +28108,38 @@ namespace System.Windows.Forms
                 return;
             }
 
-            /* VS Whidbey bug 262445 - no more commit on scroll
-            if (this.ptCurrentCell.X >= 0)
-            {
-                if (this.dataGridViewOper[DATAGRIDVIEWOPER_cancelCommitWithinVScroll])
-                {
-                    this.dataGridViewOper[DATAGRIDVIEWOPER_cancelCommitWithinVScroll] = (se.Type == ScrollEventType.ThumbTrack || se.Type == ScrollEventType.ThumbPosition);
-                    se.NewValue = this.VerticalOffset;
-                    return;
-                }
-                this.dataGridViewOper[DATAGRIDVIEWOPER_cancelCommitWithinVScroll] = (se.Type == ScrollEventType.ThumbTrack || se.Type == ScrollEventType.ThumbPosition);
-                this.vertScrollBar.Invalidate();
-                if (!CommitEdit(DataGridViewDataErrorContexts.Parsing | DataGridViewDataErrorContexts.Commit | DataGridViewDataErrorContexts.Scroll, 
-                                false /*forCurrentCellChange-/, false /*forCurrentRowChange-/))
-                {
-                    se.NewValue = this.VerticalOffset;
-                    if (se.Type == ScrollEventType.SmallIncrement || se.Type == ScrollEventType.SmallDecrement)
-                    {
-                        // Workaround for a pbm where the scrollbar ends up in a bad state after a validation failure dialog is displayed.
-                        this.vertScrollBar.RecreateScrollBarHandle();
-                    }
-                    else
-                    {
-                        this.vertScrollBar.Invalidate();
-                    }
-                    return;
-                }
-                else
-                {
-                    this.dataGridViewOper[DATAGRIDVIEWOPER_cancelCommitWithinVScroll] = false;
-                }
-            }
-            */
+            /* VS Whidbey 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
 
             int totalVisibleFrozenHeight = this.Rows.GetRowsHeight(DataGridViewElementStates.Visible | DataGridViewElementStates.Frozen);
             switch (se.Type)
@@ -28325,7 +28332,7 @@ namespace System.Windows.Forms
                     return true;
                 }
                 success = SetCurrentCellAddressCore(firstVisibleColumnIndex, firstVisibleRowIndex, true, false, false);
-                // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                 // DataGridView changes.
                 // See vsWhidbey: 325296.
                 // Debug.Assert(success);
@@ -28337,7 +28344,7 @@ namespace System.Windows.Forms
                     return true;
                 }
                 success = SetCurrentCellAddressCore(targetColumnIndex, targetRowIndex, true, false, false);
-                // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                 // DataGridView changes.
                 // See vsWhidbey: 325296.
                 // Debug.Assert(success);
@@ -28491,7 +28498,7 @@ namespace System.Windows.Forms
                     return true;
                 }
                 success = SetCurrentCellAddressCore(firstVisibleColumnIndex, firstVisibleRowIndex, true, false, false);
-                // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                 // DataGridView changes.
                 // See vsWhidbey: 325296.
                 // Debug.Assert(success);
@@ -28503,7 +28510,7 @@ namespace System.Windows.Forms
                     return true;
                 }
                 success = SetCurrentCellAddressCore(targetColumnIndex, targetRowIndex, true, false, false);
-                // [....]: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
+                // Microsoft: SetCurrentCellAddressCore can fail if by navigating to a cell the list under the
                 // DataGridView changes.
                 // See vsWhidbey: 325296.
                 // Debug.Assert(success);

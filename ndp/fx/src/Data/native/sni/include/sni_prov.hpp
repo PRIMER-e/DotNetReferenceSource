@@ -112,7 +112,7 @@ public:
 	static void Terminate();
 	
 	// Init/Accept/Open functions
-	static DWORD InitializeListener(HANDLE hSNIAcceptKey, LPSTR szListenInfo, HANDLE * pListenHandle);
+	static DWORD InitializeListener(HANDLE hSNIAcceptKey, LPWSTR wszListenInfo, HANDLE * pListenHandle);
 	static DWORD TerminateListener(HANDLE hListener);
 	static DWORD UpdateListener(HANDLE hListener, LPVOID pInfo);
 	static DWORD ResumePendingAccepts(HANDLE hListener);
@@ -123,7 +123,7 @@ public:
 						   		 SNI_Provider ** ppProv,
 						   		 LPVOID * ppAcceptInfo );
 	static DWORD Open( SNI_Conn * pConn,
-						 LPSTR szConnect,
+						 LPWSTR wszConnect,
 						 LPVOID pOpenInfo,
 						 OUT SNI_Provider ** ppProv);
 

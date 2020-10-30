@@ -1765,7 +1765,7 @@ namespace System.Windows
         //+----------------------------------------------------------------------------------
         #region InstantiateSubTree
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         internal static bool ApplyTemplateContent(
             UncommonField<HybridDictionary[]>  dataField,
             DependencyObject            container,
@@ -3432,7 +3432,7 @@ namespace System.Windows
                             oldFrameworkTemplate);
 
                         // Nothing guarantees that ApplyTemplate actually gets
-                        // called, so ask for it explicitly (bug 963163).
+                        // called, so ask for it explicitly (
                         feContainer.InvalidateMeasure();
                     }
                 }

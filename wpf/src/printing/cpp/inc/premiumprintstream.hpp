@@ -14,7 +14,7 @@
 
     Author:
 
-        Ali Naqvi (alinaqvi) - [....] 29 2005
+        Ali Naqvi (alinaqvi) - Microsoft 29 2005
 
     Revision History:
 

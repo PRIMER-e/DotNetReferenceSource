@@ -106,7 +106,7 @@ namespace System.IO.Packaging
         //  Public Methods
         //
         //------------------------------------------------------
-        #region WebRequest - [....]
+        #region WebRequest - Sync
         /// <summary>
         /// GetRequestStream
         /// </summary>

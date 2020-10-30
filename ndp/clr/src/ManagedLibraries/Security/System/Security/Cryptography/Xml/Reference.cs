@@ -3,13 +3,13 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 //
 // Reference.cs
 // 
-// 21 [....] 2000
+// 21 Microsoft 2000
 //
 
 namespace System.Security.Cryptography.Xml
@@ -377,7 +377,7 @@ namespace System.Security.Cryptography.Xml
                             // This is an XPointer reference, do not discard comments!!!
                             hashInputStream = this.TransformChain.TransformToOctetStream(normDocument, resolver, baseUri);
                         }
-                    } else {
+                    } else if (Utils.AllowDetachedSignature()) {
                         // WebRequest always expects an Absolute Uri, so try to resolve if we were passed a relative Uri.
                         System.Uri uri = new System.Uri(m_uri, UriKind.RelativeOrAbsolute);
                         if (!uri.IsAbsoluteUri) {
@@ -391,6 +391,9 @@ namespace System.Security.Cryptography.Xml
                         if (inputStream == null) goto default;
                         resolver = (this.SignedXml.ResolverSet ? this.SignedXml.m_xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
                         hashInputStream = this.TransformChain.TransformToOctetStream(inputStream, resolver, m_uri);
+                    }
+                    else {
+                        throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UriNotResolved"), m_uri);
                     }
                     break;
                 case ReferenceTargetType.XmlElement:

@@ -9,9 +9,9 @@
 // History:
 //  2005/02/08 : MingChan - Created
 //  2005/08/22 : MingChan - Added boot WinFX functionality
-//  2007/08/01 : [....]  - Added detection of System.Core.dll to infer required platform version.
+//  2007/08/01 : Microsoft  - Added detection of System.Core.dll to infer required platform version.
 //                          Because WPF v3.5 still has WindowsBase v3.0.0.0, the original heuristic failed.
-//  2008/04/08 : [....]  - Update for v3.5 SP1. ClickOnce has bestowed upon us two more sentinel assemblies!
+//  2008/04/08 : Microsoft  - Update for v3.5 SP1. ClickOnce has bestowed upon us two more sentinel assemblies!
 //                            > Sentinel.v3.5Client: for applications explicitly targeting the "client"
 //                              ("Arrowhead") subset of the framework;
 //                            > System.Data.Entity: for applications targeting the full v3.5 SP1.

@@ -205,7 +205,6 @@ namespace System.Drawing {
         /// </devdoc>
         internal IntPtr NativeFamily 
         {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get 
             {
                 //Debug.Assert( this.nativeFamily != IntPtr.Zero, "this.nativeFamily == IntPtr.Zero." );

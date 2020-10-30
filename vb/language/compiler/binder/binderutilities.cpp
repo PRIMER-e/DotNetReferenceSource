@@ -261,18 +261,18 @@ Bindable::MemberInfoIter::MemberInfoIter
 
     if (Bindable::DefinedInMetaData(Container) && !TypeHelpers::IsEmbeddableInteropType(Container))
     {
-        // For metadata container, sort by access too. This simplifies the solution for Bug VSWhidbey 401153.
-        //
-        // The reason this simplied the solution for Bug VSWhibdye 401153 is as follows:
-        //
-        // When 2 different kinds of members (method vs. field, etc.) have the same name (different casing -
-        // possible in c# - Non CLS compliant), then VB will only allow the most accessible members to be
-        // accessed. If no one kind of member is more accessible than the other, then they are marked bad
-        // along with ambiguity errors which will be reported upon their use. Also note that we will allow
-        // access to all the overloads of the most accessible member, even if the overloads are less accessible
-        // or equal in accessibility than some of the ruled out members. So for this purpose, it is easier
-        // if we can start with the most accessible member first and see what other members the most accessible
-        // member makes inaccessible.
+        // For metadata container, sort by access too. This simplifies the solution for 
+
+
+
+
+
+
+
+
+
+
+
 
         // Sort by name and then location
         qsort(

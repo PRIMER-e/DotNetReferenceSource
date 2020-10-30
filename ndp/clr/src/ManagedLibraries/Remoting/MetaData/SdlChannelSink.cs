@@ -243,7 +243,7 @@ namespace System.Runtime.Remoting.MetadataServices
             }
 
 #if !FEATURE_PAL
-            // For IIS, we will [....] the scheme://hostname:port with the incoming value
+            // For IIS, we will Microsoft the scheme://hostname:port with the incoming value
             String iisHostOverride = SetupUrlBashingForIisIfNecessary(hostName);
 #endif
             
@@ -361,7 +361,7 @@ namespace System.Runtime.Remoting.MetadataServices
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static string SetupUrlBashingForIisIfNecessaryWorker(string hostName)
         {
-            // For IIS, we will [....] the scheme://hostname:port with the incoming value
+            // For IIS, we will Microsoft the scheme://hostname:port with the incoming value
             String iisHostOverride = null;
             HttpContext context = HttpContext.Current;
             if (context != null)

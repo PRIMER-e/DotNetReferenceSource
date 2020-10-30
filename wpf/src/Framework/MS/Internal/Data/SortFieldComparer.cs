@@ -10,7 +10,7 @@
 // See spec at http://avalon/connecteddata/M5%20Specs/IDataCollection.mht
 //
 // History:
-//  06/02/2003 : [....] - Created
+//  06/02/2003 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

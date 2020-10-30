@@ -1143,9 +1143,9 @@ bool ClosureRoot::StartExpression(ILTree::Expression **ppExpr)
                 Lambda->TemporaryManager->ChangeContainingProcedure(this->GetCurrentReferencingProcedure());
 
                 // Dev10#530887: even multiline lambdas in expression-trees need parents! See the comment
-                // in ClosureRoot::FixupSymbolReferences, with the same bug number. 
-                // THIS IS A HACK. See comment in Semantics::IsConvertibleToExpressionTree with the same
-                // bug number of an explanation.
+                // in ClosureRoot::FixupSymbolReferences, with the same 
+
+
                 if (Lambda->IsStatementLambda)
                 {
                     Lambda->GetStatementLambdaBody()->Parent = GetCurrentBlock();
@@ -1439,12 +1439,12 @@ Procedure *ClosureRoot::ConvertLambdaToProcedure(ILTree::LambdaExpression *expr)
     BCSYM_Container *outerClass  = m_proc->GetPhysicalContainer(); 
 
     // Port SP1 CL 2955440 to VS10
-    // Bug #150058 - DevDiv Bugs
-    // For a field initializer Semantics::InitializeFields creates an assignment statement and puts it into 
-    // constructor, which for partial classes may be linked to a different PhysicalContainer.
-    // The assignment statement will have proper file stored inside SL_STMT node (see Semantics::InitializeFields).
-    // If the current lambda belongs to SL_STMT with the file associated with it, let's locate the right PhysicalContainer
-    // based on that information.
+    // 
+
+
+
+
+
     if(outerClass->IsPartialType() || outerClass->GetNextPartialType())
     {
         if(this->m_statementStack.Count() > 0)
@@ -3225,7 +3225,7 @@ void ClosureRoot::FixupSymbolReferences()
         // In the multiline case "Dim x as <ExpressionTree> = Function() : return x : End Function"
         // we should likewise fix up the symbol "x", and FindNearestClosure should again point to the
         // containing procedure. So, even for multiline lambdas in expression trees, trackedRef->GetBlock()
-        // has to have a valid parent. (see other comment for this bug in ClosureRoot::StartExpression)
+        // has to have a valid parent. (see other comment for this 
         
         if (!closure)
         {
@@ -4650,7 +4650,7 @@ ILTree::SymbolReferenceExpression *Closure::CreateReferenceToLiftedVariable(Vari
         //    even though inside the closure it's a different named generic param
         Symbol *type = isMyProc ? fieldInClosure->GetType() : var->GetType();
 
-        // Bug #96148 - DevDiv Bugs
+        // 
         if (type && TypeHelpers::IsPointerType(type))
         {
             // This occurs for references to symbols for Byref arguments.
@@ -5475,8 +5475,8 @@ void OptimizedClosure::SetLambda(LambdaData *lambdaData)
     // Port SP1 CL 2955440 to VS10
     BCSYM_Container *pNewOuterClass = m_root->m_proc->GetPhysicalContainer();
 
-    // Bug #150058 - DevDiv Bugs
-    // If we already connected to a different partial declaration of the same class, do not change the parent.
+    // 
+
     BCSYM_Container *pOldOuterClass = lambdaProc->GetPhysicalContainer();
     BCSYM_Container *pOldMainClass;
     BCSYM_Container *pNewMainClass;
@@ -6381,7 +6381,7 @@ void ClosureGotoVisitor::Visit(Procedure *proc, ILTree::ProcedureBlock *body)
 
         // If there is no lifted variables then we don't need to associate the closure to the block, therefore 
         // this block can be a destination of GoTo.
-        // This is added for fixing bug 662416
+        // This is added for fixing 
         if (data->GetClosure()->GetGenericContextKind() != OptimizedClosureContext)
         {
             m_realLambdaMap.SetValue(data->GetTrackedExpression()->GetBlock(), data);
@@ -6580,7 +6580,7 @@ ClosureShortLivedTemporaryVisitor::ClosureShortLivedTemporaryVisitor(ClosureRoot
                 Location loc = tempVar->HasLocation() ? *tempVar->GetLocation() : Location::GetHiddenLocation();
 
                 // Port SP1 CL 2955440 to VS10
-                // Bug #167074 - DevDiv Bugs: Make sure we do not reuse any existing temporary
+                // 
                 Variable *newTmp = mgr->AllocateShortLivedTemporaryNoReuse(
                         tempVar->GetType(),
                         &loc);

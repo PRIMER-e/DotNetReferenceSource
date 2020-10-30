@@ -8,7 +8,7 @@
 // See spec at http://avalon/connecteddata/Specs/CollectionView.mht
 //
 // History:
-//  06/02/2003 : [....]   - Ported from DotNet tree
+//  06/02/2003 : Microsoft   - Ported from DotNet tree
 //  03/27/2004 : kenlai     - Implement IList
 //
 //---------------------------------------------------------------------------
@@ -1927,7 +1927,7 @@ namespace System.Windows.Data
                 // bizarre requirement.]  We will ignore these extra events, unless
                 // they arise from a commit that we initiated.  There's
                 // no way to detect them from the event args;  we do it the same
-                // way [....].DataGridView does - by comparing counts.
+                // way Microsoft.DataGridView does - by comparing counts.
                 if (InternalList.Count == _cachedList.Count)
                 {
                     if (IsAddingNew && index == _newItemIndex)
@@ -2077,7 +2077,7 @@ namespace System.Windows.Data
                 int newPosition = CurrentPosition + 1;
                 if (newPosition < InternalCount)
                 {
-                    // CurrentItem might be out of [....] if underlying list is not INCC
+                    // CurrentItem might be out of sync if underlying list is not INCC
                     // or if this Add is the result of a Replace (Rem + Add)
                     SetCurrent(GetItemAt(newPosition), newPosition);
                 }
@@ -2108,7 +2108,7 @@ namespace System.Windows.Data
         {
             if (oldIndex == CurrentPosition)
             {
-                // moving the current item - currency moves with the item (bug 1942184)
+                // moving the current item - currency moves with the item (
                 SetCurrent(GetItemAt(newIndex), newIndex);
             }
             else if (oldIndex < CurrentPosition && CurrentPosition <= newIndex)

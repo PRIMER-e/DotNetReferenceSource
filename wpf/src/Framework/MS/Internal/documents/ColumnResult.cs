@@ -8,8 +8,8 @@
 //              information for a column.
 //
 // History:  
-//  05/20/2003 : [....] - Moving from Avalon branch.
-//  06/25/2004 : [....] - Performance work.
+//  05/20/2003 : Microsoft - Moving from Avalon branch.
+//  06/25/2004 : Microsoft - Performance work.
 //
 //---------------------------------------------------------------------------
 

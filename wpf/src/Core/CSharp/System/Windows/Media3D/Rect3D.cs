@@ -632,7 +632,7 @@ namespace System.Windows.Media.Media3D
 
         private static Rect3D CreateInfiniteRect3D()
         {
-            // NTRAID#Longhorn-1044943-2005/11/15-[....] - Robustness with infinities
+            // NTRAID#Longhorn-1044943-2005/11/15-Microsoft - Robustness with infinities
             //
             //   Once the issue with Rect robustness with infinities is addressed we
             //   should change the values below to make this rectangle truely extend

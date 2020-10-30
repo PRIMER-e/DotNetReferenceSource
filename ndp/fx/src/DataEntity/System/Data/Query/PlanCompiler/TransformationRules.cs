@@ -3,8 +3,8 @@
 //      Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //
-// @owner  [....]
-// @backupOwner [....]
+// @owner  Microsoft
+// @backupOwner Microsoft
 //---------------------------------------------------------------------
 
 using System;
@@ -4195,11 +4195,134 @@ namespace System.Data.Query.PlanCompiler
         }
         #endregion
 
+        #region GroupByOpOnAllInputColumnsWithAggregateOperation
+
+        internal static readonly SimpleRule Rule_GroupByOpOnAllInputColumnsWithAggregateOperation = new SimpleRule(
+            OpType.GroupBy, ProcessGroupByOpOnAllInputColumnsWithAggregateOperation);
+
+        /// <summary>
+        /// Converts a GroupBy(X, Y, Z) => OuterApply(X', GroupBy(Filter(X, key(X') == key(X)), Y, Z))
+        /// if and only if X is a ScanTableOp, and Z is the upper node of an aggregate function and
+        /// the group by operation uses all the columns of X as the key.
+        /// Additionally, the top-level physical projection must only expose one variable. If it exposes
+        /// more than one (more than just the aggregate itself), then this rule must not apply.
+        /// This is a fix for devdiv 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private static bool ProcessGroupByOpOnAllInputColumnsWithAggregateOperation(RuleProcessingContext context, Node n, out Node newNode)
+        {
+            newNode = n;
+
+            var rootOp = context.Command.Root.Op as PhysicalProjectOp;
+            if (rootOp == null ||
+                rootOp.Outputs.Count > 1)
+            {
+                return false;
+            }
+
+            if (n.Child0.Op.OpType != OpType.ScanTable)
+            {
+                return false;
+            }
+
+            if (n.Child2 == null
+                || n.Child2.Child0 == null
+                || n.Child2.Child0.Child0 == null
+                || n.Child2.Child0.Child0.Op.OpType != OpType.Aggregate)
+            {
+                return false;
+            }
+
+            var groupByOp = (GroupByOp)n.Op;
+
+            var sourceTable = ((ScanTableOp)n.Child0.Op).Table;
+            var allInputColumns = sourceTable.Columns;
+
+            // Exit if the group's keys do not contain all the columns defined by Child0
+            foreach (var column in allInputColumns)
+            {
+                if (!groupByOp.Keys.IsSet(column))
+                {
+                    return false;
+                }
+            }
+
+            // All the columns of Child0 are used, so remove them from the outputs and the keys
+            foreach (var column in allInputColumns)
+            {
+                groupByOp.Outputs.Clear(column);
+                groupByOp.Keys.Clear(column);
+            }
+
+            // Build the OuterApply and also set the filter around the GroupBy's scan table.
+            var command = context.Command;
+
+            var scanTableOp = command.CreateScanTableOp(sourceTable.TableMetadata);
+            var scanTable = command.CreateNode(scanTableOp);
+            var outerApplyNode = command.CreateNode(command.CreateOuterApplyOp(), scanTable, n);
+
+            Var newVar;
+            var varDefListNode = command.CreateVarDefListNode(command.CreateNode(command.CreateVarRefOp(groupByOp.Outputs.First)), out newVar);
+
+            newNode = command.CreateNode(
+                    command.CreateProjectOp(newVar),
+                    outerApplyNode,
+                    varDefListNode);
+
+            Node equality = null;
+            var leftKeys = scanTableOp.Table.Keys.GetEnumerator();
+            var rightKeys = sourceTable.Keys.GetEnumerator();
+            for (int i = 0; i < sourceTable.Keys.Count; ++i)
+            {
+                leftKeys.MoveNext();
+                rightKeys.MoveNext();
+                var comparison = command.CreateNode(
+                                    command.CreateComparisonOp(OpType.EQ),
+                                    command.CreateNode(command.CreateVarRefOp(leftKeys.Current)),
+                                    command.CreateNode(command.CreateVarRefOp(rightKeys.Current)));
+                if (equality != null)
+                {
+                    equality = command.CreateNode(
+                                    command.CreateConditionalOp(OpType.And),
+                                    equality, comparison);
+                }
+                else
+                {
+                    equality = comparison;
+                }
+            }
+
+            var filter = command.CreateNode(command.CreateFilterOp(),
+                        n.Child0,
+                        equality);
+            n.Child0 = filter;
+
+            return true; // subtree modified
+        }
+
+        #endregion
+
         #region All GroupByOp Rules
         internal static readonly InternalTrees.Rule[] Rules = new InternalTrees.Rule[] {
                  GroupByOpRules.Rule_GroupByOpWithSimpleVarRedefinitions,
                  GroupByOpRules.Rule_GroupByOverProject,
                  GroupByOpRules.Rule_GroupByOpWithNoAggregates,
+                 GroupByOpRules.Rule_GroupByOpOnAllInputColumnsWithAggregateOperation,
         };
         #endregion
     }

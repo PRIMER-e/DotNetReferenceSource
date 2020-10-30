@@ -464,7 +464,7 @@ namespace System.Windows.Threading
         ///     An IAsyncResult object that represents the result of the
         ///     BeginInvoke operation.
         /// </returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         public DispatcherOperation BeginInvoke(DispatcherPriority priority, Delegate method, object arg) // NOTE: should be Priority
         {
@@ -494,7 +494,7 @@ namespace System.Windows.Threading
         ///     An IAsyncResult object that represents the result of the
         ///     BeginInvoke operation.
         /// </returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         public DispatcherOperation BeginInvoke(DispatcherPriority priority, Delegate method, object arg, params object[] args)
         {
@@ -652,7 +652,7 @@ namespace System.Windows.Threading
             if(!cancellationToken.IsCancellationRequested && priority == DispatcherPriority.Send && CheckAccess())
             {
                 SynchronizationContext oldSynchronizationContext = SynchronizationContext.Current;
-            
+
                 try
                 {
                     DispatcherSynchronizationContext newSynchronizationContext;
@@ -672,7 +672,7 @@ namespace System.Windows.Threading
                         }
                     }
                     SynchronizationContext.SetSynchronizationContext(newSynchronizationContext);
-            
+
                     callback();
                     return;
                 }
@@ -822,7 +822,7 @@ namespace System.Windows.Threading
             if(!cancellationToken.IsCancellationRequested && priority == DispatcherPriority.Send && CheckAccess())
             {
                 SynchronizationContext oldSynchronizationContext = SynchronizationContext.Current;
-            
+
                 try
                 {
                     DispatcherSynchronizationContext newSynchronizationContext;
@@ -842,7 +842,7 @@ namespace System.Windows.Threading
                         }
                     }
                     SynchronizationContext.SetSynchronizationContext(newSynchronizationContext);
-            
+
                     return callback();
                 }
                 finally
@@ -858,7 +858,7 @@ namespace System.Windows.Threading
 
         /// <summary>
         ///     Executes the specified Action asynchronously on the thread
-        ///     that the Dispatcher was created on. 
+        ///     that the Dispatcher was created on.
         /// </summary>
         /// <param name="callback">
         ///     An Action delegate to invoke through the dispatcher.
@@ -876,7 +876,7 @@ namespace System.Windows.Threading
 
         /// <summary>
         ///     Executes the specified Action asynchronously on the thread
-        ///     that the Dispatcher was created on. 
+        ///     that the Dispatcher was created on.
         /// </summary>
         /// <param name="callback">
         ///     An Action delegate to invoke through the dispatcher.
@@ -899,7 +899,7 @@ namespace System.Windows.Threading
 
         /// <summary>
         ///     Executes the specified Action asynchronously on the thread
-        ///     that the Dispatcher was created on. 
+        ///     that the Dispatcher was created on.
         /// </summary>
         /// <param name="callback">
         ///     An Action delegate to invoke through the dispatcher.
@@ -1051,7 +1051,7 @@ namespace System.Windows.Threading
             lock(_instanceLock)
             {
                 if (!cancellationToken.IsCancellationRequested &&
-                    !_hasShutdownFinished && 
+                    !_hasShutdownFinished &&
                     !Environment.HasShutdownStarted)
                 {
                     // Add the operation to the work queue
@@ -1084,8 +1084,8 @@ namespace System.Windows.Threading
                 if(cancellationToken.CanBeCanceled)
                 {
                     CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(s => ((DispatcherOperation)s).Abort(), operation);
-                
-                    // Revoke the cancellation when the operation is done. 
+
+                    // Revoke the cancellation when the operation is done.
                     operation.Aborted += (s,e) => cancellationRegistration.Dispose();
                     operation.Completed += (s,e) => cancellationRegistration.Dispose();
                 }
@@ -1097,7 +1097,7 @@ namespace System.Windows.Threading
 
                 if (EventTrace.IsEnabled(EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info))
                 {
-                    EventTrace.EventProvider.TraceEvent(EventTrace.Event.WClientUIContextPost, EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, operation.Priority, operation.Name);
+                    EventTrace.EventProvider.TraceEvent(EventTrace.Event.WClientUIContextPost, EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, operation.Priority, operation.Name, operation.Id);
                 }
             }
             else
@@ -1467,22 +1467,23 @@ namespace System.Windows.Threading
 
             Debug.Assert(timeout.TotalMilliseconds >= 0 || timeout == TimeSpan.FromMilliseconds(-1));
             Debug.Assert(operation.Priority != DispatcherPriority.Send || !CheckAccess()); // should be handled by caller
-            
+
             if(!cancellationToken.IsCancellationRequested)
             {
                 // This operation must be queued since it was invoked either to
                 // another thread, or at a priority other than Send.
                 InvokeAsyncImpl(operation, cancellationToken);
-            
+
                 CancellationToken ctTimeout = CancellationToken.None;
                 CancellationTokenRegistration ctTimeoutRegistration = new CancellationTokenRegistration();
+                CancellationTokenSource ctsTimeout = null;
 
-                if(timeout.TotalMilliseconds >= 0) 
+                if(timeout.TotalMilliseconds >= 0)
                 {
                     // Create a CancellationTokenSource that will abort the
                     // operation after the timeout.  Note that this does not
                     // cancel the operation, just abort it if it is still pending.
-                    CancellationTokenSource ctsTimeout = new CancellationTokenSource(timeout);
+                    ctsTimeout = new CancellationTokenSource(timeout);
                     ctTimeout = ctsTimeout.Token;
                     ctTimeoutRegistration = ctTimeout.Register(s => ((DispatcherOperation)s).Abort(), operation);
                 }
@@ -1519,7 +1520,7 @@ namespace System.Windows.Threading
                 catch(OperationCanceledException)
                 {
                     Debug.Assert(operation.Status == DispatcherOperationStatus.Aborted);
-                    
+
                     // New async semantics will throw an exception if the
                     // operation was aborted.  Here we convert that
                     // exception into a timeout exception if the timeout
@@ -1540,6 +1541,10 @@ namespace System.Windows.Threading
                 finally
                 {
                     ctTimeoutRegistration.Dispose();
+                    if (ctsTimeout != null)
+                    {
+                        ctsTimeout.Dispose();
+                    }
                 }
             }
 
@@ -1912,6 +1917,25 @@ namespace System.Windows.Threading
             _window.Value.AddHook(_hook);
         }
 
+        // creates a "sentinel" dispatcher.  It doesn't do anything, and should never
+        // be called except for CheckAccess and VerifyAccess (which fail).
+        // See DispatcherObject.MakeSentinel() for more.
+        // [The 'isSentinel' parameter is ignored - it only serves to distinguish
+        // this ctor from others.]
+        internal Dispatcher(bool isSentinel)
+        {
+            Debug.Assert(isSentinel, "this ctor is only for creating a 'sentinel' dispatcher");
+
+            // set thread so that CheckAccess and VerifyAccess fail
+            _dispatcherThread = null;
+
+            // set other members so that incoming calls (which shouldn't happen)
+            // do as little as possible
+            _startingShutdown = true;
+            _hasShutdownStarted = true;
+            _hasShutdownFinished = true;
+        }
+
         ///<SecurityNote>
         /// Critical - it calls critical methods (ShutdownImpl). it can initiate a shutdown process, disabled
         /// in partial trust.
@@ -1943,13 +1967,13 @@ namespace System.Windows.Threading
                 // or InvokeShutdown were called.  So if there were not enough
                 // permissions, we would have thrown then.
                 //
-                ExecutionContext shutdownExecutionContext = ExecutionContext.Capture();
-                _shutdownExecutionContext = new SecurityCriticalDataClass<ExecutionContext>(shutdownExecutionContext);
+                CulturePreservingExecutionContext shutdownExecutionContext = CulturePreservingExecutionContext.Capture();
+                _shutdownExecutionContext = new SecurityCriticalDataClass<CulturePreservingExecutionContext>(shutdownExecutionContext);
 
                 // Tell Win32 to exit the message loop for this thread.
-                // NOTE: I removed this code because of bug 1062099.
-                //
-                // UnsafeNativeMethods.PostQuitMessage(0);
+                // NOTE: I removed this code because of 
+
+
 
                 if(_frameDepth > 0)
                 {
@@ -1978,7 +2002,7 @@ namespace System.Windows.Threading
                 {
                     // Continue using the execution context that was active when the shutdown
                     // was initiated.
-                    ExecutionContext.Run(_shutdownExecutionContext.Value, new ContextCallback(ShutdownImplInSecurityContext), null);
+                    CulturePreservingExecutionContext.Run(_shutdownExecutionContext.Value, new ContextCallback(ShutdownImplInSecurityContext), null);
                 }
                 else
                 {
@@ -2075,11 +2099,11 @@ namespace System.Windows.Threading
         }
 
         // Returns whether or not the priority was set.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
-        /// <SecurityNote>
-        ///     Critical: accesses _hooks
-        ///     TreatAsSafe: does not expose _hooks
-        /// </SecurityNote>
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+
+
+
+
         [SecurityCritical, SecurityTreatAsSafe]
         internal bool SetPriority(DispatcherOperation operation, DispatcherPriority priority) // NOTE: should be Priority
         {
@@ -2112,7 +2136,7 @@ namespace System.Windows.Threading
 
                 if (EventTrace.IsEnabled(EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info))
                 {
-                    EventTrace.EventProvider.TraceEvent(EventTrace.Event.WClientUIContextPromote, EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, priority, operation.Name);
+                    EventTrace.EventProvider.TraceEvent(EventTrace.Event.WClientUIContextPromote, EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, priority, operation.Name, operation.Id);
                 }
             }
 
@@ -2120,11 +2144,11 @@ namespace System.Windows.Threading
         }
 
         // Returns whether or not the operation was removed.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
-        /// <SecurityNote>
-        ///     Critical: accesses _hooks
-        ///     TreatAsSafe: does not expose _hooks
-        /// </SecurityNote>
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+
+
+
+
         [SecurityCritical, SecurityTreatAsSafe]
         internal bool Abort(DispatcherOperation operation)
         {
@@ -2152,7 +2176,7 @@ namespace System.Windows.Threading
 
                 if (EventTrace.IsEnabled(EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info))
                 {
-                    EventTrace.EventProvider.TraceEvent(EventTrace.Event.WClientUIContextAbort, EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, operation.Priority, operation.Name);
+                    EventTrace.EventProvider.TraceEvent(EventTrace.Event.WClientUIContextAbort, EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, operation.Priority, operation.Name, operation.Id);
                 }
 
             }
@@ -2160,11 +2184,11 @@ namespace System.Windows.Threading
             return notify;
         }
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
-        /// <SecurityNote>
-        ///    Critical: This code can be used to process input and calls into DispatcherOperation.Invoke which
-        ///    is critical
-        /// </SecurityNote>
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
+
+
+
+
         [SecurityCritical]
         private void ProcessQueue()
         {
@@ -2208,7 +2232,7 @@ namespace System.Windows.Threading
 
                 if (EventTrace.IsEnabled(EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info))
                 {
-                    EventTrace.EventProvider.TraceEvent(EventTrace.Event.WClientUIContextDispatchBegin, EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, op.Priority, op.Name);
+                    EventTrace.EventProvider.TraceEvent(EventTrace.Event.WClientUIContextDispatchBegin, EventTrace.Keyword.KeywordDispatcher | EventTrace.Keyword.KeywordPerf, EventTrace.Level.Info, op.Priority, op.Name, op.Id);
                     eventlogged = true;
                 }
 
@@ -2270,7 +2294,7 @@ namespace System.Windows.Threading
                 oldSyncContext = SynchronizationContext.Current;
                 newSyncContext = new DispatcherSynchronizationContext(this);
                 SynchronizationContext.SetSynchronizationContext(newSyncContext);
-                
+
                 try
                 {
                     while(frame.Continue)
@@ -2565,7 +2589,7 @@ namespace System.Windows.Threading
         {
             return CriticalRequestProcessing(false);
         }
-        
+
         /// <SecurityNote>
         ///   Critical: This code controls the timing of when the Dispatcher
         ///             invokes the next operation.
@@ -2586,7 +2610,7 @@ namespace System.Windows.Threading
             if (priority != DispatcherPriority.Invalid &&
                 priority != DispatcherPriority.Inactive)
             {
-                // If forcing the processing request, we will discard any 
+                // If forcing the processing request, we will discard any
                 // existing request (timer or message) and request again.
                 if (force)
                 {
@@ -2601,7 +2625,7 @@ namespace System.Windows.Threading
                     }
                     _postedProcessingType = PROCESS_NONE;
                 }
-                
+
                 if (_foregroundPriorityRange.Contains(priority))
                 {
                     succeeded = RequestForegroundProcessing();
@@ -3024,7 +3048,7 @@ namespace System.Windows.Threading
         private const int TIMERID_BACKGROUND = 1;
         private const int TIMERID_TIMERS = 2;
         private const int DELTA_BACKGROUND = 1;
-        
+
         private static List<WeakReference> _dispatchers;
         private static WeakReference _possibleDispatcher;
         private static object _globalLock;
@@ -3038,7 +3062,7 @@ namespace System.Windows.Threading
         internal bool _exitAllFrames;       // used from DispatcherFrame
         private bool _startingShutdown;
         internal bool _hasShutdownStarted;  // used from DispatcherFrame
-        private SecurityCriticalDataClass<ExecutionContext> _shutdownExecutionContext;
+        private SecurityCriticalDataClass<CulturePreservingExecutionContext> _shutdownExecutionContext;
 
         internal int _disableProcessingCount; // read by DispatcherSynchronizationContext, decremented by DispatcherProcessingDisabled
 

@@ -6,7 +6,7 @@
 //      Provides a class to decorate change callback methods.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

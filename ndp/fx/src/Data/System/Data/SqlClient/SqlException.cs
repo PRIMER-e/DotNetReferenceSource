@@ -2,8 +2,8 @@
 // <copyright file="SqlException.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
-// <owner current="true" primary="true">[....]</owner>
-// <owner current="true" primary="false">[....]</owner>
+// <owner current="true" primary="true">Microsoft</owner>
+// <owner current="true" primary="false">Microsoft</owner>
 //------------------------------------------------------------------------------
 
 namespace System.Data.SqlClient {
@@ -19,6 +19,9 @@ namespace System.Data.SqlClient {
 
     [Serializable]
     public sealed class SqlException : System.Data.Common.DbException {
+        private const string OriginalClientConnectionIdKey = "OriginalClientConnectionId";
+        private const string RoutingDestinationKey = "RoutingDestination";
+
         private SqlErrorCollection _errors;
         [System.Runtime.Serialization.OptionalFieldAttribute(VersionAdded = 4)]
         private Guid _clientConnectionId = Guid.Empty;
@@ -103,16 +106,50 @@ namespace System.Data.SqlClient {
         }
 
         public override string ToString() {
-                StringBuilder sb = new StringBuilder(base.ToString());
-                sb.Append("\r\n");
-                sb.Append("ClientConnectionId:");
-                sb.Append(this._clientConnectionId.ToString());
-                return sb.ToString();
+            StringBuilder sb = new StringBuilder(base.ToString());
+            sb.AppendLine();
+            sb.AppendFormat(SQLMessage.ExClientConnectionId(), _clientConnectionId);
 
+            // Append the error number, state and class if the server provided it
+            if (Number != 0) {
+                sb.AppendLine();
+                sb.AppendFormat(SQLMessage.ExErrorNumberStateClass(), Number, State, Class);
+            }
+
+            // If routed, include the original client connection id
+            if (Data.Contains(OriginalClientConnectionIdKey)) {
+                sb.AppendLine();
+                sb.AppendFormat(SQLMessage.ExOriginalClientConnectionId(), Data[OriginalClientConnectionIdKey]);
+            }
+
+            // If routed, provide the routing destination
+            if (Data.Contains(RoutingDestinationKey)) {
+                sb.AppendLine();
+                sb.AppendFormat(SQLMessage.ExRoutingDestination(), Data[RoutingDestinationKey]);
+            }
+
+            return sb.ToString();
         }
 
         static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion) {
             return CreateException(errorCollection, serverVersion, Guid.Empty);
+        }
+
+        static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, SqlInternalConnectionTds internalConnection, Exception innerException = null) {
+            Guid connectionId = (internalConnection == null) ? Guid.Empty : internalConnection._clientConnectionId;
+            var exception = CreateException(errorCollection, serverVersion, connectionId, innerException);
+
+            if (internalConnection != null) { 
+                if ((internalConnection.OriginalClientConnectionId != Guid.Empty) && (internalConnection.OriginalClientConnectionId != internalConnection.ClientConnectionId)) {
+                    exception.Data.Add(OriginalClientConnectionIdKey, internalConnection.OriginalClientConnectionId);
+                }
+
+                if (!string.IsNullOrEmpty(internalConnection.RoutingDestination)) {
+                    exception.Data.Add(RoutingDestinationKey, internalConnection.RoutingDestination);
+                }
+            }
+
+            return exception;
         }
 
         static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, Guid conId, Exception innerException = null) {

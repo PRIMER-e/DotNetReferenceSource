@@ -1005,9 +1005,9 @@
                             InvalidateRow(currentRow);
     
                             if (currentRowSaved != listManager.Position) {
-                                // not in [....]
+                                // not in sync
     #if DEBUG
-                                Debug.Assert(inDataSource_PositionChanged, "currentRow and listManager.Position can be out of [....] only when the listManager changes its position under the DataGrid or when navigating back");
+                                Debug.Assert(inDataSource_PositionChanged, "currentRow and listManager.Position can be out of sync only when the listManager changes its position under the DataGrid or when navigating back");
                                 Debug.Assert(ListManager.Position == currentRow || listManager.Position == -1, "DataSource_PositionChanged changes the position in the grid to the position in the listManager");
     #endif //DEBUG
                                 doNotEdit = true;
@@ -1079,7 +1079,7 @@
                         if (result == DialogResult.Yes) {
                             currentRow = currentRowSaved;
                             currentCol = currentColSaved;
-                            Debug.Assert(currentRow == ListManager.Position || listManager.Position == -1, "the position in the list manager (" + ListManager.Position + ") is out of [....] with the currentRow (" + currentRow + ")" + " and the exception is '" + errorMessage + "'");
+                            Debug.Assert(currentRow == ListManager.Position || listManager.Position == -1, "the position in the list manager (" + ListManager.Position + ") is out of sync with the currentRow (" + currentRow + ")" + " and the exception is '" + errorMessage + "'");
                             // this will make sure the newRow will not paint the
                             // row selector.
                             InvalidateRowHeader(newRow);
@@ -1129,7 +1129,7 @@
                         AccessibilityNotifyClients(AccessibleEvents.Selection, CurrentCellAccIndex);
                     }
     
-                    Debug.Assert(currentRow == ListManager.Position || listManager.Position == -1, "the position in the list manager is out of [....] with the currentRow");
+                    Debug.Assert(currentRow == ListManager.Position || listManager.Position == -1, "the position in the list manager is out of sync with the currentRow");
                 }
             }
 
@@ -3687,7 +3687,7 @@
                     if (result == DialogResult.Yes) {
                         currentRow = currentRowSaved;
                         currentCol = currentColSaved;
-                        Debug.Assert(currentRow == ListManager.Position || listManager.Position == -1, "the position in the list manager (" + ListManager.Position + ") is out of [....] with the currentRow (" + currentRow + ")" + " and the exception is '" + errorMessage + "'");
+                        Debug.Assert(currentRow == ListManager.Position || listManager.Position == -1, "the position in the list manager (" + ListManager.Position + ") is out of sync with the currentRow (" + currentRow + ")" + " and the exception is '" + errorMessage + "'");
                         // also, make sure that we get the row selector on the currentrow, too
                         InvalidateRowHeader(currentRow);
                         Edit();
@@ -4766,7 +4766,7 @@
                         headerFont = this.HeaderFont;
                     else
                         headerFont = this.myGridTable.HeaderFont;
-                    size = (int) g.MeasureString(columnName, headerFont).Width + layout.ColumnHeaders.Height + 1; // This is not a bug, the sort triangle's width is equal to it's height.
+                    size = (int) g.MeasureString(columnName, headerFont).Width + layout.ColumnHeaders.Height + 1; // This is not a 
                     int rowCount = listManager.Count;
                     for (int row = 0; row < rowCount; ++row) {
                         object value = column.GetColumnValueAtRow(listManager, row);
@@ -5516,7 +5516,7 @@
                 // the same problem with negative numbers:
                 // if the width passed in is negative, then return 0
                 //
-                // added the check for the columns.Count == 0 ( [....], November 14, 2000)
+                // added the check for the columns.Count == 0 ( Microsoft, November 14, 2000)
                 //
                 if (visibleWidth < 0 || columns.Count == 0)
                 {
@@ -5642,11 +5642,11 @@
                 int numRows = DataGridRowsLength;
     
                 // when minimizing the dataGrid window, we will get negative values for the
-                // layout.Data.Width and layout.Data.Height ( is this a bug or not? if layout.Data.Height == 0 in that case,
-                // the old code would have worked )
-                //
-                // if this is the case, then set numVisibleRows = numTotallyVisibleRows = 0;
-                //
+                // layout.Data.Width and layout.Data.Height ( is this a 
+
+
+
+
                 if (visibleHeight < 0)
                 {
                     numVisibleRows = numTotallyVisibleRows = 0;
@@ -8079,7 +8079,7 @@
                             // in the listManager is -1, and the currentPosition in the grid is 0
                             if (ListManager != null && ListManager.Count > 0) {
                                 Debug.Assert(ListManager.Position == this.currentRow,
-                                                "Current row out of [....] with DataSource",
+                                                "Current row out of sync with DataSource",
                                                 "The DataSource's Position property should be mirrored by the CurrentCell.RowNumber of the DataGrid.");
                             }
                             #endif // DEBUG
@@ -8302,8 +8302,8 @@
     
                 int lastColumnMarkedVisible = 0;
                 int firstColumnMarkedVisible = cols.Count-1;
-                // bug 70492: if we do not have any rows, then tab should move focus to the next control
-                //
+                // 
+
                 if (localRows.Length == 0) {
                     EndEdit();
     
@@ -8454,7 +8454,7 @@
                         {
                             CurrentColumn = lastColumnMarkedVisible;
                         }
-                        if (!gridState[GRIDSTATE_childLinkFocused])             // bug 86803
+                        if (!gridState[GRIDSTATE_childLinkFocused])             // 
                             CurrentRow --;
                     } else if (gridState[GRIDSTATE_childLinkFocused] && CurrentColumn == lastColumnMarkedVisible) {
                         // part deux: when we hilite the childLink and then press shift-tab, we
@@ -9505,7 +9505,7 @@
                             change = true;
                         AllowAdd= listManager.AllowAdd && !gridReadOnly && bl != null && bl.SupportsChangeNotification;
                         AllowEdit= listManager.AllowEdit && !gridReadOnly;
-                        AllowRemove = listManager.AllowRemove && !gridReadOnly && bl != null && bl.SupportsChangeNotification;     // bug 86061
+                        AllowRemove = listManager.AllowRemove && !gridReadOnly && bl != null && bl.SupportsChangeNotification;     // 
                     }
                     return change;
                 }

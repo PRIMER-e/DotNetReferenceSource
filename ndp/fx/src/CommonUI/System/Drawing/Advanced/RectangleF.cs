@@ -76,7 +76,6 @@ namespace System.Drawing {
         ///    </para>
         /// </devdoc>
         // !! Not in C++ version
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static RectangleF FromLTRB(float left, float top, float right, float bottom) {
             return new RectangleF(left,
                                  top,
@@ -93,7 +92,6 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public PointF Location {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return new PointF(X, Y);
             }
@@ -111,7 +109,6 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public SizeF Size {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return new SizeF(Width, Height);
             }
@@ -221,7 +218,6 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public float Right {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return X + Width;
             }
@@ -236,7 +232,6 @@ namespace System.Drawing {
         /// </devdoc>
         [Browsable(false)]
         public float Bottom {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return Y + Height;
             }

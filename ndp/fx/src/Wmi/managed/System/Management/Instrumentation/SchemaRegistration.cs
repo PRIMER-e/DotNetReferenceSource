@@ -228,7 +228,7 @@ namespace System.Management.Instrumentation
         }
 
 		// function to check if the class to be added to MOF is already present in repository
-		// [[....]] VSUQFE#2248 (VSWhidbey 231885)
+		// [Microsoft] VSUQFE#2248 (VSWhidbey 231885)
 		bool IsClassAlreadyPresentInRepository(ManagementObject obj)
 		{
 			bool bRet = false;
@@ -277,7 +277,7 @@ namespace System.Management.Instrumentation
 
         public void RegisterNonAssemblySpecificSchema(InstallContext installContext)
         {
-            SecurityHelper.UnmanagedCode.Demand(); // Bug#112640 - Close off any potential use from anything but fully trusted code
+            SecurityHelper.UnmanagedCode.Demand(); // 
             
             // Make sure the 'Client' key has the correct permissions
             WmiNetUtilsHelper.VerifyClientKey_f();
@@ -324,7 +324,7 @@ namespace System.Management.Instrumentation
               [ResourceExposure(ResourceScope.None),ResourceConsumption(ResourceScope.Machine,ResourceScope.Machine)]
 		public void RegisterAssemblySpecificSchema()
 		{
-			SecurityHelper.UnmanagedCode.Demand(); // Bug#112640 - Close off any potential use from anything but fully trusted code
+			SecurityHelper.UnmanagedCode.Demand(); // 
 
 			Type[] types = InstrumentedAttribute.GetInstrumentedTypes(assembly);
 			StringCollection events = new StringCollection();
@@ -361,7 +361,7 @@ namespace System.Management.Instrumentation
 			for(int i=0;i<types.Length;i++)
 				mapTypeToConverterClassName[types[i]] = "ConvertClass_" + i;
 
-			// [[....]] VSUQFE#2248 (VSWhidbey 231885)
+			// [Microsoft] VSUQFE#2248 (VSWhidbey 231885)
 			bool bSchemaToBeCompared = IsSchemaToBeCompared();
 			bool bNewClassToCompile = false;
 
@@ -375,8 +375,8 @@ namespace System.Management.Instrumentation
 			{
 				SchemaMapping mapping = new SchemaMapping(types[i], this, mapTypeToConverterClassName);
 
-				codeCCTOR.Line(String.Format("mapTypeToConverter[typeof({0})] = typeof({1});", mapping.ClassType.FullName.Replace('+', '.'), mapping.CodeClassName));  // bug#92918 - watch for nested classes
-				// [[....]] VSUQFE#2248 (VSWhidbey 231885)
+				codeCCTOR.Line(String.Format("mapTypeToConverter[typeof({0})] = typeof({1});", mapping.ClassType.FullName.Replace('+', '.'), mapping.CodeClassName));  // 
+				// [Microsoft] VSUQFE#2248 (VSWhidbey 231885)
 				if (bSchemaToBeCompared == true && IsClassAlreadyPresentInRepository(mapping.NewClass) == false)
 				{
 					bNewClassToCompile = true;
@@ -422,7 +422,7 @@ namespace System.Management.Instrumentation
 				log.WriteLine(GenerateMof(mofs));
 			}
 
-			// [[....]] VSUQFE#2248 (VSWhidbey 231885)
+			// [Microsoft] VSUQFE#2248 (VSWhidbey 231885)
 			// Write the mof to a file and compile it only if there are any new classes , apart from
 			// what is there in the repository
 			if (bNewClassToCompile == true)

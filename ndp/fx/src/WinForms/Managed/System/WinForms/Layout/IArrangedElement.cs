@@ -42,7 +42,7 @@ namespace System.Windows.Forms.Layout {
 
         // When an extender provided property is changed, we call this
         // method to update the layout on the element. In Orcas, we
-        // will [....] the DPs changed event.
+        // will sync the DPs changed event.
         void PerformLayout(IArrangedElement affectedElement, string propertyName);
 
         // Returns the element's parent container (on a control, this forwands to Parent)

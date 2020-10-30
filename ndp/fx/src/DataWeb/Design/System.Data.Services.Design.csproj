@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{6dd9b2af-9310-4b21-b71f-93f86917f7f8}</ProjectGuid>
+    <OutputPath>.</OutputPath>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Data.Services.Design</AssemblyName>
+    <UseVSHostingProcess>False</UseVSHostingProcess>
+    <NoStdLib>True</NoStdLib>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <DefineConstants>CODE_ANALYSIS_BASELINE;FEATURE_LEGACYSURFACEAREA;FEATURE_UTF32;FEATURE_UTF7;QFE_ENV;TRACE;RETAIL;WIN32</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " >
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\clr\src\bcl\mscorlib.csproj">
+      <Project>{20f34c38-8c60-44e7-b703-0e341d274957}</Project>
+      <Name>mscorlib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.csproj">
+      <Project>{85716da4-9fb2-4f44-9c4d-b7431fdf1b20}</Project>
+      <Name>System</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\System.Core.csproj">
+      <Project>{1d8f39aa-9297-49e4-8f18-cea8f165d7c4}</Project>
+      <Name>System.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\data\System.Data.csproj">
+      <Project>{6c5dd4f8-ed35-4f22-b8dc-4489d2c3dfaa}</Project>
+      <Name>System.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\DataEntity\System.Data.Entity.csproj">
+      <Project>{3a333785-9f6f-4973-8a33-e6439f6d9275}</Project>
+      <Name>System.Data.Entity</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Client\System.Data.Services.Client.csproj">
+      <Project>{cb516c27-877a-4a2e-86b2-6ddcd8ab05e7}</Project>
+      <Name>System.Data.Services.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\xsp\system\Web\System.Web.csproj">
+      <Project>{c19c6ca7-c88d-4933-9973-93c83ee6a697}</Project>
+      <Name>System.Web</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Xml\System.Xml.csproj">
+      <Project>{6f992f82-1c90-4388-ab60-15c653aeeca5}</Project>
+      <Name>System.Xml</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\XLinq\System.Xml.Linq.csproj">
+      <Project>{f7ad8bac-760f-40d9-8759-886b9ddb7e23}</Project>
+      <Name>System.Xml.Linq</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Server\System\Data\Services\Epm\EpmAttributeNameBuilder.cs" />
+    <Compile Include="..\Server\System\Data\Services\Epm\EpmHelper.cs" />
+    <Compile Include="System\Data\Common\Utils\InternalBase.cs" />
+    <Compile Include="System\Data\Common\Utils\Memoizer.cs" />
+    <Compile Include="System\Data\Common\Utils\StringUtil.cs" />
+    <Compile Include="System\Data\Entity\Design\Common\EDesignUtil.cs" />
+    <Compile Include="System\Data\Entity\Design\Common\UniqueIdentifierService.cs" />
+    <Compile Include="System\Data\Entity\Design\SSDLGenerator\ModelBuilderErrorCodes.cs" />
+    <Compile Include="System\Data\EntityModel\DataServiceBuildProvider.cs" />
+    <Compile Include="System\Data\EntityModel\EdmToObjectNamespaceMap.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\AssociationTypeEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\AttributeEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\ClientApiGenerator.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\CommentEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\ComplexTypeEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\Emitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\EntityContainerEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\EntityTypeEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\FixUp.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\FixUpCollection.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\FixUpType.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\MetadataItemEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\NamespaceEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\NavigationPropertyEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\PrivateMemberPrefixId.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\PropertyEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\PropertyEmitterBase.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\SchemaTypeEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\StructuredTypeEmitter.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\TypeReference.cs" />
+    <Compile Include="System\Data\EntityModel\Emitters\Utils.cs" />
+    <Compile Include="System\Data\EntityModel\EntityClassGenerator.cs" />
+    <Compile Include="System\Data\EntityModel\LanguageOption.cs" />
+    <Compile Include="System\Data\EntityModel\LazyTextWriterCreator.cs" />
+    <Compile Include="System\Data\EntityModel\PropertyGeneratedEventArgs.cs" />
+    <Compile Include="System\Data\EntityModel\TypeGeneratedEventArgs.cs" />
+    <Compile Include="System\Data\GlobalSuppressions.cs" />
+    <Compile Include="System\Data\Metadata\Edm\EdmConstants.cs" />
+    <Compile Include="System\Data\Metadata\XmlConstants.cs" />
+    <Compile Include="System\Data\Services\Design\Xml\XNodeSchemaApplier.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

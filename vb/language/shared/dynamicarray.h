@@ -60,7 +60,7 @@ public:
             // This will cause the contents of our thinggy to get
             // destroyed.  Neato, eh?
             //
-            // Note ([....]): The destructor will not get called if the object you are storing
+            // Note (Microsoft): The destructor will not get called if the object you are storing
             // in the array is a pointer, so you will have to remove every element yourself
             // and call delete on it.
 

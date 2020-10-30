@@ -191,7 +191,7 @@ ParseTree::Expression * ParserHelper::CreateConversion(
 //
 //  Returns [ParseTree::NewArrayInitializerExpression]:
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::NewArrayInitializerExpression *
 ParserHelper::CreateNewArray
@@ -258,7 +258,7 @@ AddInitializer
 //      [TheArray]  --  The base array
 //      [NewValue]  --  A new value to add to the end of the list
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 void
 ParserHelper::AddElementInitializer
@@ -621,7 +621,7 @@ ParserHelper::CreateBoundArgList
 //
 //  Returns [ParseTree::ArgumentList]:
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::ArgumentList *
 ParserHelper::CreateArgList
@@ -745,7 +745,7 @@ ParserHelper::AddArgument( ParseTree::ArgumentList * List, ParseTree::Expression
 //
 //  Returns [ParseTree::Name]:
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::Name *
 ParserHelper::CreateName
@@ -824,7 +824,7 @@ ParserHelper::CreateNameWithTypeArguments
 //
 //  Returns [ParseTree::Name]:
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::Name *
 ParserHelper::CreateNameEx
@@ -994,7 +994,7 @@ ParserHelper::CreateNameExpression
 //
 //  Returns [ParseTree::Expression]:
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::Expression *
 ParserHelper::CreateNameExpression
@@ -1045,7 +1045,7 @@ ParserHelper::CreateQualifiedNameExpression
 //
 //  Returns [ParseTree::Expression]:
 //
-//  History:    2-18-2005   [....]     Comment Added
+//  History:    2-18-2005   Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::Expression *
 ParserHelper::CreateNameExpressionEx
@@ -1106,7 +1106,7 @@ ParserHelper::CreateNameExpressionEx
 //
 //  Returns [ParseTree::Expression]:
 //
-//  History:    2-18-2005   [....]     Comment Added
+//  History:    2-18-2005   Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::Expression *
 ParserHelper::CreateNameExpressionEx
@@ -1150,7 +1150,7 @@ ParserHelper::CreateGenericQualifiedExpression
 //
 //  Returns [ParseTree::AlreadyBoundExpression]:    A Parse Tree Expression
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::AlreadyBoundExpression *
 ParserHelper::CreateBoundExpression
@@ -1182,7 +1182,7 @@ ParserHelper::CreateBoundExpression
 //      are maintained for the decompilation dependencies
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::Expression *
 ParserHelper::CreateBoundSymbol
@@ -1269,7 +1269,7 @@ ParserHelper::CreateBoundSymbolOnNewInstance
 //      [UnaryType]     --  The expression type.
 //      [Operand]   --  The unbound operand
 //
-//  History:    2-23-2005   [....]     Comment Added
+//  History:    2-23-2005   Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::UnaryExpression *
 ParserHelper::CreateUnaryExpression
@@ -1296,7 +1296,7 @@ ParserHelper::CreateUnaryExpression
 //      [Left]   --  The left operand
 //      [Right]   --  The right operand
 //
-//  History:    09-22-2006   [....]    Created
+//  History:    09-22-2006   Microsoft    Created
 //---------------------------------------------------------------------------
 ParseTree::BinaryExpression *
 ParserHelper::CreateBinaryExpression
@@ -1586,7 +1586,7 @@ ParserHelper::AddParameter
 //
 //  Returns [ParseTree::Type]:
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::Type *
 ParserHelper::CreateType
@@ -1614,7 +1614,7 @@ ParserHelper::CreateType
 //
 //  Returns [ParseTree::AlreadyBoundType]:
 //
-//  History:    3-23-2005   [....]     Comment Added
+//  History:    3-23-2005   Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::AlreadyBoundType *
 ParserHelper::CreateBoundType
@@ -1696,7 +1696,7 @@ ParserHelper::CreateImplicitConversionExpression
 //
 //  Returns [ParseTree::AlreadyBoundDelayCalculatedType]:
 //
-//  History:    11-8-2006    [....]     Created
+//  History:    11-8-2006    Microsoft     Created
 //---------------------------------------------------------------------------
 ParseTree::AlreadyBoundDelayCalculatedType *
 ParserHelper::CreateBoundDelayCalculatedType
@@ -1728,7 +1728,7 @@ ParserHelper::CreateBoundDelayCalculatedType
 //
 //  Returns [ParseTree::NewExpression]:
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::NewExpression *
 ParserHelper::CreateNewObject
@@ -1861,7 +1861,7 @@ ParserHelper::CreateQueryAggregateGroupExpression
 //
 //  Returns [ParseTree::CallOrIndexExpression]:
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::CallOrIndexExpression *
 ParserHelper::CreateMethodCall
@@ -2144,7 +2144,7 @@ ParserHelper::CreateIdentifierDescriptor
 //  Parameters:
 //      [MethodReference]  -- the expression returning the method referece
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::AddressOfExpression *
 ParserHelper::CreateAddressOf
@@ -2174,7 +2174,7 @@ ParserHelper::CreateAddressOf
 //                            null is ok signifying the only one to append.
 //      [CurrentStatement]  -- the statement to append to the statementlist
 //
-//  History:    21-10-2006    [....]     Created
+//  History:    21-10-2006    Microsoft     Created
 //---------------------------------------------------------------------------
 ParseTree::StatementList *
 ParserHelper::AppendToStatementList
@@ -2216,7 +2216,7 @@ ParserHelper::AppendToStatementList
 //  Parameters:
 //      [CurrentStatement]  -- the statement to wrap into a statementlist
 //
-//  History:    21-10-2006    [....]     Created
+//  History:    21-10-2006    Microsoft     Created
 //---------------------------------------------------------------------------
 ParseTree::StatementList *
 ParserHelper::CreateStatementList
@@ -2348,7 +2348,7 @@ ParserHelper::JoinStatementList
 //      [Then]  --  A statemetnlist with the code for the if block.
 //      [Else]  -- A statemetnlist with the else code. Can be null.
 //
-//  History:    2-7-2005    [....]     Created
+//  History:    2-7-2005    Microsoft     Created
 //---------------------------------------------------------------------------
 ParseTree::StatementList *
 ParserHelper::CreateIfStatement
@@ -2458,7 +2458,7 @@ ParserHelper::CreateIfStatement
 //      [EventReference]  --  The base array
 //      [DelegateReference]  --  A reference expression like AddressOf or Lambda
 //
-//  History:    2-7-2005    [....]     Created
+//  History:    2-7-2005    Microsoft     Created
 //---------------------------------------------------------------------------
 ParseTree::HandlerStatement *
 ParserHelper::CreateAddHandler
@@ -2483,7 +2483,7 @@ ParserHelper::CreateAddHandler
 //      [EventReference]  --  The base array
 //      [DelegateReference]  --  A reference expression like AddressOf or Lambda
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::HandlerStatement *
 ParserHelper::CreateRemoveHandler
@@ -2508,7 +2508,7 @@ ParserHelper::CreateRemoveHandler
 //      [Target]  --  Target = Source
 //      [Source]  --  Target = Source
 //
-//  History:    21-9-2006    [....]     Added
+//  History:    21-9-2006    Microsoft     Added
 //---------------------------------------------------------------------------
 ParseTree::AssignmentStatement *
 ParserHelper::CreateAssignment
@@ -2542,7 +2542,7 @@ ParserHelper::CreateAssignment
 //      [StartOfList]  --  The completely seperate unattached statementlist
 //      [ParentBlock]  --  The block to make the parent of these statements
 //
-//  History:    21-9-2006    [....]     Added
+//  History:    21-9-2006    Microsoft     Added
 //---------------------------------------------------------------------------
 ParseTree::StatementList *
 ParserHelper::FindLastStatementAndPlaceInBlock
@@ -2589,7 +2589,7 @@ ParserHelper::FindLastStatementAndPlaceInBlock
 //      [EventReference]     --  The base array
 //      [DelegateReference]  --  A reference expression like AddressOf or Lambda
 //
-//  History:    2-7-2005    [....]     Comment Added
+//  History:    2-7-2005    Microsoft     Comment Added
 //---------------------------------------------------------------------------
 ParseTree::HandlerStatement *
 ParserHelper::CreateHandlerStatement

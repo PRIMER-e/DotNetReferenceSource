@@ -399,8 +399,8 @@ namespace MS.Internal.IO.Packaging
                                 }
                                 catch (COMException)
                                 {
-                                    // Any initialization bug giving rise to an exception in the initialization
-                                    // code should be ignored, since this will be due to faulty external code.
+                                    // Any initialization 
+
                                 }
                                 catch (IOException)
                                 {

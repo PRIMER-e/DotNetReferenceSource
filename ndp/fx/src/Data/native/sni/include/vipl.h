@@ -43,6 +43,7 @@ typedef unsigned __int8 VIP_UINT8;
 
 typedef unsigned char VIP_UCHAR;
 typedef char VIP_CHAR;
+typedef WCHAR VIP_WCHAR;
 
 typedef unsigned short VIP_USHORT;
 typedef short VIP_SHORT;

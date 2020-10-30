@@ -5,7 +5,7 @@
 // Description: An interface representing the presentation of an ITextContainer.
 //
 // History:  
-//  9/17/2004 : [....] - Created
+//  9/17/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

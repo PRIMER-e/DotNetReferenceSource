@@ -4,7 +4,6 @@
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-using System;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -120,7 +119,7 @@ namespace System.Security.Policy
             this.btnInstall = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.tableLayoutPanelInfo = new System.Windows.Forms.TableLayoutPanel();
-            this.lblName = new System.Windows.Forms.Label();
+            this.lblName = new System.Windows.Forms.Label();            
             this.lblFrom = new System.Windows.Forms.Label();
             this.lblPublisher = new System.Windows.Forms.Label();
             this.linkLblName = new System.Windows.Forms.LinkLabel();
@@ -240,6 +239,7 @@ namespace System.Security.Policy
             // 
             resources.ApplyResources(this.tableLayoutPanelInfo, "tableLayoutPanelInfo");
             this.tableLayoutPanelInfo.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.tableLayoutPanelInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelInfo.Controls.Add(this.lblName, 0, 0);
             this.tableLayoutPanelInfo.Controls.Add(this.linkLblName, 0, 1);
             this.tableLayoutPanelInfo.Controls.Add(this.lblFrom, 0, 2);
@@ -746,7 +746,7 @@ namespace System.Security.Policy
             {
                 UpdateFonts();
             }
-            Invalidate(); // Workaround a bug where the form's background does not repaint properly
+            Invalidate(); // Workaround a 
         }
 
         private void UpdateFonts()

@@ -6,7 +6,7 @@
 //      OpenTypeMethods methods used for queries over open types.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

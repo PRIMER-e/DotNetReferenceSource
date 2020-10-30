@@ -51,7 +51,7 @@ namespace System.Windows.Documents
             // Keep the garbage collector from moving things around
             _gchThis = GCHandle.Alloc(_winEventProc.Value);
 
-            // Workaround for bug 150666.
+            // Workaround for 
             Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
             if (dispatcher != null)
             {
@@ -157,7 +157,7 @@ namespace System.Windows.Documents
             WinEventProc(eventId , hwnd);
         }
 
-        // Workaround for bug 150666.
+        // Workaround for 
         private void OnDispatcherShutDown(object sender, EventArgs args)
         {
             Stop();

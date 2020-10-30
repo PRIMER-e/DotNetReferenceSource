@@ -5,13 +5,7 @@
 //------------------------------------------------------------------------------
 
 namespace System.Drawing.Printing {
-
-    using System.Diagnostics;
-    using System;
-    using System.Drawing;
-    using Microsoft.Win32;
-    using System.ComponentModel;
-
+    
     /// <include file='doc\QueryPageSettingsEventArgs.uex' path='docs/doc[@for="QueryPageSettingsEventArgs"]/*' />
     /// <devdoc>
     ///    <para>
@@ -20,6 +14,14 @@ namespace System.Drawing.Printing {
     /// </devdoc>
     public class QueryPageSettingsEventArgs : PrintEventArgs {
         private PageSettings pageSettings;
+        
+        /// <summary>
+        /// It's too expensive to compare 2 instances of PageSettings class, as the getters
+        /// are accessing the printer spooler, thus we track any explicit invocations of the setters or getters on this class,
+        /// and this field tracks if PageSettings property was accessed. It will return a false 
+        /// positive when the user is reading property values, but we'll take a perf hit in this case assuming this event is not 
+        /// used often.
+        internal bool PageSettingsChanged;
 
         /// <include file='doc\QueryPageSettingsEventArgs.uex' path='docs/doc[@for="QueryPageSettingsEventArgs.QueryPageSettingsEventArgs"]/*' />
         /// <devdoc>
@@ -38,11 +40,16 @@ namespace System.Drawing.Printing {
         ///    </para>
         /// </devdoc>
         public PageSettings PageSettings {
-            get { return pageSettings;}
+            get {
+                PageSettingsChanged = true;
+                return pageSettings;
+            }
             set {
-                if (value == null)
+                if (value == null) {
                     value = new PageSettings();
+                }
                 pageSettings = value;
+                PageSettingsChanged = true;
             }
         }
     }

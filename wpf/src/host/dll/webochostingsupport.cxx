@@ -7,7 +7,7 @@
 //      See Framework\System\Windows\Controls\WebBrowser.cs.
 //
 //  History:
-//      04/24/08 - [....] - Created
+//      04/24/08 - Microsoft - Created
 //
 //------------------------------------------------------------------------------
 

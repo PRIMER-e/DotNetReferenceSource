@@ -6,7 +6,7 @@
 //      Provides a deserializer for plain XML content.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers
@@ -104,12 +104,12 @@ namespace System.Data.Services.Serializers
 
         /// <summary>
         /// Converts the given value to the expected type as per XML serializer rules.
-        /// Make sure these rules are in [....] with PlainXmlSerializer.
+        /// Make sure these rules are in sync with PlainXmlSerializer.
         /// </summary>
         /// <param name="value">value to the converted</param>
         /// <param name="propertyName">name of the property whose value is getting converted</param>
         /// <param name="typeToBeConverted">clr type to which the value needs to be converted to</param>
-        /// <returns>object which is in [....] with the properties type</returns>
+        /// <returns>object which is in sync with the properties type</returns>
         internal static object ConvertValuesForXml(object value, string propertyName, Type typeToBeConverted)
         {
             Debug.Assert(WebUtil.IsPrimitiveType(typeToBeConverted), "WebUtil.IsPrimitiveType(typeToBeConverted)"); 

@@ -6,7 +6,7 @@
 //      Provides a type to represent custom operations on services.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

@@ -109,7 +109,7 @@ namespace MS.Internal.TextFormatting
                 int                     paragraphWidth,
                 LineFlags               lineFlags
                 )
-                : this(settings.TextFormattingMode, settings.Pap.Justify)
+                : this(settings.TextFormattingMode, settings.Pap.Justify, settings.TextSource.PixelsPerDip)
             {
                 if (    (lineFlags & LineFlags.KeepState) != 0
                     ||  settings.Pap.AlwaysCollapsible)
@@ -184,7 +184,7 @@ namespace MS.Internal.TextFormatting
             /// Safe - as this just initializes it with the default value.
             /// </SecurityNote>
             [SecurityCritical, SecurityTreatAsSafe]
-            private FullTextLine(TextFormattingMode textFormattingMode, bool justify)
+            private FullTextLine(TextFormattingMode textFormattingMode, bool justify, double pixelsPerDip) : base(pixelsPerDip)
             {
                 _textFormattingMode = textFormattingMode;
                 if (justify)
@@ -192,6 +192,7 @@ namespace MS.Internal.TextFormatting
                     _statusFlags |= StatusFlags.IsJustified;
                 }
                 _metrics = new TextMetrics();
+                _metrics._pixelsPerDip = pixelsPerDip;
                 _ploline = new SecurityCriticalDataForSet<IntPtr>(IntPtr.Zero);
             }
 
@@ -379,8 +380,8 @@ namespace MS.Internal.TextFormatting
                         {
                             // apply display-mode rounding before checking for overflow
                             double realWidth = Width;
-                            double realFormatWidth = _metrics._formatter.IdealToReal(finiteFormatWidth);
-                            hasOverflowed = (TextFormatterImp.CompareReal(realWidth, realFormatWidth, _textFormattingMode) > 0);
+                            double realFormatWidth = _metrics._formatter.IdealToReal(finiteFormatWidth, PixelsPerDip);
+                            hasOverflowed = (TextFormatterImp.CompareReal(realWidth, realFormatWidth, PixelsPerDip, _textFormattingMode) > 0);
                         }
 
                         if (hasOverflowed)
@@ -581,8 +582,8 @@ namespace MS.Internal.TextFormatting
 
                 MatrixTransform antiInversion = TextFormatterImp.CreateAntiInversionTransform(
                     inversion,
-                    _metrics._formatter.IdealToReal(_paragraphWidth),
-                    _metrics._formatter.IdealToReal(_metrics._height)
+                    _metrics._formatter.IdealToReal(_paragraphWidth, PixelsPerDip),
+                    _metrics._formatter.IdealToReal(_metrics._height, PixelsPerDip)
                     );
 
                 if (antiInversion == null)
@@ -759,7 +760,7 @@ namespace MS.Internal.TextFormatting
                 TextCollapsingProperties collapsingProp = collapsingPropertiesList[0];
                 double constraintWidth = collapsingProp.Width;
 
-                if (TextFormatterImp.CompareReal(constraintWidth, Width, _textFormattingMode) > 0)
+                if (TextFormatterImp.CompareReal(constraintWidth, Width, PixelsPerDip, _textFormattingMode) > 0)
                 {
                     // constraining width is greater than original line width, no collapsing neeeded.
                     return this;
@@ -775,6 +776,7 @@ namespace MS.Internal.TextFormatting
                         collapsingProp.Symbol,
                         RightToLeft,
                         TextFormatterImp.ToIdeal,
+                        (float)PixelsPerDip,
                         _textFormattingMode,
                         false
                         );
@@ -783,7 +785,7 @@ namespace MS.Internal.TextFormatting
 
                 Debug.Assert(_fullText != null);
 
-                FullTextLine line = new TextMetrics.FullTextLine(_textFormattingMode, IsJustified);
+                FullTextLine line = new TextMetrics.FullTextLine(_textFormattingMode, IsJustified, PixelsPerDip);
 
                 // collapsing preserves original line metrics
                 Debug.Assert(_metrics._height > 0);
@@ -1018,7 +1020,7 @@ namespace MS.Internal.TextFormatting
 
                 TextFormatterImp.VerifyCaretCharacterHit(characterHit, _cpFirst, _metrics._cchLength);
 
-                return _metrics._formatter.IdealToReal(LSLineUToParagraphU(DistanceFromCharacterHit(characterHit)));
+                return _metrics._formatter.IdealToReal(LSLineUToParagraphU(DistanceFromCharacterHit(characterHit)), PixelsPerDip);
             }
 
 
@@ -2017,7 +2019,7 @@ namespace MS.Internal.TextFormatting
                     // actually greater. That's what happen when the client hittest a hidden
                     // run that follows a reverse block. Since it is a hidden run, LS has
                     // to yield the closest non-hidden place which may be the run preceding
-                    // the hidden text. (wchao, PS bug #930976)
+                    // the hidden text. (wchao, PS 
                     return null;
                 }
 
@@ -2532,15 +2534,15 @@ namespace MS.Internal.TextFormatting
                 if (lsTextCell.lscpEndCell < lsTextCell.lscpStartCell)
                 {
                     // When hit-testing is done on a generated hyphen of a hyphenated word, LS can only tell
-                    // the start LSCP and not the end LSCP. Argurably this is LS bug. In such situation they
-                    // should assume the end LSCP being the last LSCP of the line.
-                    //
-                    // However our code assumes that LS must tell both and the text cell must have size greater
-                    // than one codepoint. We count on that to reliably advance the caret position.
-                    //
-                    // The LSPTS bug#1005 has been filed and while we are still debating, we need to unblock
-                    // ourselves. What we can do is to assume that the next caret stop in this case is always
-                    // the next codepoint.
+                    // the start LSCP and not the end LSCP. Argurably this is LS 
+
+
+
+
+
+
+
+
                     lsTextCell.lscpEndCell = lsTextCell.lscpStartCell;
                 }
             }
@@ -2595,15 +2597,15 @@ namespace MS.Internal.TextFormatting
                 if (lsTextCell.lscpEndCell < lsTextCell.lscpStartCell)
                 {
                     // When hit-testing is done on a generated hyphen of a hyphenated word, LS can only tell
-                    // the start LSCP and not the end LSCP. Argurably this is LS bug. In such situation they
-                    // should assume the end LSCP being the last LSCP of the line.
-                    //
-                    // However our code assumes that LS must tell both and the text cell must have size greater
-                    // than one codepoint. We count on that to reliably advance the caret position.
-                    //
-                    // The LSPTS bug#1005 has been filed and while we are still debating, we need to unblock
-                    // ourselves. What we can do is to assume that the next caret stop in this case is always
-                    // the next codepoint.
+                    // the start LSCP and not the end LSCP. Argurably this is LS 
+
+
+
+
+
+
+
+
                     lsTextCell.lscpEndCell = lsTextCell.lscpStartCell;
                 }
             }
@@ -2645,7 +2647,7 @@ namespace MS.Internal.TextFormatting
 
             internal double MinWidth
             {
-                get { return _metrics._formatter.IdealToReal(_textMinWidthAtTrailing + _metrics._textStart); }
+                get { return _metrics._formatter.IdealToReal(_textMinWidthAtTrailing + _metrics._textStart, PixelsPerDip); }
             }
 
             internal bool RightToLeft
@@ -2699,7 +2701,7 @@ namespace MS.Internal.TextFormatting
 
                     if (RightToLeft)
                     {
-                        double paragraphWidth = _metrics._formatter.IdealToReal(_paragraphWidth);
+                        double paragraphWidth = _metrics._formatter.IdealToReal(_paragraphWidth, PixelsPerDip);
 
                         _overhang.Leading = paragraphWidth - Start - boundingBox.Right;
                         _overhang.Trailing = boundingBox.Left - (paragraphWidth - Start - Width);

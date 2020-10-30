@@ -6,7 +6,7 @@
 //      Provides the update interface for providers.
 // </summary>
 //
-// @owner  [....]
+// @owner  pratikp
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

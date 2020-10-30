@@ -36,7 +36,6 @@ namespace System.Drawing {
         ///    Translates the specified <see cref='System.Drawing.Color'/> to a
         ///    Win32 color.
         /// </devdoc>
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public static int ToWin32(Color c) {
             return c.R << Win32RedShift | c.G << Win32GreenShift | c.B << Win32BlueShift;
         }

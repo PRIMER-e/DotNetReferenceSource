@@ -40,7 +40,7 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 	*pfSsrpRequired = false;
 	
 	//check if there is a protocol specified
-	if( pConnectParams->m_szProtocolName[0] )
+	if( pConnectParams->m_wszProtocolName[0] )
 	{
 		pProtElem = NewNoX(gpmo) ProtElem();
 
@@ -53,28 +53,28 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 			return ERROR_OUTOFMEMORY;
 		}
 
-		if( ERROR_SUCCESS != pProtElem->Init( pConnectParams->m_szServerName, pConnectParams->m_szOriginalServerName) )
+		if( ERROR_SUCCESS != pProtElem->Init( pConnectParams->m_wszServerName, pConnectParams->m_wszOriginalServerName) )
 		{
 			goto ErrorExit; 
 		}
 
-		switch(pConnectParams->m_szProtocolName[0])
+		switch(pConnectParams->m_wszProtocolName[0])
 		{
-			case 'a':
-				if(!strcmp("admin",pConnectParams->m_szProtocolName))
+			case L'a':
+				if(!wcscmp(L"admin",pConnectParams->m_wszProtocolName))
 				{
 					pProtElem->SetProviderNum(TCP_PROV);
 
 					// Here, the port is provided
-					if(pConnectParams->m_szProtocolParameter[0])
+					if(pConnectParams->m_wszProtocolParameter[0])
 					{
 						goto ErrorExit;
 					}
 
 					// Default instance - set the port to 1434
-					else if( !pConnectParams->m_szInstanceName[0] )
+					else if( !pConnectParams->m_wszInstanceName[0] )
 					{
-						(void)StringCchPrintfA( pProtElem->Tcp.szPort, CCH_ANSI_STRING(pProtElem->Tcp.szPort), "%d", 1434);
+						(void)StringCchPrintfW( pProtElem->Tcp.wszPort, ARRAYSIZE(pProtElem->Tcp.wszPort), L"%d", 1434);
 					}
 
 					// Named instance - do SSRP
@@ -82,8 +82,8 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 					{
 						USHORT port;
 						
-						if( !SSRP::GetAdminPort( pConnectParams->m_szServerName, 
-												(char *)pConnectParams->m_szInstanceName, 
+						if( !SSRP::GetAdminPort( pConnectParams->m_wszServerName, 
+												pConnectParams->m_wszInstanceName, 
 												&port) )
 						{
 							delete pProtElem;
@@ -96,7 +96,7 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 							return ERROR_FAIL;
 						}
 
-						(void) StringCchPrintfA( pProtElem->Tcp.szPort, CCH_ANSI_STRING(pProtElem->Tcp.szPort), "%d", port);
+						(void) StringCchPrintfW( pProtElem->Tcp.wszPort, ARRAYSIZE(pProtElem->Tcp.wszPort), L"%d", port);
 					}
 						
 				}else
@@ -104,36 +104,36 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 
 				break;
 
-			case 't':
-				if( !strcmp("tcp",pConnectParams->m_szProtocolName))
+			case L't':
+				if( !wcscmp(L"tcp",pConnectParams->m_wszProtocolName))
 				{
 					if( ERROR_SUCCESS != 
 						GetProtocolDefaults(
-							pProtElem, "tcp", (char *)pConnectParams->m_szServerName ) )
+							pProtElem, L"tcp", pConnectParams->m_wszServerName ) )
 					{
 							goto ErrorExit;
 					}
 
-					if(pConnectParams->m_szProtocolParameter[0])
+					if(pConnectParams->m_wszProtocolParameter[0])
 					{
-						char * tmp = const_cast<char*>(pConnectParams->m_szProtocolParameter);
+						WCHAR * tmp = const_cast<WCHAR*>(pConnectParams->m_wszProtocolParameter);
 
 						//SQL BU 396129
 						//Trim off trailing spaces for TCP port.
 						//
-						while ( *tmp && ( *tmp != ' ' && *tmp != '\t' ))
+						while ( *tmp && ( *tmp != L' ' && *tmp != L'\t' ))
 						{
 							tmp++;
 						}
 
 						*tmp = 0;
 						
-						if( 0 == Strtoi(pConnectParams->m_szProtocolParameter))
+						if( 0 == Wcstoi(pConnectParams->m_wszProtocolParameter))
 							goto ErrorExit;
 						
-						(void) StringCchCopyA(pProtElem->Tcp.szPort,CCH_ANSI_STRING(pProtElem->Tcp.szPort),pConnectParams->m_szProtocolParameter);
+						(void) StringCchCopyW(pProtElem->Tcp.wszPort,ARRAYSIZE(pProtElem->Tcp.wszPort),pConnectParams->m_wszProtocolParameter);
 					}
-					else if(pConnectParams->m_szInstanceName[0])
+					else if(pConnectParams->m_wszInstanceName[0])
 					{
 						*pfSsrpRequired = true;
 					}
@@ -142,26 +142,32 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 					{
 						pProtElem->Tcp.fParallel = true;
 					}
+
+					if (pConnectParams->m_TransparentNetworkResolution != TransparentNetworkResolutionMode::DisabledMode)
+					{
+						pProtElem->Tcp.transparentNetworkIPResolution = pConnectParams->m_TransparentNetworkResolution;
+						pProtElem->Tcp.totalTimeout = pConnectParams->m_TotalTimeout;
+					}
 				}else
 					goto ErrorExit;
 				
 				break;
 				
-			case 'v':
-				if(!strcmp("via",pConnectParams->m_szProtocolName))
+			case L'v':
+				if(!wcscmp(L"via",pConnectParams->m_wszProtocolName))
 				{
 					if( ERROR_SUCCESS != 
 						GetProtocolDefaults(
-							pProtElem, "via", (char *)pConnectParams->m_szServerName ) )
+							pProtElem, L"via", (WCHAR*) pConnectParams->m_wszServerName ) )
 					{
 							goto ErrorExit;
 					}
 
-					if(pConnectParams->m_szProtocolParameter[0])
+					if(pConnectParams->m_wszProtocolParameter[0])
 					{
-						(void)StringCchCopyA(pProtElem->Via.Param,CCH_ANSI_STRING(pProtElem->Via.Param),pConnectParams->m_szProtocolParameter);
+						(void)StringCchCopyW(pProtElem->Via.Param,ARRAYSIZE(pProtElem->Via.Param),pConnectParams->m_wszProtocolParameter);
 					}
-					else if(pConnectParams->m_szInstanceName[0])
+					else if(pConnectParams->m_wszInstanceName[0])
 					{
 						*pfSsrpRequired = true;
 					}
@@ -170,23 +176,23 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 					goto ErrorExit;
 				break;
 				
-			case 'n':
-				if(!strcmp("np",pConnectParams->m_szProtocolName))
+			case L'n':
+				if(!wcscmp(L"np",pConnectParams->m_wszProtocolName))
 				{
 					if( ERROR_SUCCESS != 
 						GetProtocolDefaults(
-							pProtElem, "np", (char *)pConnectParams->m_szServerName ) )
+							pProtElem, L"np", pConnectParams->m_wszServerName ) )
 					{
 							goto ErrorExit;
 					}
 
-					if(pConnectParams->m_szProtocolParameter[0])
+					if(pConnectParams->m_wszProtocolParameter[0])
 					{
-						if(strncmp(pConnectParams->m_szProtocolParameter,"\\\\",2))
+						if(wcsncmp(pConnectParams->m_wszProtocolParameter,L"\\\\",2))
 							goto ErrorExit;
-						(void)StringCchCopyA(pProtElem->Np.Pipe,CCH_ANSI_STRING(pProtElem->Np.Pipe),pConnectParams->m_szProtocolParameter);
+						(void)StringCchCopyW(pProtElem->Np.Pipe,ARRAYSIZE(pProtElem->Np.Pipe),pConnectParams->m_wszProtocolParameter);
 					}
-					else if(pConnectParams->m_szInstanceName[0])
+					else if(pConnectParams->m_wszInstanceName[0])
 					{
 						*pfSsrpRequired = true;
 					}
@@ -194,14 +200,14 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 					goto ErrorExit;
 				break;
 				
-			case 'l':
-				if(!strcmp("lpc",pConnectParams->m_szProtocolName))
+			case L'l':
+				if(!wcscmp(L"lpc",pConnectParams->m_wszProtocolName))
 				{
 					pProtElem->SetProviderNum(SM_PROV);
 
-					(void)StringCchCopyA(pProtElem->Sm.Alias,CCH_ANSI_STRING(pProtElem->Sm.Alias),pConnectParams->m_szAlias);
+					(void)StringCchCopyW(pProtElem->Sm.Alias,ARRAYSIZE(pProtElem->Sm.Alias),pConnectParams->m_wszAlias);
 					
-					if(pConnectParams->m_szProtocolParameter[0])
+					if(pConnectParams->m_wszProtocolParameter[0])
 						goto ErrorExit;
 				}else
 					goto ErrorExit;
@@ -222,7 +228,7 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 		pProtElem = 0;	//it is part of the list we shouldn't be able to delete it in ErrorExit
 
 	}
-	else if(pConnectParams->m_szInstanceName[0])
+	else if(pConnectParams->m_wszInstanceName[0])
 	{
 		ProtElem *pSm;
 		
@@ -230,7 +236,7 @@ DWORD MakeProtocolList( 	__inout const ConnectParameter * pConnectParams,
 
 		if( pSm )
 		{
-			(void)StringCchCopyA(pSm->Sm.Alias,CCH_ANSI_STRING(pSm->Sm.Alias),pConnectParams->m_szAlias);
+			(void)StringCchCopyW(pSm->Sm.Alias,ARRAYSIZE(pSm->Sm.Alias),pConnectParams->m_wszAlias);
 		}
 
 		*pfSsrpRequired = true;
@@ -272,20 +278,20 @@ DWORD Connect(  __in ConnectParameter *pConnectParams,
 
 	dwRet = SNIOpenSync( &(pClientConsumerInfo->ConsumerInfo), NULL, pProtElem, ppConn, pClientConsumerInfo->fSynchronousConnection,timeout);
 
-	if( ERROR_SUCCESS == dwRet && pClientConsumerInfo->szSPN && 0 < pClientConsumerInfo->cchSPN )
+	if( ERROR_SUCCESS == dwRet && pClientConsumerInfo->wszSPN && 0 < pClientConsumerInfo->cchSPN )
 	{
 		Assert(rgProvInfo[TCP_PROV].fInitialized);	// need TCP to be initialized to reverse DNS lookup.
-		Assert(pProtElem->m_szServerName[0]);		// Server Name must be non-blank since we connected.
+		Assert(pProtElem->m_wszServerName[0]);		// Server Name must be non-blank since we connected.
 		
-		char szDnsFQDN[NI_MAXHOST];
+		WCHAR wszDnsFQDN[NI_MAXHOST];
 
-		dwRet = Tcp::GetDnsName( pProtElem->m_szServerName, szDnsFQDN, sizeof( szDnsFQDN ));
+		dwRet = Tcp::GetDnsName( pProtElem->m_wszServerName, wszDnsFQDN, ARRAYSIZE( wszDnsFQDN ));
 
 		if( dwRet != ERROR_SUCCESS)
 		{
 			// Reverse lookup failed, we need to fix a FQDN. For numaric IP address, use IP address to compose SPN,
 			// see design spec for details; otherwise, use the servername directly.
-			if (FAILED (StringCchPrintf_lA(szDnsFQDN, NI_MAXHOST, "%s", GetDefaultLocale(),pProtElem->m_szServerName)))
+			if (FAILED (StringCchPrintf_lW(wszDnsFQDN, NI_MAXHOST, L"%s", GetDefaultLocale(),pProtElem->m_wszServerName)))
 			{
 				dwRet = ERROR_INVALID_PARAMETER;
 
@@ -305,36 +311,32 @@ DWORD Connect(  __in ConnectParameter *pConnectParams,
 		}
 
 		USHORT usPort = 0;
-		pClientConsumerInfo->szSPN[0]=0;
-
-		// Make sure it is ok to cast BYTE* into TCHAR* when calling SNI_Spn::MakeSpn
-		//
-		CPL_ASSERT(sizeof(TCHAR)==sizeof(BYTE));
+		pClientConsumerInfo->wszSPN[0]=L'\0';
 
 		switch(pProtElem->GetProviderNum())
 		{
 			case TCP_PROV:
 				{
 					
-					usPort = (USHORT)_atoi_l(pProtElem->Tcp.szPort, GetDefaultLocale());
+					usPort = (USHORT)_wtoi_l(pProtElem->Tcp.wszPort, GetDefaultLocale());
 
-					if(!strcmp("admin", pConnectParams->m_szProtocolName))
+					if(!wcscmp(L"admin", pConnectParams->m_wszProtocolName))
 					{
 						//	For admin connection, i.e. prefix with "admin", the instance name is always available from the
 						//	connection string. It can be blank if it is default instance. Admin connection doesn't allow 
 						//    "admin:server,port or "admin:server\instance,port". Thus the m_szProtocolParameter must be 
 						//	blank.
 						//
-						Assert( 0 == pConnectParams->m_szProtocolParameter[0]);
+						Assert( 0 == pConnectParams->m_wszProtocolParameter[0]);
 						
-						dwRet = SNI_Spn::MakeSpn(szDnsFQDN, pConnectParams->m_szInstanceName, 0, (TCHAR*)pClientConsumerInfo->szSPN, pClientConsumerInfo->cchSPN);
+						dwRet = SNI_Spn::MakeSpn(wszDnsFQDN, pConnectParams->m_wszInstanceName, 0, (TCHAR*)pClientConsumerInfo->wszSPN, pClientConsumerInfo->cchSPN);
 					}
 					else
 					{
 						//Force to use port for TCP connection other than admin by passing NULL as instanceName.
 						//In katmai+2, consider to use the instance name.
 						//
-						dwRet = SNI_Spn::MakeSpn(szDnsFQDN, NULL,usPort, (TCHAR*)pClientConsumerInfo->szSPN, pClientConsumerInfo->cchSPN);
+						dwRet = SNI_Spn::MakeSpn(wszDnsFQDN, NULL,usPort, (TCHAR*)pClientConsumerInfo->wszSPN, pClientConsumerInfo->cchSPN);
 					}			
 
 					break;
@@ -344,20 +346,20 @@ DWORD Connect(  __in ConnectParameter *pConnectParams,
 				case SM_PROV:
 				{
 #ifdef SNIX
-					// TFS task 722353: RANU fails on XP if SPN is passed to ISC() because of a Windows bug
-					// where local loopback cannot be detected if ":" is part of the SPN and auth uses Kerberos instead of NTLM
-					// Kerberos token generated causes a failure in Security component's code.
-					//
-					// For XP only, revert to the DEV9/SNI Yukon behavior.
+					// TFS task 722353: RANU fails on XP if SPN is passed to ISC() because of a Windows 
+
+
+
+
 					if ((g_osviSNI.dwMajorVersion == 5) && (g_osviSNI.dwMinorVersion == 1))
 					{
-						pClientConsumerInfo->szSPN[0]=0;
+						pClientConsumerInfo->wszSPN[0]=L'\0';
 					}
 					else
 #endif
 					{
 						//Alway use instance name for NP and SM.
-						dwRet = SNI_Spn::MakeSpn(szDnsFQDN, pConnectParams->m_szInstanceName, 0 , (TCHAR*)pClientConsumerInfo->szSPN, pClientConsumerInfo->cchSPN);
+						dwRet = SNI_Spn::MakeSpn(wszDnsFQDN, pConnectParams->m_wszInstanceName, 0 , (TCHAR*)pClientConsumerInfo->wszSPN, pClientConsumerInfo->cchSPN);
 					}
 					break;
 				}
@@ -368,22 +370,22 @@ DWORD Connect(  __in ConnectParameter *pConnectParams,
 					//	Force to use port for SPN. For instance, "server,port". VIA can have NIC:PORT as param, use it
 					//   instead of the port if so.
 					//
-					if(pConnectParams->m_szProtocolParameter[0] && !pConnectParams->m_szInstanceName[0])
+					if(pConnectParams->m_wszProtocolParameter[0] && !pConnectParams->m_wszInstanceName[0])
 					{
 						if(0 < pProtElem->Via.Port)
 						{
-							dwRet = SNI_Spn::MakeSpn(szDnsFQDN, NULL,  pProtElem->Via.Port, (TCHAR*)pClientConsumerInfo->szSPN, pClientConsumerInfo->cchSPN);
+							dwRet = SNI_Spn::MakeSpn(wszDnsFQDN, NULL,  pProtElem->Via.Port, (TCHAR*)pClientConsumerInfo->wszSPN, pClientConsumerInfo->cchSPN);
 						}
 						else
 						{
 							Assert(pProtElem->Via.Param[0]);
 							
-							dwRet = SNI_Spn::MakeSpn(szDnsFQDN, pProtElem->Via.Param,  0, (TCHAR*)pClientConsumerInfo->szSPN, pClientConsumerInfo->cchSPN);
+							dwRet = SNI_Spn::MakeSpn(wszDnsFQDN, pProtElem->Via.Param,  0, (TCHAR*)pClientConsumerInfo->wszSPN, pClientConsumerInfo->cchSPN);
 						}
 					}
 					else
 					{
-						dwRet = SNI_Spn::MakeSpn(szDnsFQDN, pConnectParams->m_szInstanceName, 0, (TCHAR*)pClientConsumerInfo->szSPN, pClientConsumerInfo->cchSPN);
+						dwRet = SNI_Spn::MakeSpn(wszDnsFQDN, pConnectParams->m_wszInstanceName, 0, (TCHAR*)pClientConsumerInfo->wszSPN, pClientConsumerInfo->cchSPN);
 					}
 			
 					break;
@@ -445,7 +447,7 @@ bool ConnectUsingCache( __in ConnectParameter *pConnectParams,
 	DWORD dwStart = GetTickCount();
 	int timeleft = timeout;
 
-	if( ERROR_SUCCESS != cacheElem.Init( pConnectParams->m_szServerName, pConnectParams->m_szOriginalServerName ) )
+	if( ERROR_SUCCESS != cacheElem.Init( pConnectParams->m_wszServerName, pConnectParams->m_wszOriginalServerName ) )
 	{
 		BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("false\n"));
 
@@ -454,7 +456,7 @@ bool ConnectUsingCache( __in ConnectParameter *pConnectParams,
 
 	Assert( pConnectParams->m_fCanUseCache );
 
-	if( !LastConnectCache::GetEntry( pConnectParams->m_szAlias, &cacheElem ))
+	if( !LastConnectCache::GetEntry( pConnectParams->m_wszAlias, &cacheElem ))
 	{
 		BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("false\n"));
 
@@ -465,44 +467,44 @@ bool ConnectUsingCache( __in ConnectParameter *pConnectParams,
 	// Note: m_szProtocolName is in lower case, as such CompareStringA can use case sensitive 
 	// comparison directly.
 	//
-	if( pConnectParams->m_szProtocolName[0] )
+	if( pConnectParams->m_wszProtocolName[0] )
 	{
-		char *szProviderName;
+		WCHAR *wszProviderName;
 		
 		switch( cacheElem.GetProviderNum() )
 		{
 			case HTTP_PROV:
-				szProviderName ="http";
+				wszProviderName =L"http";
 				break;
 
 			case NP_PROV:
-				szProviderName ="np";
+				wszProviderName =L"np";
 				break;
 
 			case SM_PROV:
-				szProviderName ="lpc";
+				wszProviderName =L"lpc";
 				break;
 
 			case TCP_PROV:
-				szProviderName ="tcp";
+				wszProviderName =L"tcp";
 				break;
 
 			case VIA_PROV:
-				szProviderName ="via";
+				wszProviderName =L"via";
 				break;
 
 			default:
-				szProviderName = NULL;
+				wszProviderName = NULL;
 				break;
 		}
 
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-		if( !szProviderName || 
-			CSTR_EQUAL != CompareStringA(LOCALE_SYSTEM_DEFAULT,
+		if( !wszProviderName || 
+			CSTR_EQUAL != CompareStringW(LOCALE_SYSTEM_DEFAULT,
 									 NORM_IGNOREWIDTH,
-									 szProviderName, -1,
-									 pConnectParams->m_szProtocolName, -1))
+									 wszProviderName, -1,
+									 pConnectParams->m_wszProtocolName, -1))
 OACR_WARNING_POP
 		{
 			BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("false\n"));
@@ -512,7 +514,7 @@ OACR_WARNING_POP
 	}
 	else if( pProtOrder->Find(cacheElem.GetProviderNum()) == NULL)
 	{
-		LastConnectCache::RemoveEntry( pConnectParams->m_szAlias );
+		LastConnectCache::RemoveEntry( pConnectParams->m_wszAlias );
 
 		BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("false\n"));
 
@@ -530,7 +532,7 @@ OACR_WARNING_POP
 
 	if( ERROR_SUCCESS != Connect( pConnectParams, pClientConsumerInfo, &cacheElem, ppConn, timeleft))
 	{
-		LastConnectCache::RemoveEntry( pConnectParams->m_szAlias );
+		LastConnectCache::RemoveEntry( pConnectParams->m_wszAlias );
 
 		BidTraceU0( SNI_BID_TRACE_ON,RETURN_TAG _T("false\n"));
 
@@ -547,7 +549,7 @@ OACR_WARNING_POP
 //attribute is specified with sharememory. To keep the same behavior, we don't 
 //prefix "lpc"" as well.
 //
-const char* g_rgszPrefix[INVALID_PREFIX]={"","","tcp:","np:","via:"};
+const WCHAR* g_rgwszPrefix[INVALID_PREFIX]={L"",L"",L"tcp:",L"np:",L"via:"};
 
 __success(ERROR_SUCCESS == return)
 DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
@@ -557,9 +559,9 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 								_T("ppConn: %p{SNI_Conn**}, ")
 								_T( "pClientConsumerInfo->wszConnectionString: \"%ls\"{LPWSTR}, ")
 								_T( "pClientConsumerInfo->networkLibrary: %d{PrefixEnum}, ")
-								_T( "pClientConsumerInfo->szSPN: %p{LPSTR}, ")
+								_T( "pClientConsumerInfo->wszSPN: %p{LPWSTR}, ")
 								_T( "pClientConsumerInfo->cchSPN: %d{DWORD}, ")
-								_T( "pClientConsumerInfo->szInstanceName: %p{LPSTR}, ")
+								_T( "pClientConsumerInfo->wszInstanceName: %p{LPWSTR}, ")
 								_T( "pClientConsumerInfo->cchInstanceName: %d{DWORD}, ")
 								_T( "pClientConsumerInfo->fOverrideLastConnectCache: %d{BOOL}, ")
 								_T( "pClientConsumerInfo->fSynchronousConnection: %d{BOOL}\n"),
@@ -567,7 +569,7 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 								ppConn,
 								pClientConsumerInfo->wszConnectionString,
 								pClientConsumerInfo->networkLibrary,
-								pClientConsumerInfo->szSPN,
+								pClientConsumerInfo->wszSPN,
 								pClientConsumerInfo->cchSPN,
 								pClientConsumerInfo->szInstanceName,
 								pClientConsumerInfo->cchInstanceName,
@@ -616,11 +618,7 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 		goto ExitFunc;
 	}
 
-	char szTmp[MAX_PROTOCOLNAME_LENGTH+1+
-						MAX_ALIAS_LENGTH+1+
-						MAX_PROTOCOLPARAMETER_LENGTH+1];
-
-	char szConnect[MAX_PROTOCOLNAME_LENGTH+1+
+	WCHAR wszConnect[MAX_PROTOCOLNAME_LENGTH+1+
 						MAX_ALIAS_LENGTH+1+
 						MAX_PROTOCOLPARAMETER_LENGTH+1];
 
@@ -665,62 +663,44 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 			goto ExitFunc;
 		}
 		
-		if( !WideCharToMultiByte(CP_ACP,
-								0,
-								wszLocaldbConnect,
-								-1,
-								szTmp,
-								sizeof(szTmp),
-								NULL,
-								NULL))
+		
+        if (FAILED( dwRet = StringCchPrintfW(wszConnect, 
+							ARRAYSIZE(wszConnect),
+							L"%s%s",
+							g_rgwszPrefix[pClientConsumerInfo->networkLibrary],
+							wszLocaldbConnect)) )        		
 		{
-			dwRet = GetLastError();
 			SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_SYSTEM, dwRet );
 			goto ExitFunc;
 		}
 	}
-	else if( !WideCharToMultiByte(CP_ACP,
-						0,
-						pClientConsumerInfo->wszConnectionString,
-						-1,
-						szTmp,
-						sizeof(szTmp),
-						NULL,
-						NULL))
+	else if (FAILED( dwRet = StringCchPrintfW(wszConnect,
+							ARRAYSIZE(wszConnect),
+							L"%s%s",
+							g_rgwszPrefix[pClientConsumerInfo->networkLibrary],
+							pClientConsumerInfo->wszConnectionString)) )
 	{
-		dwRet = GetLastError();
 		SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_SYSTEM, dwRet );
 		goto ExitFunc;
 	}
-
-	if( FAILED( StringCchPrintf_lA(szConnect, 
-						CCH_ANSI_STRING(szConnect),
-						"%s%s",
-						GetDefaultLocale(),
-						g_rgszPrefix[pClientConsumerInfo->networkLibrary],
-						szTmp)) )
-	{
-		dwRet = ERROR_INVALID_PARAMETER;
-		goto ExitFunc;
-	}
 	
-	dwRet = pConnectParams->ParseConnectionString( szConnect, !!(pClientConsumerInfo->fParallel) );
+	dwRet = pConnectParams->ParseConnectionString(wszConnect, !!(pClientConsumerInfo->fParallel), pClientConsumerInfo->transparentNetworkResolution, pClientConsumerInfo->totalTimeout);
 
 	if( ERROR_SUCCESS != dwRet)
 	{
 		goto ExitFunc;
 	}
 
-	if( !pConnectParams->m_szProtocolName[0] )
+	if( !pConnectParams->m_wszProtocolName[0] )
 	{
-		GetProtocolList(&protList, pConnectParams->m_szServerName, pConnectParams->m_szOriginalServerName );
+		GetProtocolList(&protList, (TCHAR *) pConnectParams->m_wszServerName, (TCHAR *) pConnectParams->m_wszOriginalServerName );
 	}
 	
 	// when fOverrideCache is TRUE we should wipe out the cache entry
 	// and do a connection from scratch
 	if( pClientConsumerInfo->fOverrideLastConnectCache )
 	{
-		LastConnectCache::RemoveEntry( pConnectParams->m_szAlias);
+		LastConnectCache::RemoveEntry( pConnectParams->m_wszAlias);
 	}
 	else
 	{
@@ -774,17 +754,17 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 	}
 
 	//
-	// SQL BU DT bug 286397: SNAC requires a successful SSRP query
-	// for named instances even if no protocol was specifed 
-	// (e.g. ".\instanceName"), and the connection could succeed 
-	// through SM taken from the protocol list without any SSRP query.  
-	// This is a breaking change compared to MDAC 2.x.  
-	//
-	// To minimize the risk for Yukon Beta 2, this is only a partial 
-	// fix, which will skip the SSRP query only if the SM protocol is 
-	// first in the list.  Later on, it can be extended to cases when
-	// SM is further down the list.  
-	//
+	// SQL BU DT 
+
+
+
+
+
+
+
+
+
+
 
 	bool fSmDone = false;
 	
@@ -815,7 +795,7 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 		{
 			if( pConnectParams->m_fCanUseCache )
 			{
-				LastConnectCache::SetEntry(pConnectParams->m_szAlias, pProtElem);
+				LastConnectCache::SetEntry(pConnectParams->m_wszAlias, pProtElem);
 			}
 			
 			goto ExitFunc;
@@ -834,8 +814,8 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 
 	if( fSsrpRequired )
 	{
-		dwRet = SSRP::SsrpGetInfo(pConnectParams->m_szServerName,
-									pConnectParams->m_szInstanceName, 
+		dwRet = SSRP::SsrpGetInfo(pConnectParams->m_wszServerName,
+									pConnectParams->m_wszInstanceName, 
 									&protList);
 		if( dwRet != ERROR_SUCCESS )
 		{
@@ -876,6 +856,12 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 			BidTraceU1( SNI_BID_TRACE_ON, SNI_TAG _T("timeout(2): %d\n"), timeleft);
 		}
 		
+		if (pProtElem->GetProviderNum() == TCP_PROV)
+		{
+			pProtElem->Tcp.transparentNetworkIPResolution = pConnectParams->m_TransparentNetworkResolution;
+			pProtElem->Tcp.totalTimeout = pConnectParams->m_TotalTimeout;
+		}
+
 		dwRet = Connect( pConnectParams, 
 						 pClientConsumerInfo, 
 						 pProtElem, 
@@ -886,7 +872,7 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 		{
 			if( pConnectParams->m_fCanUseCache )
 			{
-				LastConnectCache::SetEntry(pConnectParams->m_szAlias, pProtElem);
+				LastConnectCache::SetEntry(pConnectParams->m_wszAlias, pProtElem);
 			}
 			
 			break;
@@ -897,15 +883,15 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 			// Special case to check if we are connecting to a DEFAULT server for DAC
 			// In that case, we would have tried to connect to port 1434 and if that has
 			// failed, we now want to get the port through SSRP
-			if( !strcmp("admin", pConnectParams->m_szProtocolName) &&
-				!pConnectParams->m_szInstanceName[0] &&
-				(1434 == atoi( pProtElem->Tcp.szPort ))  )
+			if( !wcscmp(L"admin", pConnectParams->m_wszProtocolName) &&
+				!pConnectParams->m_wszInstanceName[0] &&
+				(1434 == _wtoi( pProtElem->Tcp.wszPort ))  )
 				
 			{
 				USHORT port;
 				
-				if( !SSRP::GetAdminPort( pConnectParams->m_szServerName, 
-										"MSSQLServer", 
+				if( !SSRP::GetAdminPort( pConnectParams->m_wszServerName, 
+										L"MSSQLServer", 
 										&port) )
 				{
 					SNI_SET_LAST_ERROR( INVALID_PROV, SNIE_43, ERROR_FAIL );
@@ -921,7 +907,7 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 
 				else
 				{
-					(void)StringCchPrintfA( pProtElem->Tcp.szPort, CCH_ANSI_STRING(pProtElem->Tcp.szPort), "%d", port);
+					(void)StringCchPrintfW( pProtElem->Tcp.wszPort, ARRAYSIZE(pProtElem->Tcp.wszPort), L"%d", port);
 					continue;
 				}
 			}
@@ -932,16 +918,16 @@ DWORD SNIOpenSyncEx( __inout SNI_CLIENT_CONSUMER_INFO * pClientConsumerInfo,
 			{
 				DWORD nlRet;
 
-				if ( pConnectParams->m_szInstanceName[0] == '\0' ) 
+				if ( pConnectParams->m_wszInstanceName[0] == L'\0' ) 
 				{
-					nlRet = SSRP::SsrpGetInfo(pConnectParams->m_szServerName, 
-												"MSSQLSERVER", 
+					nlRet = SSRP::SsrpGetInfo(pConnectParams->m_wszServerName, 
+												L"MSSQLSERVER", 
 												&protList);
 				}
 				else
 				{
-					nlRet = SSRP::SsrpGetInfo(pConnectParams->m_szServerName, 
-												pConnectParams->m_szInstanceName, 
+					nlRet = SSRP::SsrpGetInfo(pConnectParams->m_wszServerName, 
+												pConnectParams->m_wszInstanceName, 
 												&protList);
 				}
 				fSsrpDone = true;
@@ -983,7 +969,39 @@ ExitFunc:
 
 	if( ERROR_SUCCESS == dwRet )
 	{
-		(void)StringCchCopyA( pClientConsumerInfo->szInstanceName, pClientConsumerInfo->cchInstanceName, pConnectParams->m_fStandardInstName?pConnectParams->m_szInstanceName:"");
+		if (pConnectParams->m_fStandardInstName)
+		{
+			int cchInstanceName = wcslen(pConnectParams->m_wszInstanceName);
+			if (cchInstanceName == 0)
+			{
+				pClientConsumerInfo->szInstanceName = "";
+			}
+			else
+			{
+				int ret = WideCharToMultiByte(CP_ACP, 0, pConnectParams->m_wszInstanceName, cchInstanceName, NULL, 0, NULL, NULL);
+				if (ret >= MAX_NAME_SIZE - 1 || ret <= 0)
+				{
+
+					dwRet = GetLastError();
+					return dwRet;
+				}
+	
+				ret = WideCharToMultiByte(CP_ACP, 0, pConnectParams->m_wszInstanceName, cchInstanceName, pClientConsumerInfo->szInstanceName, cchInstanceName, NULL, NULL);
+				if (ret >= MAX_NAME_SIZE - 1 || ret <= 0)
+				{
+
+					dwRet = GetLastError();
+					return dwRet;
+				}
+	
+				pClientConsumerInfo->szInstanceName[ret] = '\0';
+			}
+			
+		}
+		else
+		{
+			pClientConsumerInfo->szInstanceName = "";
+		}
 
 		BidUpdateItemIDA( (*ppConn)->GetBidIdPtr(), SNI_ID_TAG 
 			"connection string: '%ls'", pClientConsumerInfo->wszConnectionString );  

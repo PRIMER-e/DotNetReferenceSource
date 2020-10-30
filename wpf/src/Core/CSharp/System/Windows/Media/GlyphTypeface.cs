@@ -9,7 +9,7 @@
 //
 // History:
 //  06/04/2003 : mleonov - Moved GlyphTypeface from GlyphRun.cs
-//  09/15/2008 : [....] - Changed GlyphTypeface to directly call methods 
+//  09/15/2008 : Microsoft - Changed GlyphTypeface to directly call methods 
 //                         in DWrite.Font and DWrite.FontFace rather than 
 //                         FontFaceLayoutInfo.cs.
 //
@@ -1077,8 +1077,8 @@ namespace System.Windows.Media
 
 
         // The next several properties return non CLS-compliant types.  This is
-        // tracked by bug 1792236.  For now, suppress the compiler warning.
-        // 
+        // tracked by 
+
         #pragma warning disable 3003
 
         /// <summary>
@@ -1293,7 +1293,8 @@ namespace System.Windows.Media
         /// Safe - as this only gives width information which is safe to give out.
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
-        internal double GetAdvanceWidth(ushort             glyph, 
+        internal double GetAdvanceWidth(ushort             glyph,
+                                        float              pixelsPerDip,
                                         TextFormattingMode textFormattingMode,
                                         bool               isSideways)
         {
@@ -1303,7 +1304,7 @@ namespace System.Windows.Media
             // When we get to using GetAdvanceHeight for vertical writing, we need to consider doing the same optimization there.
             unsafe
             {
-                MS.Internal.Text.TextInterface.GlyphMetrics glyphMetrics = GlyphMetrics(glyph, DesignEmHeight, textFormattingMode, isSideways);
+                MS.Internal.Text.TextInterface.GlyphMetrics glyphMetrics = GlyphMetrics(glyph, DesignEmHeight, pixelsPerDip, textFormattingMode, isSideways);
 
                 return (double)glyphMetrics.AdvanceWidth / DesignEmHeight;
             }
@@ -1328,6 +1329,7 @@ namespace System.Windows.Media
         }
 
         private double GetAdvanceHeight(ushort glyph,
+            float pixelsPerDip,
             TextFormattingMode textFormattingMode,
             bool isSideways)
         {
@@ -1336,6 +1338,7 @@ namespace System.Windows.Media
                 glyph,
                 1.0,
                 1.0,
+                pixelsPerDip,
                 textFormattingMode,
                 isSideways,
                 out aw,
@@ -1355,6 +1358,7 @@ namespace System.Windows.Media
         [SecurityCritical]
         private unsafe MS.Internal.Text.TextInterface.GlyphMetrics GlyphMetrics(ushort             glyphIndex,
                                                                                 double             emSize,
+                                                                                float              pixelsPerDip,
                                                                                 TextFormattingMode textFormattingMode,
                                                                                 bool               isSideways)
         {
@@ -1376,7 +1380,8 @@ namespace System.Windows.Media
                 else
                 {
                     // We can safely pass pointers to glyphIndex and glyphMetrics since both are value types and are allocated on the stack.
-                    fontFaceDWrite.GetDisplayGlyphMetrics(&glyphIndex, 1, &glyphMetrics, checked((float)emSize), textFormattingMode != TextFormattingMode.Display, isSideways, Util.PixelsPerDip);
+                    fontFaceDWrite.GetDisplayGlyphMetrics(&glyphIndex, 1, &glyphMetrics, checked((float)emSize),
+                        textFormattingMode != TextFormattingMode.Display, isSideways, pixelsPerDip);
                 }
             }
             finally
@@ -1391,7 +1396,8 @@ namespace System.Windows.Media
         /// Critical - Calls critical DWrite.FontFace methods
         /// </SecurityNote>
         [SecurityCritical]
-        private unsafe void GlyphMetrics(ushort* pGlyphIndices, int characterCount, MS.Internal.Text.TextInterface.GlyphMetrics* pGlyphMetrics, double emSize, TextFormattingMode textFormattingMode, bool isSideways)
+        private unsafe void GlyphMetrics(ushort* pGlyphIndices, int characterCount, MS.Internal.Text.TextInterface.GlyphMetrics* pGlyphMetrics, double emSize, 
+            float pixelsPerDip, TextFormattingMode textFormattingMode, bool isSideways)
         {
             MS.Internal.Text.TextInterface.FontFace fontFaceDWrite = _font.GetFontFace();
             try
@@ -1402,7 +1408,8 @@ namespace System.Windows.Media
                 }
                 else
                 {
-                    fontFaceDWrite.GetDisplayGlyphMetrics(pGlyphIndices, checked((uint)characterCount), pGlyphMetrics, checked((float)emSize), textFormattingMode != TextFormattingMode.Display, isSideways, Util.PixelsPerDip);
+                    fontFaceDWrite.GetDisplayGlyphMetrics(pGlyphIndices, checked((uint)characterCount), pGlyphMetrics, 
+                        checked((float)emSize), textFormattingMode != TextFormattingMode.Display, isSideways, pixelsPerDip);
                 }
             }
             finally
@@ -1416,11 +1423,12 @@ namespace System.Windows.Media
         /// TreatAsSafe - This information is safe to expose.
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
-        private double GetLeftSidebearing(ushort         glyph, 
+        private double GetLeftSidebearing(ushort         glyph,
+                                          float          pixelsPerDip,
                                           TextFormattingMode textFormattingMode,
                                           bool           isSideways)
         {
-            return ((double)GlyphMetrics(glyph, DesignEmHeight, textFormattingMode, isSideways).LeftSideBearing) / DesignEmHeight;
+            return ((double)GlyphMetrics(glyph, DesignEmHeight, pixelsPerDip, textFormattingMode, isSideways).LeftSideBearing) / DesignEmHeight;
         }
 
         /// <SecurityNote>
@@ -1429,10 +1437,11 @@ namespace System.Windows.Media
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
         private double GetRightSidebearing(ushort         glyph,
+                                           float          pixelsPerDip,
                                            TextFormattingMode textFormattingMode,
                                            bool           isSideways)
         {
-            return ((double)GlyphMetrics(glyph, DesignEmHeight, textFormattingMode, isSideways).RightSideBearing) / DesignEmHeight;
+            return ((double)GlyphMetrics(glyph, DesignEmHeight, pixelsPerDip, textFormattingMode, isSideways).RightSideBearing) / DesignEmHeight;
         }
 
         /// <SecurityNote>
@@ -1441,10 +1450,11 @@ namespace System.Windows.Media
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
         private double GetTopSidebearing(ushort         glyph,
+                                         float          pixelsPerDip,
                                          TextFormattingMode textFormattingMode,
                                          bool           isSideways)
         {
-            return ((double)GlyphMetrics(glyph, DesignEmHeight, textFormattingMode, isSideways).TopSideBearing) / DesignEmHeight;
+            return ((double)GlyphMetrics(glyph, DesignEmHeight, pixelsPerDip, textFormattingMode, isSideways).TopSideBearing) / DesignEmHeight;
         }
 
         /// <SecurityNote>
@@ -1453,10 +1463,11 @@ namespace System.Windows.Media
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
         private double GetBottomSidebearing(ushort         glyph,
+                                            float          pixelsPerDip,
                                             TextFormattingMode textFormattingMode,
                                             bool           isSideways)
         {
-            return ((double)GlyphMetrics(glyph, DesignEmHeight, textFormattingMode, isSideways).BottomSideBearing) / DesignEmHeight;
+            return ((double)GlyphMetrics(glyph, DesignEmHeight, pixelsPerDip, textFormattingMode, isSideways).BottomSideBearing) / DesignEmHeight;
         }
 
         /// <SecurityNote>
@@ -1465,10 +1476,11 @@ namespace System.Windows.Media
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
         private double GetBaseline(ushort glyph,
+                                   float pixelsPerDip,
                                    TextFormattingMode textFormattingMode,
                                    bool isSideways)
         {
-            MS.Internal.Text.TextInterface.GlyphMetrics glyphMetrics = GlyphMetrics(glyph, DesignEmHeight, textFormattingMode, isSideways);
+            MS.Internal.Text.TextInterface.GlyphMetrics glyphMetrics = GlyphMetrics(glyph, DesignEmHeight, pixelsPerDip, textFormattingMode, isSideways);
             return BaselineHelper(glyphMetrics) / DesignEmHeight;
         }
 
@@ -1495,6 +1507,7 @@ namespace System.Windows.Media
             ushort glyph,
             double renderingEmSize,
             double scalingFactor,
+            float pixelsPerDip,
             TextFormattingMode textFormattingMode,
             bool isSideways,
             out double aw,
@@ -1510,19 +1523,19 @@ namespace System.Windows.Media
 
             unsafe
             {
-                MS.Internal.Text.TextInterface.GlyphMetrics glyphMetrics = GlyphMetrics(glyph, renderingEmSize, textFormattingMode, isSideways);
+                MS.Internal.Text.TextInterface.GlyphMetrics glyphMetrics = GlyphMetrics(glyph, renderingEmSize, pixelsPerDip, textFormattingMode, isSideways);
 
                 double designToEm = renderingEmSize / DesignEmHeight;
 
                 if (TextFormattingMode.Display == textFormattingMode)
                 {
-                    aw = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.AdvanceWidth) * scalingFactor;
-                    ah = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.AdvanceHeight) * scalingFactor;
-                    lsb = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.LeftSideBearing) * scalingFactor;
-                    rsb = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.RightSideBearing) * scalingFactor;
-                    tsb = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.TopSideBearing) * scalingFactor;
-                    bsb = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.BottomSideBearing) * scalingFactor;
-                    baseline = TextFormatterImp.RoundDipForDisplayMode(designToEm * BaselineHelper(glyphMetrics)) * scalingFactor;
+                    aw = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.AdvanceWidth, pixelsPerDip) * scalingFactor;
+                    ah = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.AdvanceHeight, pixelsPerDip) * scalingFactor;
+                    lsb = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.LeftSideBearing, pixelsPerDip) * scalingFactor;
+                    rsb = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.RightSideBearing, pixelsPerDip) * scalingFactor;
+                    tsb = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.TopSideBearing, pixelsPerDip) * scalingFactor;
+                    bsb = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.BottomSideBearing, pixelsPerDip) * scalingFactor;
+                    baseline = TextFormatterImp.RoundDipForDisplayMode(designToEm * BaselineHelper(glyphMetrics), pixelsPerDip) * scalingFactor;
                 }
                 else
                 {
@@ -1550,6 +1563,7 @@ namespace System.Windows.Media
             ushort[] glyphs,
             int glyphsLength,
             double renderingEmSize,
+            float pixelsPerDip,
             TextFormattingMode textFormattingMode,
             bool isSideways,
             MS.Internal.Text.TextInterface.GlyphMetrics[] glyphMetrics
@@ -1565,7 +1579,7 @@ namespace System.Windows.Media
                 {
                     fixed (ushort* pGlyphs = &glyphs[0])
                     {
-                        GlyphMetrics(pGlyphs, glyphsLength, pGlyphMetrics, renderingEmSize, textFormattingMode, isSideways);
+                        GlyphMetrics(pGlyphs, glyphsLength, pGlyphMetrics, renderingEmSize, pixelsPerDip, textFormattingMode, isSideways);
                     }
                 }
             }
@@ -1655,6 +1669,7 @@ namespace System.Windows.Media
             char*              unsafeCharString,
             int                stringLength,
             double             emSize,
+            float              pixelsPerDip,
             double             scalingFactor,
             int*               advanceWidthsUnshaped,
             bool               nullFont,
@@ -1672,6 +1687,7 @@ namespace System.Windows.Media
 
                 GetGlyphMetricsOptimized(charBufferRange,
                                          emSize,
+                                         pixelsPerDip,
                                          textFormattingMode,
                                          isSideways,
                                          glyphMetrics
@@ -1682,7 +1698,7 @@ namespace System.Windows.Media
                     double designToEm = emSize / DesignEmHeight;
                     for (int i = 0; i < stringLength; i++)
                     {
-                        advanceWidthsUnshaped[i] = (int)Math.Round(TextFormatterImp.RoundDipForDisplayMode(glyphMetrics[i].AdvanceWidth * designToEm) * scalingFactor);
+                        advanceWidthsUnshaped[i] = (int)Math.Round(TextFormatterImp.RoundDipForDisplayMode(glyphMetrics[i].AdvanceWidth * designToEm, pixelsPerDip) * scalingFactor);
                     }
                 }
                 else
@@ -1698,7 +1714,7 @@ namespace System.Windows.Media
             }
             else
             {
-                int missingGlyphWidth = (int)Math.Round(TextFormatterImp.RoundDip(emSize * GetAdvanceWidth(0, textFormattingMode, isSideways), textFormattingMode) * scalingFactor);
+                int missingGlyphWidth = (int)Math.Round(TextFormatterImp.RoundDip(emSize * GetAdvanceWidth(0, pixelsPerDip, textFormattingMode, isSideways), pixelsPerDip, textFormattingMode) * scalingFactor);
                 for (int i = 0; i < stringLength; i++)
                 {
                     advanceWidthsUnshaped[i] = missingGlyphWidth;
@@ -1714,6 +1730,7 @@ namespace System.Windows.Media
             CharacterBufferRange charBufferRange,
             IList<double> charWidths,
             double emSize,
+            float pixelsPerDip,
             double emHintingSize,
             bool nullGlyph,
             CultureInfo cultureInfo,
@@ -1738,7 +1755,7 @@ namespace System.Windows.Media
             }
             else
             {
-                GetGlyphIndicesOptimized(charBufferRange, nominalGlyphs);
+                GetGlyphIndicesOptimized(charBufferRange, nominalGlyphs, pixelsPerDip);
             }
             
             return GlyphRun.TryCreate(
@@ -1746,6 +1763,7 @@ namespace System.Windows.Media
                 0,      // bidiLevel
                 false,  // sideway
                 emSize,
+                pixelsPerDip,
                 nominalGlyphs,
                 origin,
                 charWidths,
@@ -1764,11 +1782,11 @@ namespace System.Windows.Media
         /// It should not be used if both indices and advance widths are required. In that
         /// case use GetGlyphMetricsOptimized to get both.
         /// </summary>
-        internal void GetGlyphIndicesOptimized(CharacterBufferRange characters, ushort[] glyphIndices)
+        internal void GetGlyphIndicesOptimized(CharacterBufferRange characters, ushort[] glyphIndices, float pixelsPerDip)
         {
             // We don't need to pass real emSize, widths, TextFormattingMode and isSideways parameters, because 
             // they only matter for advance widths and we're only interested in getting glyph indices
-            GetGlyphMetricsOptimized(characters, 0.0f, glyphIndices, null, TextFormattingMode.Ideal, false);
+            GetGlyphMetricsOptimized(characters, 0.0f, pixelsPerDip, glyphIndices, null, TextFormattingMode.Ideal, false);
         }
 
         /// <summary>
@@ -1776,11 +1794,12 @@ namespace System.Windows.Media
         /// </summary>
         internal void GetGlyphMetricsOptimized(CharacterBufferRange characters,
             double emSize,
+            float pixelsPerDip,
             TextFormattingMode textFormattingMode,
             bool isSideways,
             MS.Internal.Text.TextInterface.GlyphMetrics[] glyphMetrics)
         {
-            GetGlyphMetricsOptimized(characters, emSize, null, glyphMetrics, textFormattingMode, isSideways);
+            GetGlyphMetricsOptimized(characters, emSize, pixelsPerDip, null, glyphMetrics, textFormattingMode, isSideways);
         }
 
         /// <summary>
@@ -1789,6 +1808,7 @@ namespace System.Windows.Media
         [SecurityCritical, SecurityTreatAsSafe]
         internal void GetGlyphMetricsOptimized(CharacterBufferRange characters,
             double emSize,
+            float pixelsPerDip,
             ushort[] glyphIndices,
             MS.Internal.Text.TextInterface.GlyphMetrics[] glyphMetrics,
             TextFormattingMode textFormattingMode,
@@ -1805,7 +1825,7 @@ namespace System.Windows.Media
                     {
                         pCodepoints[i] = characters[i];
                     }
-                    GetGlyphMetricsAndIndicesOptimized(pCodepoints, characters.Length, emSize, glyphIndices, glyphMetrics, textFormattingMode, isSideways);
+                    GetGlyphMetricsAndIndicesOptimized(pCodepoints, characters.Length, emSize, pixelsPerDip, glyphIndices, glyphMetrics, textFormattingMode, isSideways);
                 }
             }
             else
@@ -1819,7 +1839,7 @@ namespace System.Windows.Media
                 {
                     fixed (uint *pCodepoints = &codepoints[0])
                     {
-                        GetGlyphMetricsAndIndicesOptimized(pCodepoints, characters.Length, emSize, glyphIndices, glyphMetrics, textFormattingMode, isSideways);
+                        GetGlyphMetricsAndIndicesOptimized(pCodepoints, characters.Length, emSize, pixelsPerDip, glyphIndices, glyphMetrics, textFormattingMode, isSideways);
                     }
                 }                
             }
@@ -1829,6 +1849,7 @@ namespace System.Windows.Media
         private unsafe void GetGlyphMetricsAndIndicesOptimized(uint *pCodepoints, 
                                                                int characterCount, 
                                                                double emSize,
+                                                               float pixelsPerDip,
                                                                ushort[] glyphIndices,
                                                                MS.Internal.Text.TextInterface.GlyphMetrics[] glyphMetrics,
                                                                TextFormattingMode textFormattingMode, 
@@ -1850,7 +1871,7 @@ namespace System.Windows.Media
                 {
                     fixed (MS.Internal.Text.TextInterface.GlyphMetrics* pGlyphMetrics = &glyphMetrics[0])
                     {
-                        GlyphMetrics(pGlyphIndices, characterCount, pGlyphMetrics, emSize, textFormattingMode, isSideways);
+                        GlyphMetrics(pGlyphIndices, characterCount, pGlyphMetrics, emSize, pixelsPerDip, textFormattingMode, isSideways);
                     }
                 }
             }
@@ -2083,7 +2104,7 @@ namespace System.Windows.Media
 
         #region Private Nested Classes
 
-        private delegate double GlyphAccessor(ushort glyphIndex, TextFormattingMode textFormattingMode, bool isSideways);
+        private delegate double GlyphAccessor(ushort glyphIndex, float pixelsPerDip, TextFormattingMode textFormattingMode, bool isSideways);
 
         /// <summary>
         /// This class is a helper to implement named indexers
@@ -2142,7 +2163,9 @@ namespace System.Windows.Media
             {
                 get
                 {
-                    return _accessor(key, TextFormattingMode.Ideal, false);
+                    // ?????? hardcoded 1.0 as pixelsPerDip, as this is for Ideal Mode, and therefore will not be needed.
+                    // Discuss implications.
+                    return _accessor(key, (float)1.0, TextFormattingMode.Ideal, false);
                 }
                 set
                 {

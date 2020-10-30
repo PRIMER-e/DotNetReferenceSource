@@ -200,7 +200,7 @@ namespace MS.Internal.AutomationProxies
 
         // Not many of these will be created at a time so having the
         // event in the class is OK and easier than having just one
-        // that manages any [....] method call.
+        // that manages any sync method call.
         internal class SyncQueueItem : QueueItem
         {
             // ------------------------------------------------------

@@ -101,7 +101,7 @@ class SNI_Sec
 										BYTE	*pOut,
 										DWORD	*pcbOut,
 										BOOL	*pfDone,
-										__in __nullterminated const CHAR	*szServerInfo,
+										__in __nullterminated const WCHAR	*wszServerInfo,
 										DWORD	 cbServerInfo,
 										LPCWSTR pwszUserName,
 										LPCWSTR pwszPassword);

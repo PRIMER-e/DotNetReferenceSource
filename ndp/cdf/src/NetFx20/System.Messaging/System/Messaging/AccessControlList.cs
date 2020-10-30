@@ -36,7 +36,7 @@ namespace System.Messaging {
                 if (environment == UnknownEnvironment) { 
                     lock (AccessControlList.staticLock) {
                         if (environment == UnknownEnvironment) {
-                            //SECREVIEW: [....]- need to assert Environment permissions here
+                            //SECREVIEW: Microsoft- need to assert Environment permissions here
                             //                        the environment check is not exposed as a public 
                             //                        method                        
                             EnvironmentPermission environmentPermission = new EnvironmentPermission(PermissionState.Unrestricted);                        

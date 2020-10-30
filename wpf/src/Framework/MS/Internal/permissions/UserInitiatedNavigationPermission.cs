@@ -21,7 +21,7 @@
 //                  the set of operations allowed. 
 // 
 // History:
-//  09/12/05 : [....] - seperated UserInitiatedNaviagtionPermission from InternalPermission.cs
+//  09/12/05 : Microsoft - seperated UserInitiatedNaviagtionPermission from InternalPermission.cs
 //  02/28/05 : marka - Created
 //---------------------------------------------------------------------------
 

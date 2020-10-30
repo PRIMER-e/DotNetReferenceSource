@@ -14,6 +14,7 @@ using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Diagnostics;
 using System.Windows.Media;
 using System.Windows.Media.Composition;
 using System.Windows.Markup;
@@ -367,8 +368,9 @@ namespace System.Windows.Media.Media3D
 
             // Fire notifications
             OnVisualChildrenChanged(child, /* visualRemoved = */ null);
-            
+
             child.FireOnVisualParentChanged(null);
+            VisualDiagnostics.OnVisualChildChanged(this, child, true);
         }
 
         // NOTE:  The code here is highly similar to RemoveChildCore in ModelVisual3D,
@@ -386,6 +388,8 @@ namespace System.Windows.Media.Media3D
 
             Debug.Assert(child != null);
             Debug.Assert(child.InternalVisualParent == this);
+
+            VisualDiagnostics.OnVisualChildChanged(this, child, false);
 
             child.SetParent(/* newParent = */ (Visual) null);  // CS0121: Call is ambigious without casting null to Visual.
             

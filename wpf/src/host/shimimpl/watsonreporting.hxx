@@ -20,8 +20,8 @@
 //      blank browser window. Or, in some cases, infinite relaunching of PresHost and IE happens.
 //
 //  History:
-//      2007/07/20   [....]     Created
-//      2007/09/20   [....]     Ported Windows->DevDiv. See SourcesHistory.txt.
+//      2007/07/20   Microsoft     Created
+//      2007/09/20   Microsoft     Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
 

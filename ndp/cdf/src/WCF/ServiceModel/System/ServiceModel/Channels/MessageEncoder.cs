@@ -7,6 +7,7 @@ namespace System.ServiceModel.Channels
     using System.IO;
     using System.Net.Mime;
     using System.Runtime.Serialization;
+    using System.Runtime.Diagnostics;
     using System.ServiceModel.Diagnostics;
     using System.Runtime;
     using System.Threading;
@@ -14,6 +15,8 @@ namespace System.ServiceModel.Channels
 
     public abstract class MessageEncoder
     {
+        private string traceSourceString;
+
         public abstract string ContentType { get; }
 
         public abstract string MediaType { get; }
@@ -207,6 +210,16 @@ namespace System.ServiceModel.Channels
                     new ProtocolException(SR.GetString(SR.EncoderMessageVersionMismatch, message.Version, MessageVersion)),
                     message);
             }
+        }
+
+        internal string GetTraceSourceString()
+        {
+            if (this.traceSourceString == null)
+            {
+                this.traceSourceString = DiagnosticTraceBase.CreateDefaultSourceString(this);
+            }
+
+            return this.traceSourceString;
         }
 
         class WriteMessageAsyncResult : ScheduleActionItemAsyncResult

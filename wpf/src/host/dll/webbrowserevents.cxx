@@ -6,8 +6,8 @@
 //     Implements an event sink for the IWebBrowser2 events
 //
 //  History:
-//     2006/08/30   [....]     Created
-//     2007/09/20   [....]     Ported Windows->DevDiv. See SourcesHistory.txt.
+//     2006/08/30   Microsoft     Created
+//     2007/09/20   Microsoft     Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 // ------------------------------------------------------------------------
 

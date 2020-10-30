@@ -57,7 +57,7 @@ namespace MS.Internal.Controls
         public static readonly int inTransition = BitVector32.CreateMask(sinkAttached);
         public static readonly int processingKeyUp = BitVector32.CreateMask(inTransition);
 
-        //[kusumav]These are from [....] code. These transforms were not working correctly
+        //[kusumav]These are from Microsoft code. These transforms were not working correctly
         //I used Avalon sizes but leaving these in here since they are used in TransformCoordinates
         //in ActiveXSite. It doesn't seem to be invoked by WebBrowser control
         //
@@ -151,7 +151,7 @@ namespace MS.Internal.Controls
         /// our implementations of COM interfaces to be called on the thread on which their object was created,
         /// often because of interacting with core WPF objects that also have thread affinity.
         /// Getting a CLR object to "stick to the right thread" when called from another context (like cross-process)
-        /// turns out to be incredibly hard. [....] has solved the problem with StandardOleMarshalObject.
+        /// turns out to be incredibly hard. Microsoft has solved the problem with StandardOleMarshalObject.
         /// Unfortunately, it wasn't designed to work in partial trust. And apart from that, it just doesn't 
         /// seem to work cross-process, which is what we actually need for the WebOC hosting.
         /// There's also the ContextBoundObject family. A derived object could be made thread-bound. But this 

@@ -336,7 +336,7 @@ const int MIN_SINGLE_BITS = 0xff7fffff;
 const float MIN_SINGLE = *(const float *)&MIN_SINGLE_BITS;
 
 // This Resume index represents a statement which has no Resume behavior.  The value 0xffff was
-// rejected because an off-by-one bug could mistakenly cause an invalid index to become this value.
+// rejected because an off-by-one 
 const unsigned short NoResume = 0xfffe;
 
 // Variable count buffer for for loops.
@@ -2080,8 +2080,8 @@ public:
     // late during interpretation and not as soon as the anonymous delegate is created
     // in order to ensure that only the anonymous delegates that are used in the final
     // bound tree are emitted into the assembly.
-    // For an exmaple, see bug Devdiv 78381.
-    //
+    // For an exmaple, see 
+
     void RegisterRequiredAnonymousDelegates(ILTree::ProcedureBlock *OuterMostProcedureBoundTree);
 
 #if IDE 
@@ -10851,15 +10851,15 @@ protected:
     bool m_UseQueryNameLookup;
     LambdaBodyBuildKeyExpressions * m_JoinKeyBuilderList;
 
-    // Temporary fix for Bug 36881 - DevDiv Bugs
-    // We are disallowing some new features like Query Expressions and
-    // Aggregate Initializers in context of a constant expression because
-    // their interpretation allocates new symbols, which in some scenarios
-    // may cause a crash later on. So, we need to track whether we are
-    // in context of a constant expression and that is what this flag is used
-    // for. Other non-constant expressions are still going to be allowed when
-    // this flag is set to TRUE, but we are going to make it a warning (separate
-    // bug is opened) for this release and convert it to an error for the next release.
+    // Temporary fix for 
+
+
+
+
+
+
+
+
     bool m_InConstantExpressionContext;
 
     FromItemsHashTable *m_FromItemsMap;

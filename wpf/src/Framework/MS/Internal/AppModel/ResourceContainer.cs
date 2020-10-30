@@ -12,7 +12,7 @@
 // the NotSupportedException.
 // 
 // History:
-//  10/04/2004: [....]: Initial creation. 
+//  10/04/2004: Microsoft: Initial creation. 
 //  03/15/2005: BruceMac: Remove DisposeCore() override since there are no resources
 //              to release.
 //  06/16/2005: WeibZ, Remove DefaultResourceManager, and change the role of 

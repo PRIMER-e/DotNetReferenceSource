@@ -5,7 +5,7 @@
 // </copyright>
 //
 //
-// Description: 
+// Description:
 //      Helper routines for doing cross-process SendMessage to Common Controls
 //
 // History:
@@ -34,7 +34,7 @@ namespace MS.Internal.AutomationProxies
 
         // Retrieves a string when the reference to a string is embedded as a field
         // within a structure. The lParam to the message is a reference to the struct
-        // 
+        //
         // The parameters are: a pointer the struct and its size.
         //                     a pointer to the pointer to the string to retrieve.
         //                     the max size for the string.
@@ -59,7 +59,7 @@ namespace MS.Internal.AutomationProxies
 
         // Retrieves a string when the reference to a string is embedded as a field
         // within a structure. The lParam to the message is a reference to the struct
-        // 
+        //
         // The parameters are: a pointer the struct and its size.
         //                     a pointer to the pointer to the string to retrieve.
         //                     the max size for the string.
@@ -127,7 +127,7 @@ namespace MS.Internal.AutomationProxies
                     achRes[maxLength] = '\0';
                     fixed (char* pchRes = achRes)
                     {
-                        // Read the string from the common 
+                        // Read the string from the common
                         rmem.ReadFrom(new IntPtr((byte*)rmem.Address.ToPointer() + cbSize), new IntPtr(pchRes), new IntPtr(maxLength * sizeof(char)));
 
                         // Construct the returned string with an explicit length to avoid
@@ -264,7 +264,7 @@ namespace MS.Internal.AutomationProxies
         {
             return XSend (hwnd, uMsg, ptrStructure, lParam, cbSize, ErrorValue.Zero);
         }
-        
+
         // Main method.  It simply copies an unmamaged buffer to the remote process, sends the message, and then
         // copies the remote buffer back to the local unmanaged buffer.
         internal static bool XSend (IntPtr hwnd, int uMsg, IntPtr ptrStructure, int lParam, int cbSize, ErrorValue errorCode)
@@ -311,7 +311,7 @@ namespace MS.Internal.AutomationProxies
         {
             return XSend (hwnd, uMsg, ptrStructure1, ptrStructure2, cbSize1, cbSize2, ErrorValue.Zero);
         }
-        
+
         // Main method.  It simply copies an unmamaged buffer to the remote process, sends the message, and then
         // copies the remote buffer back to the local unmanaged buffer.
         internal static bool XSend (IntPtr hwnd, int uMsg, IntPtr ptrStructure1, IntPtr ptrStructure2, int cbSize1, int cbSize2, ErrorValue errorCode)
@@ -680,12 +680,12 @@ namespace MS.Internal.AutomationProxies
             if (((mask & NativeMethods.LVGF_HEADER)  == 0) && ((mask & NativeMethods.LVGF_SUBSET) == 0))
                 return "";
 
-            
+
             if (localBitness == remoteBitness)
             {
                 switch (mask)
                 {
-                    case NativeMethods.LVGF_HEADER: 
+                    case NativeMethods.LVGF_HEADER:
                         textAddress = new IntPtr(&item.pszHeader);
                         size = item.cchHeader;
                         break;
@@ -703,7 +703,7 @@ namespace MS.Internal.AutomationProxies
 
                 switch (mask)
                 {
-                    case NativeMethods.LVGF_HEADER: 
+                    case NativeMethods.LVGF_HEADER:
                         textAddress = new IntPtr(&item32.pszHeader);
                         size = item32.cchHeader;
                         break;
@@ -721,7 +721,7 @@ namespace MS.Internal.AutomationProxies
 
                 switch (mask)
                 {
-                    case NativeMethods.LVGF_HEADER: 
+                    case NativeMethods.LVGF_HEADER:
                         textAddress = new IntPtr(&item64.pszHeader);
                         size = item64.cchHeader;
                         break;
@@ -1122,7 +1122,7 @@ namespace MS.Internal.AutomationProxies
             ProcessorTypes remoteBitness;
             GetProcessTypes(hwnd, out localBitness, out remoteBitness);
 
-            // On Vista, TTM_GETTEXT accepts the max length of the text buffer in wParam 
+            // On Vista, TTM_GETTEXT accepts the max length of the text buffer in wParam
             // in order to prevent text buffer overflow.
             // The value of wParam will be ignored on XP.
             const int maxTextLength = 128;
@@ -1194,20 +1194,20 @@ namespace MS.Internal.AutomationProxies
                         remoteMem.WriteTo(localRectStart, new IntPtr(cMem));
 
                         if (Misc.ProxySendMessageInt(hwnd, msg, new IntPtr(index), remoteMem.Address) != 0)
-                        {                            
+                        {
                             remoteMem.ReadFrom(localRectStart, new IntPtr(cMem));
-                            Misc.MapWindowPoints(hwnd, IntPtr.Zero, ref rectW32, 2);                            
+                            Misc.MapWindowPoints(hwnd, IntPtr.Zero, ref rectW32, 2);
 
-                            // Errors in RTL handling are sometimes caused by a failure to clearly define 
-                            // class responsibility for normalizing the rectangles.  If a class provides a 
-                            // normalized rectangle that is subsequently normalized by a caller, Win32Rect 
-                            // will convert the boundaries to EmptyRect.  This is caused by the test in 
-                            // Win32Rect.IsEmpty, which returns true if (left >= right || top >= bottom).  
-                            // For various reasons some controls provide normalized rectangles and some 
-                            // controls do not, so the calling class needs to selectively normalize based 
-                            // on known behaviors, version information, or other criteria.  
-                            // CommonXSendMessage is an intermediary, consumed by multiple classes, 
-                            // and normalizing here introduces some unwarranted complexity into the 
+                            // Errors in RTL handling are sometimes caused by a failure to clearly define
+                            // class responsibility for normalizing the rectangles.  If a class provides a
+                            // normalized rectangle that is subsequently normalized by a caller, Win32Rect
+                            // will convert the boundaries to EmptyRect.  This is caused by the test in
+                            // Win32Rect.IsEmpty, which returns true if (left >= right || top >= bottom).
+                            // For various reasons some controls provide normalized rectangles and some
+                            // controls do not, so the calling class needs to selectively normalize based
+                            // on known behaviors, version information, or other criteria.
+                            // CommonXSendMessage is an intermediary, consumed by multiple classes,
+                            // and normalizing here introduces some unwarranted complexity into the
                             // responsibility contract.
                             return rectW32.ToRect(false);
                         }
@@ -1339,17 +1339,17 @@ namespace MS.Internal.AutomationProxies
         // This method retrieves the group text on WinXP OS
         private static string ListView_V6_GetGroupTextOnWinXp(IntPtr hwnd, NativeMethods.LVGROUP group)
         {
-            // Due to the ListView Group bug on WinXP we need to have a special implementation
-            // for retrieving a text of the group for WinXP
-            // On WinXP the code to give back the header text looks something like that:
-            //            if (plvgrp->mask & LVGF_HEADER)
-            //            {
-            //                plvgrp->pszHeader = pgrp->pszHeader;
-            //            }
-            // Instead of something along the lines of StringCchCopy(plvgrp->pszHeader, plvgrp->cchHeader, pgrp->pszHeader);
-            // Hence after the call to CommCtrl.Common_GetSetText() we will get back an internal buffer pointer
-            // and not the text itself (ref string str will be ""). It makes no sense to call CommCtrl.Common_GetSetText()
-            // Use XSendMessage to get the internal buffer pointer and than "manually" read the string
+            // Due to the ListView Group 
+
+
+
+
+
+
+
+
+
+
 
             // get internal buffer pointer (group.pszHeader)
             // NOTE: do no check XSendMessage.XSend since, LVM_GETGROUPINFO returns id of the group which can be 0, hence
@@ -1371,7 +1371,7 @@ namespace MS.Internal.AutomationProxies
                         {
                             if (!hProcess.IsInvalid)
                             {
-                                int count;
+                                IntPtr count;
                                 if (Misc.ReadProcessMemory(hProcess, group.pszHeader, copyTo, new IntPtr(NativeMethods.MAX_PATH), out count))
                                 {
                                     return copyTo.GetStringAuto();
@@ -1387,17 +1387,17 @@ namespace MS.Internal.AutomationProxies
 
         private static string ListView_V6_GetGroupTextOnWinXp(IntPtr hwnd, LVGROUP_32 group)
         {
-            // Due to the ListView Group bug on WinXP we need to have a special implementation
-            // for retrieving a text of the group for WinXP
-            // On WinXP the code to give back the header text looks something like that:
-            //            if (plvgrp->mask & LVGF_HEADER)
-            //            {
-            //                plvgrp->pszHeader = pgrp->pszHeader;
-            //            }
-            // Instead of something along the lines of StringCchCopy(plvgrp->pszHeader, plvgrp->cchHeader, pgrp->pszHeader);
-            // Hence after the call to CommCtrl.Common_GetSetText() we will get back an internal buffer pointer
-            // and not the text itself (ref string str will be ""). It makes no sense to call CommCtrl.Common_GetSetText()
-            // Use XSendMessage to get the internal buffer pointer and than "manually" read the string
+            // Due to the ListView Group 
+
+
+
+
+
+
+
+
+
+
 
             // get internal buffer pointer (group.pszHeader)
             // NOTE: do no check XSendMessage.XSend since, LVM_GETGROUPINFO returns id of the group which can be 0, hence
@@ -1419,7 +1419,7 @@ namespace MS.Internal.AutomationProxies
                         {
                             if (!hProcess.IsInvalid)
                             {
-                                int count;
+                                IntPtr count;
                                 if (Misc.ReadProcessMemory(hProcess, new IntPtr(group.pszHeader), copyTo, new IntPtr(NativeMethods.MAX_PATH), out count))
                                 {
                                     return copyTo.GetStringAuto();
@@ -1435,17 +1435,17 @@ namespace MS.Internal.AutomationProxies
 
         private static string ListView_V6_GetGroupTextOnWinXp(IntPtr hwnd, LVGROUP_64 group)
         {
-            // Due to the ListView Group bug on WinXP we need to have a special implementation
-            // for retrieving a text of the group for WinXP
-            // On WinXP the code to give back the header text looks something like that:
-            //            if (plvgrp->mask & LVGF_HEADER)
-            //            {
-            //                plvgrp->pszHeader = pgrp->pszHeader;
-            //            }
-            // Instead of something along the lines of StringCchCopy(plvgrp->pszHeader, plvgrp->cchHeader, pgrp->pszHeader);
-            // Hence after the call to CommCtrl.Common_GetSetText() we will get back an internal buffer pointer
-            // and not the text itself (ref string str will be ""). It makes no sense to call CommCtrl.Common_GetSetText()
-            // Use XSendMessage to get the internal buffer pointer and than "manually" read the string
+            // Due to the ListView Group 
+
+
+
+
+
+
+
+
+
+
 
             // get internal buffer pointer (group.pszHeader)
             // NOTE: do no check XSendMessage.XSend since, LVM_GETGROUPINFO returns id of the group which can be 0, hence
@@ -1467,7 +1467,7 @@ namespace MS.Internal.AutomationProxies
                         {
                             if (!hProcess.IsInvalid)
                             {
-                                int count;
+                                IntPtr count;
                                 if (Misc.ReadProcessMemory(hProcess, new IntPtr(group.pszHeader), copyTo, new IntPtr(NativeMethods.MAX_PATH), out count))
                                 {
                                     return copyTo.GetStringAuto();
@@ -1516,7 +1516,7 @@ namespace MS.Internal.AutomationProxies
                 // Windows 2000 (major version 5)
                 else if (Environment.OSVersion.Version.Major == 5)
                 {
-                    // NtQueryInformationProcess is available for use in Windows 2000 and Windows XP. 
+                    // NtQueryInformationProcess is available for use in Windows 2000 and Windows XP.
                     // It may be altered or unavailable in subsequent versions. Applications should use the alternate functions
                     ulong infoWOW64 = 0;
                     int status = UnsafeNativeMethods.NtQueryInformationProcess(hProcess, UnsafeNativeMethods.ProcessWow64Information, ref infoWOW64, Marshal.SizeOf(typeof(ulong)), null);
@@ -2022,7 +2022,7 @@ namespace MS.Internal.AutomationProxies
             internal int stateMask;
             internal int state;
             internal int align;
-            
+
             // new stuff for v6
             internal IntPtr pszSubtitle;
             internal int cchSubtitle;
@@ -2052,7 +2052,7 @@ namespace MS.Internal.AutomationProxies
                 stateMask = item.stateMask;
                 state = item.state;
                 align = item.align;
-                
+
                 // new stuff for v6
                 pszSubtitle = item.pszSubtitle;
                 cchSubtitle = item.cchSubtitle;
@@ -2101,7 +2101,7 @@ namespace MS.Internal.AutomationProxies
                 nativeItem.cItems = item.cItems;             // Read only
                 nativeItem.pszSubsetTitle = item.pszSubsetTitle; // NULL if group is not subset
                 nativeItem.cchSubsetTitle = item.cchSubsetTitle;
-                
+
                 return nativeItem;
             }
         }
@@ -2187,7 +2187,7 @@ namespace MS.Internal.AutomationProxies
             internal int cItems;             // Read only
             internal long pszSubsetTitle;     // NULL if group is not subset
             internal int cchSubsetTitle;
-            
+
             // This constructor should only be called with LVGROUP is a 32 bit structure
             internal LVGROUP_V6_64(NativeMethods.LVGROUP_V6 item)
             {
@@ -2202,7 +2202,7 @@ namespace MS.Internal.AutomationProxies
                 stateMask = item.stateMask;
                 state = item.state;
                 align = item.align;
-                
+
                 // new stuff for v6
                 pszSubtitle = (long)item.pszSubtitle;
                 cchSubtitle = item.cchSubtitle;
@@ -2251,7 +2251,7 @@ namespace MS.Internal.AutomationProxies
                 nativeItem.cItems = item.cItems;             // Read only
                 nativeItem.pszSubsetTitle = IntPtr.Zero; // NULL if group is not subset
                 nativeItem.cchSubsetTitle = item.cchSubsetTitle;
-                
+
                 return nativeItem;
             }
         }

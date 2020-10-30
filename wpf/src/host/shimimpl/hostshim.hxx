@@ -7,9 +7,9 @@
 //     the version-independent hosting shim.
 //
 // History:
-//      2005/05/09 - [....]
+//      2005/05/09 - Microsoft
 //          Created
-//      2007/09/20 - [....]
+//      2007/09/20 - Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

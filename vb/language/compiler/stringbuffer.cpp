@@ -66,7 +66,7 @@ StringBuffer::StringBuffer
 
     m_wszStringPtr = wszBuffer;
 
-    // [....] 9/19/2004:  Overflow check; trying to avoid math to do it to minimize perf hit.
+    // Microsoft 9/19/2004:  Overflow check; trying to avoid math to do it to minimize perf hit.
     if (cchBuffer < 0x80000000)
     {
         m_cbMemory = cchBuffer * sizeof(WCHAR);
@@ -276,7 +276,7 @@ void StringBuffer::AppendWithLength(
 {
     VSASSERT( psBuffer != NULL, "Caller must supply a StringBuffer" );
 
-    // [....] 9/19/2004:  Overflow check; trying to avoid math to do it to minimize perf hit.
+    // Microsoft 9/19/2004:  Overflow check; trying to avoid math to do it to minimize perf hit.
     if (cchLength < 0x80000000)
     {
         AppendData( psBuffer->m_wszStringPtr, cchLength * sizeof( WCHAR ) );
@@ -300,7 +300,7 @@ void StringBuffer::AppendWithLength(
     _In_count_(cchLength)PCWCH wszBuffer,
     size_t cchLength)
 {
-    // [....] 9/19/2004:  Overflow check; trying to avoid math to do it to minimize perf hit.
+    // Microsoft 9/19/2004:  Overflow check; trying to avoid math to do it to minimize perf hit.
     if (cchLength < 0x80000000)
     {
         AppendData(wszBuffer, cchLength * sizeof(WCHAR));
@@ -440,7 +440,7 @@ void StringBuffer::CopyWithLength(
     _In_count_(cchLength)PCWCH wszBuffer,
     size_t cchLength)
 {
-    // [....] 9/19/2004:  Overflow check; trying to avoid math to do it to minimize perf hit.
+    // Microsoft 9/19/2004:  Overflow check; trying to avoid math to do it to minimize perf hit.
     IfFalseThrow(cchLength < 0x80000000);
     AllocateSize( cchLength * sizeof(WCHAR) );
 
@@ -481,7 +481,7 @@ void StringBuffer::AppendMultiCopiesOfAWChar(
     WCHAR wchBuffer,
     size_t cchLength)
 {
-    // [....] 9/19/2004:  Overflow check.
+    // Microsoft 9/19/2004:  Overflow check.
     IfFalseThrow(cchLength < 0x80000000 && m_cbLen + (cchLength + 1) * sizeof(WCHAR) >= m_cbLen);
     if (cchLength > 0)
     {

@@ -294,7 +294,7 @@ namespace System.Windows.Media
         /// <summary>
         /// Render method renders the visual tree.
         /// </summary>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         void ICompositionTarget.Render(bool inResize, DUCE.Channel channel)
         {
 

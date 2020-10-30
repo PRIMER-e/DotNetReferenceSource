@@ -20,8 +20,6 @@
 
 #include "snipch.hpp"
 
-#define UNICODE 
-
 #include <wincrypt.h>
 
 #define SECURITY_WIN32
@@ -41,20 +39,19 @@ public:
 	DWORD WriteSync( __inout SNI_Packet * pPacket, __in SNI_ProvInfo * pProvInfo );
 	DWORD WriteAsync(__inout SNI_Packet * pPacket, __in SNI_ProvInfo * pProvInfo);
 	DWORD ReadDone(__deref_inout SNI_Packet ** ppPacket, __deref_inout SNI_Packet **ppLeftOver, __in DWORD dwBytes, __in DWORD dwError);
-	DWORD WriteDone(__deref_inout SNI_Packet ** ppPacket, __in DWORD dwBytes, __in DWORD dwError);	
+	DWORD WriteDone(__deref_inout SNI_Packet ** ppPacket, __in DWORD dwBytes, __in DWORD dwError);
 	DWORD Close();
 	void Release();
 	DWORD RemoveX();
-
+	
 protected:
-
 	SslState 		m_State;
 	
 	SNI_Packet *	m_pLeftOver;
 
 	DWORD 		m_cbHeaderLength;
 	DWORD 		m_cbTrailerLength;
-
+	
 	SNICritSec *	m_CS;
 
 	DWORD	    m_dwSslNativeError;
@@ -68,7 +65,7 @@ protected:
 
 	void CallbackError();
 	void ProcessPendingIO();
-
+	
 private:
 
 	bool 			m_fClosed;
@@ -107,7 +104,7 @@ public:
 	static DWORD Initialize( PSNI_PROVIDER_INFO pInfo );
 	static DWORD Terminate();
 	DWORD InitX( __in PCtxtHandle h);
-
+	
 private:
 
 	const static DWORD s_cbSignLength = 16;	//MD5
@@ -134,6 +131,10 @@ private:
 	DWORD Decrypt( __inout SNI_Packet *pPacket, __deref_out SNI_Packet **ppLeftOver );
 
 };
+
+// Defined in sni.cpp, but used by CryptoBase provider subclasses: Ssl
+void DecrementConnBufSize(__out SNI_Conn * pConn, SNI_PROVIDER_INFO * pProvInfo);
+void IncrementConnBufSize(__out SNI_Conn * pConn, SNI_PROVIDER_INFO * pProvInfo);
 
 class Ssl: public CryptoBase
 {
@@ -174,14 +175,12 @@ public:
 	DWORD 	HandshakeWriteDone( __inout_opt SNI_Packet *pPacket, __in DWORD dwError );
 	DWORD 	HandshakeWriteToken( __inout_opt SNI_Packet *pPacket);
 	
-
 	void 	CallbackError();
 	void 	ProcessPendingIO();
 
+	void DecConnBufSize();
+	
 private:
-
-	const static DWORD 	s_cbHeaderLength = 5;
-	const static DWORD 	s_cbTrailerLength = 36;
 
 	static HMODULE 				s_hSecurity;
 	static PSecurityFunctionTable 	s_pfTable;
@@ -224,6 +223,7 @@ private:
 	// maximum message length allowed for encryption
 	DWORD		m_cbMaximumMessage;
 
+	BOOL		m_fConnBufSizeIncremented;
 
 	// Internal helpers
 	static DWORD FindAndLoadCertificate( __in HCERTSTORE  hMyCertStore, 
@@ -234,13 +234,16 @@ private:
 	
 	static DWORD IsServerAuthCert(PCCERT_CONTEXT   pCertContext );
 	static DWORD GetCertShaHash(PCCERT_CONTEXT   pCertContext, BYTE* pbShaHash, DWORD* pcbSize);
-	static DWORD GetCertShaHashInText(PCCERT_CONTEXT   pCertContext, char* pszShaHashText, DWORD cbSize);
+	static DWORD GetCertShaHashInText(PCCERT_CONTEXT   pCertContext, WCHAR* pwszShaHashText, DWORD cchSize);
 
 	static DWORD	LoadSecurityLibrary();
 
 	DWORD SetChannelBindings();
 
-
+	virtual DWORD AdjustProtocolFields();
+	void IncConnBufSize();
+	DWORD CopyPacket( __inout SNI_Packet * pLeftOver, __deref_out SNI_Packet ** ppNewPacket, __in_opt LPVOID pPacketKey, SNI_Packet_IOType ioType ); 
+	void GetSSLProvInfo(SNI_PROVIDER_INFO *pProvInfo);
 };
 
 #endif

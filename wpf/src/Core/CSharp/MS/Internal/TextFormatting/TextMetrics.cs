@@ -43,7 +43,7 @@ namespace MS.Internal.TextFormatting
         private int                     _textWidthAtTrailing;       // text start to end excluding trailing whitespaces    
         private int                     _paragraphToText;           // paragraph start to text start
         private LSRun                   _lastRun;                   // Last Text LSRun
-
+        private double                  _pixelsPerDip;              // PixelsPerDip
 
         /// <summary>
         /// Construct text metrics from full text info
@@ -148,6 +148,7 @@ namespace MS.Internal.TextFormatting
             _formatter = fullText.Formatter;
             TextStore store = fullText.TextStore;
 
+            _pixelsPerDip = store.Settings.TextSource.PixelsPerDip;
             // obtain position of important distances
             _textStart = lineWidths.upStartMainText;
             _textWidthAtTrailing = lineWidths.upStartTrailing;
@@ -209,8 +210,8 @@ namespace MS.Internal.TextFormatting
                     _height = pap.LineHeight;
                     _baselineOffset = (int)Math.Round(
                         _height
-                        * pap.DefaultTypeface.Baseline(pap.EmSize, Constants.DefaultIdealToReal, Util.PixelsPerDip, fullText.TextFormattingMode)
-                        / pap.DefaultTypeface.LineSpacing(pap.EmSize, Constants.DefaultIdealToReal, Util.PixelsPerDip, fullText.TextFormattingMode)
+                        * pap.DefaultTypeface.Baseline(pap.EmSize, Constants.DefaultIdealToReal, _pixelsPerDip, fullText.TextFormattingMode)
+                        / pap.DefaultTypeface.LineSpacing(pap.EmSize, Constants.DefaultIdealToReal, _pixelsPerDip, fullText.TextFormattingMode)
                         );
                 }
 
@@ -218,8 +219,8 @@ namespace MS.Internal.TextFormatting
                 {
                     // Line is empty so text height and text baseline are based on the default typeface;
                     // it doesn't make sense even for an emtpy line to have zero text height
-                    _textAscent = (int)Math.Round(pap.DefaultTypeface.Baseline(pap.EmSize, Constants.DefaultIdealToReal, Util.PixelsPerDip, fullText.TextFormattingMode));
-                    _textHeight = (int)Math.Round(pap.DefaultTypeface.LineSpacing(pap.EmSize, Constants.DefaultIdealToReal, Util.PixelsPerDip, fullText.TextFormattingMode));
+                    _textAscent = (int)Math.Round(pap.DefaultTypeface.Baseline(pap.EmSize, Constants.DefaultIdealToReal, _pixelsPerDip, fullText.TextFormattingMode));
+                    _textHeight = (int)Math.Round(pap.DefaultTypeface.LineSpacing(pap.EmSize, Constants.DefaultIdealToReal, _pixelsPerDip, fullText.TextFormattingMode));
                 }
                 else
                 {
@@ -379,7 +380,7 @@ namespace MS.Internal.TextFormatting
         /// </summary>
         public double Start
         {
-            get { return _formatter.IdealToReal(_paragraphToText - _textStart); }
+            get { return _formatter.IdealToReal(_paragraphToText - _textStart, _pixelsPerDip); }
         }
 
 
@@ -388,7 +389,7 @@ namespace MS.Internal.TextFormatting
         /// </summary>
         public double Width
         {
-            get { return _formatter.IdealToReal(_textWidthAtTrailing + _textStart); }
+            get { return _formatter.IdealToReal(_textWidthAtTrailing + _textStart, _pixelsPerDip); }
         }
 
 
@@ -397,7 +398,7 @@ namespace MS.Internal.TextFormatting
         /// </summary>
         public double WidthIncludingTrailingWhitespace
         {
-            get { return _formatter.IdealToReal(_textWidth + _textStart); }
+            get { return _formatter.IdealToReal(_textWidth + _textStart, _pixelsPerDip); }
         }
 
 
@@ -406,7 +407,7 @@ namespace MS.Internal.TextFormatting
         /// </summary>
         public double Height 
         { 
-            get { return _formatter.IdealToReal(_height); } 
+            get { return _formatter.IdealToReal(_height, _pixelsPerDip); } 
         }
 
 
@@ -416,7 +417,7 @@ namespace MS.Internal.TextFormatting
         /// </summary>
         public double TextHeight
         {
-            get { return _formatter.IdealToReal(_textHeight); }
+            get { return _formatter.IdealToReal(_textHeight, _pixelsPerDip); }
         }
 
 
@@ -425,7 +426,7 @@ namespace MS.Internal.TextFormatting
         /// </summary>
         public double Baseline
         { 
-            get { return _formatter.IdealToReal(_baselineOffset); } 
+            get { return _formatter.IdealToReal(_baselineOffset, _pixelsPerDip); } 
         }
 
 
@@ -435,7 +436,7 @@ namespace MS.Internal.TextFormatting
         /// </summary>
         public double TextBaseline
         {
-            get { return _formatter.IdealToReal(_textAscent); }
+            get { return _formatter.IdealToReal(_textAscent, _pixelsPerDip); }
         }
 
 

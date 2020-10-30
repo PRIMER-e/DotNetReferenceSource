@@ -46,8 +46,12 @@ namespace System.Windows.Forms
         private const byte DATAGRIDVIEWCELL_flagErrorArea = 0x02;
         internal const byte DATAGRIDVIEWCELL_iconMarginWidth = 4;      // 4 pixels of margin on the left and right of icons
         internal const byte DATAGRIDVIEWCELL_iconMarginHeight = 4;     // 4 pixels of margin on the top and bottom of icons
-        internal const byte DATAGRIDVIEWCELL_iconsWidth = 12;          // all icons are 12 pixels wide - make sure that it stays that way
-        internal const byte DATAGRIDVIEWCELL_iconsHeight = 11;         // all icons are 11 pixels tall - make sure that it stays that way
+        private const byte DATAGRIDVIEWCELL_iconsWidth = 12;          // all icons are 12 pixels wide - make sure that it stays that way
+        private const byte DATAGRIDVIEWCELL_iconsHeight = 11;         // all icons are 11 pixels tall - make sure that it stays that way
+
+        private static bool isScalingInitialized = false;
+        internal static byte iconsWidth = DATAGRIDVIEWCELL_iconsWidth;
+        internal static byte iconsHeight = DATAGRIDVIEWCELL_iconsHeight;
 
         internal static readonly int PropCellValue = PropertyStore.CreateKey();
         private static readonly int PropCellContextMenuStrip = PropertyStore.CreateKey();
@@ -76,6 +80,14 @@ namespace System.Windows.Forms
         /// </devdoc>
         protected DataGridViewCell() : base()
         {
+            if (!isScalingInitialized) {
+                if (DpiHelper.IsScalingRequired) {
+                    iconsWidth = (byte)DpiHelper.LogicalToDeviceUnitsX(DATAGRIDVIEWCELL_iconsWidth);
+                    iconsHeight = (byte)DpiHelper.LogicalToDeviceUnitsY(DATAGRIDVIEWCELL_iconsHeight);
+                }
+                isScalingInitialized = true;
+            }
+
             this.propertyStore = new PropertyStore();
             this.StateInternal = DataGridViewElementStates.None;
         }
@@ -1156,8 +1168,8 @@ namespace System.Windows.Forms
         /// <include file='doc\DataGridViewCell.uex' path='docs/doc[@for="DataGridViewCell.Clone"]/*' />
         public virtual object Clone()
         {
-            // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
-            //
+            // SECREVIEW : Late-binding does not represent a security thread, see 
+
             DataGridViewCell dataGridViewCell = (DataGridViewCell) System.Activator.CreateInstance(this.GetType());
             CloneInternal(dataGridViewCell);
             return dataGridViewCell;
@@ -1234,15 +1246,15 @@ namespace System.Windows.Forms
 
         internal Rectangle ComputeErrorIconBounds(Rectangle cellValueBounds)
         {
-            if (cellValueBounds.Width >= DATAGRIDVIEWCELL_iconMarginWidth * 2 + DATAGRIDVIEWCELL_iconsWidth &&
-                cellValueBounds.Height >= DATAGRIDVIEWCELL_iconMarginHeight * 2 + DATAGRIDVIEWCELL_iconsHeight)
+            if (cellValueBounds.Width >= DATAGRIDVIEWCELL_iconMarginWidth * 2 + iconsWidth &&
+                cellValueBounds.Height >= DATAGRIDVIEWCELL_iconMarginHeight * 2 + iconsHeight)
             {
                 Rectangle bmpRect = new Rectangle(this.DataGridView.RightToLeftInternal ?
                                       cellValueBounds.Left + DATAGRIDVIEWCELL_iconMarginWidth :
-                                      cellValueBounds.Right - DATAGRIDVIEWCELL_iconMarginWidth - DATAGRIDVIEWCELL_iconsWidth,
-                                      cellValueBounds.Y + (cellValueBounds.Height - DATAGRIDVIEWCELL_iconsHeight) / 2,
-                                      DATAGRIDVIEWCELL_iconsWidth,
-                                      DATAGRIDVIEWCELL_iconsHeight);
+                                      cellValueBounds.Right - DATAGRIDVIEWCELL_iconMarginWidth - iconsWidth,
+                                      cellValueBounds.Y + (cellValueBounds.Height - iconsHeight) / 2,
+                                      iconsWidth,
+                                      iconsHeight);
                 return bmpRect;
             }
             else
@@ -1511,6 +1523,13 @@ namespace System.Windows.Forms
         {
             Bitmap b = new Bitmap(typeof(DataGridViewCell), bitmapName);
             b.MakeTransparent();
+            if (DpiHelper.IsScalingRequired) {
+                Bitmap scaledBitmap = DpiHelper.CreateResizedBitmap(b, new Size(iconsWidth, iconsHeight));
+                if (scaledBitmap != null) {
+                    b.Dispose();
+                    b = scaledBitmap;
+                }
+            }
             return b;
         }
 
@@ -3332,8 +3351,8 @@ namespace System.Windows.Forms
                     OnCellErrorAreaMouseLeaveInternal();
                     break;
                 case DATAGRIDVIEWCELL_flagAreaNotSet:
-                    // [....]: there seems to be a bug in setting the HorizontalOffset when scrolling
-                    // Debug.Assert(false, "if we leave the cell we should already have set the CurrentMouseLocation to Data Area or Error Area");
+                    // Microsoft: there seems to be a 
+
                     break;
                 default:
                     Debug.Assert(false, "there are only three possible choices for the CurrentMouseLocation");
@@ -4243,8 +4262,8 @@ namespace System.Windows.Forms
         protected virtual void PaintErrorIcon(Graphics graphics, Rectangle clipBounds, Rectangle cellValueBounds, string errorText)
         {
             if (!string.IsNullOrEmpty(errorText) &&
-                cellValueBounds.Width >= DATAGRIDVIEWCELL_iconMarginWidth*2+DATAGRIDVIEWCELL_iconsWidth && 
-                cellValueBounds.Height >= DATAGRIDVIEWCELL_iconMarginHeight*2+DATAGRIDVIEWCELL_iconsHeight)
+                cellValueBounds.Width >= DATAGRIDVIEWCELL_iconMarginWidth*2+iconsWidth &&
+                cellValueBounds.Height >= DATAGRIDVIEWCELL_iconMarginHeight * 2 + iconsHeight)
             {
                 PaintErrorIcon(graphics, ComputeErrorIconBounds(cellValueBounds));
             }
@@ -4258,7 +4277,7 @@ namespace System.Windows.Forms
             {
                 lock (bmp)
                 {
-                    graphics.DrawImage(bmp, iconBounds, 0, 0, DATAGRIDVIEWCELL_iconsWidth, DATAGRIDVIEWCELL_iconsHeight, GraphicsUnit.Pixel);
+                    graphics.DrawImage(bmp, iconBounds, 0, 0, iconsWidth, iconsHeight, GraphicsUnit.Pixel);
                 }
             }
         }
@@ -4266,11 +4285,11 @@ namespace System.Windows.Forms
         internal void PaintErrorIcon(Graphics graphics, DataGridViewCellStyle cellStyle, int rowIndex, Rectangle cellBounds, Rectangle cellValueBounds, string errorText)
         {
             if (!string.IsNullOrEmpty(errorText) &&
-                cellValueBounds.Width >= DATAGRIDVIEWCELL_iconMarginWidth * 2 + DATAGRIDVIEWCELL_iconsWidth &&
-                cellValueBounds.Height >= DATAGRIDVIEWCELL_iconMarginHeight * 2 + DATAGRIDVIEWCELL_iconsHeight)
+                cellValueBounds.Width >= DATAGRIDVIEWCELL_iconMarginWidth * 2 + iconsWidth &&
+                cellValueBounds.Height >= DATAGRIDVIEWCELL_iconMarginHeight * 2 + iconsHeight)
             {
                 Rectangle iconBounds = GetErrorIconBounds(graphics, cellStyle, rowIndex);
-                if (iconBounds.Width >= DATAGRIDVIEWCELL_iconMarginWidth && iconBounds.Height >= DATAGRIDVIEWCELL_iconsHeight)
+                if (iconBounds.Width >= DATAGRIDVIEWCELL_iconMarginWidth && iconBounds.Height >= iconsHeight)
                 {
                     iconBounds.X += cellBounds.X;
                     iconBounds.Y += cellBounds.Y;

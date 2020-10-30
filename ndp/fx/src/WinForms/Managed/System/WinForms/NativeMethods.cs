@@ -181,7 +181,7 @@ namespace System.Windows.Forms {
 		// Note: ADVF_ONLYONCE and ADVF_PRIMEFIRST values now conform with objidl.dll but are backwards from
 		// Platform SDK documentation as of 07/21/2003.
         // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/com/htm/oen_a2z_8jxi.asp.
-        // See VSWhidbey bug#96162.
+        // See VSWhidbey 
 
         public const int BCM_GETIDEALSIZE = 0x1601,
         BI_RGB = 0,
@@ -1042,6 +1042,8 @@ namespace System.Windows.Forms {
 
         public const int MEMBERID_NIL = (-1),
         MAX_PATH = 260,
+        MAX_UNICODESTRING_LEN =  short.MaxValue, // maximum unicode string length 
+        ERROR_INSUFFICIENT_BUFFER = 122, //https://msdn.microsoft.com/en-us/library/windows/desktop/ms681382(v=vs.85).aspx
         MA_ACTIVATE = 0x0001,
         MA_ACTIVATEANDEAT = 0x0002,
         MA_NOACTIVATE = 0x0003,
@@ -2181,7 +2183,6 @@ namespace System.Windows.Forms {
 
         private static int wmMouseEnterMessage = -1;
         public static int WM_MOUSEENTER {
-           [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
            get {
               if (wmMouseEnterMessage == -1) {
                   wmMouseEnterMessage = SafeNativeMethods.RegisterWindowMessage("WinFormsMouseEnter");
@@ -2192,7 +2193,6 @@ namespace System.Windows.Forms {
 
         private static int wmUnSubclass = -1;
         public static int WM_UIUNSUBCLASS {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 if (wmUnSubclass == -1) {
                     wmUnSubclass = SafeNativeMethods.RegisterWindowMessage("WinFormsUnSubclass");
@@ -4317,7 +4317,7 @@ namespace System.Windows.Forms {
                     else if (t == typeof(Decimal)) {
                         v.vt = (int)tagVT.VT_CY;
                         Decimal c = (Decimal)var;
-                        // [....], it's bizzare that we need to call this as a static!
+                        // Microsoft, it's bizzare that we need to call this as a static!
                         v.SetLong(Decimal.ToInt64(c));
                     }
                     else if (t == typeof(decimal)) {
@@ -4953,7 +4953,7 @@ namespace System.Windows.Forms {
             
             public    /*NativeMethods.tagELEMDESC*/ IntPtr lprgelemdescParam = IntPtr.Zero;
 
-            // cpb, [....], the EE chokes on Enums in structs
+            // cpb, Microsoft, the EE chokes on Enums in structs
             
             public    /*NativeMethods.tagFUNCKIND*/ int funckind = 0;
             
@@ -5144,7 +5144,7 @@ namespace System.Windows.Forms {
 
 
     /*
-    [....]: dead code. Keep it in case we need an HDITEM class where the pszText is actually set.
+    Microsoft: dead code. Keep it in case we need an HDITEM class where the pszText is actually set.
     [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Auto)]
     public class HDITEM
     {
@@ -6263,7 +6263,7 @@ namespace System.Windows.Forms {
             [MarshalAs(UnmanagedType.U2)]
             public   short wMinorVerNum = 0;
             
-            // [....] these are inline too
+            // Microsoft these are inline too
             //public    NativeMethods.tagTYPEDESC tdescAlias;
             [MarshalAs(UnmanagedType.U4)]
             public   int tdescAlias_unionMember = 0;

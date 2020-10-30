@@ -6,7 +6,7 @@
 //      EntityPropertyMapping attribute implementation
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Common

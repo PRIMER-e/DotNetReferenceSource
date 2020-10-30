@@ -7,7 +7,7 @@
 //
 //  Contents:  ValueSerializer for DependencyProperty
 //
-//  Created:   04/28/2005 [....]
+//  Created:   04/28/2005 Microsoft
 //
 //------------------------------------------------------------------------
 

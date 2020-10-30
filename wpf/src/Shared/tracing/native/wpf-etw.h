@@ -31,14 +31,18 @@ extern "C" {
 #define MCGEN_TRACE_CONTEXT_DEF
 typedef struct _MCGEN_TRACE_CONTEXT
 {
-    TRACEHANDLE     RegistrationHandle;
-    TRACEHANDLE     Logger;
-    ULONGLONG       MatchAnyKeyword;
-    ULONGLONG       MatchAllKeyword;
-    ULONG           Flags;
-    ULONG           IsEnabled;
-    UCHAR           Level; 
-    UCHAR           Reserve;
+    TRACEHANDLE            RegistrationHandle;
+    TRACEHANDLE            Logger;
+    ULONGLONG              MatchAnyKeyword;
+    ULONGLONG              MatchAllKeyword;
+    ULONG                  Flags;
+    ULONG                  IsEnabled;
+    UCHAR                  Level; 
+    UCHAR                  Reserve;
+    USHORT                 EnableBitsCount;
+    PULONG                 EnableBitMask;
+    const ULONGLONG*       EnableKeyWords;
+    const UCHAR*           EnableLevel;
 } MCGEN_TRACE_CONTEXT, *PMCGEN_TRACE_CONTEXT;
 #endif
 
@@ -53,52 +57,61 @@ typedef struct _MCGEN_TRACE_CONTEXT
 typedef
 ULONG
 (__stdcall *PFN_EVENT_WRITE)(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR EventDescriptor,
-    __in ULONG UserDataCount,
-    __in_ecount_opt(UserDataCount) PEVENT_DATA_DESCRIPTOR UserData
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR EventDescriptor,
+    _In_ ULONG UserDataCount,
+    _In_reads_opt_(UserDataCount) PEVENT_DATA_DESCRIPTOR UserData
     );
 
 
 typedef
 ULONG
 (__stdcall *PFN_EVENT_REGISTER)(
-    __in LPCGUID ProviderId,
-    __in_opt PENABLECALLBACK EnableCallback,
-    __in_opt PVOID CallbackContext,
-    __out PREGHANDLE RegHandle
+    _In_ LPCGUID ProviderId,
+    _In_opt_ PENABLECALLBACK EnableCallback,
+    _In_opt_ PVOID CallbackContext,
+    _Out_ PREGHANDLE RegHandle
     );
 
 typedef
 ULONG
 (__stdcall *PFN_EVENT_UNREGISTER)(
-    __in REGHANDLE RegHandle
+    _In_ REGHANDLE RegHandle
     );
 
 typedef
 BOOLEAN
 (__stdcall *PFN_EVENT_ENABLED)(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR EventDescriptor
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR EventDescriptor
     );
 
 ULONG __stdcall
 McGenEventTracingRegister(
-    __in LPCGUID ProviderId,
-    __in_opt PENABLECALLBACK EnableCallback,
-    __in_opt PVOID CallbackContext,
-    __out PREGHANDLE RegHandle
+    _In_ LPCGUID ProviderId,
+    _In_opt_ PENABLECALLBACK EnableCallback,
+    _In_opt_ PVOID CallbackContext,
+    _Inout_ PREGHANDLE RegHandle
     );
 
 ULONG __stdcall
-McGenEventTracingUnregister(__in PREGHANDLE RegHandle);
+McGenEventTracingUnregister(_In_ PREGHANDLE RegHandle);
 
 BOOLEAN __stdcall
 McGenEventTracingEnabled(
-    __in PMCGEN_TRACE_CONTEXT EnableInfo,
-    __in PCEVENT_DESCRIPTOR EventDescriptor
+    _In_ PMCGEN_TRACE_CONTEXT EnableInfo,
+    _In_ PCEVENT_DESCRIPTOR EventDescriptor
     );
 
+BOOLEAN __stdcall
+McGenLevelKeywordEnabled(
+    _In_ PMCGEN_TRACE_CONTEXT EnableInfo,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG Keyword
+    );
+
+#if !defined(MCGEN_TRACE_GLOBALS_DEF)
+#define MCGEN_TRACE_GLOBALS_DEF
 __declspec(selectany) BOOLEAN McGenTracingSupportInit = FALSE;
 __declspec(selectany) BOOLEAN McGenPreVista = FALSE;
 
@@ -111,6 +124,7 @@ __declspec(selectany) PFN_EVENT_REGISTER  PfnEventRegister = McGenEventTracingRe
 
 #pragma prefast(suppress:__WARNING_ENCODE_GLOBAL_FUNCTION_POINTER, "this pointer can not be encoded");
 __declspec(selectany) PFN_EVENT_UNREGISTER PfnEventUnregister = NULL;
+#endif
 
 
 
@@ -120,10 +134,10 @@ __declspec(selectany) PFN_EVENT_UNREGISTER PfnEventUnregister = NULL;
 DECLSPEC_NOINLINE __inline
 ULONG __stdcall
 McGenControlCallback(
-    __in WMIDPREQUESTCODE RequestCode,
-    __in PVOID Context,
-    __inout ULONG *InOutBufferSize,
-    __inout PVOID Buffer
+    _In_ WMIDPREQUESTCODE RequestCode,
+    _In_ PVOID Context,
+    _Inout_ ULONG *InOutBufferSize,
+    _Inout_ PVOID Buffer
     )
 /*++
 
@@ -144,6 +158,7 @@ Remarks:
     ULONG Flags;
     ULONG IsEnabled = 0;
     UCHAR Level;
+    ULONG Ix;
 
     *InOutBufferSize = 0;
 
@@ -175,6 +190,9 @@ Remarks:
                 Logger = 0;
                 Flags  = 0;
                 Level  = 0;
+                if (Ctx->EnableBitsCount > 0) {
+                    RtlZeroMemory(Ctx->EnableBitMask, (((Ctx->EnableBitsCount - 1) / 32) + 1) * sizeof(ULONG));
+                }
                 McGenDebug(1, ("[Callback] WMI_DISABLE_EVENTS Ctx 0x%08p\n", Ctx));
                 break;
             }
@@ -188,6 +206,14 @@ Remarks:
     Ctx->Level    = Level;
     Ctx->Flags    = Flags;
     Ctx->IsEnabled = IsEnabled;
+
+    for (Ix = 0; Ix < Ctx->EnableBitsCount; Ix += 1) {
+        if (McGenLevelKeywordEnabled(Ctx, Ctx->EnableLevel[Ix], Ctx->EnableKeyWords[Ix]) != FALSE) {
+            Ctx->EnableBitMask[Ix >> 5] |= (1 << (Ix % 32));
+        } else {
+            Ctx->EnableBitMask[Ix >> 5] &= ~(1 << (Ix % 32));
+        }
+    }
         
 
 #ifdef MCGEN_PRIVATE_ENABLE_CALLBACK
@@ -209,13 +235,13 @@ DECLSPEC_NOINLINE __inline
 VOID
 __stdcall
 McGenControlCallbackV2(
-    __in LPCGUID SourceId,
-    __in ULONG ControlCode,
-    __in UCHAR Level,
-    __in ULONGLONG MatchAnyKeyword,
-    __in ULONGLONG MatchAllKeyword,
-    __in_opt PEVENT_FILTER_DESCRIPTOR FilterData,
-    __in_opt PVOID CallbackContext
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PEVENT_FILTER_DESCRIPTOR FilterData,
+    _Inout_opt_ PVOID CallbackContext
     )
 /*++
 
@@ -250,6 +276,7 @@ Remarks:
 --*/
 {
     PMCGEN_TRACE_CONTEXT Ctx = (PMCGEN_TRACE_CONTEXT)CallbackContext;
+    ULONG Ix;
 #ifndef MCGEN_PRIVATE_ENABLE_CALLBACK_V2
     UNREFERENCED_PARAMETER(SourceId);
     UNREFERENCED_PARAMETER(FilterData);
@@ -266,6 +293,14 @@ Remarks:
             Ctx->MatchAnyKeyword = MatchAnyKeyword;
             Ctx->MatchAllKeyword = MatchAllKeyword;
             Ctx->IsEnabled = EVENT_CONTROL_CODE_ENABLE_PROVIDER;
+
+            for (Ix = 0; Ix < Ctx->EnableBitsCount; Ix += 1) {
+                if (McGenLevelKeywordEnabled(Ctx, Ctx->EnableLevel[Ix], Ctx->EnableKeyWords[Ix]) != FALSE) {
+                    Ctx->EnableBitMask[Ix >> 5] |= (1 << (Ix % 32));
+                } else {
+                    Ctx->EnableBitMask[Ix >> 5] &= ~(1 << (Ix % 32));
+                }
+            }
             break;
 
         case EVENT_CONTROL_CODE_DISABLE_PROVIDER:
@@ -273,6 +308,9 @@ Remarks:
             Ctx->Level = 0;
             Ctx->MatchAnyKeyword = 0;
             Ctx->MatchAllKeyword = 0;
+            if (Ctx->EnableBitsCount > 0) {
+                RtlZeroMemory(Ctx->EnableBitMask, (((Ctx->EnableBitsCount - 1) / 32) + 1) * sizeof(ULONG));
+            }
             break;
  
         default:
@@ -304,15 +342,17 @@ Remarks:
 VOID McGenInitTracingSupport(
     VOID
     );
+#if !defined(McGenEventRegisterUnregister)
+#define McGenEventRegisterUnregister
 #pragma warning(push)
 #pragma warning(disable:4068)
 FORCEINLINE
 ULONG __stdcall
 McGenEventTracingRegister(
-    __in LPCGUID ProviderId,
-    __in_opt PENABLECALLBACK EnableCallback,
-    __in_opt PVOID CallbackContext,
-    __out PREGHANDLE RegHandle
+    _In_ LPCGUID ProviderId,
+    _In_opt_ PENABLECALLBACK EnableCallback,
+    _In_opt_ PVOID CallbackContext,
+    _Inout_ PREGHANDLE RegHandle
     )
 /*++
 
@@ -396,7 +436,7 @@ Cleanup:
 
 FORCEINLINE
 ULONG __stdcall
-McGenEventTracingUnregister(__in PREGHANDLE RegHandle)
+McGenEventTracingUnregister(_In_ PREGHANDLE RegHandle)
 /*++
 
 Routine Description:
@@ -441,7 +481,7 @@ Remarks:
         //
         // down-level : XP/W2K3
         //
-        PMCGEN_TRACE_CONTEXT Context = (PMCGEN_TRACE_CONTEXT)(*RegHandle);
+        PMCGEN_TRACE_CONTEXT Context = (PMCGEN_TRACE_CONTEXT)(ULONG_PTR)(*RegHandle);
 
 #pragma prefast(suppress:__WARNING_BANNED_LEGACY_INSTRUMENTATION_API_USAGE, "Generated Code Down-Level Support");
         Error = UnregisterTraceGuids(Context->RegistrationHandle);
@@ -449,6 +489,9 @@ Remarks:
         Context->Flags = 0;
         Context->Level = 0;
         Context->Logger = 0;
+        if (Context->EnableBitsCount > 0) {
+            RtlZeroMemory(Context->EnableBitMask, (((Context->EnableBitsCount - 1) / 32) + 1) * sizeof(ULONG));
+        }
         Context->RegistrationHandle = 0;
     }
 
@@ -457,12 +500,16 @@ Remarks:
     return Error;    
 }
 #pragma warning(pop)
+#endif
 
+#if !defined(McGenEventEnabledCheck)
+#define McGenEventEnabledCheck
 FORCEINLINE 
 BOOLEAN __stdcall
-McGenEventTracingEnabled(
-    __in PMCGEN_TRACE_CONTEXT EnableInfo,
-    __in PCEVENT_DESCRIPTOR EventDescriptor
+McGenLevelKeywordEnabled(
+    _In_ PMCGEN_TRACE_CONTEXT EnableInfo,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG Keyword
     )
 {
 
@@ -473,8 +520,8 @@ McGenEventTracingEnabled(
 
     if(McGenPreVista){
 
-	    return ( ((EventDescriptor->Level <= EnableInfo->Level) || (EnableInfo->Level == 0)) &&
-	             (((ULONG)(EventDescriptor->Keyword & 0xFFFFFFFF) == 0) || ((ULONG)(EventDescriptor->Keyword & 0xFFFFFFFF) & EnableInfo->Flags)));
+      return ( ((Level <= EnableInfo->Level) || (EnableInfo->Level == 0)) &&
+               (((ULONG)(Keyword & 0xFFFFFFFF) == 0) || ((ULONG)(Keyword & 0xFFFFFFFF) & EnableInfo->Flags)));
     }
     //
     // Check if the event Level is lower than the level at which
@@ -483,16 +530,16 @@ McGenEventTracingEnabled(
     // all levels are enabled.
     //
 
-    if ((EventDescriptor->Level <= EnableInfo->Level) || // This also covers the case of Level == 0.
+    if ((Level <= EnableInfo->Level) || // This also covers the case of Level == 0.
         (EnableInfo->Level == 0)) {
 
         //
         // Check if Keyword is enabled
         //
 
-        if ((EventDescriptor->Keyword == (ULONGLONG)0) ||
-            ((EventDescriptor->Keyword & EnableInfo->MatchAnyKeyword) &&
-             ((EventDescriptor->Keyword & EnableInfo->MatchAllKeyword) == EnableInfo->MatchAllKeyword))) {
+        if ((Keyword == (ULONGLONG)0) ||
+            ((Keyword & EnableInfo->MatchAnyKeyword) &&
+             ((Keyword & EnableInfo->MatchAllKeyword) == EnableInfo->MatchAllKeyword))) {
             return TRUE;
         }
     }
@@ -500,6 +547,38 @@ McGenEventTracingEnabled(
     return FALSE;
 }
 
+
+FORCEINLINE 
+BOOLEAN __stdcall
+McGenEventTracingEnabled(
+    _In_ PMCGEN_TRACE_CONTEXT EnableInfo,
+    _In_ PCEVENT_DESCRIPTOR EventDescriptor
+    )
+{
+
+    return McGenLevelKeywordEnabled(EnableInfo, EventDescriptor->Level, EventDescriptor->Keyword);
+}
+#endif
+
+
+#if !defined(MCGEN_TRACING_DLL)
+#define MCGEN_TRACING_DLL L"advapi32.dll"
+#endif
+#if !defined(MCGEN_TRACING_DLL_V2)
+#define MCGEN_TRACING_DLL_V2 L"api-ms-win-eventing-provider-l1-1-0.dll"
+#endif
+#if !defined(MCGEN_EVENTWRITE_API)
+#define MCGEN_EVENTWRITE_API  "EventWrite"
+#endif
+#if !defined(MCGEN_EVENTREGISTER_API)
+#define MCGEN_EVENTREGISTER_API   "EventRegister"
+#endif
+#if !defined(MCGEN_EVENTUNREGISTER_API)
+#define MCGEN_EVENTUNREGISTER_API "EventUnregister"
+#endif
+
+#if !defined(McGenInitTracingSupportFunc)
+#define McGenInitTracingSupportFunc
 FORCEINLINE
 VOID McGenInitTracingSupport(
     VOID
@@ -520,8 +599,9 @@ Remarks:
 --*/
 {
     OSVERSIONINFO OSVersion;
-    HINSTANCE AdvapiDll = NULL;
+    HINSTANCE TraceApiDll = NULL;
     BOOL OkVersion;
+    BOOL IsWin8OrLater = FALSE;
 
     if (McGenTracingSupportInit){
         return;
@@ -536,6 +616,7 @@ Remarks:
     if (OkVersion) {
 
         McGenPreVista = (OSVersion.dwMajorVersion < 6);
+        IsWin8OrLater = (OSVersion.dwMajorVersion > 6) || ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion > 1));
 
         if (McGenPreVista) {
 
@@ -546,11 +627,14 @@ Remarks:
     } 
 
 
-    AdvapiDll = GetModuleHandleW(L"advapi32");
+    TraceApiDll = GetModuleHandleW(MCGEN_TRACING_DLL);
+    if ((TraceApiDll == NULL) && (IsWin8OrLater != FALSE)) {
+        TraceApiDll = GetModuleHandleW(MCGEN_TRACING_DLL_V2);
+    }
     
-    if (AdvapiDll != NULL)
+    if (TraceApiDll != NULL)
     {
-        PfnEventWrite = (PFN_EVENT_WRITE)GetProcAddress(AdvapiDll, "EventWrite");
+        PfnEventWrite = (PFN_EVENT_WRITE)GetProcAddress(TraceApiDll, MCGEN_EVENTWRITE_API);
 
         if (NULL == PfnEventWrite) {
 
@@ -563,7 +647,7 @@ Remarks:
 
         } 
 
-        PfnEventRegister = (PFN_EVENT_REGISTER) GetProcAddress(AdvapiDll, "EventRegister");
+        PfnEventRegister = (PFN_EVENT_REGISTER) GetProcAddress(TraceApiDll, MCGEN_EVENTREGISTER_API);
         
         if (NULL == PfnEventRegister) {
             McGenDebug(1, ("[McGenInitTracing] Failed to load EventRegister, using PreVista ETW \n"));
@@ -573,7 +657,7 @@ Remarks:
 
         }
 
-        PfnEventUnregister = (PFN_EVENT_UNREGISTER) GetProcAddress(AdvapiDll, "EventUnregister");
+        PfnEventUnregister = (PFN_EVENT_UNREGISTER) GetProcAddress(TraceApiDll, MCGEN_EVENTUNREGISTER_API);
         
         if (NULL == PfnEventUnregister) {
             McGenDebug(1, ("[McGenInitTracing] Failed to load EventUnregister, using PreVista ETW \n"));
@@ -584,7 +668,7 @@ Remarks:
 
     } else {
     
-        McGenDebug(1, ("[McGenInitTracing] Failed to load Advapi32, using PreVista ETW \n"));
+        McGenDebug(1, ("[McGenInitTracing] Failed to load %ws, using PreVista ETW \n", MCGEN_TRACING_DLL));
         McGenPreVista = TRUE;
 
     }
@@ -594,6 +678,7 @@ done:
     McGenDebug(1, ("[McGenInitTracing] Prevista %s \n", McGenPreVista ? "TRUE" : "FALSE" ));
     McGenTracingSupportInit = TRUE;
 }
+#endif
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 
 //
@@ -604,7 +689,7 @@ done:
 #endif
 
 //+
-// Provider Microsoft-Windows-WPF Event Count 334
+// Provider Microsoft-Windows-WPF Event Count 333
 //+
 EXTERN_C __declspec(selectany) const GUID MICROSOFT_WINDOWS_WPF_PROVIDER = {0xe13b77a8, 0x14b6, 0x11de, {0x80, 0x69, 0x00, 0x1b, 0x21, 0x2b, 0x50, 0x09}};
 
@@ -729,8 +814,6 @@ EXTERN_C __declspec(selectany) const GUID MICROSOFT_WINDOWS_WPF_PROVIDER = {0xe1
 #define DOWNLOADAPPLICATIONEND 0x3a
 #define DOWNLOADPROGRESSUPDATE 0x3b
 #define XAPPLAUNCHERAPPNAVIGATED 0x3c
-#define STARTINGFONTCACHESERVICESTART 0x3d
-#define STARTINGFONTCACHESERVICEEND 0x3e
 #define UPDATEBROWSERCOMMANDSSTART 0x46
 #define UPDATEBROWSERCOMMANDSEND 0x47
 #define POSTSHUTDOWN 0x50
@@ -1019,6 +1102,8 @@ EXTERN_C __declspec(selectany) const GUID WClientParseXamlBamlInfoId = {0x00c117
 EXTERN_C __declspec(selectany) const GUID WClientCreateIRTId = {0xd56e7b1e, 0xe24c, 0x4b0b, {0x9c, 0x4a, 0x88, 0x81, 0xf7, 0x00, 0x56, 0x33}};
 #define TWClientPotentialIRTResource 0x92
 EXTERN_C __declspec(selectany) const GUID WClientPotentialIRTResourceId = {0x4055bbd6, 0xba41, 0x4bd0, {0xbc, 0x0d, 0x6b, 0x67, 0x96, 0x52, 0x29, 0xbe}};
+#define TPenThreadPoolThreadAcquisition 0x93
+EXTERN_C __declspec(selectany) const GUID PenThreadPoolThreadAcquisitionId = {0x6c325c36, 0x4d5f, 0x4328, {0xb1, 0xc6, 0xe1, 0x64, 0x79, 0x6d, 0xfe, 0x2b}};
 //
 // Keyword
 //
@@ -1077,6 +1162,8 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ManipulationReportFrame = 
 #define ManipulationReportFrame_value 0x7d6
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ManipulationEventRaised = {0x7d7, 0x0, 0x10, 0x4, 0x0, 0x89, 0x800000000000000a};
 #define ManipulationEventRaised_value 0x7d7
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR PenThreadPoolThreadAcquisition = {0x7d8, 0x0, 0x10, 0x4, 0x0, 0x93, 0x8000000000000009};
+#define PenThreadPoolThreadAcquisition_value 0x7d8
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR CreateStickyNoteBegin = {0xbb9, 0x2, 0x10, 0x4, 0x1, 0x5c, 0x8000000000000010};
 #define CreateStickyNoteBegin_value 0xbb9
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR CreateStickyNoteEnd = {0xbba, 0x2, 0x10, 0x4, 0x2, 0x5c, 0x8000000000000010};
@@ -1533,10 +1620,6 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WpfHost_DownloadProgressUp
 #define WpfHost_DownloadProgressUpdate_value 0x2371
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WpfHost_XappLauncherAppNavigated = {0x2372, 0x2, 0x10, 0x5, 0x3c, 0x75, 0x8000000000000402};
 #define WpfHost_XappLauncherAppNavigated_value 0x2372
-EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WpfHost_StartingFontCacheServiceStart = {0x2373, 0x2, 0x10, 0x4, 0x3d, 0x75, 0x8000000000000402};
-#define WpfHost_StartingFontCacheServiceStart_value 0x2373
-EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WpfHost_StartingFontCacheServiceEnd = {0x2374, 0x2, 0x10, 0x4, 0x3e, 0x75, 0x8000000000000402};
-#define WpfHost_StartingFontCacheServiceEnd_value 0x2374
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WpfHost_UpdateBrowserCommandsStart = {0x2375, 0x2, 0x10, 0x5, 0x46, 0x75, 0x8000000000000402};
 #define WpfHost_UpdateBrowserCommandsStart_value 0x2375
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WpfHost_UpdateBrowserCommandsEnd = {0x2376, 0x2, 0x10, 0x5, 0x47, 0x75, 0x8000000000000402};
@@ -1695,15 +1778,15 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientCreateIRT = {0x2b39
 #define WClientCreateIRT_value 0x2b39
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientPotentialIRTResource = {0x2b3a, 0x0, 0x10, 0x12, 0x0, 0x92, 0x8000000000001000};
 #define WClientPotentialIRTResource_value 0x2b3a
-EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextDispatchBegin = {0x2ee1, 0x2, 0x10, 0x4, 0x1, 0x14, 0x8000000000002002};
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextDispatchBegin = {0x2ee1, 0x3, 0x10, 0x4, 0x1, 0x14, 0x8000000000002002};
 #define WClientUIContextDispatchBegin_value 0x2ee1
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextDispatchEnd = {0x2ee2, 0x2, 0x10, 0x4, 0x2, 0x14, 0x8000000000002002};
 #define WClientUIContextDispatchEnd_value 0x2ee2
-EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextPost = {0x2ee3, 0x2, 0x10, 0x4, 0x0, 0x15, 0x8000000000002002};
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextPost = {0x2ee3, 0x3, 0x10, 0x4, 0x0, 0x15, 0x8000000000002002};
 #define WClientUIContextPost_value 0x2ee3
-EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextAbort = {0x2ee4, 0x2, 0x10, 0x4, 0x0, 0x16, 0x8000000000002000};
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextAbort = {0x2ee4, 0x3, 0x10, 0x4, 0x0, 0x16, 0x8000000000002000};
 #define WClientUIContextAbort_value 0x2ee4
-EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextPromote = {0x2ee5, 0x2, 0x10, 0x4, 0x0, 0x17, 0x8000000000002000};
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextPromote = {0x2ee5, 0x3, 0x10, 0x4, 0x0, 0x17, 0x8000000000002000};
 #define WClientUIContextPromote_value 0x2ee5
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextIdle = {0x2ee6, 0x2, 0x10, 0x4, 0x0, 0x18, 0x8000000000002002};
 #define WClientUIContextIdle_value 0x2ee6
@@ -1728,9 +1811,17 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR WClientUIContextIdle = {0x
 // Globals 
 //
 
-EXTERN_C __declspec(selectany) REGHANDLE Microsoft_Windows_WPFHandle = (REGHANDLE)0;
 
-EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_WPF_PROVIDER_Context = {0};
+//
+// Event Enablement Bits
+//
+
+EXTERN_C __declspec(selectany) DECLSPEC_CACHEALIGN ULONG Microsoft_Windows_WPFEnableBits[1];
+EXTERN_C __declspec(selectany) const ULONGLONG Microsoft_Windows_WPFKeywords[27] = {0x8000000000000001, 0x8000000000000003, 0x8000000000000001, 0x8000000000000004, 0x800000000000000a, 0x8000000000000009, 0x8000000000000010, 0x8000000000000022, 0x8000000000000020, 0x8000000000000020, 0x8000000000000040, 0x8000000000000040, 0x8000000000000082, 0x8000000000000102, 0x8000000000000100, 0x8000000000000402, 0x8000000000000400, 0x8000000000000402, 0x8000000000000400, 0x8000000000001000, 0x8000000000001000, 0x8000000000001002, 0x8000000000001002, 0x8000000000001002, 0x8000000000001000, 0x8000000000002002, 0x8000000000002000};
+EXTERN_C __declspec(selectany) const UCHAR Microsoft_Windows_WPFLevels[27] = {4, 4, 5, 4, 4, 4, 4, 4, 4, 5, 4, 5, 4, 4, 5, 4, 4, 5, 5, 4, 5, 4, 5, 17, 18, 4, 4};
+EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_WPF_PROVIDER_Context = {0, 0, 0, 0, 0, 0, 0, 0, 27, Microsoft_Windows_WPFEnableBits, Microsoft_Windows_WPFKeywords, Microsoft_Windows_WPFLevels};
+
+EXTERN_C __declspec(selectany) REGHANDLE Microsoft_Windows_WPFHandle = (REGHANDLE)0;
 
 //
 // Register with ETW XP, W2K, W2K3, Vista +
@@ -1747,2674 +1838,4664 @@ EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_WPF_PROVIDE
 #endif
 
 //
+// Enablement check macro for WClientCreateVisual
+//
+
+#define EventEnabledWClientCreateVisual() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000001) != 0)
+
+//
 // Event Macro for WClientCreateVisual
 //
 #define EventWriteWClientCreateVisual(Id, HWND)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientCreateVisual) ?\
+        EventEnabledWClientCreateVisual() ?\
         MofTemplate_di(Microsoft_Windows_WPFHandle, &WClientCreateVisual, &WClientCreateVisualId, Id, HWND)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientAppCtor
+//
+
+#define EventEnabledWClientAppCtor() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000002) != 0)
 
 //
 // Event Macro for WClientAppCtor
 //
 #define EventWriteWClientAppCtor()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientAppCtor) ?\
+        EventEnabledWClientAppCtor() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientAppCtor, &WClientAppCtorId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientAppRun
+//
+
+#define EventEnabledWClientAppRun() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000002) != 0)
 
 //
 // Event Macro for WClientAppRun
 //
 #define EventWriteWClientAppRun()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientAppRun) ?\
+        EventEnabledWClientAppRun() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientAppRun, &WClientAppRunId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientString
+//
+
+#define EventEnabledWClientString() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for WClientString
 //
 #define EventWriteWClientString(Info)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientString) ?\
+        EventEnabledWClientString() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientString, &WClientStringId, Info)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientStringBegin
+//
+
+#define EventEnabledWClientStringBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for WClientStringBegin
 //
 #define EventWriteWClientStringBegin(Info)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientStringBegin) ?\
+        EventEnabledWClientStringBegin() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientStringBegin, &WClientStringId, Info)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientStringEnd
+//
+
+#define EventEnabledWClientStringEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for WClientStringEnd
 //
 #define EventWriteWClientStringEnd(Info)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientStringEnd) ?\
+        EventEnabledWClientStringEnd() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientStringEnd, &WClientStringId, Info)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientPropParentCheck
+//
+
+#define EventEnabledWClientPropParentCheck() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for WClientPropParentCheck
 //
 #define EventWriteWClientPropParentCheck(Id, TypeAndName)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientPropParentCheck) ?\
+        EventEnabledWClientPropParentCheck() ?\
         MofTemplate_dz(Microsoft_Windows_WPFHandle, &WClientPropParentCheck, &WClientPropParentCheckId, Id, TypeAndName)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for UpdateVisualStateStart
+//
+
+#define EventEnabledUpdateVisualStateStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000002) != 0)
 
 //
 // Event Macro for UpdateVisualStateStart
 //
 #define EventWriteUpdateVisualStateStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, UpdateVisualStateStart) ?\
+        EventEnabledUpdateVisualStateStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &UpdateVisualStateStart, &UpdateVisualStateId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for UpdateVisualStateEnd
+//
+
+#define EventEnabledUpdateVisualStateEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000002) != 0)
 
 //
 // Event Macro for UpdateVisualStateEnd
 //
 #define EventWriteUpdateVisualStateEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, UpdateVisualStateEnd) ?\
+        EventEnabledUpdateVisualStateEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &UpdateVisualStateEnd, &UpdateVisualStateId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for PerfElementIDName
+//
+
+#define EventEnabledPerfElementIDName() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000004) != 0)
 
 //
 // Event Macro for PerfElementIDName
 //
 #define EventWritePerfElementIDName(Id, Type, Name)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, PerfElementIDName) ?\
+        EventEnabledPerfElementIDName() ?\
         MofTemplate_izz(Microsoft_Windows_WPFHandle, &PerfElementIDName, &WPFElementIDId, Id, Type, Name)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for PerfElementIDAssignment
+//
+
+#define EventEnabledPerfElementIDAssignment() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000004) != 0)
 
 //
 // Event Macro for PerfElementIDAssignment
 //
 #define EventWritePerfElementIDAssignment(Id, Type, Data, AssemblyID)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, PerfElementIDAssignment) ?\
+        EventEnabledPerfElementIDAssignment() ?\
         MofTemplate_izzi(Microsoft_Windows_WPFHandle, &PerfElementIDAssignment, &WPFElementIDId, Id, Type, Data, AssemblyID)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientFontCache
+//
+
+#define EventEnabledWClientFontCache() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000008) != 0)
 
 //
 // Event Macro for WClientFontCache
 //
 #define EventWriteWClientFontCache()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientFontCache) ?\
+        EventEnabledWClientFontCache() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientFontCache, &WClientFontCacheId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientInputMessage
+//
+
+#define EventEnabledWClientInputMessage() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for WClientInputMessage
 //
 #define EventWriteWClientInputMessage(Id, HWND, Msg, WParam, LParam)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientInputMessage) ?\
+        EventEnabledWClientInputMessage() ?\
         MofTemplate_diddd(Microsoft_Windows_WPFHandle, &WClientInputMessage, &WClientInputMessageId, Id, HWND, Msg, WParam, LParam)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for StylusEventQueued
+//
+
+#define EventEnabledStylusEventQueued() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for StylusEventQueued
 //
 #define EventWriteStylusEventQueued(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, StylusEventQueued) ?\
+        EventEnabledStylusEventQueued() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &StylusEventQueued, &StylusEventQueuedId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for TouchDownReported
+//
+
+#define EventEnabledTouchDownReported() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for TouchDownReported
 //
 #define EventWriteTouchDownReported(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, TouchDownReported) ?\
+        EventEnabledTouchDownReported() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &TouchDownReported, &TouchDownReportedId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for TouchMoveReported
+//
+
+#define EventEnabledTouchMoveReported() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for TouchMoveReported
 //
 #define EventWriteTouchMoveReported(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, TouchMoveReported) ?\
+        EventEnabledTouchMoveReported() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &TouchMoveReported, &TouchMoveReportedId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for TouchUpReported
+//
+
+#define EventEnabledTouchUpReported() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for TouchUpReported
 //
 #define EventWriteTouchUpReported(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, TouchUpReported) ?\
+        EventEnabledTouchUpReported() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &TouchUpReported, &TouchUpReportedId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ManipulationReportFrame
+//
+
+#define EventEnabledManipulationReportFrame() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for ManipulationReportFrame
 //
 #define EventWriteManipulationReportFrame(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, ManipulationReportFrame) ?\
+        EventEnabledManipulationReportFrame() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &ManipulationReportFrame, &ManipulationReportFrameId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ManipulationEventRaised
+//
+
+#define EventEnabledManipulationEventRaised() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for ManipulationEventRaised
 //
 #define EventWriteManipulationEventRaised(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, ManipulationEventRaised) ?\
+        EventEnabledManipulationEventRaised() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &ManipulationEventRaised, &ManipulationEventRaisedId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for PenThreadPoolThreadAcquisition
+//
+
+#define EventEnabledPenThreadPoolThreadAcquisition() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000020) != 0)
+
+//
+// Event Macro for PenThreadPoolThreadAcquisition
+//
+#define EventWritePenThreadPoolThreadAcquisition(Id)\
+        EventEnabledPenThreadPoolThreadAcquisition() ?\
+        MofTemplate_d(Microsoft_Windows_WPFHandle, &PenThreadPoolThreadAcquisition, &PenThreadPoolThreadAcquisitionId, Id)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CreateStickyNoteBegin
+//
+
+#define EventEnabledCreateStickyNoteBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for CreateStickyNoteBegin
 //
 #define EventWriteCreateStickyNoteBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, CreateStickyNoteBegin) ?\
+        EventEnabledCreateStickyNoteBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &CreateStickyNoteBegin, &CreateStickyNoteId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CreateStickyNoteEnd
+//
+
+#define EventEnabledCreateStickyNoteEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for CreateStickyNoteEnd
 //
 #define EventWriteCreateStickyNoteEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, CreateStickyNoteEnd) ?\
+        EventEnabledCreateStickyNoteEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &CreateStickyNoteEnd, &CreateStickyNoteId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DeleteTextNoteBegin
+//
+
+#define EventEnabledDeleteTextNoteBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for DeleteTextNoteBegin
 //
 #define EventWriteDeleteTextNoteBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DeleteTextNoteBegin) ?\
+        EventEnabledDeleteTextNoteBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DeleteTextNoteBegin, &DeleteTextNoteId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DeleteTextNoteEnd
+//
+
+#define EventEnabledDeleteTextNoteEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for DeleteTextNoteEnd
 //
 #define EventWriteDeleteTextNoteEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DeleteTextNoteEnd) ?\
+        EventEnabledDeleteTextNoteEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DeleteTextNoteEnd, &DeleteTextNoteId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DeleteInkNoteBegin
+//
+
+#define EventEnabledDeleteInkNoteBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for DeleteInkNoteBegin
 //
 #define EventWriteDeleteInkNoteBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DeleteInkNoteBegin) ?\
+        EventEnabledDeleteInkNoteBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DeleteInkNoteBegin, &DeleteInkNoteId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DeleteInkNoteEnd
+//
+
+#define EventEnabledDeleteInkNoteEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for DeleteInkNoteEnd
 //
 #define EventWriteDeleteInkNoteEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DeleteInkNoteEnd) ?\
+        EventEnabledDeleteInkNoteEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DeleteInkNoteEnd, &DeleteInkNoteId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CreateHighlightBegin
+//
+
+#define EventEnabledCreateHighlightBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for CreateHighlightBegin
 //
 #define EventWriteCreateHighlightBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, CreateHighlightBegin) ?\
+        EventEnabledCreateHighlightBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &CreateHighlightBegin, &CreateHighlightId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CreateHighlightEnd
+//
+
+#define EventEnabledCreateHighlightEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for CreateHighlightEnd
 //
 #define EventWriteCreateHighlightEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, CreateHighlightEnd) ?\
+        EventEnabledCreateHighlightEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &CreateHighlightEnd, &CreateHighlightId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ClearHighlightBegin
+//
+
+#define EventEnabledClearHighlightBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for ClearHighlightBegin
 //
 #define EventWriteClearHighlightBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, ClearHighlightBegin) ?\
+        EventEnabledClearHighlightBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &ClearHighlightBegin, &ClearHighlightId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ClearHighlightEnd
+//
+
+#define EventEnabledClearHighlightEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for ClearHighlightEnd
 //
 #define EventWriteClearHighlightEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, ClearHighlightEnd) ?\
+        EventEnabledClearHighlightEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &ClearHighlightEnd, &ClearHighlightId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for LoadAnnotationsBegin
+//
+
+#define EventEnabledLoadAnnotationsBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for LoadAnnotationsBegin
 //
 #define EventWriteLoadAnnotationsBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, LoadAnnotationsBegin) ?\
+        EventEnabledLoadAnnotationsBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &LoadAnnotationsBegin, &LoadAnnotationsId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for LoadAnnotationsEnd
+//
+
+#define EventEnabledLoadAnnotationsEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for LoadAnnotationsEnd
 //
 #define EventWriteLoadAnnotationsEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, LoadAnnotationsEnd) ?\
+        EventEnabledLoadAnnotationsEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &LoadAnnotationsEnd, &LoadAnnotationsId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AddAnnotationBegin
+//
+
+#define EventEnabledAddAnnotationBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AddAnnotationBegin
 //
 #define EventWriteAddAnnotationBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AddAnnotationBegin) ?\
+        EventEnabledAddAnnotationBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AddAnnotationBegin, &AddAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AddAnnotationEnd
+//
+
+#define EventEnabledAddAnnotationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AddAnnotationEnd
 //
 #define EventWriteAddAnnotationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AddAnnotationEnd) ?\
+        EventEnabledAddAnnotationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AddAnnotationEnd, &AddAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DeleteAnnotationBegin
+//
+
+#define EventEnabledDeleteAnnotationBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for DeleteAnnotationBegin
 //
 #define EventWriteDeleteAnnotationBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DeleteAnnotationBegin) ?\
+        EventEnabledDeleteAnnotationBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DeleteAnnotationBegin, &DeleteAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DeleteAnnotationEnd
+//
+
+#define EventEnabledDeleteAnnotationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for DeleteAnnotationEnd
 //
 #define EventWriteDeleteAnnotationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DeleteAnnotationEnd) ?\
+        EventEnabledDeleteAnnotationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DeleteAnnotationEnd, &DeleteAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GetAnnotationByIdBegin
+//
+
+#define EventEnabledGetAnnotationByIdBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for GetAnnotationByIdBegin
 //
 #define EventWriteGetAnnotationByIdBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, GetAnnotationByIdBegin) ?\
+        EventEnabledGetAnnotationByIdBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &GetAnnotationByIdBegin, &GetAnnotationByIdId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GetAnnotationByIdEnd
+//
+
+#define EventEnabledGetAnnotationByIdEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for GetAnnotationByIdEnd
 //
 #define EventWriteGetAnnotationByIdEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, GetAnnotationByIdEnd) ?\
+        EventEnabledGetAnnotationByIdEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &GetAnnotationByIdEnd, &GetAnnotationByIdId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GetAnnotationByLocBegin
+//
+
+#define EventEnabledGetAnnotationByLocBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for GetAnnotationByLocBegin
 //
 #define EventWriteGetAnnotationByLocBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, GetAnnotationByLocBegin) ?\
+        EventEnabledGetAnnotationByLocBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &GetAnnotationByLocBegin, &GetAnnotationByLocId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GetAnnotationByLocEnd
+//
+
+#define EventEnabledGetAnnotationByLocEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for GetAnnotationByLocEnd
 //
 #define EventWriteGetAnnotationByLocEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, GetAnnotationByLocEnd) ?\
+        EventEnabledGetAnnotationByLocEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &GetAnnotationByLocEnd, &GetAnnotationByLocId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GetAnnotationsBegin
+//
+
+#define EventEnabledGetAnnotationsBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for GetAnnotationsBegin
 //
 #define EventWriteGetAnnotationsBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, GetAnnotationsBegin) ?\
+        EventEnabledGetAnnotationsBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &GetAnnotationsBegin, &GetAnnotationsId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GetAnnotationsEnd
+//
+
+#define EventEnabledGetAnnotationsEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for GetAnnotationsEnd
 //
 #define EventWriteGetAnnotationsEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, GetAnnotationsEnd) ?\
+        EventEnabledGetAnnotationsEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &GetAnnotationsEnd, &GetAnnotationsId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for SerializeAnnotationBegin
+//
+
+#define EventEnabledSerializeAnnotationBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for SerializeAnnotationBegin
 //
 #define EventWriteSerializeAnnotationBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, SerializeAnnotationBegin) ?\
+        EventEnabledSerializeAnnotationBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &SerializeAnnotationBegin, &SerializeAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for SerializeAnnotationEnd
+//
+
+#define EventEnabledSerializeAnnotationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for SerializeAnnotationEnd
 //
 #define EventWriteSerializeAnnotationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, SerializeAnnotationEnd) ?\
+        EventEnabledSerializeAnnotationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &SerializeAnnotationEnd, &SerializeAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DeserializeAnnotationBegin
+//
+
+#define EventEnabledDeserializeAnnotationBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for DeserializeAnnotationBegin
 //
 #define EventWriteDeserializeAnnotationBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DeserializeAnnotationBegin) ?\
+        EventEnabledDeserializeAnnotationBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DeserializeAnnotationBegin, &DeserializeAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DeserializeAnnotationEnd
+//
+
+#define EventEnabledDeserializeAnnotationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for DeserializeAnnotationEnd
 //
 #define EventWriteDeserializeAnnotationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DeserializeAnnotationEnd) ?\
+        EventEnabledDeserializeAnnotationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DeserializeAnnotationEnd, &DeserializeAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for UpdateAnnotationWithSNCBegin
+//
+
+#define EventEnabledUpdateAnnotationWithSNCBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for UpdateAnnotationWithSNCBegin
 //
 #define EventWriteUpdateAnnotationWithSNCBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, UpdateAnnotationWithSNCBegin) ?\
+        EventEnabledUpdateAnnotationWithSNCBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &UpdateAnnotationWithSNCBegin, &UpdateAnnotationWithSNCId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for UpdateAnnotationWithSNCEnd
+//
+
+#define EventEnabledUpdateAnnotationWithSNCEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for UpdateAnnotationWithSNCEnd
 //
 #define EventWriteUpdateAnnotationWithSNCEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, UpdateAnnotationWithSNCEnd) ?\
+        EventEnabledUpdateAnnotationWithSNCEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &UpdateAnnotationWithSNCEnd, &UpdateAnnotationWithSNCId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for UpdateSNCWithAnnotationBegin
+//
+
+#define EventEnabledUpdateSNCWithAnnotationBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for UpdateSNCWithAnnotationBegin
 //
 #define EventWriteUpdateSNCWithAnnotationBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, UpdateSNCWithAnnotationBegin) ?\
+        EventEnabledUpdateSNCWithAnnotationBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &UpdateSNCWithAnnotationBegin, &UpdateSNCWithAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for UpdateSNCWithAnnotationEnd
+//
+
+#define EventEnabledUpdateSNCWithAnnotationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for UpdateSNCWithAnnotationEnd
 //
 #define EventWriteUpdateSNCWithAnnotationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, UpdateSNCWithAnnotationEnd) ?\
+        EventEnabledUpdateSNCWithAnnotationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &UpdateSNCWithAnnotationEnd, &UpdateSNCWithAnnotationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AnnotationTextChangedBegin
+//
+
+#define EventEnabledAnnotationTextChangedBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AnnotationTextChangedBegin
 //
 #define EventWriteAnnotationTextChangedBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AnnotationTextChangedBegin) ?\
+        EventEnabledAnnotationTextChangedBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AnnotationTextChangedBegin, &AnnotationTextChangedId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AnnotationTextChangedEnd
+//
+
+#define EventEnabledAnnotationTextChangedEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AnnotationTextChangedEnd
 //
 #define EventWriteAnnotationTextChangedEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AnnotationTextChangedEnd) ?\
+        EventEnabledAnnotationTextChangedEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AnnotationTextChangedEnd, &AnnotationTextChangedId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AnnotationInkChangedBegin
+//
+
+#define EventEnabledAnnotationInkChangedBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AnnotationInkChangedBegin
 //
 #define EventWriteAnnotationInkChangedBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AnnotationInkChangedBegin) ?\
+        EventEnabledAnnotationInkChangedBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AnnotationInkChangedBegin, &AnnotationInkChangedId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AnnotationInkChangedEnd
+//
+
+#define EventEnabledAnnotationInkChangedEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AnnotationInkChangedEnd
 //
 #define EventWriteAnnotationInkChangedEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AnnotationInkChangedEnd) ?\
+        EventEnabledAnnotationInkChangedEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AnnotationInkChangedEnd, &AnnotationInkChangedId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AddAttachedSNBegin
+//
+
+#define EventEnabledAddAttachedSNBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AddAttachedSNBegin
 //
 #define EventWriteAddAttachedSNBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AddAttachedSNBegin) ?\
+        EventEnabledAddAttachedSNBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AddAttachedSNBegin, &AddAttachedSNId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AddAttachedSNEnd
+//
+
+#define EventEnabledAddAttachedSNEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AddAttachedSNEnd
 //
 #define EventWriteAddAttachedSNEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AddAttachedSNEnd) ?\
+        EventEnabledAddAttachedSNEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AddAttachedSNEnd, &AddAttachedSNId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for RemoveAttachedSNBegin
+//
+
+#define EventEnabledRemoveAttachedSNBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for RemoveAttachedSNBegin
 //
 #define EventWriteRemoveAttachedSNBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, RemoveAttachedSNBegin) ?\
+        EventEnabledRemoveAttachedSNBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &RemoveAttachedSNBegin, &RemoveAttachedSNId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for RemoveAttachedSNEnd
+//
+
+#define EventEnabledRemoveAttachedSNEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for RemoveAttachedSNEnd
 //
 #define EventWriteRemoveAttachedSNEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, RemoveAttachedSNEnd) ?\
+        EventEnabledRemoveAttachedSNEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &RemoveAttachedSNEnd, &RemoveAttachedSNId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AddAttachedHighlightBegin
+//
+
+#define EventEnabledAddAttachedHighlightBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AddAttachedHighlightBegin
 //
 #define EventWriteAddAttachedHighlightBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AddAttachedHighlightBegin) ?\
+        EventEnabledAddAttachedHighlightBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AddAttachedHighlightBegin, &AddAttachedHighlightId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AddAttachedHighlightEnd
+//
+
+#define EventEnabledAddAttachedHighlightEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AddAttachedHighlightEnd
 //
 #define EventWriteAddAttachedHighlightEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AddAttachedHighlightEnd) ?\
+        EventEnabledAddAttachedHighlightEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AddAttachedHighlightEnd, &AddAttachedHighlightId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for RemoveAttachedHighlightBegin
+//
+
+#define EventEnabledRemoveAttachedHighlightBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for RemoveAttachedHighlightBegin
 //
 #define EventWriteRemoveAttachedHighlightBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, RemoveAttachedHighlightBegin) ?\
+        EventEnabledRemoveAttachedHighlightBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &RemoveAttachedHighlightBegin, &RemoveAttachedHighlightId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for RemoveAttachedHighlightEnd
+//
+
+#define EventEnabledRemoveAttachedHighlightEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for RemoveAttachedHighlightEnd
 //
 #define EventWriteRemoveAttachedHighlightEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, RemoveAttachedHighlightEnd) ?\
+        EventEnabledRemoveAttachedHighlightEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &RemoveAttachedHighlightEnd, &RemoveAttachedHighlightId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AddAttachedMHBegin
+//
+
+#define EventEnabledAddAttachedMHBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AddAttachedMHBegin
 //
 #define EventWriteAddAttachedMHBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AddAttachedMHBegin) ?\
+        EventEnabledAddAttachedMHBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AddAttachedMHBegin, &AddAttachedMHId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for AddAttachedMHEnd
+//
+
+#define EventEnabledAddAttachedMHEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for AddAttachedMHEnd
 //
 #define EventWriteAddAttachedMHEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, AddAttachedMHEnd) ?\
+        EventEnabledAddAttachedMHEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &AddAttachedMHEnd, &AddAttachedMHId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for RemoveAttachedMHBegin
+//
+
+#define EventEnabledRemoveAttachedMHBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for RemoveAttachedMHBegin
 //
 #define EventWriteRemoveAttachedMHBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, RemoveAttachedMHBegin) ?\
+        EventEnabledRemoveAttachedMHBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &RemoveAttachedMHBegin, &RemoveAttachedMHId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for RemoveAttachedMHEnd
+//
+
+#define EventEnabledRemoveAttachedMHEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for RemoveAttachedMHEnd
 //
 #define EventWriteRemoveAttachedMHEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, RemoveAttachedMHEnd) ?\
+        EventEnabledRemoveAttachedMHEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &RemoveAttachedMHEnd, &RemoveAttachedMHId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseBamlBegin
+//
+
+#define EventEnabledWClientParseBamlBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000080) != 0)
 
 //
 // Event Macro for WClientParseBamlBegin
 //
 #define EventWriteWClientParseBamlBegin(URI)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseBamlBegin) ?\
+        EventEnabledWClientParseBamlBegin() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientParseBamlBegin, &WClientParseBamlId, URI)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseBamlEnd
+//
+
+#define EventEnabledWClientParseBamlEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000080) != 0)
 
 //
 // Event Macro for WClientParseBamlEnd
 //
 #define EventWriteWClientParseBamlEnd(URI)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseBamlEnd) ?\
+        EventEnabledWClientParseBamlEnd() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientParseBamlEnd, &WClientParseBamlId, URI)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseXmlBegin
+//
+
+#define EventEnabledWClientParseXmlBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientParseXmlBegin
 //
 #define EventWriteWClientParseXmlBegin(URI)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseXmlBegin) ?\
+        EventEnabledWClientParseXmlBegin() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientParseXmlBegin, &WClientParseXmlId, URI)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseXmlEnd
+//
+
+#define EventEnabledWClientParseXmlEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientParseXmlEnd
 //
 #define EventWriteWClientParseXmlEnd(URI)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseXmlEnd) ?\
+        EventEnabledWClientParseXmlEnd() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientParseXmlEnd, &WClientParseXmlId, URI)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseFefCrInstBegin
+//
+
+#define EventEnabledWClientParseFefCrInstBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000200) != 0)
 
 //
 // Event Macro for WClientParseFefCrInstBegin
 //
 #define EventWriteWClientParseFefCrInstBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseFefCrInstBegin) ?\
+        EventEnabledWClientParseFefCrInstBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientParseFefCrInstBegin, &WClientParseFefCrInstId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseFefCrInstEnd
+//
+
+#define EventEnabledWClientParseFefCrInstEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000200) != 0)
 
 //
 // Event Macro for WClientParseFefCrInstEnd
 //
 #define EventWriteWClientParseFefCrInstEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseFefCrInstEnd) ?\
+        EventEnabledWClientParseFefCrInstEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientParseFefCrInstEnd, &WClientParseFefCrInstId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseInstVisTreeBegin
+//
+
+#define EventEnabledWClientParseInstVisTreeBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000200) != 0)
 
 //
 // Event Macro for WClientParseInstVisTreeBegin
 //
 #define EventWriteWClientParseInstVisTreeBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseInstVisTreeBegin) ?\
+        EventEnabledWClientParseInstVisTreeBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientParseInstVisTreeBegin, &WClientParseInstVisTreeId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseInstVisTreeEnd
+//
+
+#define EventEnabledWClientParseInstVisTreeEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000200) != 0)
 
 //
 // Event Macro for WClientParseInstVisTreeEnd
 //
 #define EventWriteWClientParseInstVisTreeEnd(Message)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseInstVisTreeEnd) ?\
+        EventEnabledWClientParseInstVisTreeEnd() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientParseInstVisTreeEnd, &WClientParseInstVisTreeId, Message)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseRdrCrInstBegin
+//
+
+#define EventEnabledWClientParseRdrCrInstBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000200) != 0)
 
 //
 // Event Macro for WClientParseRdrCrInstBegin
 //
 #define EventWriteWClientParseRdrCrInstBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseRdrCrInstBegin) ?\
+        EventEnabledWClientParseRdrCrInstBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientParseRdrCrInstBegin, &WClientParseRdrCrInstId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseRdrCrInstEnd
+//
+
+#define EventEnabledWClientParseRdrCrInstEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000200) != 0)
 
 //
 // Event Macro for WClientParseRdrCrInstEnd
 //
 #define EventWriteWClientParseRdrCrInstEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseRdrCrInstEnd) ?\
+        EventEnabledWClientParseRdrCrInstEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientParseRdrCrInstEnd, &WClientParseRdrCrInstId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseRdrCrInFTypBegin
+//
+
+#define EventEnabledWClientParseRdrCrInFTypBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientParseRdrCrInFTypBegin
 //
 #define EventWriteWClientParseRdrCrInFTypBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseRdrCrInFTypBegin) ?\
+        EventEnabledWClientParseRdrCrInFTypBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientParseRdrCrInFTypBegin, &WClientParseRdrCrInFTypId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseRdrCrInFTypEnd
+//
+
+#define EventEnabledWClientParseRdrCrInFTypEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientParseRdrCrInFTypEnd
 //
 #define EventWriteWClientParseRdrCrInFTypEnd(Type)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseRdrCrInFTypEnd) ?\
+        EventEnabledWClientParseRdrCrInFTypEnd() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientParseRdrCrInFTypEnd, &WClientParseRdrCrInFTypId, Type)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientResourceFindBegin
+//
+
+#define EventEnabledWClientResourceFindBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000080) != 0)
 
 //
 // Event Macro for WClientResourceFindBegin
 //
 #define EventWriteWClientResourceFindBegin(Key)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientResourceFindBegin) ?\
+        EventEnabledWClientResourceFindBegin() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientResourceFindBegin, &WClientResourceFindId, Key)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientResourceFindEnd
+//
+
+#define EventEnabledWClientResourceFindEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000080) != 0)
 
 //
 // Event Macro for WClientResourceFindEnd
 //
 #define EventWriteWClientResourceFindEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientResourceFindEnd) ?\
+        EventEnabledWClientResourceFindEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientResourceFindEnd, &WClientResourceFindId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientResourceCacheValue
+//
+
+#define EventEnabledWClientResourceCacheValue() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientResourceCacheValue
 //
 #define EventWriteWClientResourceCacheValue()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientResourceCacheValue) ?\
+        EventEnabledWClientResourceCacheValue() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientResourceCacheValue, &WClientResourceCacheValueId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientResourceCacheNull
+//
+
+#define EventEnabledWClientResourceCacheNull() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientResourceCacheNull
 //
 #define EventWriteWClientResourceCacheNull()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientResourceCacheNull) ?\
+        EventEnabledWClientResourceCacheNull() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientResourceCacheNull, &WClientResourceCacheNullId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientResourceCacheMiss
+//
+
+#define EventEnabledWClientResourceCacheMiss() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000080) != 0)
 
 //
 // Event Macro for WClientResourceCacheMiss
 //
 #define EventWriteWClientResourceCacheMiss()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientResourceCacheMiss) ?\
+        EventEnabledWClientResourceCacheMiss() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientResourceCacheMiss, &WClientResourceCacheMissId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientResourceStock
+//
+
+#define EventEnabledWClientResourceStock() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000080) != 0)
 
 //
 // Event Macro for WClientResourceStock
 //
 #define EventWriteWClientResourceStock(Key)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientResourceStock) ?\
+        EventEnabledWClientResourceStock() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientResourceStock, &WClientResourceStockId, Key)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientResourceBamlAssembly
+//
+
+#define EventEnabledWClientResourceBamlAssembly() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientResourceBamlAssembly
 //
 #define EventWriteWClientResourceBamlAssembly(AssemblyName)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientResourceBamlAssembly) ?\
+        EventEnabledWClientResourceBamlAssembly() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientResourceBamlAssembly, &WClientResourceBamlAssemblyId, AssemblyName)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseXamlBegin
+//
+
+#define EventEnabledWClientParseXamlBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientParseXamlBegin
 //
 #define EventWriteWClientParseXamlBegin(URI)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseXamlBegin) ?\
+        EventEnabledWClientParseXamlBegin() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientParseXamlBegin, &WClientParseXamlId, URI)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseXamlBamlInfo
+//
+
+#define EventEnabledWClientParseXamlBamlInfo() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000200) != 0)
 
 //
 // Event Macro for WClientParseXamlBamlInfo
 //
 #define EventWriteWClientParseXamlBamlInfo(PerfElementID, LineNumber, LinePosition)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseXamlBamlInfo) ?\
+        EventEnabledWClientParseXamlBamlInfo() ?\
         MofTemplate_idd(Microsoft_Windows_WPFHandle, &WClientParseXamlBamlInfo, &WClientParseXamlBamlInfoId, PerfElementID, LineNumber, LinePosition)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientParseXamlEnd
+//
+
+#define EventEnabledWClientParseXamlEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for WClientParseXamlEnd
 //
 #define EventWriteWClientParseXamlEnd(URI)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientParseXamlEnd) ?\
+        EventEnabledWClientParseXamlEnd() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WClientParseXamlEnd, &WClientParseXamlId, URI)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXFlushPageStart
+//
+
+#define EventEnabledWClientDRXFlushPageStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXFlushPageStart
 //
 #define EventWriteWClientDRXFlushPageStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXFlushPageStart) ?\
+        EventEnabledWClientDRXFlushPageStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXFlushPageStart, &WClientDRXFlushPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXFlushPageStop
+//
+
+#define EventEnabledWClientDRXFlushPageStop() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXFlushPageStop
 //
 #define EventWriteWClientDRXFlushPageStop()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXFlushPageStop) ?\
+        EventEnabledWClientDRXFlushPageStop() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXFlushPageStop, &WClientDRXFlushPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXSerializeTreeStart
+//
+
+#define EventEnabledWClientDRXSerializeTreeStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXSerializeTreeStart
 //
 #define EventWriteWClientDRXSerializeTreeStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXSerializeTreeStart) ?\
+        EventEnabledWClientDRXSerializeTreeStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXSerializeTreeStart, &WClientDRXSerializeTreeId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXSerializeTreeEnd
+//
+
+#define EventEnabledWClientDRXSerializeTreeEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXSerializeTreeEnd
 //
 #define EventWriteWClientDRXSerializeTreeEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXSerializeTreeEnd) ?\
+        EventEnabledWClientDRXSerializeTreeEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXSerializeTreeEnd, &WClientDRXSerializeTreeId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetVisualStart
+//
+
+#define EventEnabledWClientDRXGetVisualStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetVisualStart
 //
 #define EventWriteWClientDRXGetVisualStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetVisualStart) ?\
+        EventEnabledWClientDRXGetVisualStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetVisualStart, &WClientDRXGetVisualId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetVisualEnd
+//
+
+#define EventEnabledWClientDRXGetVisualEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetVisualEnd
 //
 #define EventWriteWClientDRXGetVisualEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetVisualEnd) ?\
+        EventEnabledWClientDRXGetVisualEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetVisualEnd, &WClientDRXGetVisualId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXReleaseWriterStart
+//
+
+#define EventEnabledWClientDRXReleaseWriterStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXReleaseWriterStart
 //
 #define EventWriteWClientDRXReleaseWriterStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXReleaseWriterStart) ?\
+        EventEnabledWClientDRXReleaseWriterStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXReleaseWriterStart, &WClientDRXReleaseWriterId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXReleaseWriterEnd
+//
+
+#define EventEnabledWClientDRXReleaseWriterEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXReleaseWriterEnd
 //
 #define EventWriteWClientDRXReleaseWriterEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXReleaseWriterEnd) ?\
+        EventEnabledWClientDRXReleaseWriterEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXReleaseWriterEnd, &WClientDRXReleaseWriterId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetPrintCapStart
+//
+
+#define EventEnabledWClientDRXGetPrintCapStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetPrintCapStart
 //
 #define EventWriteWClientDRXGetPrintCapStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetPrintCapStart) ?\
+        EventEnabledWClientDRXGetPrintCapStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetPrintCapStart, &WClientDRXGetPrintCapId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetPrintCapEnd
+//
+
+#define EventEnabledWClientDRXGetPrintCapEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetPrintCapEnd
 //
 #define EventWriteWClientDRXGetPrintCapEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetPrintCapEnd) ?\
+        EventEnabledWClientDRXGetPrintCapEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetPrintCapEnd, &WClientDRXGetPrintCapId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXPTProviderStart
+//
+
+#define EventEnabledWClientDRXPTProviderStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXPTProviderStart
 //
 #define EventWriteWClientDRXPTProviderStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXPTProviderStart) ?\
+        EventEnabledWClientDRXPTProviderStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXPTProviderStart, &WClientDRXPTProviderId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXPTProviderEnd
+//
+
+#define EventEnabledWClientDRXPTProviderEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXPTProviderEnd
 //
 #define EventWriteWClientDRXPTProviderEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXPTProviderEnd) ?\
+        EventEnabledWClientDRXPTProviderEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXPTProviderEnd, &WClientDRXPTProviderId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXRasterStart
+//
+
+#define EventEnabledWClientDRXRasterStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXRasterStart
 //
 #define EventWriteWClientDRXRasterStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXRasterStart) ?\
+        EventEnabledWClientDRXRasterStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXRasterStart, &WClientDRXRasterId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXRasterEnd
+//
+
+#define EventEnabledWClientDRXRasterEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXRasterEnd
 //
 #define EventWriteWClientDRXRasterEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXRasterEnd) ?\
+        EventEnabledWClientDRXRasterEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXRasterEnd, &WClientDRXRasterId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXOpenPackageBegin
+//
+
+#define EventEnabledWClientDRXOpenPackageBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXOpenPackageBegin
 //
 #define EventWriteWClientDRXOpenPackageBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXOpenPackageBegin) ?\
+        EventEnabledWClientDRXOpenPackageBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXOpenPackageBegin, &WClientDRXOpenPackageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXOpenPackageEnd
+//
+
+#define EventEnabledWClientDRXOpenPackageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXOpenPackageEnd
 //
 #define EventWriteWClientDRXOpenPackageEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXOpenPackageEnd) ?\
+        EventEnabledWClientDRXOpenPackageEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXOpenPackageEnd, &WClientDRXOpenPackageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetStreamBegin
+//
+
+#define EventEnabledWClientDRXGetStreamBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetStreamBegin
 //
 #define EventWriteWClientDRXGetStreamBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetStreamBegin) ?\
+        EventEnabledWClientDRXGetStreamBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetStreamBegin, &WClientDRXGetStreamId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetStreamEnd
+//
+
+#define EventEnabledWClientDRXGetStreamEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetStreamEnd
 //
 #define EventWriteWClientDRXGetStreamEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetStreamEnd) ?\
+        EventEnabledWClientDRXGetStreamEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetStreamEnd, &WClientDRXGetStreamId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXPageVisible
+//
+
+#define EventEnabledWClientDRXPageVisible() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXPageVisible
 //
 #define EventWriteWClientDRXPageVisible(FirstVisiblePage, LastVisiblePage)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXPageVisible) ?\
+        EventEnabledWClientDRXPageVisible() ?\
         MofTemplate_dd(Microsoft_Windows_WPFHandle, &WClientDRXPageVisible, &WClientDRXPageVisibleId, FirstVisiblePage, LastVisiblePage)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXPageLoaded
+//
+
+#define EventEnabledWClientDRXPageLoaded() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXPageLoaded
 //
 #define EventWriteWClientDRXPageLoaded(PageNumber)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXPageLoaded) ?\
+        EventEnabledWClientDRXPageLoaded() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientDRXPageLoaded, &WClientDRXPageLoadedId, PageNumber)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXInvalidateView
+//
+
+#define EventEnabledWClientDRXInvalidateView() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXInvalidateView
 //
 #define EventWriteWClientDRXInvalidateView()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXInvalidateView) ?\
+        EventEnabledWClientDRXInvalidateView() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXInvalidateView, &WClientDRXInvalidateViewId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXStyleCreated
+//
+
+#define EventEnabledWClientDRXStyleCreated() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXStyleCreated
 //
 #define EventWriteWClientDRXStyleCreated()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXStyleCreated) ?\
+        EventEnabledWClientDRXStyleCreated() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXStyleCreated, &WClientDRXStyleCreatedId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXFindBegin
+//
+
+#define EventEnabledWClientDRXFindBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXFindBegin
 //
 #define EventWriteWClientDRXFindBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXFindBegin) ?\
+        EventEnabledWClientDRXFindBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXFindBegin, &WClientDRXFindId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXFindEnd
+//
+
+#define EventEnabledWClientDRXFindEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXFindEnd
 //
 #define EventWriteWClientDRXFindEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXFindEnd) ?\
+        EventEnabledWClientDRXFindEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXFindEnd, &WClientDRXFindId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXZoom
+//
+
+#define EventEnabledWClientDRXZoom() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXZoom
 //
 #define EventWriteWClientDRXZoom(Zoom)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXZoom) ?\
+        EventEnabledWClientDRXZoom() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientDRXZoom, &WClientDRXZoomId, Zoom)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXEnsureOMBegin
+//
+
+#define EventEnabledWClientDRXEnsureOMBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXEnsureOMBegin
 //
 #define EventWriteWClientDRXEnsureOMBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXEnsureOMBegin) ?\
+        EventEnabledWClientDRXEnsureOMBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXEnsureOMBegin, &WClientDRXEnsureOMId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXEnsureOMEnd
+//
+
+#define EventEnabledWClientDRXEnsureOMEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXEnsureOMEnd
 //
 #define EventWriteWClientDRXEnsureOMEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXEnsureOMEnd) ?\
+        EventEnabledWClientDRXEnsureOMEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXEnsureOMEnd, &WClientDRXEnsureOMId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXTreeFlattenBegin
+//
+
+#define EventEnabledWClientDRXTreeFlattenBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXTreeFlattenBegin
 //
 #define EventWriteWClientDRXTreeFlattenBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXTreeFlattenBegin) ?\
+        EventEnabledWClientDRXTreeFlattenBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXTreeFlattenBegin, &WClientDRXTreeFlattenId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXTreeFlattenEnd
+//
+
+#define EventEnabledWClientDRXTreeFlattenEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXTreeFlattenEnd
 //
 #define EventWriteWClientDRXTreeFlattenEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXTreeFlattenEnd) ?\
+        EventEnabledWClientDRXTreeFlattenEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXTreeFlattenEnd, &WClientDRXTreeFlattenId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXAlphaFlattenBegin
+//
+
+#define EventEnabledWClientDRXAlphaFlattenBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXAlphaFlattenBegin
 //
 #define EventWriteWClientDRXAlphaFlattenBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXAlphaFlattenBegin) ?\
+        EventEnabledWClientDRXAlphaFlattenBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXAlphaFlattenBegin, &WClientDRXAlphaFlattenId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXAlphaFlattenEnd
+//
+
+#define EventEnabledWClientDRXAlphaFlattenEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXAlphaFlattenEnd
 //
 #define EventWriteWClientDRXAlphaFlattenEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXAlphaFlattenEnd) ?\
+        EventEnabledWClientDRXAlphaFlattenEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXAlphaFlattenEnd, &WClientDRXAlphaFlattenId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetDevModeBegin
+//
+
+#define EventEnabledWClientDRXGetDevModeBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetDevModeBegin
 //
 #define EventWriteWClientDRXGetDevModeBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetDevModeBegin) ?\
+        EventEnabledWClientDRXGetDevModeBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetDevModeBegin, &WClientDRXGetDevModeId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetDevModeEnd
+//
+
+#define EventEnabledWClientDRXGetDevModeEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetDevModeEnd
 //
 #define EventWriteWClientDRXGetDevModeEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetDevModeEnd) ?\
+        EventEnabledWClientDRXGetDevModeEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetDevModeEnd, &WClientDRXGetDevModeId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXStartDocBegin
+//
+
+#define EventEnabledWClientDRXStartDocBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXStartDocBegin
 //
 #define EventWriteWClientDRXStartDocBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXStartDocBegin) ?\
+        EventEnabledWClientDRXStartDocBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXStartDocBegin, &WClientDRXStartDocId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXStartDocEnd
+//
+
+#define EventEnabledWClientDRXStartDocEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXStartDocEnd
 //
 #define EventWriteWClientDRXStartDocEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXStartDocEnd) ?\
+        EventEnabledWClientDRXStartDocEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXStartDocEnd, &WClientDRXStartDocId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXEndDocBegin
+//
+
+#define EventEnabledWClientDRXEndDocBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXEndDocBegin
 //
 #define EventWriteWClientDRXEndDocBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXEndDocBegin) ?\
+        EventEnabledWClientDRXEndDocBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXEndDocBegin, &WClientDRXEndDocId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXEndDocEnd
+//
+
+#define EventEnabledWClientDRXEndDocEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXEndDocEnd
 //
 #define EventWriteWClientDRXEndDocEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXEndDocEnd) ?\
+        EventEnabledWClientDRXEndDocEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXEndDocEnd, &WClientDRXEndDocId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXStartPageBegin
+//
+
+#define EventEnabledWClientDRXStartPageBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXStartPageBegin
 //
 #define EventWriteWClientDRXStartPageBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXStartPageBegin) ?\
+        EventEnabledWClientDRXStartPageBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXStartPageBegin, &WClientDRXStartPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXStartPageEnd
+//
+
+#define EventEnabledWClientDRXStartPageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXStartPageEnd
 //
 #define EventWriteWClientDRXStartPageEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXStartPageEnd) ?\
+        EventEnabledWClientDRXStartPageEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXStartPageEnd, &WClientDRXStartPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXEndPageBegin
+//
+
+#define EventEnabledWClientDRXEndPageBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXEndPageBegin
 //
 #define EventWriteWClientDRXEndPageBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXEndPageBegin) ?\
+        EventEnabledWClientDRXEndPageBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXEndPageBegin, &WClientDRXEndPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXEndPageEnd
+//
+
+#define EventEnabledWClientDRXEndPageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXEndPageEnd
 //
 #define EventWriteWClientDRXEndPageEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXEndPageEnd) ?\
+        EventEnabledWClientDRXEndPageEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXEndPageEnd, &WClientDRXEndPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXCommitPageBegin
+//
+
+#define EventEnabledWClientDRXCommitPageBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXCommitPageBegin
 //
 #define EventWriteWClientDRXCommitPageBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXCommitPageBegin) ?\
+        EventEnabledWClientDRXCommitPageBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXCommitPageBegin, &WClientDRXCommitPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXCommitPageEnd
+//
+
+#define EventEnabledWClientDRXCommitPageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXCommitPageEnd
 //
 #define EventWriteWClientDRXCommitPageEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXCommitPageEnd) ?\
+        EventEnabledWClientDRXCommitPageEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXCommitPageEnd, &WClientDRXCommitPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXConvertFontBegin
+//
+
+#define EventEnabledWClientDRXConvertFontBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXConvertFontBegin
 //
 #define EventWriteWClientDRXConvertFontBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXConvertFontBegin) ?\
+        EventEnabledWClientDRXConvertFontBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXConvertFontBegin, &WClientDRXConvertFontId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXConvertFontEnd
+//
+
+#define EventEnabledWClientDRXConvertFontEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXConvertFontEnd
 //
 #define EventWriteWClientDRXConvertFontEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXConvertFontEnd) ?\
+        EventEnabledWClientDRXConvertFontEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXConvertFontEnd, &WClientDRXConvertFontId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXConvertImageBegin
+//
+
+#define EventEnabledWClientDRXConvertImageBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXConvertImageBegin
 //
 #define EventWriteWClientDRXConvertImageBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXConvertImageBegin) ?\
+        EventEnabledWClientDRXConvertImageBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXConvertImageBegin, &WClientDRXConvertImageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXConvertImageEnd
+//
+
+#define EventEnabledWClientDRXConvertImageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXConvertImageEnd
 //
 #define EventWriteWClientDRXConvertImageEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXConvertImageEnd) ?\
+        EventEnabledWClientDRXConvertImageEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXConvertImageEnd, &WClientDRXConvertImageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXSaveXpsBegin
+//
+
+#define EventEnabledWClientDRXSaveXpsBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXSaveXpsBegin
 //
 #define EventWriteWClientDRXSaveXpsBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXSaveXpsBegin) ?\
+        EventEnabledWClientDRXSaveXpsBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXSaveXpsBegin, &WClientDRXSaveXpsId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXSaveXpsEnd
+//
+
+#define EventEnabledWClientDRXSaveXpsEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXSaveXpsEnd
 //
 #define EventWriteWClientDRXSaveXpsEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXSaveXpsEnd) ?\
+        EventEnabledWClientDRXSaveXpsEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXSaveXpsEnd, &WClientDRXSaveXpsId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXLoadPrimitiveBegin
+//
+
+#define EventEnabledWClientDRXLoadPrimitiveBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXLoadPrimitiveBegin
 //
 #define EventWriteWClientDRXLoadPrimitiveBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXLoadPrimitiveBegin) ?\
+        EventEnabledWClientDRXLoadPrimitiveBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXLoadPrimitiveBegin, &WClientDRXLoadPrimitiveId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXLoadPrimitiveEnd
+//
+
+#define EventEnabledWClientDRXLoadPrimitiveEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXLoadPrimitiveEnd
 //
 #define EventWriteWClientDRXLoadPrimitiveEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXLoadPrimitiveEnd) ?\
+        EventEnabledWClientDRXLoadPrimitiveEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXLoadPrimitiveEnd, &WClientDRXLoadPrimitiveId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXSavePageBegin
+//
+
+#define EventEnabledWClientDRXSavePageBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXSavePageBegin
 //
 #define EventWriteWClientDRXSavePageBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXSavePageBegin) ?\
+        EventEnabledWClientDRXSavePageBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXSavePageBegin, &WClientDRXSavePageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXSavePageEnd
+//
+
+#define EventEnabledWClientDRXSavePageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXSavePageEnd
 //
 #define EventWriteWClientDRXSavePageEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXSavePageEnd) ?\
+        EventEnabledWClientDRXSavePageEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXSavePageEnd, &WClientDRXSavePageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXSerializationBegin
+//
+
+#define EventEnabledWClientDRXSerializationBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXSerializationBegin
 //
 #define EventWriteWClientDRXSerializationBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXSerializationBegin) ?\
+        EventEnabledWClientDRXSerializationBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXSerializationBegin, &WClientDRXSerializationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXSerializationEnd
+//
+
+#define EventEnabledWClientDRXSerializationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXSerializationEnd
 //
 #define EventWriteWClientDRXSerializationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXSerializationEnd) ?\
+        EventEnabledWClientDRXSerializationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXSerializationEnd, &WClientDRXSerializationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXReadStreamBegin
+//
+
+#define EventEnabledWClientDRXReadStreamBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000800) != 0)
 
 //
 // Event Macro for WClientDRXReadStreamBegin
 //
 #define EventWriteWClientDRXReadStreamBegin(Count)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXReadStreamBegin) ?\
+        EventEnabledWClientDRXReadStreamBegin() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientDRXReadStreamBegin, &WClientDRXReadStreamId, Count)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXReadStreamEnd
+//
+
+#define EventEnabledWClientDRXReadStreamEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000800) != 0)
 
 //
 // Event Macro for WClientDRXReadStreamEnd
 //
 #define EventWriteWClientDRXReadStreamEnd(Result)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXReadStreamEnd) ?\
+        EventEnabledWClientDRXReadStreamEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientDRXReadStreamEnd, &WClientDRXReadStreamId, Result)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetPageBegin
+//
+
+#define EventEnabledWClientDRXGetPageBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetPageBegin
 //
 #define EventWriteWClientDRXGetPageBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetPageBegin) ?\
+        EventEnabledWClientDRXGetPageBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetPageBegin, &WClientDRXGetPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXGetPageEnd
+//
+
+#define EventEnabledWClientDRXGetPageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXGetPageEnd
 //
 #define EventWriteWClientDRXGetPageEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXGetPageEnd) ?\
+        EventEnabledWClientDRXGetPageEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXGetPageEnd, &WClientDRXGetPageId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXLineDown
+//
+
+#define EventEnabledWClientDRXLineDown() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXLineDown
 //
 #define EventWriteWClientDRXLineDown(VerticalOffset)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXLineDown) ?\
+        EventEnabledWClientDRXLineDown() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientDRXLineDown, &WClientDRXLineDownId, VerticalOffset)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXPageDown
+//
+
+#define EventEnabledWClientDRXPageDown() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXPageDown
 //
 #define EventWriteWClientDRXPageDown(VerticalOffset)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXPageDown) ?\
+        EventEnabledWClientDRXPageDown() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientDRXPageDown, &WClientDRXPageDownId, VerticalOffset)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXPageJump
+//
+
+#define EventEnabledWClientDRXPageJump() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXPageJump
 //
 #define EventWriteWClientDRXPageJump(PageNumber, FirstVisiblePage)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXPageJump) ?\
+        EventEnabledWClientDRXPageJump() ?\
         MofTemplate_dd(Microsoft_Windows_WPFHandle, &WClientDRXPageJump, &WClientDRXPageJumpId, PageNumber, FirstVisiblePage)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXLayoutBegin
+//
+
+#define EventEnabledWClientDRXLayoutBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXLayoutBegin
 //
 #define EventWriteWClientDRXLayoutBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXLayoutBegin) ?\
+        EventEnabledWClientDRXLayoutBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXLayoutBegin, &WClientDRXLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXLayoutEnd
+//
+
+#define EventEnabledWClientDRXLayoutEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXLayoutEnd
 //
 #define EventWriteWClientDRXLayoutEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXLayoutEnd) ?\
+        EventEnabledWClientDRXLayoutEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXLayoutEnd, &WClientDRXLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDRXInstantiated
+//
+
+#define EventEnabledWClientDRXInstantiated() ((Microsoft_Windows_WPFEnableBits[0] & 0x00000400) != 0)
 
 //
 // Event Macro for WClientDRXInstantiated
 //
 #define EventWriteWClientDRXInstantiated()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDRXInstantiated) ?\
+        EventEnabledWClientDRXInstantiated() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientDRXInstantiated, &WClientDRXInstantiatedId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientTimeManagerTickBegin
+//
+
+#define EventEnabledWClientTimeManagerTickBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00001000) != 0)
 
 //
 // Event Macro for WClientTimeManagerTickBegin
 //
 #define EventWriteWClientTimeManagerTickBegin(TickTime)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientTimeManagerTickBegin) ?\
+        EventEnabledWClientTimeManagerTickBegin() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientTimeManagerTickBegin, &WClientTimeManagerTickId, TickTime)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientTimeManagerTickEnd
+//
+
+#define EventEnabledWClientTimeManagerTickEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00001000) != 0)
 
 //
 // Event Macro for WClientTimeManagerTickEnd
 //
 #define EventWriteWClientTimeManagerTickEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientTimeManagerTickEnd) ?\
+        EventEnabledWClientTimeManagerTickEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientTimeManagerTickEnd, &WClientTimeManagerTickId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutBegin
+//
+
+#define EventEnabledWClientLayoutBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientLayoutBegin
 //
 #define EventWriteWClientLayoutBegin(Id, source)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutBegin) ?\
+        EventEnabledWClientLayoutBegin() ?\
         MofTemplate_ic(Microsoft_Windows_WPFHandle, &WClientLayoutBegin, &WClientLayoutId, Id, source)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutEnd
+//
+
+#define EventEnabledWClientLayoutEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientLayoutEnd
 //
 #define EventWriteWClientLayoutEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutEnd) ?\
+        EventEnabledWClientLayoutEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientLayoutEnd, &WClientLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientMeasureBegin
+//
+
+#define EventEnabledWClientMeasureBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientMeasureBegin
 //
 #define EventWriteWClientMeasureBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientMeasureBegin) ?\
+        EventEnabledWClientMeasureBegin() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientMeasureBegin, &WClientMeasureId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientMeasureAbort
+//
+
+#define EventEnabledWClientMeasureAbort() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientMeasureAbort
 //
 #define EventWriteWClientMeasureAbort(LoopDurationMS, loopCounter)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientMeasureAbort) ?\
+        EventEnabledWClientMeasureAbort() ?\
         MofTemplate_dd(Microsoft_Windows_WPFHandle, &WClientMeasureAbort, &WClientMeasureId, LoopDurationMS, loopCounter)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientMeasureEnd
+//
+
+#define EventEnabledWClientMeasureEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientMeasureEnd
 //
 #define EventWriteWClientMeasureEnd(Count)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientMeasureEnd) ?\
+        EventEnabledWClientMeasureEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientMeasureEnd, &WClientMeasureId, Count)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientMeasureElementBegin
+//
+
+#define EventEnabledWClientMeasureElementBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientMeasureElementBegin
 //
 #define EventWriteWClientMeasureElementBegin(Id, Width, Height)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientMeasureElementBegin) ?\
+        EventEnabledWClientMeasureElementBegin() ?\
         MofTemplate_igg(Microsoft_Windows_WPFHandle, &WClientMeasureElementBegin, &WClientMeasureId, Id, Width, Height)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientMeasureElementEnd
+//
+
+#define EventEnabledWClientMeasureElementEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientMeasureElementEnd
 //
 #define EventWriteWClientMeasureElementEnd(Id, Width, Height)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientMeasureElementEnd) ?\
+        EventEnabledWClientMeasureElementEnd() ?\
         MofTemplate_igg(Microsoft_Windows_WPFHandle, &WClientMeasureElementEnd, &WClientMeasureId, Id, Width, Height)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientArrangeBegin
+//
+
+#define EventEnabledWClientArrangeBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientArrangeBegin
 //
 #define EventWriteWClientArrangeBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientArrangeBegin) ?\
+        EventEnabledWClientArrangeBegin() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientArrangeBegin, &WClientArrangeId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientArrangeAbort
+//
+
+#define EventEnabledWClientArrangeAbort() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientArrangeAbort
 //
 #define EventWriteWClientArrangeAbort(LoopDurationMS, loopCounter)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientArrangeAbort) ?\
+        EventEnabledWClientArrangeAbort() ?\
         MofTemplate_dd(Microsoft_Windows_WPFHandle, &WClientArrangeAbort, &WClientArrangeId, LoopDurationMS, loopCounter)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientArrangeEnd
+//
+
+#define EventEnabledWClientArrangeEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientArrangeEnd
 //
 #define EventWriteWClientArrangeEnd(Count)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientArrangeEnd) ?\
+        EventEnabledWClientArrangeEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientArrangeEnd, &WClientArrangeId, Count)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientArrangeElementBegin
+//
+
+#define EventEnabledWClientArrangeElementBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientArrangeElementBegin
 //
 #define EventWriteWClientArrangeElementBegin(Id, Top, Left, Width, Height)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientArrangeElementBegin) ?\
+        EventEnabledWClientArrangeElementBegin() ?\
         MofTemplate_igggg(Microsoft_Windows_WPFHandle, &WClientArrangeElementBegin, &WClientArrangeId, Id, Top, Left, Width, Height)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientArrangeElementEnd
+//
+
+#define EventEnabledWClientArrangeElementEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientArrangeElementEnd
 //
 #define EventWriteWClientArrangeElementEnd(Id, Top, Left, Width, Height)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientArrangeElementEnd) ?\
+        EventEnabledWClientArrangeElementEnd() ?\
         MofTemplate_igggg(Microsoft_Windows_WPFHandle, &WClientArrangeElementEnd, &WClientArrangeId, Id, Top, Left, Width, Height)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutAbort
+//
+
+#define EventEnabledWClientLayoutAbort() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientLayoutAbort
 //
 #define EventWriteWClientLayoutAbort(LoopDurationMS, loopCounter)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutAbort) ?\
+        EventEnabledWClientLayoutAbort() ?\
         MofTemplate_dd(Microsoft_Windows_WPFHandle, &WClientLayoutAbort, &WClientLayoutId, LoopDurationMS, loopCounter)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutFireSizeChangedBegin
+//
+
+#define EventEnabledWClientLayoutFireSizeChangedBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientLayoutFireSizeChangedBegin
 //
 #define EventWriteWClientLayoutFireSizeChangedBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutFireSizeChangedBegin) ?\
+        EventEnabledWClientLayoutFireSizeChangedBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientLayoutFireSizeChangedBegin, &WClientLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutFireSizeChangedEnd
+//
+
+#define EventEnabledWClientLayoutFireSizeChangedEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientLayoutFireSizeChangedEnd
 //
 #define EventWriteWClientLayoutFireSizeChangedEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutFireSizeChangedEnd) ?\
+        EventEnabledWClientLayoutFireSizeChangedEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientLayoutFireSizeChangedEnd, &WClientLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutFireLayoutUpdatedBegin
+//
+
+#define EventEnabledWClientLayoutFireLayoutUpdatedBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientLayoutFireLayoutUpdatedBegin
 //
 #define EventWriteWClientLayoutFireLayoutUpdatedBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutFireLayoutUpdatedBegin) ?\
+        EventEnabledWClientLayoutFireLayoutUpdatedBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientLayoutFireLayoutUpdatedBegin, &WClientLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutFireLayoutUpdatedEnd
+//
+
+#define EventEnabledWClientLayoutFireLayoutUpdatedEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientLayoutFireLayoutUpdatedEnd
 //
 #define EventWriteWClientLayoutFireLayoutUpdatedEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutFireLayoutUpdatedEnd) ?\
+        EventEnabledWClientLayoutFireLayoutUpdatedEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientLayoutFireLayoutUpdatedEnd, &WClientLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutFireAutomationEventsBegin
+//
+
+#define EventEnabledWClientLayoutFireAutomationEventsBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientLayoutFireAutomationEventsBegin
 //
 #define EventWriteWClientLayoutFireAutomationEventsBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutFireAutomationEventsBegin) ?\
+        EventEnabledWClientLayoutFireAutomationEventsBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientLayoutFireAutomationEventsBegin, &WClientLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutFireAutomationEventsEnd
+//
+
+#define EventEnabledWClientLayoutFireAutomationEventsEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientLayoutFireAutomationEventsEnd
 //
 #define EventWriteWClientLayoutFireAutomationEventsEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutFireAutomationEventsEnd) ?\
+        EventEnabledWClientLayoutFireAutomationEventsEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientLayoutFireAutomationEventsEnd, &WClientLayoutId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutException
+//
+
+#define EventEnabledWClientLayoutException() ((Microsoft_Windows_WPFEnableBits[0] & 0x00002000) != 0)
 
 //
 // Event Macro for WClientLayoutException
 //
 #define EventWriteWClientLayoutException(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutException) ?\
+        EventEnabledWClientLayoutException() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientLayoutException, &WClientLayoutId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientLayoutInvalidated
+//
+
+#define EventEnabledWClientLayoutInvalidated() ((Microsoft_Windows_WPFEnableBits[0] & 0x00004000) != 0)
 
 //
 // Event Macro for WClientLayoutInvalidated
 //
 #define EventWriteWClientLayoutInvalidated(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientLayoutInvalidated) ?\
+        EventEnabledWClientLayoutInvalidated() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientLayoutInvalidated, &WClientLayoutId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_WinMainStart
+//
+
+#define EventEnabledWpfHostUm_WinMainStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_WinMainStart
 //
 #define EventWriteWpfHostUm_WinMainStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_WinMainStart) ?\
+        EventEnabledWpfHostUm_WinMainStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_WinMainStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_WinMainEnd
+//
+
+#define EventEnabledWpfHostUm_WinMainEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_WinMainEnd
 //
 #define EventWriteWpfHostUm_WinMainEnd(ReturnCode)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_WinMainEnd) ?\
+        EventEnabledWpfHostUm_WinMainEnd() ?\
         MofTemplate_q(Microsoft_Windows_WPFHandle, &WpfHostUm_WinMainEnd, &WpfHostUmId, ReturnCode)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_InvokingBrowser
+//
+
+#define EventEnabledWpfHostUm_InvokingBrowser() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_InvokingBrowser
 //
 #define EventWriteWpfHostUm_InvokingBrowser(URL)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_InvokingBrowser) ?\
+        EventEnabledWpfHostUm_InvokingBrowser() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHostUm_InvokingBrowser, &WpfHostUmId, URL)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_LaunchingRestrictedProcess
+//
+
+#define EventEnabledWpfHostUm_LaunchingRestrictedProcess() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_LaunchingRestrictedProcess
 //
 #define EventWriteWpfHostUm_LaunchingRestrictedProcess()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_LaunchingRestrictedProcess) ?\
+        EventEnabledWpfHostUm_LaunchingRestrictedProcess() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_LaunchingRestrictedProcess, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_EnteringMessageLoop
+//
+
+#define EventEnabledWpfHostUm_EnteringMessageLoop() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_EnteringMessageLoop
 //
 #define EventWriteWpfHostUm_EnteringMessageLoop()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_EnteringMessageLoop) ?\
+        EventEnabledWpfHostUm_EnteringMessageLoop() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_EnteringMessageLoop, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ClassFactoryCreateInstance
+//
+
+#define EventEnabledWpfHostUm_ClassFactoryCreateInstance() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_ClassFactoryCreateInstance
 //
 #define EventWriteWpfHostUm_ClassFactoryCreateInstance()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ClassFactoryCreateInstance) ?\
+        EventEnabledWpfHostUm_ClassFactoryCreateInstance() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_ClassFactoryCreateInstance, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ReadingDeplManifestStart
+//
+
+#define EventEnabledWpfHostUm_ReadingDeplManifestStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_ReadingDeplManifestStart
 //
 #define EventWriteWpfHostUm_ReadingDeplManifestStart(URL)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ReadingDeplManifestStart) ?\
+        EventEnabledWpfHostUm_ReadingDeplManifestStart() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHostUm_ReadingDeplManifestStart, &WpfHostUmId, URL)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ReadingDeplManifestEnd
+//
+
+#define EventEnabledWpfHostUm_ReadingDeplManifestEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_ReadingDeplManifestEnd
 //
 #define EventWriteWpfHostUm_ReadingDeplManifestEnd(URL)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ReadingDeplManifestEnd) ?\
+        EventEnabledWpfHostUm_ReadingDeplManifestEnd() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHostUm_ReadingDeplManifestEnd, &WpfHostUmId, URL)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ReadingAppManifestStart
+//
+
+#define EventEnabledWpfHostUm_ReadingAppManifestStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_ReadingAppManifestStart
 //
 #define EventWriteWpfHostUm_ReadingAppManifestStart(URL)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ReadingAppManifestStart) ?\
+        EventEnabledWpfHostUm_ReadingAppManifestStart() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHostUm_ReadingAppManifestStart, &WpfHostUmId, URL)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ReadingAppManifestEnd
+//
+
+#define EventEnabledWpfHostUm_ReadingAppManifestEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_ReadingAppManifestEnd
 //
 #define EventWriteWpfHostUm_ReadingAppManifestEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ReadingAppManifestEnd) ?\
+        EventEnabledWpfHostUm_ReadingAppManifestEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_ReadingAppManifestEnd, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ParsingMarkupVersionStart
+//
+
+#define EventEnabledWpfHostUm_ParsingMarkupVersionStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_ParsingMarkupVersionStart
 //
 #define EventWriteWpfHostUm_ParsingMarkupVersionStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ParsingMarkupVersionStart) ?\
+        EventEnabledWpfHostUm_ParsingMarkupVersionStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_ParsingMarkupVersionStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ParsingMarkupVersionEnd
+//
+
+#define EventEnabledWpfHostUm_ParsingMarkupVersionEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_ParsingMarkupVersionEnd
 //
 #define EventWriteWpfHostUm_ParsingMarkupVersionEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ParsingMarkupVersionEnd) ?\
+        EventEnabledWpfHostUm_ParsingMarkupVersionEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_ParsingMarkupVersionEnd, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_IPersistFileLoad
+//
+
+#define EventEnabledWpfHostUm_IPersistFileLoad() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_IPersistFileLoad
 //
 #define EventWriteWpfHostUm_IPersistFileLoad(URL)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_IPersistFileLoad) ?\
+        EventEnabledWpfHostUm_IPersistFileLoad() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHostUm_IPersistFileLoad, &WpfHostUmId, URL)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_IPersistMonikerLoadStart
+//
+
+#define EventEnabledWpfHostUm_IPersistMonikerLoadStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_IPersistMonikerLoadStart
 //
 #define EventWriteWpfHostUm_IPersistMonikerLoadStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_IPersistMonikerLoadStart) ?\
+        EventEnabledWpfHostUm_IPersistMonikerLoadStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_IPersistMonikerLoadStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_IPersistMonikerLoadEnd
+//
+
+#define EventEnabledWpfHostUm_IPersistMonikerLoadEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_IPersistMonikerLoadEnd
 //
 #define EventWriteWpfHostUm_IPersistMonikerLoadEnd(ReturnCode)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_IPersistMonikerLoadEnd) ?\
+        EventEnabledWpfHostUm_IPersistMonikerLoadEnd() ?\
         MofTemplate_q(Microsoft_Windows_WPFHandle, &WpfHostUm_IPersistMonikerLoadEnd, &WpfHostUmId, ReturnCode)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_BindProgress
+//
+
+#define EventEnabledWpfHostUm_BindProgress() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_BindProgress
 //
 #define EventWriteWpfHostUm_BindProgress(Code, Text)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_BindProgress) ?\
+        EventEnabledWpfHostUm_BindProgress() ?\
         MofTemplate_qz(Microsoft_Windows_WPFHandle, &WpfHostUm_BindProgress, &WpfHostUmId, Code, Text)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_OnStopBinding
+//
+
+#define EventEnabledWpfHostUm_OnStopBinding() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_OnStopBinding
 //
 #define EventWriteWpfHostUm_OnStopBinding(ReturnCode)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_OnStopBinding) ?\
+        EventEnabledWpfHostUm_OnStopBinding() ?\
         MofTemplate_q(Microsoft_Windows_WPFHandle, &WpfHostUm_OnStopBinding, &WpfHostUmId, ReturnCode)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_VersionAttach
+//
+
+#define EventEnabledWpfHostUm_VersionAttach() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_VersionAttach
 //
 #define EventWriteWpfHostUm_VersionAttach()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_VersionAttach) ?\
+        EventEnabledWpfHostUm_VersionAttach() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_VersionAttach, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_VersionActivateStart
+//
+
+#define EventEnabledWpfHostUm_VersionActivateStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_VersionActivateStart
 //
 #define EventWriteWpfHostUm_VersionActivateStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_VersionActivateStart) ?\
+        EventEnabledWpfHostUm_VersionActivateStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_VersionActivateStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_VersionActivateEnd
+//
+
+#define EventEnabledWpfHostUm_VersionActivateEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_VersionActivateEnd
 //
 #define EventWriteWpfHostUm_VersionActivateEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_VersionActivateEnd) ?\
+        EventEnabledWpfHostUm_VersionActivateEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_VersionActivateEnd, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_StartingCLRStart
+//
+
+#define EventEnabledWpfHostUm_StartingCLRStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_StartingCLRStart
 //
 #define EventWriteWpfHostUm_StartingCLRStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_StartingCLRStart) ?\
+        EventEnabledWpfHostUm_StartingCLRStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_StartingCLRStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_StartingCLREnd
+//
+
+#define EventEnabledWpfHostUm_StartingCLREnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_StartingCLREnd
 //
 #define EventWriteWpfHostUm_StartingCLREnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_StartingCLREnd) ?\
+        EventEnabledWpfHostUm_StartingCLREnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_StartingCLREnd, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_IHlinkTargetNavigateStart
+//
+
+#define EventEnabledWpfHostUm_IHlinkTargetNavigateStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_IHlinkTargetNavigateStart
 //
 #define EventWriteWpfHostUm_IHlinkTargetNavigateStart(Location)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_IHlinkTargetNavigateStart) ?\
+        EventEnabledWpfHostUm_IHlinkTargetNavigateStart() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHostUm_IHlinkTargetNavigateStart, &WpfHostUmId, Location)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_IHlinkTargetNavigateEnd
+//
+
+#define EventEnabledWpfHostUm_IHlinkTargetNavigateEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_IHlinkTargetNavigateEnd
 //
 #define EventWriteWpfHostUm_IHlinkTargetNavigateEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_IHlinkTargetNavigateEnd) ?\
+        EventEnabledWpfHostUm_IHlinkTargetNavigateEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_IHlinkTargetNavigateEnd, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ReadyStateChanged
+//
+
+#define EventEnabledWpfHostUm_ReadyStateChanged() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_ReadyStateChanged
 //
 #define EventWriteWpfHostUm_ReadyStateChanged(State)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ReadyStateChanged) ?\
+        EventEnabledWpfHostUm_ReadyStateChanged() ?\
         MofTemplate_q(Microsoft_Windows_WPFHandle, &WpfHostUm_ReadyStateChanged, &WpfHostUmId, State)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_InitDocHostStart
+//
+
+#define EventEnabledWpfHostUm_InitDocHostStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_InitDocHostStart
 //
 #define EventWriteWpfHostUm_InitDocHostStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_InitDocHostStart) ?\
+        EventEnabledWpfHostUm_InitDocHostStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_InitDocHostStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_InitDocHostEnd
+//
+
+#define EventEnabledWpfHostUm_InitDocHostEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_InitDocHostEnd
 //
 #define EventWriteWpfHostUm_InitDocHostEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_InitDocHostEnd) ?\
+        EventEnabledWpfHostUm_InitDocHostEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_InitDocHostEnd, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_MergingMenusStart
+//
+
+#define EventEnabledWpfHostUm_MergingMenusStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_MergingMenusStart
 //
 #define EventWriteWpfHostUm_MergingMenusStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_MergingMenusStart) ?\
+        EventEnabledWpfHostUm_MergingMenusStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_MergingMenusStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_MergingMenusEnd
+//
+
+#define EventEnabledWpfHostUm_MergingMenusEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_MergingMenusEnd
 //
 #define EventWriteWpfHostUm_MergingMenusEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_MergingMenusEnd) ?\
+        EventEnabledWpfHostUm_MergingMenusEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_MergingMenusEnd, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_UIActivationStart
+//
+
+#define EventEnabledWpfHostUm_UIActivationStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_UIActivationStart
 //
 #define EventWriteWpfHostUm_UIActivationStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_UIActivationStart) ?\
+        EventEnabledWpfHostUm_UIActivationStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_UIActivationStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_UIActivationEnd
+//
+
+#define EventEnabledWpfHostUm_UIActivationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_UIActivationEnd
 //
 #define EventWriteWpfHostUm_UIActivationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_UIActivationEnd) ?\
+        EventEnabledWpfHostUm_UIActivationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_UIActivationEnd, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_LoadingResourceDLLStart
+//
+
+#define EventEnabledWpfHostUm_LoadingResourceDLLStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHostUm_LoadingResourceDLLStart
 //
 #define EventWriteWpfHostUm_LoadingResourceDLLStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_LoadingResourceDLLStart) ?\
+        EventEnabledWpfHostUm_LoadingResourceDLLStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_LoadingResourceDLLStart, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_LoadingResourceDLLEnd
+//
+
+#define EventEnabledWpfHostUm_LoadingResourceDLLEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHostUm_LoadingResourceDLLEnd
 //
 #define EventWriteWpfHostUm_LoadingResourceDLLEnd(URL)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_LoadingResourceDLLEnd) ?\
+        EventEnabledWpfHostUm_LoadingResourceDLLEnd() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHostUm_LoadingResourceDLLEnd, &WpfHostUmId, URL)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_OleCmdQueryStatusStart
+//
+
+#define EventEnabledWpfHostUm_OleCmdQueryStatusStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_OleCmdQueryStatusStart
 //
 #define EventWriteWpfHostUm_OleCmdQueryStatusStart(GUID_Data1, CmdId)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_OleCmdQueryStatusStart) ?\
+        EventEnabledWpfHostUm_OleCmdQueryStatusStart() ?\
         MofTemplate_qq(Microsoft_Windows_WPFHandle, &WpfHostUm_OleCmdQueryStatusStart, &WpfHostUmId, GUID_Data1, CmdId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_OleCmdQueryStatusEnd
+//
+
+#define EventEnabledWpfHostUm_OleCmdQueryStatusEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_OleCmdQueryStatusEnd
 //
 #define EventWriteWpfHostUm_OleCmdQueryStatusEnd(CmdFlags, HResult)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_OleCmdQueryStatusEnd) ?\
+        EventEnabledWpfHostUm_OleCmdQueryStatusEnd() ?\
         MofTemplate_qq(Microsoft_Windows_WPFHandle, &WpfHostUm_OleCmdQueryStatusEnd, &WpfHostUmId, CmdFlags, HResult)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_OleCmdExecStart
+//
+
+#define EventEnabledWpfHostUm_OleCmdExecStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_OleCmdExecStart
 //
 #define EventWriteWpfHostUm_OleCmdExecStart(GUID_Data1, CmdId)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_OleCmdExecStart) ?\
+        EventEnabledWpfHostUm_OleCmdExecStart() ?\
         MofTemplate_qq(Microsoft_Windows_WPFHandle, &WpfHostUm_OleCmdExecStart, &WpfHostUmId, GUID_Data1, CmdId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_OleCmdExecEnd
+//
+
+#define EventEnabledWpfHostUm_OleCmdExecEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_OleCmdExecEnd
 //
 #define EventWriteWpfHostUm_OleCmdExecEnd(ReturnCode)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_OleCmdExecEnd) ?\
+        EventEnabledWpfHostUm_OleCmdExecEnd() ?\
         MofTemplate_q(Microsoft_Windows_WPFHandle, &WpfHostUm_OleCmdExecEnd, &WpfHostUmId, ReturnCode)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_ProgressPageShown
+//
+
+#define EventEnabledWpfHostUm_ProgressPageShown() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_ProgressPageShown
 //
 #define EventWriteWpfHostUm_ProgressPageShown()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_ProgressPageShown) ?\
+        EventEnabledWpfHostUm_ProgressPageShown() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_ProgressPageShown, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_AdHocProfile1Start
+//
+
+#define EventEnabledWpfHostUm_AdHocProfile1Start() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_AdHocProfile1Start
 //
 #define EventWriteWpfHostUm_AdHocProfile1Start()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_AdHocProfile1Start) ?\
+        EventEnabledWpfHostUm_AdHocProfile1Start() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_AdHocProfile1Start, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_AdHocProfile1End
+//
+
+#define EventEnabledWpfHostUm_AdHocProfile1End() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_AdHocProfile1End
 //
 #define EventWriteWpfHostUm_AdHocProfile1End()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_AdHocProfile1End) ?\
+        EventEnabledWpfHostUm_AdHocProfile1End() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_AdHocProfile1End, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_AdHocProfile2Start
+//
+
+#define EventEnabledWpfHostUm_AdHocProfile2Start() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHostUm_AdHocProfile2Start
 //
 #define EventWriteWpfHostUm_AdHocProfile2Start(Location)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_AdHocProfile2Start) ?\
+        EventEnabledWpfHostUm_AdHocProfile2Start() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHostUm_AdHocProfile2Start, &WpfHostUmId, Location)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHostUm_AdHocProfile2End
+//
+
+#define EventEnabledWpfHostUm_AdHocProfile2End() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHostUm_AdHocProfile2End
 //
 #define EventWriteWpfHostUm_AdHocProfile2End()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHostUm_AdHocProfile2End) ?\
+        EventEnabledWpfHostUm_AdHocProfile2End() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHostUm_AdHocProfile2End, &WpfHostUmId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DocObjHostCreated
+//
+
+#define EventEnabledWpfHost_DocObjHostCreated() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_DocObjHostCreated
 //
 #define EventWriteWpfHost_DocObjHostCreated()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DocObjHostCreated) ?\
+        EventEnabledWpfHost_DocObjHostCreated() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DocObjHostCreated, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_XappLauncherAppStartup
+//
+
+#define EventEnabledWpfHost_XappLauncherAppStartup() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_XappLauncherAppStartup
 //
 #define EventWriteWpfHost_XappLauncherAppStartup()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_XappLauncherAppStartup) ?\
+        EventEnabledWpfHost_XappLauncherAppStartup() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_XappLauncherAppStartup, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_XappLauncherAppExit
+//
+
+#define EventEnabledWpfHost_XappLauncherAppExit() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_XappLauncherAppExit
 //
 #define EventWriteWpfHost_XappLauncherAppExit(AttemptDownload)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_XappLauncherAppExit) ?\
+        EventEnabledWpfHost_XappLauncherAppExit() ?\
         MofTemplate_c(Microsoft_Windows_WPFHandle, &WpfHost_XappLauncherAppExit, &WpfHostId, AttemptDownload)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DocObjHostRunApplicationStart
+//
+
+#define EventEnabledWpfHost_DocObjHostRunApplicationStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_DocObjHostRunApplicationStart
 //
 #define EventWriteWpfHost_DocObjHostRunApplicationStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DocObjHostRunApplicationStart) ?\
+        EventEnabledWpfHost_DocObjHostRunApplicationStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DocObjHostRunApplicationStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DocObjHostRunApplicationEnd
+//
+
+#define EventEnabledWpfHost_DocObjHostRunApplicationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_DocObjHostRunApplicationEnd
 //
 #define EventWriteWpfHost_DocObjHostRunApplicationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DocObjHostRunApplicationEnd) ?\
+        EventEnabledWpfHost_DocObjHostRunApplicationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DocObjHostRunApplicationEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_ClickOnceActivationStart
+//
+
+#define EventEnabledWpfHost_ClickOnceActivationStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_ClickOnceActivationStart
 //
 #define EventWriteWpfHost_ClickOnceActivationStart(Direct)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_ClickOnceActivationStart) ?\
+        EventEnabledWpfHost_ClickOnceActivationStart() ?\
         MofTemplate_c(Microsoft_Windows_WPFHandle, &WpfHost_ClickOnceActivationStart, &WpfHostId, Direct)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_ClickOnceActivationEnd
+//
+
+#define EventEnabledWpfHost_ClickOnceActivationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_ClickOnceActivationEnd
 //
 #define EventWriteWpfHost_ClickOnceActivationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_ClickOnceActivationEnd) ?\
+        EventEnabledWpfHost_ClickOnceActivationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_ClickOnceActivationEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_InitAppProxyStart
+//
+
+#define EventEnabledWpfHost_InitAppProxyStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_InitAppProxyStart
 //
 #define EventWriteWpfHost_InitAppProxyStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_InitAppProxyStart) ?\
+        EventEnabledWpfHost_InitAppProxyStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_InitAppProxyStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_InitAppProxyEnd
+//
+
+#define EventEnabledWpfHost_InitAppProxyEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_InitAppProxyEnd
 //
 #define EventWriteWpfHost_InitAppProxyEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_InitAppProxyEnd) ?\
+        EventEnabledWpfHost_InitAppProxyEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_InitAppProxyEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_AppProxyCtor
+//
+
+#define EventEnabledWpfHost_AppProxyCtor() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_AppProxyCtor
 //
 #define EventWriteWpfHost_AppProxyCtor()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_AppProxyCtor) ?\
+        EventEnabledWpfHost_AppProxyCtor() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_AppProxyCtor, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_RootBrowserWindowSetupStart
+//
+
+#define EventEnabledWpfHost_RootBrowserWindowSetupStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_RootBrowserWindowSetupStart
 //
 #define EventWriteWpfHost_RootBrowserWindowSetupStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_RootBrowserWindowSetupStart) ?\
+        EventEnabledWpfHost_RootBrowserWindowSetupStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_RootBrowserWindowSetupStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_RootBrowserWindowSetupEnd
+//
+
+#define EventEnabledWpfHost_RootBrowserWindowSetupEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_RootBrowserWindowSetupEnd
 //
 #define EventWriteWpfHost_RootBrowserWindowSetupEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_RootBrowserWindowSetupEnd) ?\
+        EventEnabledWpfHost_RootBrowserWindowSetupEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_RootBrowserWindowSetupEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_AppProxyRunStart
+//
+
+#define EventEnabledWpfHost_AppProxyRunStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_AppProxyRunStart
 //
 #define EventWriteWpfHost_AppProxyRunStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_AppProxyRunStart) ?\
+        EventEnabledWpfHost_AppProxyRunStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_AppProxyRunStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_AppProxyRunEnd
+//
+
+#define EventEnabledWpfHost_AppProxyRunEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_AppProxyRunEnd
 //
 #define EventWriteWpfHost_AppProxyRunEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_AppProxyRunEnd) ?\
+        EventEnabledWpfHost_AppProxyRunEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_AppProxyRunEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_AppDomainManagerCctor
+//
+
+#define EventEnabledWpfHost_AppDomainManagerCctor() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_AppDomainManagerCctor
 //
 #define EventWriteWpfHost_AppDomainManagerCctor()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_AppDomainManagerCctor) ?\
+        EventEnabledWpfHost_AppDomainManagerCctor() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_AppDomainManagerCctor, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_ApplicationActivatorCreateInstanceStart
+//
+
+#define EventEnabledWpfHost_ApplicationActivatorCreateInstanceStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_ApplicationActivatorCreateInstanceStart
 //
 #define EventWriteWpfHost_ApplicationActivatorCreateInstanceStart(URI)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_ApplicationActivatorCreateInstanceStart) ?\
+        EventEnabledWpfHost_ApplicationActivatorCreateInstanceStart() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHost_ApplicationActivatorCreateInstanceStart, &WpfHostId, URI)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_ApplicationActivatorCreateInstanceEnd
+//
+
+#define EventEnabledWpfHost_ApplicationActivatorCreateInstanceEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_ApplicationActivatorCreateInstanceEnd
 //
 #define EventWriteWpfHost_ApplicationActivatorCreateInstanceEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_ApplicationActivatorCreateInstanceEnd) ?\
+        EventEnabledWpfHost_ApplicationActivatorCreateInstanceEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_ApplicationActivatorCreateInstanceEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DetermineApplicationTrustStart
+//
+
+#define EventEnabledWpfHost_DetermineApplicationTrustStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_DetermineApplicationTrustStart
 //
 #define EventWriteWpfHost_DetermineApplicationTrustStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DetermineApplicationTrustStart) ?\
+        EventEnabledWpfHost_DetermineApplicationTrustStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DetermineApplicationTrustStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DetermineApplicationTrustEnd
+//
+
+#define EventEnabledWpfHost_DetermineApplicationTrustEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_DetermineApplicationTrustEnd
 //
 #define EventWriteWpfHost_DetermineApplicationTrustEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DetermineApplicationTrustEnd) ?\
+        EventEnabledWpfHost_DetermineApplicationTrustEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DetermineApplicationTrustEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_FirstTimeActivation
+//
+
+#define EventEnabledWpfHost_FirstTimeActivation() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_FirstTimeActivation
 //
 #define EventWriteWpfHost_FirstTimeActivation()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_FirstTimeActivation) ?\
+        EventEnabledWpfHost_FirstTimeActivation() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_FirstTimeActivation, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_GetDownloadPageStart
+//
+
+#define EventEnabledWpfHost_GetDownloadPageStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00040000) != 0)
 
 //
 // Event Macro for WpfHost_GetDownloadPageStart
 //
 #define EventWriteWpfHost_GetDownloadPageStart(Page)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_GetDownloadPageStart) ?\
+        EventEnabledWpfHost_GetDownloadPageStart() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &WpfHost_GetDownloadPageStart, &WpfHostId, Page)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_GetDownloadPageEnd
+//
+
+#define EventEnabledWpfHost_GetDownloadPageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00040000) != 0)
 
 //
 // Event Macro for WpfHost_GetDownloadPageEnd
 //
 #define EventWriteWpfHost_GetDownloadPageEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_GetDownloadPageEnd) ?\
+        EventEnabledWpfHost_GetDownloadPageEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_GetDownloadPageEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DownloadDeplManifestStart
+//
+
+#define EventEnabledWpfHost_DownloadDeplManifestStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_DownloadDeplManifestStart
 //
 #define EventWriteWpfHost_DownloadDeplManifestStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DownloadDeplManifestStart) ?\
+        EventEnabledWpfHost_DownloadDeplManifestStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DownloadDeplManifestStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DownloadDeplManifestEnd
+//
+
+#define EventEnabledWpfHost_DownloadDeplManifestEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_DownloadDeplManifestEnd
 //
 #define EventWriteWpfHost_DownloadDeplManifestEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DownloadDeplManifestEnd) ?\
+        EventEnabledWpfHost_DownloadDeplManifestEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DownloadDeplManifestEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_AssertAppRequirementsStart
+//
+
+#define EventEnabledWpfHost_AssertAppRequirementsStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_AssertAppRequirementsStart
 //
 #define EventWriteWpfHost_AssertAppRequirementsStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_AssertAppRequirementsStart) ?\
+        EventEnabledWpfHost_AssertAppRequirementsStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_AssertAppRequirementsStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_AssertAppRequirementsEnd
+//
+
+#define EventEnabledWpfHost_AssertAppRequirementsEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_AssertAppRequirementsEnd
 //
 #define EventWriteWpfHost_AssertAppRequirementsEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_AssertAppRequirementsEnd) ?\
+        EventEnabledWpfHost_AssertAppRequirementsEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_AssertAppRequirementsEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DownloadApplicationStart
+//
+
+#define EventEnabledWpfHost_DownloadApplicationStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_DownloadApplicationStart
 //
 #define EventWriteWpfHost_DownloadApplicationStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DownloadApplicationStart) ?\
+        EventEnabledWpfHost_DownloadApplicationStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DownloadApplicationStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DownloadApplicationEnd
+//
+
+#define EventEnabledWpfHost_DownloadApplicationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_DownloadApplicationEnd
 //
 #define EventWriteWpfHost_DownloadApplicationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DownloadApplicationEnd) ?\
+        EventEnabledWpfHost_DownloadApplicationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_DownloadApplicationEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_DownloadProgressUpdate
+//
+
+#define EventEnabledWpfHost_DownloadProgressUpdate() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_DownloadProgressUpdate
 //
 #define EventWriteWpfHost_DownloadProgressUpdate(Bytes, Total)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_DownloadProgressUpdate) ?\
+        EventEnabledWpfHost_DownloadProgressUpdate() ?\
         MofTemplate_qq(Microsoft_Windows_WPFHandle, &WpfHost_DownloadProgressUpdate, &WpfHostId, Bytes, Total)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_XappLauncherAppNavigated
+//
+
+#define EventEnabledWpfHost_XappLauncherAppNavigated() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_XappLauncherAppNavigated
 //
 #define EventWriteWpfHost_XappLauncherAppNavigated()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_XappLauncherAppNavigated) ?\
+        EventEnabledWpfHost_XappLauncherAppNavigated() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_XappLauncherAppNavigated, &WpfHostId)\
         : ERROR_SUCCESS\
 
 //
-// Event Macro for WpfHost_StartingFontCacheServiceStart
+// Enablement check macro for WpfHost_UpdateBrowserCommandsStart
 //
-#define EventWriteWpfHost_StartingFontCacheServiceStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_StartingFontCacheServiceStart) ?\
-        MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_StartingFontCacheServiceStart, &WpfHostId)\
-        : ERROR_SUCCESS\
 
-//
-// Event Macro for WpfHost_StartingFontCacheServiceEnd
-//
-#define EventWriteWpfHost_StartingFontCacheServiceEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_StartingFontCacheServiceEnd) ?\
-        MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_StartingFontCacheServiceEnd, &WpfHostId)\
-        : ERROR_SUCCESS\
+#define EventEnabledWpfHost_UpdateBrowserCommandsStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_UpdateBrowserCommandsStart
 //
 #define EventWriteWpfHost_UpdateBrowserCommandsStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_UpdateBrowserCommandsStart) ?\
+        EventEnabledWpfHost_UpdateBrowserCommandsStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_UpdateBrowserCommandsStart, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_UpdateBrowserCommandsEnd
+//
+
+#define EventEnabledWpfHost_UpdateBrowserCommandsEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for WpfHost_UpdateBrowserCommandsEnd
 //
 #define EventWriteWpfHost_UpdateBrowserCommandsEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_UpdateBrowserCommandsEnd) ?\
+        EventEnabledWpfHost_UpdateBrowserCommandsEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_UpdateBrowserCommandsEnd, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_PostShutdown
+//
+
+#define EventEnabledWpfHost_PostShutdown() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHost_PostShutdown
 //
 #define EventWriteWpfHost_PostShutdown()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_PostShutdown) ?\
+        EventEnabledWpfHost_PostShutdown() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_PostShutdown, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_AbortingActivation
+//
+
+#define EventEnabledWpfHost_AbortingActivation() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for WpfHost_AbortingActivation
 //
 #define EventWriteWpfHost_AbortingActivation()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_AbortingActivation) ?\
+        EventEnabledWpfHost_AbortingActivation() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WpfHost_AbortingActivation, &WpfHostId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_IBHSRunStart
+//
+
+#define EventEnabledWpfHost_IBHSRunStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_IBHSRunStart
 //
 #define EventWriteWpfHost_IBHSRunStart(Path, AppId)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_IBHSRunStart) ?\
+        EventEnabledWpfHost_IBHSRunStart() ?\
         MofTemplate_zz(Microsoft_Windows_WPFHandle, &WpfHost_IBHSRunStart, &WpfHostId, Path, AppId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WpfHost_IBHSRunEnd
+//
+
+#define EventEnabledWpfHost_IBHSRunEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for WpfHost_IBHSRunEnd
 //
 #define EventWriteWpfHost_IBHSRunEnd(ExitCode)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WpfHost_IBHSRunEnd) ?\
+        EventEnabledWpfHost_IBHSRunEnd() ?\
         MofTemplate_q(Microsoft_Windows_WPFHandle, &WpfHost_IBHSRunEnd, &WpfHostId, ExitCode)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for Wpf_NavigationAsyncWorkItem
+//
+
+#define EventEnabledWpf_NavigationAsyncWorkItem() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for Wpf_NavigationAsyncWorkItem
 //
 #define EventWriteWpf_NavigationAsyncWorkItem()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, Wpf_NavigationAsyncWorkItem) ?\
+        EventEnabledWpf_NavigationAsyncWorkItem() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &Wpf_NavigationAsyncWorkItem, &NavigationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for Wpf_NavigationWebResponseReceived
+//
+
+#define EventEnabledWpf_NavigationWebResponseReceived() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for Wpf_NavigationWebResponseReceived
 //
 #define EventWriteWpf_NavigationWebResponseReceived()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, Wpf_NavigationWebResponseReceived) ?\
+        EventEnabledWpf_NavigationWebResponseReceived() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &Wpf_NavigationWebResponseReceived, &NavigationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for Wpf_NavigationEnd
+//
+
+#define EventEnabledWpf_NavigationEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for Wpf_NavigationEnd
 //
 #define EventWriteWpf_NavigationEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, Wpf_NavigationEnd) ?\
+        EventEnabledWpf_NavigationEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &Wpf_NavigationEnd, &NavigationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for Wpf_NavigationContentRendered
+//
+
+#define EventEnabledWpf_NavigationContentRendered() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for Wpf_NavigationContentRendered
 //
 #define EventWriteWpf_NavigationContentRendered()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, Wpf_NavigationContentRendered) ?\
+        EventEnabledWpf_NavigationContentRendered() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &Wpf_NavigationContentRendered, &NavigationId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for Wpf_NavigationStart
+//
+
+#define EventEnabledWpf_NavigationStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00008000) != 0)
 
 //
 // Event Macro for Wpf_NavigationStart
 //
 #define EventWriteWpf_NavigationStart(NavigationMode, UriOrObject)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, Wpf_NavigationStart) ?\
+        EventEnabledWpf_NavigationStart() ?\
         MofTemplate_zz(Microsoft_Windows_WPFHandle, &Wpf_NavigationStart, &NavigationId, NavigationMode, UriOrObject)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for Wpf_NavigationLaunchBrowser
+//
+
+#define EventEnabledWpf_NavigationLaunchBrowser() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for Wpf_NavigationLaunchBrowser
 //
 #define EventWriteWpf_NavigationLaunchBrowser(URI)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, Wpf_NavigationLaunchBrowser) ?\
+        EventEnabledWpf_NavigationLaunchBrowser() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &Wpf_NavigationLaunchBrowser, &NavigationId, URI)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for Wpf_NavigationPageFunctionReturn
+//
+
+#define EventEnabledWpf_NavigationPageFunctionReturn() ((Microsoft_Windows_WPFEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for Wpf_NavigationPageFunctionReturn
 //
 #define EventWriteWpf_NavigationPageFunctionReturn(PF)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, Wpf_NavigationPageFunctionReturn) ?\
+        EventEnabledWpf_NavigationPageFunctionReturn() ?\
         MofTemplate_z(Microsoft_Windows_WPFHandle, &Wpf_NavigationPageFunctionReturn, &NavigationId, PF)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DrawBitmapInfo
+//
+
+#define EventEnabledDrawBitmapInfo() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for DrawBitmapInfo
 //
 #define EventWriteDrawBitmapInfo(Bitmap, width, height)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DrawBitmapInfo) ?\
+        EventEnabledDrawBitmapInfo() ?\
         MofTemplate_pqq(Microsoft_Windows_WPFHandle, &DrawBitmapInfo, &DrawBitmapId, Bitmap, width, height)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for BitmapCopyInfo
+//
+
+#define EventEnabledBitmapCopyInfo() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for BitmapCopyInfo
 //
 #define EventWriteBitmapCopyInfo(width, height)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, BitmapCopyInfo) ?\
+        EventEnabledBitmapCopyInfo() ?\
         MofTemplate_qq(Microsoft_Windows_WPFHandle, &BitmapCopyInfo, &BitmapCopyId, width, height)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for SetClipInfo
+//
+
+#define EventEnabledSetClipInfo() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for SetClipInfo
 //
 #define EventWriteSetClipInfo(left, top, right, bottom)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, SetClipInfo) ?\
+        EventEnabledSetClipInfo() ?\
         MofTemplate_qqqq(Microsoft_Windows_WPFHandle, &SetClipInfo, &SetClipId, left, top, right, bottom)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_ClearStart
+//
+
+#define EventEnabledDWMDraw_ClearStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for DWMDraw_ClearStart
 //
 #define EventWriteDWMDraw_ClearStart(left, top, right, bottom)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_ClearStart) ?\
+        EventEnabledDWMDraw_ClearStart() ?\
         MofTemplate_ffff(Microsoft_Windows_WPFHandle, &DWMDraw_ClearStart, &DWMDraw_ClearId, left, top, right, bottom)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_ClearEnd
+//
+
+#define EventEnabledDWMDraw_ClearEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for DWMDraw_ClearEnd
 //
 #define EventWriteDWMDraw_ClearEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_ClearEnd) ?\
+        EventEnabledDWMDraw_ClearEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DWMDraw_ClearEnd, &DWMDraw_ClearId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_BitmapStart
+//
+
+#define EventEnabledDWMDraw_BitmapStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_BitmapStart
 //
 #define EventWriteDWMDraw_BitmapStart(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_BitmapStart) ?\
+        EventEnabledDWMDraw_BitmapStart() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_BitmapStart, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_BitmapEnd
+//
+
+#define EventEnabledDWMDraw_BitmapEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_BitmapEnd
 //
 #define EventWriteDWMDraw_BitmapEnd(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_BitmapEnd) ?\
+        EventEnabledDWMDraw_BitmapEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_BitmapEnd, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_RectangleStart
+//
+
+#define EventEnabledDWMDraw_RectangleStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_RectangleStart
 //
 #define EventWriteDWMDraw_RectangleStart(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_RectangleStart) ?\
+        EventEnabledDWMDraw_RectangleStart() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_RectangleStart, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_RectangleEnd
+//
+
+#define EventEnabledDWMDraw_RectangleEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_RectangleEnd
 //
 #define EventWriteDWMDraw_RectangleEnd(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_RectangleEnd) ?\
+        EventEnabledDWMDraw_RectangleEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_RectangleEnd, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_GeometryStart
+//
+
+#define EventEnabledDWMDraw_GeometryStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_GeometryStart
 //
 #define EventWriteDWMDraw_GeometryStart(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_GeometryStart) ?\
+        EventEnabledDWMDraw_GeometryStart() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_GeometryStart, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_GeometryEnd
+//
+
+#define EventEnabledDWMDraw_GeometryEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_GeometryEnd
 //
 #define EventWriteDWMDraw_GeometryEnd(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_GeometryEnd) ?\
+        EventEnabledDWMDraw_GeometryEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_GeometryEnd, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_ImageStart
+//
+
+#define EventEnabledDWMDraw_ImageStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_ImageStart
 //
 #define EventWriteDWMDraw_ImageStart(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_ImageStart) ?\
+        EventEnabledDWMDraw_ImageStart() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_ImageStart, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_ImageEnd
+//
+
+#define EventEnabledDWMDraw_ImageEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_ImageEnd
 //
 #define EventWriteDWMDraw_ImageEnd(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_ImageEnd) ?\
+        EventEnabledDWMDraw_ImageEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_ImageEnd, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_GlyphRunStart
+//
+
+#define EventEnabledDWMDraw_GlyphRunStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_GlyphRunStart
 //
 #define EventWriteDWMDraw_GlyphRunStart(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_GlyphRunStart) ?\
+        EventEnabledDWMDraw_GlyphRunStart() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_GlyphRunStart, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_GlyphRunEnd
+//
+
+#define EventEnabledDWMDraw_GlyphRunEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_GlyphRunEnd
 //
 #define EventWriteDWMDraw_GlyphRunEnd(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_GlyphRunEnd) ?\
+        EventEnabledDWMDraw_GlyphRunEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_GlyphRunEnd, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_BeginLayerStart
+//
+
+#define EventEnabledDWMDraw_BeginLayerStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_BeginLayerStart
 //
 #define EventWriteDWMDraw_BeginLayerStart(left, top, right, bottom)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_BeginLayerStart) ?\
+        EventEnabledDWMDraw_BeginLayerStart() ?\
         MofTemplate_ffff(Microsoft_Windows_WPFHandle, &DWMDraw_BeginLayerStart, &DWMDraw_Id, left, top, right, bottom)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_BeginLayerEnd
+//
+
+#define EventEnabledDWMDraw_BeginLayerEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_BeginLayerEnd
 //
 #define EventWriteDWMDraw_BeginLayerEnd(left, top, right, bottom)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_BeginLayerEnd) ?\
+        EventEnabledDWMDraw_BeginLayerEnd() ?\
         MofTemplate_ffff(Microsoft_Windows_WPFHandle, &DWMDraw_BeginLayerEnd, &DWMDraw_Id, left, top, right, bottom)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_EndLayerStart
+//
+
+#define EventEnabledDWMDraw_EndLayerStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_EndLayerStart
 //
 #define EventWriteDWMDraw_EndLayerStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_EndLayerStart) ?\
+        EventEnabledDWMDraw_EndLayerStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DWMDraw_EndLayerStart, &DWMDraw_Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_EndLayerEnd
+//
+
+#define EventEnabledDWMDraw_EndLayerEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_EndLayerEnd
 //
 #define EventWriteDWMDraw_EndLayerEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_EndLayerEnd) ?\
+        EventEnabledDWMDraw_EndLayerEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &DWMDraw_EndLayerEnd, &DWMDraw_Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_ClippedBitmapStart
+//
+
+#define EventEnabledDWMDraw_ClippedBitmapStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_ClippedBitmapStart
 //
 #define EventWriteDWMDraw_ClippedBitmapStart(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_ClippedBitmapStart) ?\
+        EventEnabledDWMDraw_ClippedBitmapStart() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_ClippedBitmapStart, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_ClippedBitmapEnd
+//
+
+#define EventEnabledDWMDraw_ClippedBitmapEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_ClippedBitmapEnd
 //
 #define EventWriteDWMDraw_ClippedBitmapEnd(Z)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_ClippedBitmapEnd) ?\
+        EventEnabledDWMDraw_ClippedBitmapEnd() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &DWMDraw_ClippedBitmapEnd, &DWMDraw_Id, Z)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for DWMDraw_Info
+//
+
+#define EventEnabledDWMDraw_Info() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for DWMDraw_Info
 //
 #define EventWriteDWMDraw_Info(left, top, right, bottom)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, DWMDraw_Info) ?\
+        EventEnabledDWMDraw_Info() ?\
         MofTemplate_ffff(Microsoft_Windows_WPFHandle, &DWMDraw_Info, &DWMDraw_Id, left, top, right, bottom)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for LayerEventStart
+//
+
+#define EventEnabledLayerEventStart() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for LayerEventStart
 //
 #define EventWriteLayerEventStart()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, LayerEventStart) ?\
+        EventEnabledLayerEventStart() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &LayerEventStart, &LayerEventId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for LayerEventEnd
+//
+
+#define EventEnabledLayerEventEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for LayerEventEnd
 //
 #define EventWriteLayerEventEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, LayerEventEnd) ?\
+        EventEnabledLayerEventEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &LayerEventEnd, &LayerEventId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDesktopRTCreateBegin
+//
+
+#define EventEnabledWClientDesktopRTCreateBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientDesktopRTCreateBegin
 //
 #define EventWriteWClientDesktopRTCreateBegin(Hwnd)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDesktopRTCreateBegin) ?\
+        EventEnabledWClientDesktopRTCreateBegin() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientDesktopRTCreateBegin, &WClientDesktopRTCreateId, Hwnd)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientDesktopRTCreateEnd
+//
+
+#define EventEnabledWClientDesktopRTCreateEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientDesktopRTCreateEnd
 //
 #define EventWriteWClientDesktopRTCreateEnd(Hwnd)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientDesktopRTCreateEnd) ?\
+        EventEnabledWClientDesktopRTCreateEnd() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientDesktopRTCreateEnd, &WClientDesktopRTCreateId, Hwnd)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUceProcessQueueBegin
+//
+
+#define EventEnabledWClientUceProcessQueueBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUceProcessQueueBegin
 //
 #define EventWriteWClientUceProcessQueueBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUceProcessQueueBegin) ?\
+        EventEnabledWClientUceProcessQueueBegin() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientUceProcessQueueBegin, &WClientUceProcessQueueId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUceProcessQueueEnd
+//
+
+#define EventEnabledWClientUceProcessQueueEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUceProcessQueueEnd
 //
 #define EventWriteWClientUceProcessQueueEnd(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUceProcessQueueEnd) ?\
+        EventEnabledWClientUceProcessQueueEnd() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientUceProcessQueueEnd, &WClientUceProcessQueueId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUceProcessQueueInfo
+//
+
+#define EventEnabledWClientUceProcessQueueInfo() ((Microsoft_Windows_WPFEnableBits[0] & 0x00400000) != 0)
 
 //
 // Event Macro for WClientUceProcessQueueInfo
 //
 #define EventWriteWClientUceProcessQueueInfo(BatchSize)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUceProcessQueueInfo) ?\
+        EventEnabledWClientUceProcessQueueInfo() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientUceProcessQueueInfo, &WClientUceProcessQueueId, BatchSize)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUcePrecomputeBegin
+//
+
+#define EventEnabledWClientUcePrecomputeBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUcePrecomputeBegin
 //
 #define EventWriteWClientUcePrecomputeBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUcePrecomputeBegin) ?\
+        EventEnabledWClientUcePrecomputeBegin() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientUcePrecomputeBegin, &WClientUcePrecomputeId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUcePrecomputeEnd
+//
+
+#define EventEnabledWClientUcePrecomputeEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUcePrecomputeEnd
 //
 #define EventWriteWClientUcePrecomputeEnd(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUcePrecomputeEnd) ?\
+        EventEnabledWClientUcePrecomputeEnd() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientUcePrecomputeEnd, &WClientUcePrecomputeId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUceRenderBegin
+//
+
+#define EventEnabledWClientUceRenderBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUceRenderBegin
 //
 #define EventWriteWClientUceRenderBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUceRenderBegin) ?\
+        EventEnabledWClientUceRenderBegin() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientUceRenderBegin, &WClientUceRenderId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUceRenderEnd
+//
+
+#define EventEnabledWClientUceRenderEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUceRenderEnd
 //
 #define EventWriteWClientUceRenderEnd(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUceRenderEnd) ?\
+        EventEnabledWClientUceRenderEnd() ?\
         MofTemplate_x(Microsoft_Windows_WPFHandle, &WClientUceRenderEnd, &WClientUceRenderId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUcePresentBegin
+//
+
+#define EventEnabledWClientUcePresentBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUcePresentBegin
 //
 #define EventWriteWClientUcePresentBegin(Id, QPCCurrentTime)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUcePresentBegin) ?\
+        EventEnabledWClientUcePresentBegin() ?\
         MofTemplate_xx(Microsoft_Windows_WPFHandle, &WClientUcePresentBegin, &WClientUcePresentId, Id, QPCCurrentTime)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUcePresentEnd
+//
+
+#define EventEnabledWClientUcePresentEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUcePresentEnd
 //
 #define EventWriteWClientUcePresentEnd(Id, QPCCurrentTime)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUcePresentEnd) ?\
+        EventEnabledWClientUcePresentEnd() ?\
         MofTemplate_xx(Microsoft_Windows_WPFHandle, &WClientUcePresentEnd, &WClientUcePresentId, Id, QPCCurrentTime)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUceResponse
+//
+
+#define EventEnabledWClientUceResponse() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUceResponse
 //
 #define EventWriteWClientUceResponse(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUceResponse) ?\
+        EventEnabledWClientUceResponse() ?\
         MofTemplate_q(Microsoft_Windows_WPFHandle, &WClientUceResponse, &WClientUceResponseId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUceCheckDeviceStateInfo
+//
+
+#define EventEnabledWClientUceCheckDeviceStateInfo() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for WClientUceCheckDeviceStateInfo
 //
 #define EventWriteWClientUceCheckDeviceStateInfo(hwnd, hr)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUceCheckDeviceStateInfo) ?\
+        EventEnabledWClientUceCheckDeviceStateInfo() ?\
         MofTemplate_pq(Microsoft_Windows_WPFHandle, &WClientUceCheckDeviceStateInfo, &WClientUceCheckDeviceStateId, hwnd, hr)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for VisualCacheAlloc
+//
+
+#define EventEnabledVisualCacheAlloc() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for VisualCacheAlloc
 //
 #define EventWriteVisualCacheAlloc(uX, uY, uWidth, uHeight)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, VisualCacheAlloc) ?\
+        EventEnabledVisualCacheAlloc() ?\
         MofTemplate_qqqq(Microsoft_Windows_WPFHandle, &VisualCacheAlloc, &VisualCacheAllocId, uX, uY, uWidth, uHeight)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for VisualCacheUpdate
+//
+
+#define EventEnabledVisualCacheUpdate() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for VisualCacheUpdate
 //
 #define EventWriteVisualCacheUpdate(uX, uY, uWidth, uHeight)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, VisualCacheUpdate) ?\
+        EventEnabledVisualCacheUpdate() ?\
         MofTemplate_qqqq(Microsoft_Windows_WPFHandle, &VisualCacheUpdate, &VisualCacheUpdateId, uX, uY, uWidth, uHeight)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CreateChannel
+//
+
+#define EventEnabledCreateChannel() ((Microsoft_Windows_WPFEnableBits[0] & 0x00800000) != 0)
 
 //
 // Event Macro for CreateChannel
 //
 #define EventWriteCreateChannel(ChannelPtr, ChannelHandle)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, CreateChannel) ?\
+        EventEnabledCreateChannel() ?\
         MofTemplate_pq(Microsoft_Windows_WPFHandle, &CreateChannel, &CreateChannelId, ChannelPtr, ChannelHandle)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CreateOrAddResourceOnChannel
+//
+
+#define EventEnabledCreateOrAddResourceOnChannel() ((Microsoft_Windows_WPFEnableBits[0] & 0x00800000) != 0)
 
 //
 // Event Macro for CreateOrAddResourceOnChannel
 //
 #define EventWriteCreateOrAddResourceOnChannel(PerfEltId, ChannelPtr, ResourceHandle, ResourceType)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, CreateOrAddResourceOnChannel) ?\
+        EventEnabledCreateOrAddResourceOnChannel() ?\
         MofTemplate_ipqq(Microsoft_Windows_WPFHandle, &CreateOrAddResourceOnChannel, &CreateOrAddOnChnlId, PerfEltId, ChannelPtr, ResourceHandle, ResourceType)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CreateWpfGfxResource
+//
+
+#define EventEnabledCreateWpfGfxResource() ((Microsoft_Windows_WPFEnableBits[0] & 0x00800000) != 0)
 
 //
 // Event Macro for CreateWpfGfxResource
 //
 #define EventWriteCreateWpfGfxResource(ResourcePtr, ChannelHandle, ResourceHandle, ResourceType)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, CreateWpfGfxResource) ?\
+        EventEnabledCreateWpfGfxResource() ?\
         MofTemplate_pqqq(Microsoft_Windows_WPFHandle, &CreateWpfGfxResource, &CreateWpfGfxResourceId, ResourcePtr, ChannelHandle, ResourceHandle, ResourceType)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ReleaseOnChannel
+//
+
+#define EventEnabledReleaseOnChannel() ((Microsoft_Windows_WPFEnableBits[0] & 0x00800000) != 0)
 
 //
 // Event Macro for ReleaseOnChannel
 //
 #define EventWriteReleaseOnChannel(ChannelPtr, ResourceHandle)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, ReleaseOnChannel) ?\
+        EventEnabledReleaseOnChannel() ?\
         MofTemplate_pq(Microsoft_Windows_WPFHandle, &ReleaseOnChannel, &ReleaseOnChannelId, ChannelPtr, ResourceHandle)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for UnexpectedSoftwareFallback
+//
+
+#define EventEnabledUnexpectedSoftwareFallback() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for UnexpectedSoftwareFallback
 //
 #define EventWriteUnexpectedSoftwareFallback(Reason)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, UnexpectedSoftwareFallback) ?\
+        EventEnabledUnexpectedSoftwareFallback() ?\
         MofTemplate_q(Microsoft_Windows_WPFHandle, &UnexpectedSoftwareFallback, &UnexpectedSoftwareFallbackId, Reason)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientInterlockedRenderBegin
+//
+
+#define EventEnabledWClientInterlockedRenderBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for WClientInterlockedRenderBegin
 //
 #define EventWriteWClientInterlockedRenderBegin()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientInterlockedRenderBegin) ?\
+        EventEnabledWClientInterlockedRenderBegin() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientInterlockedRenderBegin, &WClientInterlockedRenderId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientInterlockedRenderEnd
+//
+
+#define EventEnabledWClientInterlockedRenderEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for WClientInterlockedRenderEnd
 //
 #define EventWriteWClientInterlockedRenderEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientInterlockedRenderEnd) ?\
+        EventEnabledWClientInterlockedRenderEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientInterlockedRenderEnd, &WClientInterlockedRenderId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientRenderHandlerBegin
+//
+
+#define EventEnabledWClientRenderHandlerBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientRenderHandlerBegin
 //
 #define EventWriteWClientRenderHandlerBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientRenderHandlerBegin) ?\
+        EventEnabledWClientRenderHandlerBegin() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientRenderHandlerBegin, &WClientRenderHandlerId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientRenderHandlerEnd
+//
+
+#define EventEnabledWClientRenderHandlerEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientRenderHandlerEnd
 //
 #define EventWriteWClientRenderHandlerEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientRenderHandlerEnd) ?\
+        EventEnabledWClientRenderHandlerEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientRenderHandlerEnd, &WClientRenderHandlerId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientAnimRenderHandlerBegin
+//
+
+#define EventEnabledWClientAnimRenderHandlerBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientAnimRenderHandlerBegin
 //
 #define EventWriteWClientAnimRenderHandlerBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientAnimRenderHandlerBegin) ?\
+        EventEnabledWClientAnimRenderHandlerBegin() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientAnimRenderHandlerBegin, &WClientAnimRenderHandlerId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientAnimRenderHandlerEnd
+//
+
+#define EventEnabledWClientAnimRenderHandlerEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientAnimRenderHandlerEnd
 //
 #define EventWriteWClientAnimRenderHandlerEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientAnimRenderHandlerEnd) ?\
+        EventEnabledWClientAnimRenderHandlerEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientAnimRenderHandlerEnd, &WClientAnimRenderHandlerId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientMediaRenderBegin
+//
+
+#define EventEnabledWClientMediaRenderBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientMediaRenderBegin
 //
 #define EventWriteWClientMediaRenderBegin(Id, QPCExpectedPresentTime)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientMediaRenderBegin) ?\
+        EventEnabledWClientMediaRenderBegin() ?\
         MofTemplate_di(Microsoft_Windows_WPFHandle, &WClientMediaRenderBegin, &WClientMediaRenderId, Id, QPCExpectedPresentTime)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientMediaRenderEnd
+//
+
+#define EventEnabledWClientMediaRenderEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientMediaRenderEnd
 //
 #define EventWriteWClientMediaRenderEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientMediaRenderEnd) ?\
+        EventEnabledWClientMediaRenderEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientMediaRenderEnd, &WClientMediaRenderId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientPostRender
+//
+
+#define EventEnabledWClientPostRender() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientPostRender
 //
 #define EventWriteWClientPostRender()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientPostRender) ?\
+        EventEnabledWClientPostRender() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientPostRender, &WClientPostRenderId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientQPCFrequency
+//
+
+#define EventEnabledWClientQPCFrequency() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for WClientQPCFrequency
 //
 #define EventWriteWClientQPCFrequency(QPCFrequency, QPCCurrentTime)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientQPCFrequency) ?\
+        EventEnabledWClientQPCFrequency() ?\
         MofTemplate_ii(Microsoft_Windows_WPFHandle, &WClientQPCFrequency, &WClientQPCFrequencyId, QPCFrequency, QPCCurrentTime)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientPrecomputeSceneBegin
+//
+
+#define EventEnabledWClientPrecomputeSceneBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientPrecomputeSceneBegin
 //
 #define EventWriteWClientPrecomputeSceneBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientPrecomputeSceneBegin) ?\
+        EventEnabledWClientPrecomputeSceneBegin() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientPrecomputeSceneBegin, &WClientPrecomputeSceneId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientPrecomputeSceneEnd
+//
+
+#define EventEnabledWClientPrecomputeSceneEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientPrecomputeSceneEnd
 //
 #define EventWriteWClientPrecomputeSceneEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientPrecomputeSceneEnd) ?\
+        EventEnabledWClientPrecomputeSceneEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientPrecomputeSceneEnd, &WClientPrecomputeSceneId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientCompileSceneBegin
+//
+
+#define EventEnabledWClientCompileSceneBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientCompileSceneBegin
 //
 #define EventWriteWClientCompileSceneBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientCompileSceneBegin) ?\
+        EventEnabledWClientCompileSceneBegin() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientCompileSceneBegin, &WClientCompileSceneId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientCompileSceneEnd
+//
+
+#define EventEnabledWClientCompileSceneEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientCompileSceneEnd
 //
 #define EventWriteWClientCompileSceneEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientCompileSceneEnd) ?\
+        EventEnabledWClientCompileSceneEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientCompileSceneEnd, &WClientCompileSceneId)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUIResponse
+//
+
+#define EventEnabledWClientUIResponse() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUIResponse
 //
 #define EventWriteWClientUIResponse(ContextID, ResponseID)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUIResponse) ?\
+        EventEnabledWClientUIResponse() ?\
         MofTemplate_dd(Microsoft_Windows_WPFHandle, &WClientUIResponse, &WClientUIResponseId, ContextID, ResponseID)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUICommitChannel
+//
+
+#define EventEnabledWClientUICommitChannel() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUICommitChannel
 //
 #define EventWriteWClientUICommitChannel(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUICommitChannel) ?\
+        EventEnabledWClientUICommitChannel() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientUICommitChannel, &WClientUICommitChannelId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUceNotifyPresent
+//
+
+#define EventEnabledWClientUceNotifyPresent() ((Microsoft_Windows_WPFEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for WClientUceNotifyPresent
 //
 #define EventWriteWClientUceNotifyPresent(QPCLastPresentationTime, PresentationResults)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUceNotifyPresent) ?\
+        EventEnabledWClientUceNotifyPresent() ?\
         MofTemplate_ii(Microsoft_Windows_WPFHandle, &WClientUceNotifyPresent, &WClientUceNotifyPresentId, QPCLastPresentationTime, PresentationResults)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientScheduleRender
+//
+
+#define EventEnabledWClientScheduleRender() ((Microsoft_Windows_WPFEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for WClientScheduleRender
 //
 #define EventWriteWClientScheduleRender(RenderDelay)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientScheduleRender) ?\
+        EventEnabledWClientScheduleRender() ?\
         MofTemplate_d(Microsoft_Windows_WPFHandle, &WClientScheduleRender, &WClientScheduleRenderId, RenderDelay)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientOnRenderBegin
+//
+
+#define EventEnabledWClientOnRenderBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x00400000) != 0)
 
 //
 // Event Macro for WClientOnRenderBegin
 //
 #define EventWriteWClientOnRenderBegin(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientOnRenderBegin) ?\
+        EventEnabledWClientOnRenderBegin() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientOnRenderBegin, &WClientOnRenderId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientOnRenderEnd
+//
+
+#define EventEnabledWClientOnRenderEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x00400000) != 0)
 
 //
 // Event Macro for WClientOnRenderEnd
 //
 #define EventWriteWClientOnRenderEnd(Id)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientOnRenderEnd) ?\
+        EventEnabledWClientOnRenderEnd() ?\
         MofTemplate_i(Microsoft_Windows_WPFHandle, &WClientOnRenderEnd, &WClientOnRenderId, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientCreateIRT
+//
+
+#define EventEnabledWClientCreateIRT() ((Microsoft_Windows_WPFEnableBits[0] & 0x01000000) != 0)
 
 //
 // Event Macro for WClientCreateIRT
 //
 #define EventWriteWClientCreateIRT(ResourcePtr, ParentResourcePtr, Reason)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientCreateIRT) ?\
+        EventEnabledWClientCreateIRT() ?\
         MofTemplate_ppq(Microsoft_Windows_WPFHandle, &WClientCreateIRT, &WClientCreateIRTId, ResourcePtr, ParentResourcePtr, Reason)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientPotentialIRTResource
+//
+
+#define EventEnabledWClientPotentialIRTResource() ((Microsoft_Windows_WPFEnableBits[0] & 0x01000000) != 0)
 
 //
 // Event Macro for WClientPotentialIRTResource
 //
 #define EventWriteWClientPotentialIRTResource(Pointer)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientPotentialIRTResource) ?\
+        EventEnabledWClientPotentialIRTResource() ?\
         MofTemplate_p(Microsoft_Windows_WPFHandle, &WClientPotentialIRTResource, &WClientPotentialIRTResourceId, Pointer)\
         : ERROR_SUCCESS\
 
 //
+// Enablement check macro for WClientUIContextDispatchBegin
+//
+
+#define EventEnabledWClientUIContextDispatchBegin() ((Microsoft_Windows_WPFEnableBits[0] & 0x02000000) != 0)
+
+//
 // Event Macro for WClientUIContextDispatchBegin
 //
-#define EventWriteWClientUIContextDispatchBegin(Priority, Operation)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUIContextDispatchBegin) ?\
-        MofTemplate_qz(Microsoft_Windows_WPFHandle, &WClientUIContextDispatchBegin, &WClientUIContextDispatchId, Priority, Operation)\
+#define EventWriteWClientUIContextDispatchBegin(Priority, Operation, Id)\
+        EventEnabledWClientUIContextDispatchBegin() ?\
+        MofTemplate_qzi(Microsoft_Windows_WPFHandle, &WClientUIContextDispatchBegin, &WClientUIContextDispatchId, Priority, Operation, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUIContextDispatchEnd
+//
+
+#define EventEnabledWClientUIContextDispatchEnd() ((Microsoft_Windows_WPFEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for WClientUIContextDispatchEnd
 //
 #define EventWriteWClientUIContextDispatchEnd()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUIContextDispatchEnd) ?\
+        EventEnabledWClientUIContextDispatchEnd() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientUIContextDispatchEnd, &WClientUIContextDispatchId)\
         : ERROR_SUCCESS\
 
 //
+// Enablement check macro for WClientUIContextPost
+//
+
+#define EventEnabledWClientUIContextPost() ((Microsoft_Windows_WPFEnableBits[0] & 0x02000000) != 0)
+
+//
 // Event Macro for WClientUIContextPost
 //
-#define EventWriteWClientUIContextPost(Priority, Operation)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUIContextPost) ?\
-        MofTemplate_qz(Microsoft_Windows_WPFHandle, &WClientUIContextPost, &WClientUIContextPostId, Priority, Operation)\
+#define EventWriteWClientUIContextPost(Priority, Operation, Id)\
+        EventEnabledWClientUIContextPost() ?\
+        MofTemplate_qzi(Microsoft_Windows_WPFHandle, &WClientUIContextPost, &WClientUIContextPostId, Priority, Operation, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUIContextAbort
+//
+
+#define EventEnabledWClientUIContextAbort() ((Microsoft_Windows_WPFEnableBits[0] & 0x04000000) != 0)
 
 //
 // Event Macro for WClientUIContextAbort
 //
-#define EventWriteWClientUIContextAbort(Priority, Operation)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUIContextAbort) ?\
-        MofTemplate_qz(Microsoft_Windows_WPFHandle, &WClientUIContextAbort, &WClientUIContextAbortId, Priority, Operation)\
+#define EventWriteWClientUIContextAbort(Priority, Operation, Id)\
+        EventEnabledWClientUIContextAbort() ?\
+        MofTemplate_qzi(Microsoft_Windows_WPFHandle, &WClientUIContextAbort, &WClientUIContextAbortId, Priority, Operation, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUIContextPromote
+//
+
+#define EventEnabledWClientUIContextPromote() ((Microsoft_Windows_WPFEnableBits[0] & 0x04000000) != 0)
 
 //
 // Event Macro for WClientUIContextPromote
 //
-#define EventWriteWClientUIContextPromote(Priority, Operation)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUIContextPromote) ?\
-        MofTemplate_qz(Microsoft_Windows_WPFHandle, &WClientUIContextPromote, &WClientUIContextPromoteId, Priority, Operation)\
+#define EventWriteWClientUIContextPromote(Priority, Operation, Id)\
+        EventEnabledWClientUIContextPromote() ?\
+        MofTemplate_qzi(Microsoft_Windows_WPFHandle, &WClientUIContextPromote, &WClientUIContextPromoteId, Priority, Operation, Id)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for WClientUIContextIdle
+//
+
+#define EventEnabledWClientUIContextIdle() ((Microsoft_Windows_WPFEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for WClientUIContextIdle
 //
 #define EventWriteWClientUIContextIdle()\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_WPF_PROVIDER_Context, WClientUIContextIdle) ?\
+        EventEnabledWClientUIContextIdle() ?\
         MofTemplateEventDescriptor(Microsoft_Windows_WPFHandle, &WClientUIContextIdle, &WClientUIContextIdleId)\
         : ERROR_SUCCESS\
 
@@ -4437,11 +6518,11 @@ EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_WPF_PROVIDE
 ETW_INLINE
 ULONG
 MofTemplate_di(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const signed int  Id,
-    __in signed __int64  HWND
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const signed int  _Arg0,
+    _In_ signed __int64  _Arg1
     )
 {
 #define ARGUMENT_COUNT_di 2
@@ -4453,9 +6534,9 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[1], &HWND, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(signed __int64)  );
 
 
   if (! McGenPreVista) {
@@ -4490,9 +6571,9 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplateEventDescriptor(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid
     )
 {
 
@@ -4528,10 +6609,10 @@ MofTemplateEventDescriptor(
 ETW_INLINE
 ULONG
 MofTemplate_z(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in_opt PCWSTR  Info
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_opt_ PCWSTR  _Arg0
     )
 {
 #define ARGUMENT_COUNT_z 1
@@ -4544,8 +6625,8 @@ typedef struct _MCGEN_TRACE_BUFFER {
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
     EventDataDescCreate(&EventData[0], 
-                        (Info != NULL) ? Info : L"NULL",
-                        (Info != NULL) ? (ULONG)((wcslen(Info) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg0 != NULL) ? _Arg0 : L"NULL",
+                        (_Arg0 != NULL) ? (ULONG)((wcslen(_Arg0) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
 
   if (! McGenPreVista) {
@@ -4578,11 +6659,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_dz(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const signed int  Id,
-    __in_opt PCWSTR  TypeAndName
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const signed int  _Arg0,
+    _In_opt_ PCWSTR  _Arg1
     )
 {
 #define ARGUMENT_COUNT_dz 2
@@ -4594,11 +6675,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const signed int)  );
 
     EventDataDescCreate(&EventData[1], 
-                        (TypeAndName != NULL) ? TypeAndName : L"NULL",
-                        (TypeAndName != NULL) ? (ULONG)((wcslen(TypeAndName) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
 
   if (! McGenPreVista) {
@@ -4631,12 +6712,12 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_izz(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  Id,
-    __in_opt PCWSTR  Type,
-    __in_opt PCWSTR  Name
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0,
+    _In_opt_ PCWSTR  _Arg1,
+    _In_opt_ PCWSTR  _Arg2
     )
 {
 #define ARGUMENT_COUNT_izz 3
@@ -4648,15 +6729,15 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
     EventDataDescCreate(&EventData[1], 
-                        (Type != NULL) ? Type : L"NULL",
-                        (Type != NULL) ? (ULONG)((wcslen(Type) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
     EventDataDescCreate(&EventData[2], 
-                        (Name != NULL) ? Name : L"NULL",
-                        (Name != NULL) ? (ULONG)((wcslen(Name) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg2 != NULL) ? _Arg2 : L"NULL",
+                        (_Arg2 != NULL) ? (ULONG)((wcslen(_Arg2) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
 
   if (! McGenPreVista) {
@@ -4689,13 +6770,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_izzi(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  Id,
-    __in_opt PCWSTR  Type,
-    __in_opt PCWSTR  Data,
-    __in signed __int64  AssemblyID
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0,
+    _In_opt_ PCWSTR  _Arg1,
+    _In_opt_ PCWSTR  _Arg2,
+    _In_ signed __int64  _Arg3
     )
 {
 #define ARGUMENT_COUNT_izzi 4
@@ -4707,17 +6788,17 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
     EventDataDescCreate(&EventData[1], 
-                        (Type != NULL) ? Type : L"NULL",
-                        (Type != NULL) ? (ULONG)((wcslen(Type) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
     EventDataDescCreate(&EventData[2], 
-                        (Data != NULL) ? Data : L"NULL",
-                        (Data != NULL) ? (ULONG)((wcslen(Data) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg2 != NULL) ? _Arg2 : L"NULL",
+                        (_Arg2 != NULL) ? (ULONG)((wcslen(_Arg2) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
-    EventDataDescCreate(&EventData[3], &AssemblyID, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(signed __int64)  );
 
 
   if (! McGenPreVista) {
@@ -4750,14 +6831,14 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_diddd(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const signed int  Id,
-    __in signed __int64  HWND,
-    __in const signed int  Msg,
-    __in const signed int  WParam,
-    __in const signed int  LParam
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const signed int  _Arg0,
+    _In_ signed __int64  _Arg1,
+    _In_ const signed int  _Arg2,
+    _In_ const signed int  _Arg3,
+    _In_ const signed int  _Arg4
     )
 {
 #define ARGUMENT_COUNT_diddd 5
@@ -4769,15 +6850,15 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[1], &HWND, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(signed __int64)  );
 
-    EventDataDescCreate(&EventData[2], &Msg, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[3], &WParam, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[4], &LParam, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[4], &_Arg4, sizeof(const signed int)  );
 
 
   if (! McGenPreVista) {
@@ -4810,10 +6891,10 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_d(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const signed int  Id
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const signed int  _Arg0
     )
 {
 #define ARGUMENT_COUNT_d 1
@@ -4825,7 +6906,7 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const signed int)  );
 
 
   if (! McGenPreVista) {
@@ -4858,12 +6939,12 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_idd(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  PerfElementID,
-    __in const signed int  LineNumber,
-    __in const signed int  LinePosition
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0,
+    _In_ const signed int  _Arg1,
+    _In_ const signed int  _Arg2
     )
 {
 #define ARGUMENT_COUNT_idd 3
@@ -4875,11 +6956,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &PerfElementID, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
-    EventDataDescCreate(&EventData[1], &LineNumber, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[2], &LinePosition, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const signed int)  );
 
 
   if (! McGenPreVista) {
@@ -4912,11 +6993,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_dd(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const signed int  FirstVisiblePage,
-    __in const signed int  LastVisiblePage
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const signed int  _Arg0,
+    _In_ const signed int  _Arg1
     )
 {
 #define ARGUMENT_COUNT_dd 2
@@ -4928,9 +7009,9 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &FirstVisiblePage, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[1], &LastVisiblePage, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const signed int)  );
 
 
   if (! McGenPreVista) {
@@ -4963,10 +7044,10 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_i(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  TickTime
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0
     )
 {
 #define ARGUMENT_COUNT_i 1
@@ -4978,7 +7059,7 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &TickTime, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
 
   if (! McGenPreVista) {
@@ -5011,11 +7092,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_ic(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  Id,
-    __in const UCHAR  source
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0,
+    _In_ const UCHAR  _Arg1
     )
 {
 #define ARGUMENT_COUNT_ic 2
@@ -5027,9 +7108,9 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
-    EventDataDescCreate(&EventData[1], &source, sizeof(const UCHAR)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const UCHAR)  );
 
 
   if (! McGenPreVista) {
@@ -5062,12 +7143,12 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_igg(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  Id,
-    __in const double  Width,
-    __in const double  Height
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0,
+    _In_ const double  _Arg1,
+    _In_ const double  _Arg2
     )
 {
 #define ARGUMENT_COUNT_igg 3
@@ -5079,11 +7160,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
-    EventDataDescCreate(&EventData[1], &Width, sizeof(const double)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const double)  );
 
-    EventDataDescCreate(&EventData[2], &Height, sizeof(const double)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const double)  );
 
 
   if (! McGenPreVista) {
@@ -5116,14 +7197,14 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_igggg(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  Id,
-    __in const double  Top,
-    __in const double  Left,
-    __in const double  Width,
-    __in const double  Height
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0,
+    _In_ const double  _Arg1,
+    _In_ const double  _Arg2,
+    _In_ const double  _Arg3,
+    _In_ const double  _Arg4
     )
 {
 #define ARGUMENT_COUNT_igggg 5
@@ -5135,15 +7216,15 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
-    EventDataDescCreate(&EventData[1], &Top, sizeof(const double)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const double)  );
 
-    EventDataDescCreate(&EventData[2], &Left, sizeof(const double)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const double)  );
 
-    EventDataDescCreate(&EventData[3], &Width, sizeof(const double)  );
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const double)  );
 
-    EventDataDescCreate(&EventData[4], &Height, sizeof(const double)  );
+    EventDataDescCreate(&EventData[4], &_Arg4, sizeof(const double)  );
 
 
   if (! McGenPreVista) {
@@ -5176,10 +7257,10 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_q(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const unsigned int  ReturnCode
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const unsigned int  _Arg0
     )
 {
 #define ARGUMENT_COUNT_q 1
@@ -5191,7 +7272,7 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &ReturnCode, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned int)  );
 
 
   if (! McGenPreVista) {
@@ -5224,11 +7305,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_qz(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const unsigned int  Code,
-    __in_opt PCWSTR  Text
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const unsigned int  _Arg0,
+    _In_opt_ PCWSTR  _Arg1
     )
 {
 #define ARGUMENT_COUNT_qz 2
@@ -5240,11 +7321,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Code, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned int)  );
 
     EventDataDescCreate(&EventData[1], 
-                        (Text != NULL) ? Text : L"NULL",
-                        (Text != NULL) ? (ULONG)((wcslen(Text) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
 
   if (! McGenPreVista) {
@@ -5277,11 +7358,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_qq(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const unsigned int  GUID_Data1,
-    __in const unsigned int  CmdId
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const unsigned int  _Arg0,
+    _In_ const unsigned int  _Arg1
     )
 {
 #define ARGUMENT_COUNT_qq 2
@@ -5293,9 +7374,9 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &GUID_Data1, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[1], &CmdId, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned int)  );
 
 
   if (! McGenPreVista) {
@@ -5328,10 +7409,10 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_c(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const char  AttemptDownload
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const char  _Arg0
     )
 {
 #define ARGUMENT_COUNT_c 1
@@ -5343,7 +7424,7 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &AttemptDownload, sizeof(const char)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const char)  );
 
 
   if (! McGenPreVista) {
@@ -5376,11 +7457,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_zz(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in_opt PCWSTR  Path,
-    __in_opt PCWSTR  AppId
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_opt_ PCWSTR  _Arg0,
+    _In_opt_ PCWSTR  _Arg1
     )
 {
 #define ARGUMENT_COUNT_zz 2
@@ -5393,12 +7474,12 @@ typedef struct _MCGEN_TRACE_BUFFER {
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
     EventDataDescCreate(&EventData[0], 
-                        (Path != NULL) ? Path : L"NULL",
-                        (Path != NULL) ? (ULONG)((wcslen(Path) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg0 != NULL) ? _Arg0 : L"NULL",
+                        (_Arg0 != NULL) ? (ULONG)((wcslen(_Arg0) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
     EventDataDescCreate(&EventData[1], 
-                        (AppId != NULL) ? AppId : L"NULL",
-                        (AppId != NULL) ? (ULONG)((wcslen(AppId) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
 
   if (! McGenPreVista) {
@@ -5431,12 +7512,12 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_pqq(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in_opt const void *  Bitmap,
-    __in const unsigned int  width,
-    __in const unsigned int  height
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_opt_ const void *  _Arg0,
+    _In_ const unsigned int  _Arg1,
+    _In_ const unsigned int  _Arg2
     )
 {
 #define ARGUMENT_COUNT_pqq 3
@@ -5448,11 +7529,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Bitmap, sizeof(PVOID)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(PVOID)  );
 
-    EventDataDescCreate(&EventData[1], &width, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[2], &height, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned int)  );
 
 
   if (! McGenPreVista) {
@@ -5485,13 +7566,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_qqqq(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const unsigned int  left,
-    __in const unsigned int  top,
-    __in const unsigned int  right,
-    __in const unsigned int  bottom
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const unsigned int  _Arg0,
+    _In_ const unsigned int  _Arg1,
+    _In_ const unsigned int  _Arg2,
+    _In_ const unsigned int  _Arg3
     )
 {
 #define ARGUMENT_COUNT_qqqq 4
@@ -5503,13 +7584,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &left, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[1], &top, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[2], &right, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[3], &bottom, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const unsigned int)  );
 
 
   if (! McGenPreVista) {
@@ -5542,13 +7623,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_ffff(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const float  left,
-    __in const float  top,
-    __in const float  right,
-    __in const float  bottom
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const float  _Arg0,
+    _In_ const float  _Arg1,
+    _In_ const float  _Arg2,
+    _In_ const float  _Arg3
     )
 {
 #define ARGUMENT_COUNT_ffff 4
@@ -5560,13 +7641,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &left, sizeof(const float)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const float)  );
 
-    EventDataDescCreate(&EventData[1], &top, sizeof(const float)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const float)  );
 
-    EventDataDescCreate(&EventData[2], &right, sizeof(const float)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const float)  );
 
-    EventDataDescCreate(&EventData[3], &bottom, sizeof(const float)  );
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const float)  );
 
 
   if (! McGenPreVista) {
@@ -5599,10 +7680,10 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_x(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in unsigned __int64  Hwnd
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ unsigned __int64  _Arg0
     )
 {
 #define ARGUMENT_COUNT_x 1
@@ -5614,7 +7695,7 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Hwnd, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(unsigned __int64)  );
 
 
   if (! McGenPreVista) {
@@ -5647,11 +7728,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_xx(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in unsigned __int64  Id,
-    __in unsigned __int64  QPCCurrentTime
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ unsigned __int64  _Arg0,
+    _In_ unsigned __int64  _Arg1
     )
 {
 #define ARGUMENT_COUNT_xx 2
@@ -5663,9 +7744,9 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Id, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[1], &QPCCurrentTime, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(unsigned __int64)  );
 
 
   if (! McGenPreVista) {
@@ -5698,11 +7779,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_pq(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in_opt const void *  hwnd,
-    __in const unsigned int  hr
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_opt_ const void *  _Arg0,
+    _In_ const unsigned int  _Arg1
     )
 {
 #define ARGUMENT_COUNT_pq 2
@@ -5714,9 +7795,9 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &hwnd, sizeof(PVOID)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(PVOID)  );
 
-    EventDataDescCreate(&EventData[1], &hr, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned int)  );
 
 
   if (! McGenPreVista) {
@@ -5749,13 +7830,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_ipqq(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  PerfEltId,
-    __in_opt const void *  ChannelPtr,
-    __in const unsigned int  ResourceHandle,
-    __in const unsigned int  ResourceType
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0,
+    _In_opt_ const void *  _Arg1,
+    _In_ const unsigned int  _Arg2,
+    _In_ const unsigned int  _Arg3
     )
 {
 #define ARGUMENT_COUNT_ipqq 4
@@ -5767,13 +7848,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &PerfEltId, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
-    EventDataDescCreate(&EventData[1], &ChannelPtr, sizeof(PVOID)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(PVOID)  );
 
-    EventDataDescCreate(&EventData[2], &ResourceHandle, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[3], &ResourceType, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const unsigned int)  );
 
 
   if (! McGenPreVista) {
@@ -5806,13 +7887,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_pqqq(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in_opt const void *  ResourcePtr,
-    __in const unsigned int  ChannelHandle,
-    __in const unsigned int  ResourceHandle,
-    __in const unsigned int  ResourceType
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_opt_ const void *  _Arg0,
+    _In_ const unsigned int  _Arg1,
+    _In_ const unsigned int  _Arg2,
+    _In_ const unsigned int  _Arg3
     )
 {
 #define ARGUMENT_COUNT_pqqq 4
@@ -5824,13 +7905,13 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &ResourcePtr, sizeof(PVOID)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(PVOID)  );
 
-    EventDataDescCreate(&EventData[1], &ChannelHandle, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[2], &ResourceHandle, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[3], &ResourceType, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const unsigned int)  );
 
 
   if (! McGenPreVista) {
@@ -5863,11 +7944,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_ii(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in signed __int64  QPCFrequency,
-    __in signed __int64  QPCCurrentTime
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ signed __int64  _Arg0,
+    _In_ signed __int64  _Arg1
     )
 {
 #define ARGUMENT_COUNT_ii 2
@@ -5879,9 +7960,9 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &QPCFrequency, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(signed __int64)  );
 
-    EventDataDescCreate(&EventData[1], &QPCCurrentTime, sizeof(signed __int64)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(signed __int64)  );
 
 
   if (! McGenPreVista) {
@@ -5914,12 +7995,12 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_ppq(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in_opt const void *  ResourcePtr,
-    __in_opt const void *  ParentResourcePtr,
-    __in const unsigned int  Reason
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_opt_ const void *  _Arg0,
+    _In_opt_ const void *  _Arg1,
+    _In_ const unsigned int  _Arg2
     )
 {
 #define ARGUMENT_COUNT_ppq 3
@@ -5931,11 +8012,11 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &ResourcePtr, sizeof(PVOID)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(PVOID)  );
 
-    EventDataDescCreate(&EventData[1], &ParentResourcePtr, sizeof(PVOID)  );
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(PVOID)  );
 
-    EventDataDescCreate(&EventData[2], &Reason, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned int)  );
 
 
   if (! McGenPreVista) {
@@ -5968,10 +8049,10 @@ typedef struct _MCGEN_TRACE_BUFFER {
 ETW_INLINE
 ULONG
 MofTemplate_p(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in_opt const void *  Pointer
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_opt_ const void *  _Arg0
     )
 {
 #define ARGUMENT_COUNT_p 1
@@ -5983,11 +8064,67 @@ typedef struct _MCGEN_TRACE_BUFFER {
     MCGEN_TRACE_BUFFER TraceBuf;
     PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
 
-    EventDataDescCreate(&EventData[0], &Pointer, sizeof(PVOID)  );
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(PVOID)  );
 
 
   if (! McGenPreVista) {
     return PfnEventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_p, EventData);
+
+  } else {
+
+    const MCGEN_TRACE_CONTEXT* Context = (const MCGEN_TRACE_CONTEXT*)(ULONG_PTR)RegHandle;
+    //
+    // Fill in header fields
+    //
+
+    TraceBuf.Header.GuidPtr = (ULONGLONG)EventGuid;
+    TraceBuf.Header.Flags = WNODE_FLAG_TRACED_GUID |WNODE_FLAG_USE_GUID_PTR|WNODE_FLAG_USE_MOF_PTR;
+    TraceBuf.Header.Class.Version = (USHORT)Descriptor->Version;
+    TraceBuf.Header.Class.Level = Descriptor->Level;
+    TraceBuf.Header.Class.Type = Descriptor->Opcode;
+    TraceBuf.Header.Size = sizeof(MCGEN_TRACE_BUFFER);
+
+    return TraceEvent(Context->Logger, &TraceBuf.Header);
+  }
+}
+#endif
+
+//
+//Template from manifest : DispatcherMessage
+//
+#ifndef MofTemplate_qzi_def
+#define MofTemplate_qzi_def
+ETW_INLINE
+ULONG
+MofTemplate_qzi(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const unsigned int  _Arg0,
+    _In_opt_ PCWSTR  _Arg1,
+    _In_ signed __int64  _Arg2
+    )
+{
+#define ARGUMENT_COUNT_qzi 3
+typedef struct _MCGEN_TRACE_BUFFER {
+    EVENT_TRACE_HEADER Header;
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_qzi];
+} MCGEN_TRACE_BUFFER;
+
+    MCGEN_TRACE_BUFFER TraceBuf;
+    PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[1], 
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(signed __int64)  );
+
+
+  if (! McGenPreVista) {
+    return PfnEventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_qzi, EventData);
 
   } else {
 

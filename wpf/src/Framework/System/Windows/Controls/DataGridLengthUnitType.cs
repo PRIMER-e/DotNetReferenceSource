@@ -16,7 +16,7 @@ namespace System.Windows.Controls
     /// </summary>
     public enum DataGridLengthUnitType 
     {
-        // Keep in [....] with DataGridLengthConverter.UnitStrings
+        // Keep in sync with DataGridLengthConverter.UnitStrings
 
         /// <summary>
         ///     The value indicates that content should be calculated based on the 

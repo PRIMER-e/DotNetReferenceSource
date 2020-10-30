@@ -1006,7 +1006,7 @@ namespace System.Windows.Media
         // Matrix in blt'd to unmanaged code, so this is padding 
         // to align structure.
         //
-        // ToDo: [....], Validate that this blt will work on 64-bit
+        // ToDo: Microsoft, Validate that this blt will work on 64-bit
         //
         internal Int32 _padding;
 #pragma warning restore 0414

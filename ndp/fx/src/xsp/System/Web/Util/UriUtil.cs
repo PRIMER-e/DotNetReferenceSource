@@ -7,6 +7,7 @@
 namespace System.Web.Util {
     using System;
     using System.Linq;
+    using System.Text;
 
     // Contains helpers for URI generation and parsing
 
@@ -31,8 +32,7 @@ namespace System.Web.Util {
                     // The path that is provided to us is expected to be in an already-decoded
                     // state, but the Uri class expects encoded input, so we'll re-encode.
                     // This removes ambiguity that can lead to unintentional double-unescaping.
-                    string reescapedPath = String.Join("/", path.Split('/').Select(s => Uri.EscapeDataString(s)));
-                    path = reescapedPath;
+                    path = EscapeForPath(path);
                 }
 
                 if (queryString != null) {
@@ -50,6 +50,70 @@ namespace System.Web.Util {
 
             string uriString = scheme + "://" + serverName + port + path + queryString;
             return new Uri(uriString);
+        }
+
+        private static string EscapeForPath(string unescaped) {
+            // DevDiv 762893: Applications might not call Uri.UnescapeDataString when looking
+            // at components of the URI, and they'll be broken if certain path-safe characters
+            // are now escaped.
+            if (String.IsNullOrEmpty(unescaped) || ContainsOnlyPathSafeCharacters(unescaped))
+                return unescaped;
+
+            string escaped = Uri.EscapeDataString(unescaped);
+
+            // If nothing was escaped, no need to decode
+            if (String.Equals(escaped, unescaped, StringComparison.Ordinal))
+                return unescaped;
+
+            // We're going to perform multiple replace operations.
+            // StringBuilder.Replace is much more memory-efficient than String.Replace
+            StringBuilder builder = new StringBuilder(escaped);
+
+            // Uri.EscapeDataString() is guaranteed to produce uppercase escape sequences.
+            // Path-safe characters are listed in RFC 3986, Appendix A. We also add '/' to
+            // this list since EscapeDataString may contain path segments.
+            builder.Replace("%21", "!");
+            builder.Replace("%24", "$");
+            builder.Replace("%26", "&");
+            builder.Replace("%27", "'");
+            builder.Replace("%28", "(");
+            builder.Replace("%29", ")");
+            builder.Replace("%2A", "*");
+            builder.Replace("%2B", "+");
+            builder.Replace("%2C", ",");
+            builder.Replace("%2F", "/");
+            builder.Replace("%3A", ":");
+            builder.Replace("%3B", ";");
+            builder.Replace("%3D", "=");
+            builder.Replace("%40", "@");
+            return builder.ToString();
+        }
+
+        private static bool ContainsOnlyPathSafeCharacters(string input) {
+            // See RFC 3986, Appendix A for the list of path-safe characters.
+            for (int i = 0; i < input.Length; i++) {
+                char c = input[i];
+
+                // unreserved = ALPHA / DIGIT / ...
+                if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9')) {
+                    continue;
+                }
+
+                switch (c) {
+                    case '/': // path-abempty; path-absolute
+                    case '-': case '.': case '_': case '~': // unreserved
+                    case ':': case '@': // pchar
+                    case '!': case '$': case '&': case '\'': case '(': case ')': // sub-delims
+                    case '*': case '+': case ',': case ';': case '=': // sub-delims, cont.
+                        continue;
+
+                    default:
+                        return false; // not path-safe
+                }
+            }
+
+            // no bad characters found
+            return true;
         }
 
         // Just extracts the query string and fragment from the input path by splitting on the separator characters.
@@ -101,7 +165,7 @@ namespace System.Web.Util {
                     // For example, the "//" could be missing, or there could be "///" as in "file:///C:\foo.txt"
                     // To retain the same string as originally given, find the authority in the original url and include
                     // everything up to that.
-                    int authorityIndex = inputWithoutQueryFragment.IndexOf(authority, StringComparison.Ordinal);
+                    int authorityIndex = inputWithoutQueryFragment.IndexOf(authority, StringComparison.OrdinalIgnoreCase);
                     if (authorityIndex != -1) {
                         int schemeAndAuthorityLength = authorityIndex + authority.Length;
                         schemeAndAuthority = inputWithoutQueryFragment.Substring(0, schemeAndAuthorityLength);

@@ -5,9 +5,9 @@
 //  File:       DrawingContext.cs
 //
 //  History:
-//      [....]: 04/19/2003
+//      Microsoft: 04/19/2003
 //          Created it based on the RetainedDrawingContext used in the AvPhat branch.
-//      [....]: 07/02/2003
+//      Microsoft: 07/02/2003
 //          Turned this class into an abstract base class for RetainedDrawingContext
 //          and PaintingDrawingContext.
 //

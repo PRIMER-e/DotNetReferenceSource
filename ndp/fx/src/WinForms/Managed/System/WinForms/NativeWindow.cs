@@ -209,7 +209,6 @@ namespace System.Windows.Forms {
         ///    </para>
         /// </devdoc>
         public IntPtr Handle {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
 #if DEBUG
                 Debug.Assert(handle == IntPtr.Zero || (handleCreatedIn != null && handleCreatedIn == AppDomain.CurrentDomain),
@@ -387,9 +386,11 @@ namespace System.Windows.Forms {
                     if (((hashBuckets[bucketNumber].hash_coll & 0x7FFFFFFF) == hashcode) && handle == hashBuckets[bucketNumber].handle) {
                         GCHandle prevWindow = hashBuckets[bucketNumber].window;
                         if (prevWindow.IsAllocated) {
-                            window.previousWindow = ((NativeWindow)prevWindow.Target);
-                            Debug.Assert(window.previousWindow.nextWindow == null, "Last window in chain should have null next ptr");
-                            window.previousWindow.nextWindow = window;
+                            if (prevWindow.Target != null) {
+                                window.previousWindow = ((NativeWindow)prevWindow.Target);
+                                Debug.Assert(window.previousWindow.nextWindow == null, "Last window in chain should have null next ptr");
+                                window.previousWindow.nextWindow = window;
+                            }
                             prevWindow.Free();
                         }
                         hashBuckets[bucketNumber].window = root;
@@ -708,7 +709,7 @@ namespace System.Windows.Forms {
                     // out the CLR will sometimes pump messages while we're waiting on the lock.  If
                     // a message comes through (say a WM_ACTIVATE for the parent) which causes the 
                     // handle to be created, we can try to create the handle twice for the same 
-                    // NativeWindow object. See bug for more details.
+                    // NativeWindow object. See 
 
                     if (this.handle != IntPtr.Zero) {
                         return;
@@ -724,10 +725,10 @@ namespace System.Windows.Forms {
                     //
                     try {
 
-                        //(bug 109840)
-                        //CreateWindowEx() is throwing because we're passing the WindowText arg with a string of length  > 32767.  
-                        //It looks like the Windows call (CreateWindowEx) will only work 
-                        //for string lengths no greater than the max length of a 16 bit int (32767).
+                        //(
+
+
+
 
                         //We need to check the length of the string we're passing into CreateWindowEx().  
                         //If it exceeds the max, we should take the substring....
@@ -1064,7 +1065,7 @@ namespace System.Windows.Forms {
                             UnsafeNativeMethods.PostMessage(href, NativeMethods.WM_CLOSE, 0, 0);
 
                             // Fish out the Window object, if it is valid, and NULL the handle pointer.  This
-                            // way the rest of [....] won't think the handle is still valid here.
+                            // way the rest of Microsoft won't think the handle is still valid here.
                             if (b.window.IsAllocated) {
                                 NativeWindow w = (NativeWindow)b.window.Target;
                                 if (w != null) {

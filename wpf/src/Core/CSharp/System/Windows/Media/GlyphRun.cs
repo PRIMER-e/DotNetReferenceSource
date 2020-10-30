@@ -40,6 +40,7 @@ using MS.Internal.Text.TextInterface;
 using MS.Utility;
 using System.Security;
 using System.Security.Permissions;
+using System.Windows.Interop;
 using SR=MS.Internal.PresentationCore.SR;
 using SRID=MS.Internal.PresentationCore.SRID;
 
@@ -65,8 +66,116 @@ namespace System.Windows.Media
         /// to begin initialization and call ISupportInitialize.EndInit() to finish the initialization.
         /// The GlyphRun does not support all the operations until it is fully initialized.
         /// </summary>
+        [Obsolete("Use the PixelsPerDip override", false)]
         public GlyphRun()
         {
+        }
+
+        /// <summary>
+        /// Construct an uninitialized GlyphRun object. Caller should call ISupportInitialize.BeginInit()
+        /// to begin initialization and call ISupportInitialize.EndInit() to finish the initialization.
+        /// The GlyphRun does not support all the operations until it is fully initialized.
+        /// <param name="pixelsPerDip">PixelsPerDip of the screen on which this is to be drawn (96ths of an inch).</param>
+        /// </summary>
+        public GlyphRun(float pixelsPerDip)
+        {
+            _pixelsPerDip = pixelsPerDip;
+        }
+
+        /// <summary>
+        /// Constructs a new GlyphRun object for per monitor DPI aware applications
+        /// </summary>
+        /// <param name="glyphTypeface">GlyphTypeface of the GlyphRun object </param>
+        /// <param name="bidiLevel">Bidi level of the GlyphRun object        </param>
+        /// <param name="isSideways">Set to true to display the GlyphRun sideways</param>
+        /// <param name="renderingEmSize">Font rendering size in drawing surface units (96ths of an inch).</param>
+        /// <param name="pixelsPerDip">PixelsPerDip of the screen on which this is to be drawn (96ths of an inch).</param>
+        /// <param name="glyphIndices">The list of font indices that represent glyphs in this run.</param>
+        /// <param name="baselineOrigin">Origin of the first glyph in the run.
+        /// The glyph is placed so that the leading edge of its advance vector
+        /// and its baseline intersect this point.
+        ///  </param>
+        /// <param name="advanceWidths">The list of advance widths, one for each glyph in GlyphIndices.
+        /// The nominal origin of the nth glyph (n > 0) in the run is the nominal origin
+        /// of the n-1th glyph plus the n-1th advance width added along the runs advance vector.
+        /// Base glyphs generally have a non-zero advance width, combining glyphs generally have a zero advance width.
+        /// </param>
+        /// <param name="glyphOffsets">The list of glyph offsets. Added to the nominal glyph origin calculated above to generate the final origin for the glyph.
+        /// Base glyphs generally have a glyph offset of (0,0), combining glyphs generally have an offset
+        /// that places them correctly on top of the nearest preceeding base glyph.
+        /// </param>
+        /// <param name="characters">Characters represented by this glyphrun</param>
+        /// <param name="deviceFontName">
+        /// Identifies a specific device font for which the GlyphRun has been optimized. When a GlyphRun is
+        /// being rendered on a device that has built-in support for this named font, then the GlyphRun should be rendered using a
+        /// possibly device specific mechanism for selecting that font, and by sending the Unicode codepoints rather than the
+        /// glyph indices. When rendering onto a device that does not include built-in support for the named font,
+        /// this property should be ignored.
+        /// </param>
+        /// <param name="clusterMap">The list that maps characters in the glyph run to glyph indices.
+        /// There is one entry per character in Characters list.
+        /// Each value gives the offset of the first glyph in GlyphIndices
+        /// that represents the corresponding character in Characters.
+        /// Where multiple characters map to a single glyph, or to a glyph group
+        /// that cannot be broken down to map exactly to individual characters,
+        /// the entries for all the characters have the same value:
+        /// the offset of the first glyph that represents this group of characters.
+        /// If the list is null or empty, sequential 1 to 1 mapping is assumed.
+        /// </param>
+        /// <param name="caretStops">A list of caret stops for the glyphs</param>
+        /// <param name="language">Language of the GlyphRun</param>
+        [CLSCompliant(false)]
+        public GlyphRun(
+            GlyphTypeface glyphTypeface,
+            int bidiLevel,
+            bool isSideways,
+            double renderingEmSize,
+            float pixelsPerDip,
+            IList<ushort> glyphIndices,
+            Point baselineOrigin,
+            IList<double> advanceWidths,
+            IList<Point> glyphOffsets,
+            IList<char> characters,
+            string deviceFontName,
+            IList<ushort> clusterMap,
+            IList<bool> caretStops,
+            XmlLanguage language
+            )
+        {
+            // Suppress PRESharp warning that glyphIndices and advanceWidths are not validated and can be null.
+            // They can indeed be null, but that's perfectly OK. An explicit null check in the constructor is
+            // not required.
+#pragma warning suppress 56506
+            Initialize(
+                glyphTypeface,
+                bidiLevel,
+                isSideways,
+                renderingEmSize,
+                pixelsPerDip,
+                glyphIndices,
+                baselineOrigin,
+                advanceWidths,
+                glyphOffsets,
+                characters,
+                deviceFontName,
+                clusterMap,
+                caretStops,
+                language,
+                TextFormattingMode.Ideal
+                );
+
+            // GlyphRunFlags.CacheInkBounds enanbles ink bounding box caching. Bounding box caching would cost
+            // 32 bytes per GlyphRun. We do not want to enable it for all cases possible working set increase.
+
+            // For Line layout, ink bounding box is only used a few times, so caching is disabled because it will
+            // go through TryCreate below. Memory cost: 1 pointer.
+
+            // For loading XPS in which bounding box calculation are called a lot in hit testing, Glyphs.cs will
+            // call this constructor, which enables caching. Memory cost: 1 pointer + boxed Rect.
+
+            // If we late decide it's worthwhile to cache for all, memory cost can be reduced to one Rect (32-bytes).
+            // If we decide single precision is good enough, it can be reduced to 16 bytes.
+            _flags |= GlyphRunFlags.CacheInkBounds;
         }
 
         /// <summary>
@@ -111,6 +220,7 @@ namespace System.Windows.Media
         /// <param name="caretStops">A list of caret stops for the glyphs</param>
         /// <param name="language">Language of the GlyphRun</param>
         [CLSCompliant(false)]
+        [Obsolete("Use the PixelsPerDip override", false)]
         public GlyphRun(
             GlyphTypeface           glyphTypeface,
             int                     bidiLevel,
@@ -136,6 +246,7 @@ namespace System.Windows.Media
                 bidiLevel,
                 isSideways,
                 renderingEmSize,
+                Util.PixelsPerDip,
                 glyphIndices,
                 baselineOrigin,
                 advanceWidths,
@@ -172,6 +283,7 @@ namespace System.Windows.Media
             int                     bidiLevel,
             bool                    isSideways,
             double                  renderingEmSize,
+            float                   pixelsPerDip,
             IList<ushort>           glyphIndices,
             Point                   baselineOrigin,
             IList<double>           advanceWidths,
@@ -184,7 +296,7 @@ namespace System.Windows.Media
             TextFormattingMode          textLayout
             )
         {
-            GlyphRun glyphRun = new GlyphRun();
+            GlyphRun glyphRun = new GlyphRun(pixelsPerDip);
 
             // Suppress PRESharp warning that glyphIndices and advanceWidths are not validated and can be null.
             // They can indeed be null, but that's perfectly OK. An explicit null check in the constructor is
@@ -195,6 +307,7 @@ namespace System.Windows.Media
                 bidiLevel,
                 isSideways,
                 renderingEmSize,
+                pixelsPerDip,
                 glyphIndices,
                 baselineOrigin,
                 advanceWidths,
@@ -221,6 +334,7 @@ namespace System.Windows.Media
             int                     bidiLevel,
             bool                    isSideways,
             double                  renderingEmSize,
+            float                   pixelsPerDip,
             IList<ushort>           glyphIndices,
             Point                   baselineOrigin,
             IList<double>           advanceWidths,
@@ -271,6 +385,7 @@ namespace System.Windows.Media
                 _caretStops = caretStops;
                 _language = language;
                 _deviceFontName = deviceFontName;
+                _pixelsPerDip = pixelsPerDip;
 
                 if (characters != null && characters.Count != 0)
                 {
@@ -717,6 +832,20 @@ namespace System.Windows.Media
 
         #region Public Properties
 
+        public float PixelsPerDip
+        {
+            get
+            {
+                CheckInitialized();
+                return _pixelsPerDip;
+            }
+            set
+            {
+                CheckInitializing();
+                _pixelsPerDip = value;
+            }
+        }
+
         /// <summary>
         /// Advance width from origin of first glyph to far alignment edge of last glyph.
         /// </summary>
@@ -1156,6 +1285,7 @@ namespace System.Windows.Media
             _glyphTypeface.GetGlyphMetrics(glyphIndices,
                                            glyphIndicesCount,
                                            _renderingEmSize,
+                                           _pixelsPerDip,
                                            _textFormattingMode,
                                            IsSideways,
                                            glyphMetrics);
@@ -1191,7 +1321,7 @@ namespace System.Windows.Media
 
                 for (int i = 0; i < GlyphCount; ++i)
                 {
-                    EmGlyphMetrics emGlyphMetrics = new EmGlyphMetrics(glyphMetrics[i], designToEm, _textFormattingMode);
+                    EmGlyphMetrics emGlyphMetrics = new EmGlyphMetrics(glyphMetrics[i], designToEm, _pixelsPerDip, _textFormattingMode);
 
                     if (TextFormattingMode.Display == _textFormattingMode)
                     {
@@ -1280,24 +1410,35 @@ namespace System.Windows.Media
             BufferCache.ReleaseGlyphMetrics(glyphMetrics);
 
             //
-            // Work around for bug Dev10 bug #741619. For some reason the assumptions
-            // we make here about calculating the ink bounding box are not true for
-            // display mode text as they are for ideal mode text. The bounding box
-            // calculated using Display metrics for a Display formatted text run are
-            // not large enough. This results in artifacts in rendering, and (slightly)
-            // inaccurate hit testing. Inflate the bounds for now as a work around
-            //
-            // This also occurs for Ideal mode, for certain font/fontsize combinations.
-            // See Dev11 bug 318363, and 327674.
-            //
-            // The amount of inflation depends on the fontsize, so that scaling
-            // the result doesn't cause false hit-testing far away from the text
-            // (see Dev11 483394).  But inflate by at most 1px.
-            if (!bounds.IsEmpty)
+            // Work around for 
+
+
+
+
+
+
+
+
+
+
+
+
+            if (CoreCompatibilityPreferences.GetIncludeAllInkInBoundingBox())
             {
-                // Inflate bounds
-                double inflation = Math.Min(_renderingEmSize / 7.0, 1.0);
-                bounds.Inflate(inflation, inflation);
+                if (!bounds.IsEmpty)
+                {
+                    // Inflate bounds
+                    double inflation = Math.Min(_renderingEmSize / 7.0, 1.0);
+                    bounds.Inflate(inflation, inflation);
+                }
+            }
+            else // user opted out of the fix - this is the 4.0 code
+            {
+                if (TextFormattingMode.Display == _textFormattingMode && !bounds.IsEmpty)
+                {
+                    // Inflate bounds
+                    bounds.Inflate(1.0, 1.0);
+                }
             }
 
             if ((_flags & GlyphRunFlags.CacheInkBounds) != 0)
@@ -1349,7 +1490,7 @@ namespace System.Windows.Media
 
             for (int i = 0; i < glyphCount; ++i)
             {
-                EmGlyphMetrics emGlyphMetrics = new EmGlyphMetrics(glyphMetrics[i], designToEm, _textFormattingMode);
+                EmGlyphMetrics emGlyphMetrics = new EmGlyphMetrics(glyphMetrics[i], designToEm, _pixelsPerDip, _textFormattingMode);
 
                 if (TextFormattingMode.Display == _textFormattingMode)
                 {
@@ -1465,7 +1606,8 @@ namespace System.Windows.Media
                     // no languages support sideways and right to left in the same run
                     Debug.Assert(!IsSideways);
 
-                    double nominalAdvance = TextFormatterImp.RoundDip(_glyphTypeface.GetAdvanceWidth(glyphIndex, _textFormattingMode, IsSideways) * _renderingEmSize, _textFormattingMode);
+                    double nominalAdvance = TextFormatterImp.RoundDip(_glyphTypeface.GetAdvanceWidth(glyphIndex, _pixelsPerDip, _textFormattingMode, IsSideways) * _renderingEmSize,
+                        _pixelsPerDip, _textFormattingMode);
 
                     originX = -accAdvance;
                     originX -= (nominalAdvance + GetGlyphOffset(i).X);
@@ -1569,17 +1711,17 @@ namespace System.Windows.Media
         /// </summary>
         private struct EmGlyphMetrics
         {
-            internal EmGlyphMetrics(MS.Internal.Text.TextInterface.GlyphMetrics glyphMetrics, double designToEm, TextFormattingMode textFormattingMode)
+            internal EmGlyphMetrics(MS.Internal.Text.TextInterface.GlyphMetrics glyphMetrics, double designToEm, double pixelsPerDip, TextFormattingMode textFormattingMode)
             {
                 if (TextFormattingMode.Display == textFormattingMode)
                 {
-                    this.AdvanceWidth = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.AdvanceWidth);
-                    this.AdvanceHeight = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.AdvanceHeight);
-                    this.LeftSideBearing = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.LeftSideBearing);
-                    this.RightSideBearing = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.RightSideBearing);
-                    this.TopSideBearing = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.TopSideBearing);
-                    this.BottomSideBearing = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.BottomSideBearing);
-                    this.Baseline = TextFormatterImp.RoundDipForDisplayMode(designToEm * GlyphTypeface.BaselineHelper(glyphMetrics));
+                    this.AdvanceWidth = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.AdvanceWidth, pixelsPerDip);
+                    this.AdvanceHeight = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.AdvanceHeight, pixelsPerDip);
+                    this.LeftSideBearing = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.LeftSideBearing, pixelsPerDip);
+                    this.RightSideBearing = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.RightSideBearing, pixelsPerDip);
+                    this.TopSideBearing = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.TopSideBearing, pixelsPerDip);
+                    this.BottomSideBearing = TextFormatterImp.RoundDipForDisplayMode(designToEm * glyphMetrics.BottomSideBearing, pixelsPerDip);
+                    this.Baseline = TextFormatterImp.RoundDipForDisplayMode(designToEm * GlyphTypeface.BaselineHelper(glyphMetrics), pixelsPerDip);
                 }
                 else
                 {
@@ -2208,6 +2350,7 @@ namespace System.Windows.Media
                 _bidiLevel,
                 (_flags & GlyphRunFlags.IsSideways) != 0,
                 _renderingEmSize,
+                _pixelsPerDip,
                 _glyphIndices,
                 _baselineOrigin,
                 // In case the layout mode is not Ideal then we cannot use ThousandthOfEmReal* since ThousandthOfEmReal* internally stores doubles as integers and hence there is some lost percision
@@ -2355,6 +2498,7 @@ namespace System.Windows.Media
         private string              _deviceFontName;
         private object              _inkBoundingBox;    // Used when CacheInkBounds is on
         private TextFormattingMode      _textFormattingMode;
+        private float               _pixelsPerDip = MS.Internal.FontCache.Util.PixelsPerDip;
 
         // the sine of 20 degrees
         private const double        Sin20 = 0.34202014332566873304409961468226;

@@ -6,7 +6,7 @@
 //      Provides a serializer for non-reference entities in plain XML.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

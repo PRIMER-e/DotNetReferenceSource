@@ -6,14 +6,16 @@
 
 namespace System.Windows.Forms {
     using System;
-    using System.Diagnostics;
-    using System.Drawing;
+    using System.Collections;
     using System.ComponentModel;
-    using System.Windows.Forms.Layout;
+    using System.ComponentModel.Design;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Drawing;
+    using System.Runtime.Versioning;
     using System.Security;
     using System.Security.Permissions;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.Versioning;
+    using System.Windows.Forms.Layout;
     
     /// <include file='doc\ToolStripControlHost.uex' path='docs/doc[@for="ToolStripControlHost"]/*' />
     /// <devdoc>
@@ -609,7 +611,7 @@ namespace System.Windows.Forms {
         
         ///
         ///  Handle* wrappers:
-        ///    We [....] the event from the hosted control and call resurface it on ToolStripItem.
+        ///    We sync the event from the hosted control and call resurface it on ToolStripItem.
         ///
 
         private void HandleClick(object sender, System.EventArgs e) {
@@ -860,7 +862,7 @@ namespace System.Windows.Forms {
         protected virtual void OnSubscribeControlEvents(Control control) {
 
             if (control != null) {
-                // Please keep this alphabetized and in [....] with Unsubscribe
+                // Please keep this alphabetized and in sync with Unsubscribe
                 // 
                 control.Click                       += new EventHandler(HandleClick);
                 control.BackColorChanged            += new EventHandler(HandleBackColorChanged);
@@ -908,7 +910,7 @@ namespace System.Windows.Forms {
         /// </devdoc>
         protected virtual void OnUnsubscribeControlEvents(Control control) {
              if (control != null) {
-                // Please keep this alphabetized and in [....] with Subscribe
+                // Please keep this alphabetized and in sync with Subscribe
                 // 
                 control.Click                       -= new EventHandler(HandleClick);
                 control.BackColorChanged            -= new EventHandler(HandleBackColorChanged);
@@ -1078,8 +1080,9 @@ namespace System.Windows.Forms {
         // This implementation of ISite would be set to Control.Site when ToolStripControlHost.Site is set at DesignTime. (Refer to Site property on ToolStripControlHost)
         // This implementation just returns the DesigMode property to be ToolStripControlHost's DesignMode property. 
         // Everything else is pretty much default implementation.
-        private class StubSite : ISite
+        private class StubSite : ISite, IDictionaryService
         {
+            private Hashtable _dictionary = null;
             IComponent comp = null;
             IComponent owner = null;
             
@@ -1118,7 +1121,7 @@ namespace System.Windows.Forms {
                     return owner.Site.DesignMode;
                 }
             }
-        
+
             // The name of the component.
             //
             /// <devdoc>
@@ -1127,7 +1130,7 @@ namespace System.Windows.Forms {
             /// </devdoc>
             String ISite.Name {
                 get {
-                    return owner.Site.Name;    
+                    return owner.Site.Name;
                 }
                 set {
                     owner.Site.Name = value;
@@ -1141,13 +1144,60 @@ namespace System.Windows.Forms {
                 if (service == null) {
                     throw new ArgumentNullException("service");
                 }
-                if (owner.Site != null)
-                {
+
+                // We have to implement our own dictionary service. If we don't,
+                // the properties of the underlying component will end up being
+                // overwritten by our own properties when GetProperties is called
+                if (service == typeof(IDictionaryService)) {
+                    return this;
+                }
+
+                if (owner.Site != null) {
                     return owner.Site.GetService(service);
                 }
                 return null;
             }
-        }
 
+            /// <devdoc>
+            ///     Retrieves the key corresponding to the given value.
+            /// </devdoc>
+            object IDictionaryService.GetKey(object value) {
+                if (_dictionary != null) {
+                    foreach (DictionaryEntry de in _dictionary) {
+                        object o = de.Value;
+                        if (value != null && value.Equals(o)) {
+                            return de.Key;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            /// <devdoc>
+            ///     Retrieves the value corresponding to the given key.
+            /// </devdoc>
+            object IDictionaryService.GetValue(object key) {
+                if (_dictionary != null) {
+                    return _dictionary[key];
+                }
+                return null;
+            }
+
+            /// <devdoc>
+            ///     Stores the given key-value pair in an object's site.  This key-value
+            ///     pair is stored on a per-object basis, and is a handy place to save
+            ///     additional information about a component.
+            /// </devdoc>
+            void IDictionaryService.SetValue(object key, object value) {
+                if (_dictionary == null) {
+                    _dictionary = new Hashtable();
+                }
+                if (value == null) {
+                    _dictionary.Remove(key);
+                } else {
+                    _dictionary[key] = value;
+                }
+            }
+        }
     }
 }

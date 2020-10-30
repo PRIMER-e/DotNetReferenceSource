@@ -131,7 +131,7 @@ extern CompilerPackage *g_pCompilerPackage;
 //
 // public\internal\vsproject\inc
 //
-#include <langproject.h>
+//#include <langproject.h>
 //#include <util_watson.h>
 #include <subtypes.h>
 

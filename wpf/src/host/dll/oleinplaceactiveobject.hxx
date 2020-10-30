@@ -8,7 +8,7 @@
 //  History:
 //     2002/06/27-murrayw
 //          Created
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

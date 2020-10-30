@@ -7,7 +7,7 @@
 //      data sources.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 #if ASTORIA_SERVER 

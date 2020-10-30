@@ -170,7 +170,12 @@ namespace System.Windows.Forms {
 
             if (e.TextColor != SystemColors.HighlightText && e.TextColor != SystemColors.ControlText) {
                 // we'll change the DefaultTextColor, if someone wants to change this,manually set the TextColor property.
-                e.DefaultTextColor = SystemColors.ControlText;
+                if (e.Item.Selected || e.Item.Pressed) {
+                    e.DefaultTextColor = SystemColors.HighlightText;
+                }
+                else {
+                    e.DefaultTextColor = SystemColors.ControlText;
+                }
             }
             base.OnRenderItemText(e);
         }

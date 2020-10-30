@@ -7,7 +7,7 @@
 // History:  
 //  07/22/2002 : MikeOrr - Created.
 //  06/26/2003 : ZhenbinX - Ported to /Rewrote for WCP tree
-//  10/28/2004 : [....] - ContentElements refactoring.
+//  10/28/2004 : Microsoft - ContentElements refactoring.
 //
 //---------------------------------------------------------------------------
 

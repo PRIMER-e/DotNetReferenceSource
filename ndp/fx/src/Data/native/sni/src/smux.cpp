@@ -176,7 +176,7 @@ private:
 
 		// 0. If this is the first Session to access the worker, worker is free to access.
 		// 1. There is no racing between checking queue conditiion and de/enqueue 
-		// of m_ReceivedPacketQueue since enqueuue is [....] by [....] access to worker
+		// of m_ReceivedPacketQueue since enqueuue is sync by sync access to worker
 		// dequeue is done only in readsync.
 		// 2. if there is a packet in the queue, don't go worker, read the packet first.
 		// Note: this code gives reading packet priority over accessing worker.

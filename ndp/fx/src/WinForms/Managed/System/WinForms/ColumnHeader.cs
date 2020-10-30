@@ -386,7 +386,7 @@ namespace System.Windows.Forms {
         ]
         public int Width {
             get {
-                // Since we can't keep our private width in [....] with the real width because
+                // Since we can't keep our private width in sync with the real width because
                 // we don't get notified when the user changes it, we need to get this info
                 // from the underlying control every time we're asked.
                 // The underlying control will only report the correct width if it's in Report view
@@ -437,8 +437,8 @@ namespace System.Windows.Forms {
                 columnHeader = new ColumnHeader();
             }
             else {
-                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
-                //
+                // SECREVIEW : Late-binding does not represent a security thread, see 
+
                 columnHeader = (ColumnHeader)Activator.CreateInstance(clonedType);
             }
 

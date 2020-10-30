@@ -424,8 +424,8 @@ namespace MS.Internal.AutomationProxies
                     return Rect.Empty;
                 }
 
-                // Work around a bug in the common control. Swap the X and Y value for vertical
-                // rebar bands
+                // Work around a 
+
                 if (Misc.IsBitSet(Misc.GetWindowStyle(hwnd), (int)CommonControlStyles.CCS_VERT))
                 {
                     return new Rect (rectW32.left, rectW32.top, rectW32.bottom - rectW32.top, rectW32.right - rectW32.left);

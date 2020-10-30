@@ -9,7 +9,7 @@
 //     10/15/2002: murrayw:       Created
 //     10/26/2002: lgolding:      Replace multiple GUIDs with a single GUID
 //                                 and a set of flags that can be OR'd into it.
-//     2007/09/20: [....]        Ported Windows->DevDiv. See SourcesHistory.txt.
+//     2007/09/20: Microsoft        Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 // Copyright (C) 2002 by Microsoft Corporation.  All rights reserved.
 // 

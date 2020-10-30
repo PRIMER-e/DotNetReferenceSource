@@ -6,7 +6,7 @@
 //      Wrapper class for a resource set.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

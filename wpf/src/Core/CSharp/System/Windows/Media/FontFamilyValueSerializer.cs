@@ -7,7 +7,7 @@
 //
 //  Contents:  FontFamilyValueSerializer implementation
 //
-//  Created:   6-20-2005 Chuck Jazdzewski ([....])
+//  Created:   6-20-2005 Chuck Jazdzewski (Microsoft)
 //
 //------------------------------------------------------------------------
 

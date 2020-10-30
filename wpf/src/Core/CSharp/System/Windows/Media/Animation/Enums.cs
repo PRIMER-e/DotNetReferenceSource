@@ -37,7 +37,7 @@ namespace System.Windows.Media.Animation
     /// <summary>
     /// Possible states the time manager may be in.
     /// </summary>
-    // 
+    // TODO leov: this structure is obsolete and should go away soon.
     internal enum TimeState
     {
         /// <summary>

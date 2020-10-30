@@ -242,7 +242,7 @@ namespace System.Windows.Controls
                 ctrl._templateIsCurrent = false;
             }
 
-            // keep the DataContext in [....] with Content
+            // keep the DataContext in sync with Content
             if (ctrl._templateIsCurrent && ctrl.Template != UIElementContentTemplate)
             {
                 ctrl.DataContext = e.NewValue;
@@ -827,11 +827,11 @@ namespace System.Windows.Controls
                 // normally this loop will execute exactly once.  The only exception
                 // is when setting the DataContext causes the ContentTemplate or
                 // ContentTemplateSelector to change, presumably because they are
-                // themselves data-bound (see bug 128119).  In that case, we need
-                // to call ChooseTemplate again, to pick up the new template.
-                // We detect this case because _templateIsCurrent is reset to false
-                // in OnContentTemplate[Selector]Changed, causing a second iteration
-                // of the loop.
+                // themselves data-bound (see 
+
+
+
+
                 _templateIsCurrent = true;
                 newTemplate = ChooseTemplate();
 
@@ -1024,7 +1024,7 @@ namespace System.Windows.Controls
                 CanBuildVisualTree = true;
             }
 
-            //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+            //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
             internal override bool BuildVisualTree(FrameworkElement container)
             {
                 bool tracingEnabled = EventTrace.IsEnabled(EventTrace.Keyword.KeywordGeneral, EventTrace.Level.Info);

@@ -6,7 +6,7 @@
 //      Provides the wrapper class for DataService hosts.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

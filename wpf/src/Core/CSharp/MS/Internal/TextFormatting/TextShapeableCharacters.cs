@@ -173,6 +173,7 @@ namespace System.Windows.Media.TextFormatting
                 (rightToLeft ? 1 : 0),
                 sideways,
                 _emSize,
+                (float)_properties.PixelsPerDip,
                 glyphIndices,
                 origin,
                 glyphAdvances,
@@ -239,6 +240,7 @@ namespace System.Windows.Media.TextFormatting
                     ),
                 characterAdvances,
                 _emSize,
+                (float)_properties.PixelsPerDip,
                 _properties.FontHintingEmSize,
                 nullFont,
                 CultureMapper.GetSpecificCulture(_properties.CultureInfo),
@@ -321,6 +323,7 @@ namespace System.Windows.Media.TextFormatting
                         characterString,
                         characterLength,
                         _emSize,
+                        (float)_properties.PixelsPerDip,
                         scalingFactor,
                         advanceWidthsUnshaped,
                         nullFont,
@@ -341,16 +344,39 @@ namespace System.Windows.Media.TextFormatting
 
                 glyphTypeface.GetGlyphMetricsOptimized(newBuffer,
                                                        _emSize,
+                                                       (float)_properties.PixelsPerDip,
                                                        _textFormattingMode,
                                                        _isSideways,
                                                        glyphMetrics
                                                        );
 
-                double designToEm = _emSize * scalingFactor / glyphTypeface.DesignEmHeight;
-
-                for (int i = 0; i < characterLength; i++)
+                if (_textFormattingMode == TextFormattingMode.Display &&
+                    TextFormatterContext.IsSpecialCharacter(*characterString))
                 {
-                    advanceWidthsUnshaped[i] = (int)Math.Round(glyphMetrics[i].AdvanceWidth * designToEm);
+                    // (DDVSO 92892) If the run starts with a special character (in
+                    // the LineServices sense), we apply display-mode rounding now,
+                    // as we won't get another chance.   This assumes that the characters
+                    // in a run are either all special or all non-special;  that assumption
+                    // is valid in the current LS implementation.
+                    double designToEm = _emSize / glyphTypeface.DesignEmHeight;
+                    double pixelsPerDip = _properties.PixelsPerDip;
+
+                    for (int i = 0; i < characterLength; i++)
+                    {
+                        advanceWidthsUnshaped[i] = (int)Math.Round(TextFormatterImp.RoundDipForDisplayMode(glyphMetrics[i].AdvanceWidth * designToEm, pixelsPerDip) * scalingFactor);
+                    }
+                }
+                else
+                {
+                    // For the normal case, rounding is applied later on when LS
+                    // invokes the callback GetGlyphPositions, so that adjustments
+                    // due to justification and shaping are taken into account.
+                    double designToEm = _emSize * scalingFactor / glyphTypeface.DesignEmHeight;
+
+                    for (int i = 0; i < characterLength; i++)
+                    {
+                        advanceWidthsUnshaped[i] = (int)Math.Round(glyphMetrics[i].AdvanceWidth * designToEm);
+                    }
                 }
 
                 BufferCache.ReleaseGlyphMetrics(glyphMetrics);
@@ -468,7 +494,7 @@ namespace System.Windows.Media.TextFormatting
         {
             get
             {
-                return _properties.Typeface.LineSpacing(_properties.FontRenderingEmSize, 1, Util.PixelsPerDip, _textFormattingMode);
+                return _properties.Typeface.LineSpacing(_properties.FontRenderingEmSize, 1, _properties.PixelsPerDip, _textFormattingMode);
             }
         }
 
@@ -480,7 +506,7 @@ namespace System.Windows.Media.TextFormatting
         {
             get
             {
-                return _properties.Typeface.Baseline(_properties.FontRenderingEmSize, 1, Util.PixelsPerDip, _textFormattingMode);
+                return _properties.Typeface.Baseline(_properties.FontRenderingEmSize, 1, _properties.PixelsPerDip, _textFormattingMode);
             }
         }
 

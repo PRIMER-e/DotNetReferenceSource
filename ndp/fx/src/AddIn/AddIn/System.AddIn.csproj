@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{b7325700-e3b5-42dd-ac08-c7bad4a3e05d}</ProjectGuid>
+    <ProjectGuid>{eb894485-96e2-4d96-ad6d-934864a39175}</ProjectGuid>
     <OutputPath>.</OutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>System.AddIn</AssemblyName>
@@ -12,27 +12,27 @@
     <NoStdLib>True</NoStdLib>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <DefineConstants>CODE_ANALYSIS_BASELINE;FEATURE_LEGACYSURFACEAREA;FEATURE_UTF32;FEATURE_UTF7;FEATURE_SERIALIZATION;PRODUCTION_BUILD;TRACE;RETAIL;WIN32</DefineConstants>
+    <DefineConstants>CODE_ANALYSIS_BASELINE;FEATURE_LEGACYSURFACEAREA;FEATURE_UTF32;FEATURE_UTF7;PRODUCTION_BUILD;TRACE;RETAIL;WIN32</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " >
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\clr\src\BCL\mscorlib.csproj">
-      <Project>{a72657be-225c-4239-956e-ee2a30893b41}</Project>
+    <ProjectReference Include="..\..\..\..\clr\src\bcl\mscorlib.csproj">
+      <Project>{20f34c38-8c60-44e7-b703-0e341d274957}</Project>
       <Name>mscorlib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Contract\System.AddIn.Contract.csproj">
-      <Project>{dfed5b61-ccc9-4afd-ae01-57b032894f2c}</Project>
-      <Name>System.AddIn.Contract</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\System.csproj">
-      <Project>{20c75c70-c8b6-4dfb-a4e5-16d09099776d}</Project>
+      <Project>{85716da4-9fb2-4f44-9c4d-b7431fdf1b20}</Project>
       <Name>System</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Contract\System.AddIn.Contract.csproj">
+      <Project>{090ae742-124e-4ff2-9b26-624c4bca0205}</Project>
+      <Name>System.AddIn.Contract</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\..\clr\src\managedlibraries\remoting\System.Runtime.Remoting.csproj">
-      <Project>{3848aeee-a670-44c0-bc44-de800e7f1e43}</Project>
+      <Project>{cb8f1986-8e4c-4150-abb1-7c47ebd175e1}</Project>
       <Name>System.Runtime.Remoting</Name>
     </ProjectReference>
   </ItemGroup>
@@ -41,23 +41,19 @@
   <ItemGroup>
     <Compile Include="misc\AssemblyAttributes.cs" />
     <Compile Include="System\Addin\AddInAttribute.cs" />
-    <Compile Include="System\Addin\ResourceProvider.cs" />
-    <Compile Include="System\Addin\ResourceState.cs" />
-    <Compile Include="System\Addin\NativeMethods.cs" />
     <Compile Include="System\Addin\Hosting\ActivationWorker.cs" />
     <Compile Include="System\Addin\Hosting\AddInActivator.cs" />
-    <Compile Include="System\Addin\Hosting\AddInSegmentDirectoryNotFoundException.cs" />
-    <Compile Include="System\Addin\Hosting\AddInSegmentType.cs" />
     <Compile Include="System\Addin\Hosting\AddInController.cs" />
     <Compile Include="System\Addin\Hosting\AddInControllerImpl.cs" />
     <Compile Include="System\Addin\Hosting\AddInDeploymentState.cs" />
     <Compile Include="System\Addin\Hosting\AddInEnvironment.cs" />
-    <Compile Include="System\Addin\Hosting\AddInProcess.cs" />
     <Compile Include="System\Addin\Hosting\AddInIpcChannel.cs" />
-    <Compile Include="System\Addin\Hosting\QualificationDataItem.cs" />
+    <Compile Include="System\Addin\Hosting\AddInProcess.cs" />
     <Compile Include="System\Addin\Hosting\AddInSecurityLevel.cs" />
-    <Compile Include="System\Addin\Hosting\AddInStore.cs" />
+    <Compile Include="System\Addin\Hosting\AddInSegmentDirectoryNotFoundException.cs" />
+    <Compile Include="System\Addin\Hosting\AddInSegmentType.cs" />
     <Compile Include="System\Addin\Hosting\AddInServer.cs" />
+    <Compile Include="System\Addin\Hosting\AddInStore.cs" />
     <Compile Include="System\Addin\Hosting\AddInToken.cs" />
     <Compile Include="System\Addin\Hosting\ContravarianceAdapter.cs" />
     <Compile Include="System\Addin\Hosting\DeploymentState.cs" />
@@ -66,20 +62,28 @@
     <Compile Include="System\Addin\Hosting\PartialToken.cs" />
     <Compile Include="System\Addin\Hosting\PipelineDeploymentState.cs" />
     <Compile Include="System\Addin\Hosting\PipelineStoreLocation.cs" />
+    <Compile Include="System\Addin\Hosting\QualificationDataItem.cs" />
     <Compile Include="System\Addin\Hosting\ReadOnlyDictionary.cs" />
     <Compile Include="System\Addin\Hosting\RemotingHelper.cs" />
+    <Compile Include="System\Addin\Hosting\Store\AddIn.cs" />
+    <Compile Include="System\Addin\Hosting\Store\AddInAdapter.cs" />
+    <Compile Include="System\Addin\Hosting\Store\AddInBase.cs" />
+    <Compile Include="System\Addin\Hosting\Store\ContractComponent.cs" />
+    <Compile Include="System\Addin\Hosting\Store\HostAdapter.cs" />
+    <Compile Include="System\Addin\Hosting\Store\PipelineComponent.cs" />
     <Compile Include="System\Addin\Hosting\Utils.cs" />
+    <Compile Include="System\Addin\MiniReflection\GenericsNotImplementedException.cs" />
+    <Compile Include="System\Addin\MiniReflection\MetadataReader\AssemblyInfo.cs" />
+    <Compile Include="System\Addin\MiniReflection\MetadataReader\Enums.cs" />
+    <Compile Include="System\Addin\MiniReflection\MetadataReader\Metadata.cs" />
+    <Compile Include="System\Addin\MiniReflection\MetadataReader\PEFileReader.cs" />
     <Compile Include="System\Addin\MiniReflection\MiniAssembly.cs" />
     <Compile Include="System\Addin\MiniReflection\MiniConstructorInfo.cs" />
     <Compile Include="System\Addin\MiniReflection\MiniCustomAttributeInfo.cs" />
     <Compile Include="System\Addin\MiniReflection\MiniModule.cs" />
     <Compile Include="System\Addin\MiniReflection\MiniParameterInfo.cs" />
     <Compile Include="System\Addin\MiniReflection\TypeInfo.cs" />
-    <Compile Include="System\Addin\MiniReflection\GenericsNotImplementedException.cs" />
-    <Compile Include="System\Addin\MiniReflection\MetadataReader\AssemblyInfo.cs" />
-    <Compile Include="System\Addin\MiniReflection\MetadataReader\Enums.cs" />
-    <Compile Include="System\Addin\MiniReflection\MetadataReader\Metadata.cs" />
-    <Compile Include="System\Addin\MiniReflection\MetadataReader\PEFileReader.cs" />
+    <Compile Include="System\Addin\NativeMethods.cs" />
     <Compile Include="System\Addin\Pipeline\AddInPipelineAttributes.cs" />
     <Compile Include="System\Addin\Pipeline\CollectionAdapters.cs" />
     <Compile Include="System\Addin\Pipeline\ContractAdapter.cs" />
@@ -87,12 +91,8 @@
     <Compile Include="System\Addin\Pipeline\ContractHandle.cs" />
     <Compile Include="System\Addin\Pipeline\ContractListAdapter.cs" />
     <Compile Include="System\Addin\Pipeline\ListContractAdapter.cs" />
-    <Compile Include="System\Addin\Hosting\Store\AddIn.cs" />
-    <Compile Include="System\Addin\Hosting\Store\AddInAdapter.cs" />
-    <Compile Include="System\Addin\Hosting\Store\AddInBase.cs" />
-    <Compile Include="System\Addin\Hosting\Store\ContractComponent.cs" />
-    <Compile Include="System\Addin\Hosting\Store\HostAdapter.cs" />
-    <Compile Include="System\Addin\Hosting\Store\PipelineComponent.cs" />
+    <Compile Include="System\Addin\ResourceProvider.cs" />
+    <Compile Include="System\Addin\ResourceState.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

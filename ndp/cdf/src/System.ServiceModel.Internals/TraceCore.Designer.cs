@@ -740,7 +740,7 @@ namespace System.Runtime
             if (trace.IsEtwProviderEnabled)
             {
                 EnsureEventDescriptors();
-                return trace.IsEtwEventEnabled(ref eventDescriptors[eventIndex]);
+                return trace.IsEtwEventEnabled(ref eventDescriptors[eventIndex], false);
             }
             return false;
         }

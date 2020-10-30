@@ -9,7 +9,7 @@
 //  of an individual "format feature" within a compound file.
 //
 // History:
-//  06/20/2002: [....]:  Created
+//  06/20/2002: Microsoft:  Created
 //  05/30/2003: LGolding: Ported to WCP tree.
 //
 //-----------------------------------------------------------------------------

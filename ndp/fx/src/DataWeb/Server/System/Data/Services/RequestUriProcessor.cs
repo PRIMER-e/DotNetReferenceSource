@@ -6,7 +6,7 @@
 //      Provides a class capable of processing Astoria request Uris.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services
@@ -290,11 +290,11 @@ namespace System.Data.Services
             UriBuilder resultBuilder = new UriBuilder(requestUri);
             resultBuilder.Query = null;
 
-            // This is fix for bug 565322.
-            // Since we don't allow uri to compose on collections, () must be present
-            // as the last thing in the uri, if present. We need to remove the () from
-            // the uri, since its a optional thing and we want to return a canonical
-            // uri from the server.
+            // This is fix for 
+
+
+
+
             if (resultBuilder.Path.EndsWith("()", StringComparison.Ordinal))
             {
                 resultBuilder.Path = resultBuilder.Path.Substring(0, resultBuilder.Path.Length - 2);
@@ -699,7 +699,7 @@ namespace System.Data.Services
                 }
                 else if (postLinkSegment && identifier != XmlConstants.UriCountSegment)
                 {
-                    // DEVNOTE([....]): [Resources]/$links/[Property]/$count is valid
+                    // DEVNOTE(Microsoft): [Resources]/$links/[Property]/$count is valid
                     throw DataServiceException.ResourceNotFoundError(Strings.RequestUriProcessor_CannotSpecifyAfterPostLinkSegment(identifier, XmlConstants.UriLinkSegment));
                 }
                 else if (previous.TargetKind == RequestTargetKind.Primitive)

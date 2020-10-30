@@ -128,7 +128,7 @@ namespace System.Management
         private void HandleIdentifierChange(object sender, 
             IdentifierChangedEventArgs e)
         {
-            // Invalidate any [....] or async call in progress
+            // Invalidate any sync or async call in progress
             Stop();
         }
 
@@ -653,7 +653,7 @@ namespace System.Management
                 this.isLocal = true;
             }
             
-            if(MTAHelper.IsNoContextMTA())  // Bug#110141 - Checking for MTA is not enough.  We need to make sure we are not in a COM+ Context
+            if(MTAHelper.IsNoContextMTA())  // 
                 HackToCreateStubInMTA(this);
             else
             {

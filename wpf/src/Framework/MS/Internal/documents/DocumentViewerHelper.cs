@@ -7,7 +7,7 @@
 // Description: Defines various helper methods used by document viewews.
 //
 // History:  
-//  11/07/2005 : [....] - created.
+//  11/07/2005 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 

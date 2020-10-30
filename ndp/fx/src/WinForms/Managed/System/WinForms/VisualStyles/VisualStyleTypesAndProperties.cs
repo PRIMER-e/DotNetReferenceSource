@@ -538,7 +538,7 @@ using System.Diagnostics.CodeAnalysis;
     	/// <include file='doc\VisualStyleTypesAndProperties.uex' path='docs/doc[@for="PointProperty.MinSize5"]/*' />
     	MinSize5 = 3408
     //		TM_PROP(3401, TMT, OFFSET,            POSITION)   // for window part layout
-    //		TM_PROP(3402, TMT, TEXTSHADOWOFFSET,  POSITION)   // where char shadows are drawn, relative to [....]. chars
+    //		TM_PROP(3402, TMT, TEXTSHADOWOFFSET,  POSITION)   // where char shadows are drawn, relative to orig. chars
     //		TM_PROP(3403, TMT, MINSIZE,           POSITION)   // min dest rect than ImageFile was designed for
     //		TM_PROP(3404, TMT, MINSIZE1,          POSITION)   // min dest rect than ImageFile1 was designed for
     //		TM_PROP(3405, TMT, MINSIZE2,          POSITION)   // min dest rect than ImageFile2 was designed for

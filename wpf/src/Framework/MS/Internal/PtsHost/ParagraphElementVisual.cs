@@ -7,7 +7,7 @@
 // Description: Visual representing a part of paragraph. 
 //
 // History:  
-//  02/02/2004 : [....] - created.
+//  02/02/2004 : grzegorz - created.
 //
 //---------------------------------------------------------------------------
 

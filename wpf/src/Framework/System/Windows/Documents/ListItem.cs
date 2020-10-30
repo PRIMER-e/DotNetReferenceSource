@@ -7,8 +7,8 @@
 //              such as bullets and numbering. 
 //
 // History:  
-//  06/06/2003 : [....] - created.
-//  10/28/2004 : [....] - ContentElements refactoring.
+//  06/06/2003 : Microsoft - created.
+//  10/28/2004 : Microsoft - ContentElements refactoring.
 //
 //---------------------------------------------------------------------------
 

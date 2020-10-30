@@ -235,16 +235,18 @@ namespace System.Windows.Documents
             object propertyValue = ((TextSelection)This.Selection).GetCurrentValue(Inline.TextDecorationsProperty);
             TextDecorationCollection textDecorations = propertyValue != DependencyProperty.UnsetValue ? (TextDecorationCollection)propertyValue : null;
 
+            TextDecorationCollection toggledTextDecorations; 
             if (!TextSchema.HasTextDecorations(textDecorations))
             {
-                textDecorations = TextDecorations.Underline;
+                toggledTextDecorations = TextDecorations.Underline;
             }
-            else
+            else if (!textDecorations.TryRemove(TextDecorations.Underline, out toggledTextDecorations))
             {
-                textDecorations = new TextDecorationCollection(); // empty collection - no underline
+                // TextDecorations.Underline was not present, so add it 
+                toggledTextDecorations.Add(TextDecorations.Underline);
             }
 
-            TextEditorCharacters._OnApplyProperty(This, Inline.TextDecorationsProperty, textDecorations);
+            TextEditorCharacters._OnApplyProperty(This, Inline.TextDecorationsProperty, toggledTextDecorations);
         }
 
         // Command handler for Ctrl+"+" key (non-numpad)

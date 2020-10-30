@@ -73,12 +73,16 @@ namespace System.Windows.Documents
         public abstract void Render(DrawingContext dc, string label, DrawDebugVisual debugVisuals) ;
         public void RenderLabel(DrawingContext dc, string label)
         {
+            // This code only runs in DEBUG mode, and looks like has been abandoned for a while.
+            // Initializing PixelsPerDip to system dpi as a safeguard, however, doesn't look like this is going to be used at all.
             FormattedText ft = new FormattedText(label, 
                                         System.Windows.Markup.TypeConverterHelper.InvariantEnglishUS,
                                         FlowDirection.LeftToRight,
                                         new Typeface("Arial"), 
                                         10,
-                                        Brushes.White);
+                                        Brushes.White,
+                                        MS.Internal.FontCache.Util.PixelsPerDip);
+
             Point labelLocation = new Point(_boundingRect.Left-25, (_boundingRect.Bottom + _boundingRect.Top)/2 - 10);
             Geometry geom = ft.BuildHighlightGeometry(labelLocation);
             Pen backgroundPen = new Pen(Brushes.Black,1);

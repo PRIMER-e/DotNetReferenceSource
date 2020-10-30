@@ -8,9 +8,9 @@
 //  History:
 //     2002/06/19-murrayw
 //          Created
-//     2005/02/22-[....]
+//     2005/02/22-Microsoft
 //          Moved, shared, simplified.
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -36,7 +36,7 @@
 //
 // Registry Key definitions
 //
-// Keep in [....] with:
+// Keep in sync with:
 //      setup\MSI\installerFiles\installDatabase\Registry.txt
 //      Shared\MS\Internal\Registry.cs
 //******************************************************************************

@@ -8,9 +8,9 @@
 //              content specific. 
 //
 // History:  
-//  05/05/2003 : [....] - created.
-//  09/28/2004 : [....] - updated pagination model.
-//  08/29/2005 : [....] - updated pagination model.
+//  05/05/2003 : Microsoft - created.
+//  09/28/2004 : Microsoft - updated pagination model.
+//  08/29/2005 : Microsoft - updated pagination model.
 //
 //---------------------------------------------------------------------------
 

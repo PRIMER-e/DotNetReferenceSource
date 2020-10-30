@@ -14,7 +14,7 @@
 //      NavigationService.
 //
 // History:
-//  11/14/05: [....]       Created; parts factored out of NavigationWindow.
+//  11/14/05: Microsoft       Created; parts factored out of NavigationWindow.
 //
 //---------------------------------------------------------------------------
 
@@ -442,7 +442,7 @@ namespace MS.Internal.AppModel
             set
             {
                 Debug.Assert(_journal == null && value != null,
-                    "The Journal should be set only once and never removed."); // see bug 1367999
+                    "The Journal should be set only once and never removed."); // see 
                 _journal = value;
                 _journal.Filter = new JournalEntryFilter(this.IsEntryNavigable);
                 _journal.BackForwardStateChange += new EventHandler(OnBackForwardStateChange);

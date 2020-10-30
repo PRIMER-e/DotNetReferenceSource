@@ -22,7 +22,7 @@ namespace System.Windows.Documents
     /// Represents a location in a formatted text content.
     /// </summary>
     /// <remarks>
-    /// <para>In Avalon formatted text can be contained in elements such as 
+    /// <para>In Avalon formatted text can be contained in elements such as
     /// <see cref="TextBlock"/> or <see cref="FlowDocument"/>.
     /// We will refer to these elements as to "text containers".</para>
     /// <para>Using the properties and the methods of the TextPointer object, you can:</para>
@@ -36,15 +36,15 @@ namespace System.Windows.Documents
     /// <para></para>
     /// <para>Positions in formatted document where TextPointer objects can be located
     /// are places between characters and element tags.</para>
-    /// <para>As you edit a document, TextPointer objects do not move relative to their surrounding text. 
+    /// <para>As you edit a document, TextPointer objects do not move relative to their surrounding text.
     /// That is, if text is inserted before a text pointer, then the offset of the pointer
-    /// from start position of a text container is incremented to reflect its new location 
+    /// from start position of a text container is incremented to reflect its new location
     /// further down in the document (offsets between text pointers can be calculated by
     /// a <see cref="TextPointer.GetOffsetToPosition"/> method).</para>
-    /// <para>If multiple TextPointer objects are located at the same position and a text 
-    /// is inserted into this position, then the new characters and structural tags are 
+    /// <para>If multiple TextPointer objects are located at the same position and a text
+    /// is inserted into this position, then the new characters and structural tags are
     /// to the right or to the left of all of the TextPointer objects depending on their
-    /// <see cref="TextPointer.LogicalDirection"/> property.</para> 
+    /// <see cref="TextPointer.LogicalDirection"/> property.</para>
     /// <para>Class <see cref="TextPointerContext"/> is an enum specifying what kind of
     /// content can be found in immediate vicility of a TextPointer. The kinds include
     /// <c>None</c> for text container boundaries, <c>ElementStart</c> and <c>ElementEnd</c>
@@ -95,13 +95,13 @@ namespace System.Windows.Documents
     ///     {
     ///         allContent = new TextRange(flowDocument.ContentStart, flowDocument.ContentEnd);
     ///         allContent.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold);
-    /// 
+    ///
     ///         allContent = new TextRange(textFlow.ContentStart, textFlow.ContentEnd);
     ///         allContent.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold);
-    /// 
+    ///
     ///         allContent = new TextRange(textBlock.ContentStart, textFlow.ContentEnd);
     ///         allContent.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold);
-    /// 
+    ///
     ///         // Note that RichTextBox does not have ContentStart/ContentEnd properties,
     ///         // we use its Document property to get to FlowDocument contained within.
     ///         TextRange allContent = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
@@ -115,14 +115,14 @@ namespace System.Windows.Documents
     ///     {
     ///         // Traverse content in forward direction until the position is
     ///         // immediately after opening tag of a Run element.
-    ///         while (position != null &amp;&amp; 
-    ///             !(position.GetPointerContext(LogicalDirection.Backward) == TextPointerContext.ElementStart 
-    ///               &amp;&amp; 
+    ///         while (position != null &amp;&amp;
+    ///             !(position.GetPointerContext(LogicalDirection.Backward) == TextPointerContext.ElementStart
+    ///               &amp;&amp;
     ///               position.Parent is Run))
     ///         {
     ///             position = position.GetNextContextPosition(LogicalDirection.Forward);
     ///         }
-    /// 
+    ///
     ///         // Return a result
     ///         return position == null ? null : position.Parent as Run;
     ///     }
@@ -150,7 +150,7 @@ namespace System.Windows.Documents
     ///                 position = position.GetNextContextPosition(LogicalDirection.Forward);
     ///             }
     ///         }
-    /// 
+    ///
     ///         return position; // will be null, if a word is not found.
     ///     }
     /// </code>
@@ -160,7 +160,7 @@ namespace System.Windows.Documents
     ///     {
     ///         int paragraphCount = 0;
     ///         TextPointer position = range.Start;
-    /// 
+    ///
     ///         while (position != null &amp;&amp; position.CompareTo(range.End) &lt; 0)
     ///         {
     ///             if (position.GetPointerContext(LogicalDirection.Backward) == TextPointerContext.ElementStart &amp;&amp;
@@ -168,8 +168,8 @@ namespace System.Windows.Documents
     ///             {
     ///                 // Just entered a paragraph.
     ///                 paragraphCount ++;
-    /// 
-    ///                 // Jump over it. 
+    ///
+    ///                 // Jump over it.
     ///                 // Schema does not allow nested paragraphs, so we will not miss any.
     ///                 position = ((Paragraph)position.Parent).ElementEnd;
     ///             }
@@ -178,7 +178,7 @@ namespace System.Windows.Documents
     ///                 position = position.GetNextContextPosition(LogicalDirection.Forward);
     ///             }
     ///         }
-    /// 
+    ///
     ///         return paragraphCount;
     ///     }
     /// </code>
@@ -190,13 +190,13 @@ namespace System.Windows.Documents
     ///     bool IsRichTextBoxEmpty(RichTextBox richTextBox)
     ///     {
     ///         FlowDocument document = richTextBox.Document; // get a document contained in a RichTextBox
-    /// 
+    ///
     ///         TextPointer normalizedStart = document.ContentStart.GetInsertionPosition(LogicalDirection.Forward);
     ///         TextPointer normalizedEnd = document.ContentEnd.GetInsertionPosition(LogicalDirection.Backward);
-    /// 
+    ///
     ///         // The character content is empty if normalized start and end pointers are at the same position
     ///         bool isEmpty = normalizedStart.CompareTo(normalizedEnd) == 0;
-    /// 
+    ///
     ///         return isEmpty;
     ///     }
     /// </code>
@@ -465,7 +465,7 @@ namespace System.Windows.Documents
         /// </returns>
         /// <exception cref="System.ArgumentException">
         /// Throws ArgumentException if position does not belong to the same
-        /// text container as this TextPointer (you can use <see cref="TextPointer.IsInSameDocument"/> 
+        /// text container as this TextPointer (you can use <see cref="TextPointer.IsInSameDocument"/>
         /// method to detect whether comparison is possible).
         /// </exception>
         public int CompareTo(TextPointer position)
@@ -510,7 +510,7 @@ namespace System.Windows.Documents
         /// <para>Returns <see cref="TextPointerContext.None"/> if this TextPointer
         /// is positioned at the beginning of a text container and the requested direction
         /// is <see cref="System.Windows.Documents.LogicalDirection.Backward"/>, or if it is positioned
-        /// at the end of a text container  and the requested direction is 
+        /// at the end of a text container  and the requested direction is
         /// <see cref="System.Windows.Documents.LogicalDirection.Forward"/>.</para>
         /// <para>Returns <see cref="TextPointerContext.ElementStart"/> if the TextPointer
         /// has an openenig tag of some of TextElements in the requested direction.</para>
@@ -532,11 +532,11 @@ namespace System.Windows.Documents
         ///     int GetElementTagBalance(TextPointer start, TextPointer end)
         ///     {
         ///         int balanse = 0;
-        /// 
+        ///
         ///         while (start != null &amp;&amp; start.CompareTo(end) &lt; 0)
         ///         {
         ///             TextPointerContext forwardContext = start.GetPointerContext(LogicalDirection.Forward);
-        /// 
+        ///
         ///             if (forwardContext == TextPointerContext.ElementStart)
         ///             {
         ///                 balanse++;
@@ -547,7 +547,7 @@ namespace System.Windows.Documents
         ///             }
         ///             start = start.GetNextContextPosition(LogicalDirection.Forward);
         ///         }
-        /// 
+        ///
         ///         return balanse;
         ///     }
         /// </code>
@@ -629,7 +629,7 @@ namespace System.Windows.Documents
         /// positioned within the same document as this TextPointer.
         /// </exception>
         /// <returns>
-        /// <para>The return value will be negative if the TextPointer position 
+        /// <para>The return value will be negative if the TextPointer position
         /// preceeds this TextPointer, zero if the two TextPointers
         /// are equally positioned, or positive if position follows this
         /// TextPointer.</para>
@@ -652,7 +652,7 @@ namespace System.Windows.Documents
         /// <para>For instance, for the following xaml:
         /// &lt;Run&gt;abc&lt;/Run&gt;&lt;InlineUIContainer&gt;&lt;Button&gt;OK&lt;/Button&gt;&lt;/InlineUIContainer&gt;
         /// the offset from itw content start to content end will be 8 -
-        /// one for each of: (1) Run start, (2) "a", (3) "b", (4) "c", (5) Run end, (6) InlineUIContainer start, 
+        /// one for each of: (1) Run start, (2) "a", (3) "b", (4) "c", (5) Run end, (6) InlineUIContainer start,
         /// (7) whole Button element, (8) InlineUIContainer end. Note that <c>Button</c>
         /// element considered as one symbol even though it is represented
         /// by two tags and two characters.</para>
@@ -665,27 +665,27 @@ namespace System.Windows.Documents
         /// methods, the selection will be restored to its original state.</para>
         /// <code>
         ///     struct PersistedTextRange { int Start; int End; }
-        /// 
+        ///
         ///     PersistedTextRange GetPersistedSelection(RichTextBox richTextBox)
         ///     {
         ///         PersistedTextRange persistedSelection;
-        /// 
+        ///
         ///         TextPointer contentStart = richTextBox.Document.ContentStart;
         ///         persistedSelection.Start = contentStart.GetOffsetToPosition(richTextBox.Selection.Start);
         ///         persistedSelection.End = contentStart.GetOffsetToPosition(richTextBox.Selection.End);
-        /// 
+        ///
         ///         return persistedSelection;
         ///     }
-        /// 
+        ///
         ///     RestoreSelectionFromPersistedRange(RichTextBox richTextBox, PersistedTextRange persistedRange)
         ///     {
         ///         TextPointer contentStart = richTextBox.Document.ContentStart;
-        /// 
+        ///
         ///         richTextBox.Selection.Select(
         ///             contentStart.GetPositionAtOffset(persistedRange.Start),
         ///             contentStart.GetPositionAtOffset(persistedRange.End));
         ///     }
-        /// 
+        ///
         /// </code>
         /// </example>
         public int GetOffsetToPosition(TextPointer position)
@@ -721,7 +721,7 @@ namespace System.Windows.Documents
         ///     string GetPlainText(TextPointer start, TextPointer end)
         ///     {
         ///         StringBuilder buffer = new StringBuilder();
-        /// 
+        ///
         ///         while (start != null &amp;&amp; start.CompareTo(end) &lt; end)
         ///         {
         ///             if (start.GetPointerContext(LogicalDirection.Forward) == TextPointerContext.Text)
@@ -733,11 +733,11 @@ namespace System.Windows.Documents
         ///                 {
         ///                     textRun = textRun.Substring(0, start.GetOffsetToPosition(end));
         ///                 }
-        /// 
+        ///
         ///                 // Add characters from this text run to output buffer.
         ///                 buffer.Add(textRun);
         ///             }
-        /// 
+        ///
         ///             start = start.GetNextContextPosition(LogicalDirection.Forward);
         ///             // Note that for text run this method skips the whole run, not just one character.
         ///         }
@@ -836,7 +836,7 @@ namespace System.Windows.Documents
         /// case the TextPointer is moved backwards.
         /// </param>
         /// <returns>
-        /// TextPointer located at requested position in case if requested position 
+        /// TextPointer located at requested position in case if requested position
         /// does exist, otherwize returns null. LogicalDirection of the TextPointer
         /// returned is the same as of this TexPointer.
         /// </returns>
@@ -857,16 +857,16 @@ namespace System.Windows.Documents
         ///     int GetPersistedPositionRelativeToParagraph(TextPointer position)
         ///     {
         ///         Paragraph paragraph = position.Paragraph;
-        /// 
+        ///
         ///         if (paragraph == null)
         ///         {
         ///             return 0; // Some positions may be not within any Paragraph,
         ///             // so we need to return something; or throw exception.
         ///         }
-        /// 
+        ///
         ///         return paragraph.ContentStart.GetOffsetToPosition(position);
         ///     }
-        /// 
+        ///
         ///     int GetTextPointerRelativeToParagraph(Paragraph paragraph, int persistedPositionRelativeToParagraph)
         ///     {
         ///         // Check whether persisted position is still within this paragraph
@@ -876,7 +876,7 @@ namespace System.Windows.Documents
         ///             // the index is beyond the paragraph end. Return the farthest position within the paragraph.
         ///             return paragraph.ContentEnd;
         ///         }
-        /// 
+        ///
         ///         return paragraph.ContentStart.GetPositionAtOffset(persistedPositionRelativeToParagraph);
         ///     }
         /// </code>
@@ -898,7 +898,7 @@ namespace System.Windows.Documents
         /// LogicalDirection desired for a returned TextPointer.
         /// </param>
         /// <returns>
-        /// TextPointer located at requested position in case if requested position 
+        /// TextPointer located at requested position in case if requested position
         /// does exist, otherwize returns null. LogicalDirection of the TextPointer
         /// returned is as specified by a <paramref name="direction"/>.
         /// </returns>
@@ -961,15 +961,15 @@ namespace System.Windows.Documents
         ///     string GetXaml(TextElement element)
         ///     {
         ///         StringBuilder buffer = new StringBuilder();
-        /// 
+        ///
         ///         // Position a "navigator" pointer before the opening tag of the element.
         ///         TextPointer navigator = element.ElementStart;
-        /// 
+        ///
         ///         while (navigator.CompareTo(element.ElementEnd) &lt; 0)
         ///         {
         ///             switch (navigator.GetPointerContext(LogicalDirection.Forward))
         ///             {
-        ///                 case TextPointerContext.ElementStart : 
+        ///                 case TextPointerContext.ElementStart :
         ///                     // Output opening tag of the TextElement
         ///                     buffer.AddFormat("&lt;{0}&gt;", navigator.GetAdjacentElement(LogicalDirection.Forward).GetType().Name);
         ///                     break;
@@ -989,10 +989,10 @@ namespace System.Windows.Documents
         ///                     Assert(false, "We do not expect to reach end of text container in this loop");
         ///                     break;
         ///             }
-        /// 
+        ///
         ///             // Advance the naviagtor to the next context position.
         ///             navigator = navigator.GetNextContextPosition(LogicalDirection.Forward);
-        /// 
+        ///
         ///             Assert(navigator != null, "We do not expect to reach an end of a text container in this loop, as it is limited by element.ContentEnd bounadry");
         ///         }
         ///     }
@@ -1021,7 +1021,7 @@ namespace System.Windows.Documents
         /// would normally place the caret.  Examples of positions that are not
         /// insertion positions include locations between Paragraphs
         /// (between closing tag of a preceding paragraph and an opening tag
-        /// of the following paragraph). A position within text runs 
+        /// of the following paragraph). A position within text runs
         /// in the middle of a surrogate Unicode surrogate pair is also
         /// not an insertion position.</para>
         /// <para>The method can be used for disambiguating insertion positions
@@ -1036,7 +1036,7 @@ namespace System.Windows.Documents
         /// <para>Another important case when the method is useful is
         /// when a sequence of structural tags is involved. If you
         /// have a position, say between closing and opening paragraph tags,
-        /// and want to fing a nearest insertion position the <c>direction</c> 
+        /// and want to fing a nearest insertion position the <c>direction</c>
         /// parameter will tell which of two possible positions to take:
         /// in the end of the preceding or in the begining of the following paragraph.</para>
         /// <para>If the pointer is already at insertion position
@@ -1047,7 +1047,7 @@ namespace System.Windows.Documents
         /// then the returned position is the same as this one.</para>
         /// <para>Somethimes the whole document does not have even
         /// one insertion position - it happens when the content
-        /// is structurally incomplete, say in empty <see cref="List"/> 
+        /// is structurally incomplete, say in empty <see cref="List"/>
         /// or <see cref="Table"/>element. In such case the method
         /// will return the  original position even though it is not
         /// an insertion position. The method never returns null.</para>
@@ -1064,7 +1064,7 @@ namespace System.Windows.Documents
         ///         // (i.e. Run or Span).
         ///         TextPointer start = element.ContentStart.GetInsertionPosition(LogicalDirection.Forward);
         ///         TextPointer end = element.ContentEnd.GetInsertionPosition(LogicalDirection.Backward);
-        /// 
+        ///
         ///         // Element has empty printable content if its first and last
         ///         // insertion positions are equal.
         ///         return start.CompareTo(end) == 0;
@@ -1090,7 +1090,7 @@ namespace System.Windows.Documents
         /// Direction to move.
         /// </param>
         /// <returns>
-        /// A TextPointer at an insertion position in a requested direction, 
+        /// A TextPointer at an insertion position in a requested direction,
         /// null if there is no more insertion positions in that direction.
         /// </returns>
         /// <remarks>
@@ -1116,24 +1116,24 @@ namespace System.Windows.Documents
         ///     int GetParagraphCount(TextPointer start, TextPointer end)
         ///     {
         ///         int paragraphCount = 0;
-        /// 
+        ///
         ///         while (start != null &amp;&amp; start.CompareTo(end) &lt; 0)
         ///         {
         ///             Paragraph paragraph = start.Paragraph;
-        /// 
+        ///
         ///             if (paragraph != null)
         ///             {
         ///                 paragraphCount++;
-        /// 
+        ///
         ///                 // Advance start to an end of the paragraph found
         ///                 start = paragraph.ContentEnd;
         ///             }
-        /// 
+        ///
         ///             // Use GetNextInsertionPosition method to skip a sequence
         ///             // of structural tags
         ///             start = start.GetNextInsertionPosition(LogicalDirection.Forward);
         ///         }
-        /// 
+        ///
         ///         return paragraphCount;
         ///     }
         /// </code>
@@ -1149,7 +1149,7 @@ namespace System.Windows.Documents
         /// </summary>
         /// <param name="count">
         /// Number of line starts to skip when finding a desired line start position.
-        /// Negative values specify preceding lines, zero specifies the current line, 
+        /// Negative values specify preceding lines, zero specifies the current line,
         /// positive values specify following lines.
         /// </param>
         /// <exception cref="System.InvalidOperationException">
@@ -1164,7 +1164,7 @@ namespace System.Windows.Documents
         /// returns null.
         /// </returns>
         /// <remarks>
-        /// <para>Line identification is possible only from normalized insertion positions; 
+        /// <para>Line identification is possible only from normalized insertion positions;
         /// Line identification from not-normalized positions is mbigous and can produce
         /// unexpected results. Say, if a position is between closing and opening
         /// Paragraph tags, then GetInsertionPosition(LogicalDirection) is needed
@@ -1326,7 +1326,7 @@ namespace System.Windows.Documents
         /// </param>
         /// <returns>
         /// Returns the actual count of deleted chars.
-        /// The actual count may be less than requested in cases 
+        /// The actual count may be less than requested in cases
         /// when original requested count exceeds text run length in given direction.
         /// </returns>
         public int DeleteTextInRun(int count)
@@ -1334,7 +1334,7 @@ namespace System.Windows.Documents
             _tree.EmptyDeadPositionList();
             SyncToTreeGeneration();
 
-            // TextSchema Validation            
+            // TextSchema Validation
             if (!TextSchema.IsInTextContent(this))
             {
                 return 0;
@@ -1345,7 +1345,7 @@ namespace System.Windows.Documents
 
             // Get text run length in given direction
             int maxDeleteCount = this.GetTextRunLength(direction);
-            
+
             // Truncate count if it extends past the run in given direction
             if (count > 0 && count > maxDeleteCount)
             {
@@ -1394,7 +1394,7 @@ namespace System.Windows.Documents
         /// according to flow schema.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Throws InvalidOperationException if textElement cannot be inserted 
+        /// Throws InvalidOperationException if textElement cannot be inserted
         /// at this position because it belongs to another tree.
         /// </exception>
         internal void InsertTextElement(TextElement textElement)
@@ -1417,16 +1417,16 @@ namespace System.Windows.Documents
         /// Insert a paragraph break at this position by splitting all elements upto its paragraph ancestor.
         /// </summary>
         /// <returns>
-        /// When this position has a paragraph parent, this method returns a 
+        /// When this position has a paragraph parent, this method returns a
         /// normalized position in the beginning of a second paragraph.
-        /// 
-        /// Otherwise, if the position is not parented by a paragraph 
+        ///
+        /// Otherwise, if the position is not parented by a paragraph
         /// (for special insertion positions such as table row end, BlockUIContainer boundaries, etc),
-        /// this method creates a paragraph by using rules of EnsureInsertionPosition() 
+        /// this method creates a paragraph by using rules of EnsureInsertionPosition()
         /// and returns a normalized position at the start of the paragraph created.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        /// Throws InvalidOperationException when this position has a non-splittable ancestor such as Hyperlink, 
+        /// Throws InvalidOperationException when this position has a non-splittable ancestor such as Hyperlink,
         /// since we cannot successfully split upto the parent paragraph in this case.
         /// </exception>
         public TextPointer InsertParagraphBreak()
@@ -2492,7 +2492,7 @@ namespace System.Windows.Documents
         }
 
         // Returns the closest insertion position, treating all unicode code points
-        // as valid insertion positions.  A useful performance win over 
+        // as valid insertion positions.  A useful performance win over
         // GetNextInsertionPosition when only formatting scopes are important.
         ITextPointer ITextPointer.GetFormatNormalizedPosition(LogicalDirection direction)
         {
@@ -2656,9 +2656,19 @@ namespace System.Windows.Documents
 
             SyncToTreeGeneration();
 
-            elementNode = GetScopingNode() as TextTreeTextElementNode;
+            TextTreeNode scopingNode = GetScopingNode();
+            elementNode = scopingNode as TextTreeTextElementNode;
             if (elementNode == null)
             {
+                // if we're at the root of the tree, the pointer is
+                // already at the element edge, and nothing more need be done.
+                // This case can arise when a text tree contains only a
+                // BlockUIContainer (and no text), as in Dev11 34517.
+                if (scopingNode is TextTreeRootNode)
+                {
+                    return;
+                }
+
                 throw new InvalidOperationException(SR.Get(SRID.NoScopingElement, "This TextNavigator"));
             }
 
@@ -3845,7 +3855,7 @@ namespace System.Windows.Documents
             {
                 Inline ancestor = this.GetNonMergeableInlineAncestor();
 
-                return ancestor != null; 
+                return ancestor != null;
             }
         }
 
@@ -3913,7 +3923,7 @@ namespace System.Windows.Documents
             int offset;
             bool isCaretUnitBoundaryCacheValid;
 
-            // We MUST [....] to the current tree, otherwise we could addref
+            // We MUST sync to the current tree, otherwise we could addref
             // an orphaned node, resulting in a future unmatched release...
             // Ref counts on orphaned nodes are only considered at the time
             // of removal, not afterwards.
@@ -4295,7 +4305,7 @@ namespace System.Windows.Documents
         }
 
         // Ensure we have a valid _flags field.
-        // See bug 1249258.
+        // See 
         private void VerifyFlags()
         {
             ElementEdge edge = (ElementEdge)(_flags & (uint)Flags.EdgeMask);

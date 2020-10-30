@@ -66,7 +66,7 @@ namespace MS.Internal.Data
         // hashtable.  This allows rapid cancellation of all tasks pending
         // for a particular client - we only need to look at the tasks that
         // are actually affected, rather than the entire list.  This avoids
-        // an O(n^2) algorithm (bug 1366032).
+        // an O(n^2) algorithm (
 
         private class Task
         {
@@ -222,7 +222,7 @@ namespace MS.Internal.Data
             // if the task is AttachToContext and the target is a UIElement,
             // register for the LayoutUpdated event, and run the task list from the
             // event handler.  This avoids flashing, at the expense of lots more
-            // events and handlers (bug 1019232)
+            // events and handlers (
             if (op == TaskOps.AttachToContext &&
                 _layoutElement == null &&
                 (_layoutElement = c.TargetElement as UIElement) != null)
@@ -297,9 +297,9 @@ namespace MS.Internal.Data
 
                     // fetch the next task _after_ the current task has
                     // run (in case the current task causes new tasks to be
-                    // added to the list, as in bug 1938866), but _before_
-                    // moving the current task to the retry list (which overwrites
-                    // the Next pointer)
+                    // added to the list, as in 
+
+
                     nextTask = task.Next;
 
                     if (task.status == Task.Status.Retry && !lastChance)

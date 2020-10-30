@@ -61,14 +61,10 @@ extern ExtendedProtectionPolicy g_eExtendedProtectionLevel;
 
 #define SHA1HASHLENGTH 20	//sha1 hash length in bytes of binary representation.
 
-extern char gszComputerName[];
+extern WCHAR gwszComputerName[];
 
-#ifdef SNI_BASED_CLIENT
-extern PSecurityFunctionTableA g_pFuncs;
-#else
 extern PSecurityFunctionTable g_pFuncs;
 extern PCCERT_CONTEXT GetFallBackCertContext();
-#endif
 
 DWORD Ssl::s_cbMaxToken = 0;
 
@@ -1423,8 +1419,8 @@ DWORD CryptoBase::ReadSync(__deref_inout SNI_Packet ** ppNewPacket, __in int tim
 
 	a_cs.Enter();
 
-	// If the caller (SNI Consumer or SNI internals, though SNI internally currently never does this) is using both [....] and Async IO
-	// on the same connection, it must drain all pending Async IO before it can initiate any [....] IO of the same type.
+	// If the caller (SNI Consumer or SNI internals, though SNI internally currently never does this) is using both Sync and Async IO
+	// on the same connection, it must drain all pending Async IO before it can initiate any Sync IO of the same type.
 	Assert(m_ReadPacketQueue.IsEmpty());
 	
 	Assert( !m_fClosed );
@@ -1793,7 +1789,7 @@ DWORD CryptoBase::WriteDone(__deref_inout SNI_Packet ** ppPacket, __in DWORD dwB
 					dwRet = HandshakeWriteToken( pPacket );
 				}
 			}
- 		
+		
 			if( dwRet == ERROR_IO_PENDING )
 			{
 				dwRet = ERROR_SUCCESS;
@@ -2249,11 +2245,10 @@ DWORD Sign::VerifySignature( BYTE *pBuf, DWORD cBuf )
 	return dwRet;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
-//Bytes2TextA
+//Bytes2Text
 //
-//This function converts byte array into ASCII char form.
+//This function converts byte array into Unicode char form.
 //
 //	Inputs:
 //		[in] const BYTE* pBytes
@@ -2261,37 +2256,38 @@ DWORD Sign::VerifySignature( BYTE *pBuf, DWORD cBuf )
 //		[in] DWORD cbBytes
 //			The byte array size in byte.
 //		[out]  char* pText
-//			The converted ascii text, not null-terminated. Caller should provide enough buffer and null terminate
+//			The converted unicode text, not null-terminated. Caller should provide enough buffer and null terminate
 //		the text when needed.
 //		[in, out] DWORD* pcbText
 //			Caller use pcbText to specify the buffer size of pText, this function will update the pcbText indicating
 //		number of chars filled by conversion.
 //   Note: this function only convert up pBytes to min(cbBytes, pcbText/2).
 //
-const char	HexChars[] = "0123456789ABCDEF";
-DWORD Bytes2TextA(__in_bcount(cbBytes) const BYTE* pBytes, __in DWORD cbBytes, __out_bcount_part(*pcbText, *pcbText) char* pchText, __inout DWORD* pcbText)
+const WCHAR	HexChars[] = L"0123456789ABCDEF";
+DWORD Bytes2Text(__in_bcount(cbBytes) const BYTE* pBytes, __in DWORD cbBytes, __out_bcount_part(*pcbText, *pcbText) WCHAR* pwchText, __inout DWORD* pcchText)
 {
 	BidxScopeAutoSNI4( SNIAPI_TAG _T("pBytes{BYTE*}: %p,")
 								 _T("cbBytes: %d,")
- 								 _T("pchText{char*}: %p,")
-								 _T("*pcbText: %d\n"),
+ 								 _T("pwchText{WCHAR*}: %p,")
+								 _T("*pcchText: %d\n"),
 								 pBytes,
 								 cbBytes,
-								 pchText,
-								 *pcbText);
+								 pwchText,
+								 *pcchText);
 	DWORD byteindex;
 
-	for( byteindex = 0; byteindex < cbBytes && byteindex < *pcbText/2; byteindex++ )
+	for( byteindex = 0; byteindex < cbBytes && byteindex < *pcchText/2; byteindex++ )
 	{
-		pchText[2*byteindex] =  HexChars[pBytes[byteindex]>>4 & 0xF];
-		pchText[2*byteindex+1] =  HexChars[pBytes[byteindex] & 0xF];		
+		pwchText[2*byteindex] =  HexChars[pBytes[byteindex]>>4 & 0xF];
+		pwchText[2*byteindex+1] =  HexChars[pBytes[byteindex] & 0xF];		
 	}
 
-	*pcbText = byteindex*2;
+	*pcchText = byteindex*2;
 
 	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_SUCCESS);
 	return ERROR_SUCCESS;
 }
+
 
 Ssl::~Ssl()
 {
@@ -2433,7 +2429,7 @@ DWORD Ssl::AcquireCredentialsForClient( PCredHandle pHandle )
 	// Initialize SchannelCred
 	memset(&SchannelCred, 0, sizeof(SchannelCred));
 	SchannelCred.dwVersion = SCHANNEL_CRED_VERSION;
-	SchannelCred.grbitEnabledProtocols = SP_PROT_SSL3TLS1;
+	SchannelCred.grbitEnabledProtocols = SP_PROT_SSL3TLS1_X;
 	SchannelCred.dwFlags |= SCH_CRED_NO_DEFAULT_CREDS;
 	//	If we need to validate the server certificate, then we'd rather 
 	//	let schannel validate it for us. However the schannel flag to 
@@ -2486,7 +2482,7 @@ DWORD Ssl::AcquireCredentialsForServer(PCCERT_CONTEXT pCertContext)
 	SchannelCred.dwVersion = SCHANNEL_CRED_VERSION;
 	SchannelCred.cCreds = 1;
 	SchannelCred.paCred = &pCertContext;
-	SchannelCred.grbitEnabledProtocols = SP_PROT_SSL3TLS1;
+	SchannelCred.grbitEnabledProtocols = SP_PROT_SSL3TLS1_X;
 
 	TimeStamp       tsExpiry;
 
@@ -2595,14 +2591,13 @@ DWORD Ssl::Decrypt( __inout SNI_Packet *pPacket, __deref_out SNI_Packet **ppLeft
 			// this can happen if a malicious user encrypts a bad packet with tls
 			// Notes:
 			// 1. This assumes that there are no providers with non-zero
-			//    headers or trailers below SSL.  
+			//    headers or trailers below SSL.
 			// 2. This effectively compares Buffers[1].cbBuffer vs. 
-			//    ConsBufferSize + ProvBufferSize - s_cbHeaderLength - s_cbTrailerLength, 
-			//    which is the maximum payload size of the SSL provider (assuming 1.) 
-			//    because ProvBufferSize was incremented by s_cb..., and not m_cb... .  
-			//
+			//    ConsBufferSize + ProvBufferSize - 2*(m_cbHeaderLength + m_cbTrailerLength), 
+			//    which is the maximum payload size of the SSL provider (assuming condition 1).
+			//    See Ssl::GetSSLProvInfo for additional details.
 			
-			if( (s_cbHeaderLength + Buffers[1].cbBuffer + s_cbTrailerLength ) > 
+			if( (2 * (m_cbHeaderLength + m_cbTrailerLength) + Buffers[1].cbBuffer) > 
 				( m_pConn->m_ConnInfo.ConsBufferSize + m_pConn->m_ConnInfo.ProvBufferSize ) )
 			{
 				scRet = ERROR_INVALID_DATA;
@@ -2664,7 +2659,7 @@ DWORD Ssl::Encrypt( __inout SNI_Packet *pPacket )
 	SecBuffer       		Buffers[4];
 	SECURITY_STATUS 	scRet;
 	SecBufferDesc   		Message;
-    
+	
 	BYTE    *	pBuf;
 	DWORD 	cBuf;
 
@@ -2991,27 +2986,20 @@ Retry:
 
 			goto ErrorExit;
 		}
-
-		// Since we initialize m_cbheaderLength to 5 and StreamSizes.cbTrailer to 28, that is 
-		// max length we expected. Otherwise, complain and fail.
-		// SBT: 346912
-		
-
-		if ( StreamSizes.cbHeader >  m_cbHeaderLength || StreamSizes.cbTrailer > m_cbTrailerLength )
-		{			
-				dwRet = SEC_E_INVALID_TOKEN;		
-				BidTrace2( ERROR_TAG _T("Unrecognized ssl/tls stream header length or trailer length cbHeader:%d , cbTrailer:%d\n"), 
-										StreamSizes.cbHeader, StreamSizes.cbTrailer);
-				SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, dwRet );
-				goto ErrorExit;	
-		}
 		
 		m_cbHeaderLength = StreamSizes.cbHeader;		
-
 		m_cbTrailerLength = StreamSizes.cbTrailer;
-
 		m_cbMaximumMessage = StreamSizes.cbMaximumMessage;
+		
+		dwRet = AdjustProtocolFields();
 
+		if (ERROR_SUCCESS != dwRet)
+		{
+			m_State = SSL_ERROR;
+			
+			// AdjustProtocolFields sets state and sni last error if needed.
+			goto ErrorExit;
+		}
 	}
 	else if( dwRet == SEC_I_CONTINUE_NEEDED )
 	{
@@ -3419,7 +3407,7 @@ DWORD Ssl::HandshakeWriteToken( __inout_opt SNI_Packet *pPacket )
 
 	if( pPacket )
 	{
-		SNIPacketReset( m_pConn, SNI_Packet_Read, pPacket, SNI_Consumer_SNI);
+		SNIPacketReset( m_pConn, SNI_Packet_Write, pPacket, SNI_Consumer_SNI);
 	}
 	else
 	{
@@ -3437,7 +3425,7 @@ DWORD Ssl::HandshakeWriteToken( __inout_opt SNI_Packet *pPacket )
 		}
 
 		//this sets m_OffSet to 0
-		SNIPacketReset( m_pConn, SNI_Packet_Read, pPacket, SNI_Consumer_SNI);
+		SNIPacketReset( m_pConn, SNI_Packet_Write, pPacket, SNI_Consumer_SNI);
 	}
 
 	Assert( SNIPacketGetBufActualSize(pPacket) >= 4088 );
@@ -3502,7 +3490,7 @@ DWORD Ssl::HandshakeWriteToken( __inout_opt SNI_Packet *pPacket )
 			goto ExitFunc;
 		}
 
-		SNIPacketReset( m_pConn, SNI_Packet_Read, pPacket, SNI_Consumer_SNI);
+		SNIPacketReset( m_pConn, SNI_Packet_Write, pPacket, SNI_Consumer_SNI);
 	}
 
 	if( !m_cWriteBuffer )
@@ -3514,6 +3502,16 @@ DWORD Ssl::HandshakeWriteToken( __inout_opt SNI_Packet *pPacket )
 	if( m_State==SSL_LAST)
 	{
 		FreeReadWriteBuffers();
+		
+		dwRet = AdjustProtocolFields();
+		
+		if (ERROR_SUCCESS != dwRet)
+        {
+            m_State = SSL_ERROR;
+
+            goto ExitFunc;
+        }
+		
 		m_State = SSL_DONE;
 	}
 	
@@ -3534,11 +3532,14 @@ DWORD Ssl::Initialize( PSNI_PROVIDER_INFO pInfo )
 	BidxScopeAutoSNI1( SNIAPI_TAG _T("pInfo: %p{PSNI_PROVIDER_INFO}\n"), pInfo );
 	
 	pInfo->ProvNum = SSL_PROV;
-	pInfo->Offset = s_cbHeaderLength;
 	pInfo->fBaseProv = FALSE;
-	pInfo->Size = s_cbHeaderLength+s_cbTrailerLength;	
 	pInfo->fInitialized = TRUE; 
 
+	// Ssl Provider uses dynamic buffer adjustment.
+	// Offset is set after handshake is complete.
+	pInfo->Offset = 0;
+	pInfo->Size = 0;
+	
 	Assert( SEC_E_OK == ERROR_SUCCESS );
 
 	SecInvalidateHandle(&s_hClientCred);
@@ -3641,13 +3642,13 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 							  _T("pListenHandle: %p{HANDLE*}\n"), 
 					hSNIListener, pInfo, pListenHandle);
 
-	LPSTR szFQDN = NULL;
+	LPWSTR wszFQDN = NULL;
 	DWORD cszFQDN = 0;
 	
-	//For prefix bug 302960:
-	//Even though we have already commented out the code that generate the warning,
-	//Initialize it to ERROR_INVALID_STATE would indicate there are improper execution
-	//of this function.
+	//For prefix 
+
+
+
 	DWORD dwRet = ERROR_INVALID_STATE;
 	
 	*pListenHandle = 0;
@@ -3681,30 +3682,30 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 
 	CRYPT_HASH_BLOB pShaBlob;
 	void * pvFindPara;
-	char szShaHashText[SHA1HASHLENGTH*2+1];
-	szShaHashText[0]='\0'; //null teminating string.
+	WCHAR wszShaHashText[SHA1HASHLENGTH*2+1];
+	wszShaHashText[0]=L'\0'; //null teminating string.
 
 // SNIX needs to work on Win9x - which does not support GetComputerNameEx
 // There we just use the NetBIOS name - this shouldnt cause too much concern, 
 // since this is a server side call
 #ifdef SNIX	
-		szFQDN = (LPSTR) gszComputerName;
+		wszFQDN = (LPWSTR) gwszComputerName;
 #else	
-		// Because of a bug in Win2k, the call below fails to return the correct size of the 
-		// FQDN string. cszFQDN is 0 on Win2k.
-		/// To get around that, I'm allocating a large value on the stack and commenting out the 
-		// failing code (hopefully, when Win2k comes out with a fix, we can uncomment it)
+		// Because of a 
+
+
+
 		/*
-		if( GetComputerNameEx( ComputerNameDnsFullyQualified, szFQDN, &cszFQDN ) || 
+		if( GetComputerNameEx( ComputerNameDnsFullyQualified, wszFQDN, &cszFQDN ) || 
 			(ERROR_MORE_DATA != (dwRet = GetLastError())) )
 		{
 			SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, dwRet );
 			goto ErrorExit;
 		}
 
-		szFQDN = (LPSTR) NewNoX(gpmo) BYTE [cszFQDN] ;
+		wszFQDN = (LPSTR) NewNoX(gpmo) BYTE [cszFQDN] ;
 
-		if( !szFQDN )
+		if( !wszFQDN )
 		{
 			dwRet = ERROR_OUTOFMEMORY;
 			SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, dwRet );
@@ -3712,13 +3713,13 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 		}
 		*/
 
-		char szFQDNBuf[1024];
-		szFQDNBuf[1023] = '\0';
+		WCHAR wszFQDNBuf[1024];
+		wszFQDNBuf[1023] = L'\0';
 
-		szFQDN = szFQDNBuf;
+		wszFQDN = wszFQDNBuf;
 		cszFQDN = 1023;
 		
-		if( !GetComputerNameEx( ComputerNameDnsFullyQualified, szFQDN, &cszFQDN ) )
+		if( !GetComputerNameEx( ComputerNameDnsFullyQualified, wszFQDN, &cszFQDN ) )
 		{
 			dwRet = GetLastError();
 			SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, dwRet );
@@ -3737,7 +3738,7 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 	// Otherwise, look for a cert. with the machine name in it
 	else
 	{
-		pvFindPara = (LPSTR) szFQDN;
+		pvFindPara = (LPWSTR) wszFQDN;
 	}
 	
 	HCERTSTORE hCertStore;
@@ -3762,9 +3763,9 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 			
 			s_fSslServerReady = TRUE;
 
-			(void)GetCertShaHashInText(s_hCertContext, szShaHashText, sizeof(szShaHashText));			
+			(void)GetCertShaHashInText(s_hCertContext, wszShaHashText, ARRAYSIZE(wszShaHashText));			
 
-			scierrlog(26013, szShaHashText );
+			scierrlog(26013, wszShaHashText );
 
 			dwRet = ERROR_SUCCESS;
 
@@ -3789,7 +3790,7 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 
 	// Check in the "current user" cert store for a viable cert.
 	if( hCertStore = CertOpenSystemStoreA(0, "MY"))
-   	{
+	{
 		dwRet = FindAndLoadCertificate( hCertStore, pInfo->fHash, pvFindPara, &s_hCertContext);
 
 		if( ERROR_SUCCESS == dwRet )
@@ -3802,9 +3803,9 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 
 			s_fSslServerReady = TRUE;
 
-			(void)GetCertShaHashInText(s_hCertContext, szShaHashText, sizeof(szShaHashText));
+			(void)GetCertShaHashInText(s_hCertContext, wszShaHashText, ARRAYSIZE(wszShaHashText));
 
-			scierrlog(26013, szShaHashText );
+			scierrlog(26013, wszShaHashText );
 
 			dwRet = ERROR_SUCCESS;
 
@@ -3812,7 +3813,7 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 		}
 
 		CertCloseStore( hCertStore, 0);
-   	}
+	}
 	else
 	{
 		// Failed to open the cert store.
@@ -3887,11 +3888,11 @@ DWORD Ssl::InitializeListener( __in HANDLE   hSNIListener,
 	{
 		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_SYSTEM, dwRet );
 		
-		DWORD cbText = sizeof(szShaHashText)-1;
-		(void)Bytes2TextA(pInfo->szHash, sizeof(pInfo->szHash), szShaHashText, &cbText );
-		szShaHashText[cbText]='\0';
+		DWORD cchText = ARRAYSIZE(wszShaHashText)-1;
+		(void)Bytes2Text(pInfo->szHash, sizeof(pInfo->szHash), wszShaHashText, &cchText );
+		wszShaHashText[cchText]=L'\0';
 		
-		scierrlog( 26014, szShaHashText);
+		scierrlog( 26014, wszShaHashText);
 	}
 	else if( pInfo->fForceEncryption )
 	{
@@ -3920,8 +3921,8 @@ ErrorExit:
 #ifndef SNIX
 	// Commenting out - see note above
 	/*
-	if( szFQDN )
-		delete [] szFQDN;
+	if( wszFQDN )
+		delete [] wszFQDN;
 	*/
 #endif
 
@@ -4131,7 +4132,7 @@ DWORD Ssl::GetCertShaHash(PCCERT_CONTEXT   pCertContext, BYTE* pbShaHash, DWORD*
 	return dwError;
 }
 
-DWORD Ssl::GetCertShaHashInText(PCCERT_CONTEXT   pCertContext, char* pszShaHashText, DWORD cbSize)
+DWORD Ssl::GetCertShaHashInText(PCCERT_CONTEXT   pCertContext, WCHAR* pwszShaHashText, DWORD cchSize)
 {
 	DWORD dwError = ERROR_SUCCESS;
 	BYTE rgbShaHash[SHA1HASHLENGTH];
@@ -4139,20 +4140,20 @@ DWORD Ssl::GetCertShaHashInText(PCCERT_CONTEXT   pCertContext, char* pszShaHashT
 
 
 	BidxScopeAutoSNI3( SNIAPI_TAG _T("pCertContext: %p{PCCERT_CONTEXT},")
-								 _T("pszShaHashText: %p{char*},")
-								 _T("cbSize: %d\n"),
+								 _T("pwszShaHashText: %p{WCHAR*},")
+								 _T("cchSize: %d\n"),
 								 pCertContext,
-								 pszShaHashText,
-								 cbSize);
+								 pwszShaHashText,
+								 cchSize);
 	
 	Assert( NULL != pCertContext );
-	Assert( NULL != pszShaHashText );
+	Assert( NULL != pwszShaHashText );
 
 	//Initialize buffer to empty string.
 	//
-	pszShaHashText[0] = '\0';
+	pwszShaHashText[0] = L'\0';
 
-	if( SHA1HASHLENGTH*2 >= cbSize )
+	if( SHA1HASHLENGTH*2 >= cchSize )
 	{
 		dwError =  ERROR_INVALID_PARAMETER;
 		goto Exit;
@@ -4172,17 +4173,17 @@ DWORD Ssl::GetCertShaHashInText(PCCERT_CONTEXT   pCertContext, char* pszShaHashT
 	//Convert Byte Array into ascii characters
 	//
 
-	DWORD cbText = cbSize-1;
-	dwError = Bytes2TextA(rgbShaHash, cbShaHash, pszShaHashText, &cbText);
+	DWORD cchText = cchSize-1;
+	dwError = Bytes2Text(rgbShaHash, cbShaHash, pwszShaHashText, &cchText);
 
 	if( ERROR_SUCCESS != dwError )
 	{	
 		goto Exit;
 	}
 
-	Assert(SHA1HASHLENGTH*2 == cbText);
+	Assert(SHA1HASHLENGTH*2 == cchText);
 	
-	pszShaHashText[cbText] = '\0';
+	pwszShaHashText[cchText] = L'\0';
 
 Exit:
 
@@ -4465,7 +4466,7 @@ DWORD Ssl::LoadSecurityLibrary()
 
 	INIT_SECURITY_INTERFACE pfInitSecurityInterface;
 	
-	pfInitSecurityInterface = (INIT_SECURITY_INTERFACE)GetProcAddress( s_hSecurity, SECURITY_ENTRYPOINT );
+	pfInitSecurityInterface = (INIT_SECURITY_INTERFACE)GetProcAddress( s_hSecurity, "InitSecurityInterfaceW" );
 
 	if( pfInitSecurityInterface == NULL )
 	{
@@ -4522,7 +4523,7 @@ void Ssl::ReleaseChannelBindings(void *pvChannelBindings)
 {
 	BidxScopeAutoSNI1( SNIAPI_TAG _T("pvChannelBindings: %p{void *}\n"), pvChannelBindings );
 	
-	Assert( NULL != pvChannelBindings ); // internal-only API, and this indicates an internal coding bug
+	Assert( NULL != pvChannelBindings ); // internal-only API, and this indicates an internal coding 
 	Assert( s_fChannelBindingsSupported ); // otherwise, we should never get here.
 
 	SecPkgContext_Bindings *pChannelBindings = (SecPkgContext_Bindings *)pvChannelBindings;
@@ -4564,9 +4565,9 @@ DWORD Ssl::SetChannelBindings()
 #endif
 	
 	// API contract: SNI consumer cannot request another SSL handshake on an SNI_Conn which has already established an SSL context (which, other
-	// than a coding bug within SNI, is the way to fire this assert).
-	// If a previously-established SSL context has since been removed from the SNI_Conn, then the SNI_Conn should have itself released and 
-	// NULLed its Channel Bindings pointer already; if not, it would be a coding bug.	
+	// than a coding 
+
+
 	Assert( NULL == m_pConn->m_pvChannelBindings );
 	
 	if( !s_fChannelBindingsSupported )
@@ -4647,8 +4648,8 @@ Ssl::Ssl(SNI_Conn * pConn):CryptoBase( pConn )
 
 	m_State = SSL_INIT;
 	
-	m_cbHeaderLength = s_cbHeaderLength;
-	m_cbTrailerLength = s_cbTrailerLength;
+	m_cbHeaderLength = 0;
+	m_cbTrailerLength = 0;
 
 	m_pWriteBuffer = 0;
 	m_iWriteOffset = 0;
@@ -4668,6 +4669,8 @@ Ssl::Ssl(SNI_Conn * pConn):CryptoBase( pConn )
 
 	m_cbMaximumMessage = 0;
 
+	m_fConnBufSizeIncremented = false;
+	
 	BidObtainItemID2A( &m_iBidId, SNI_ID_TAG "%p{.} created by %u#{SNI_Conn}", 
 		this, pConn->GetBidId() );
 }
@@ -4897,33 +4900,14 @@ DWORD Ssl::Validate(WCHAR * wszSvr)
 	
 	PCCERT_CONTEXT pServerCert = NULL;
 	SECURITY_STATUS scRet;
-	char szServerName[MAX_NAME_SIZE+1];
 	HTTPSPolicyCallbackData  polHttps;
 	CERT_CHAIN_POLICY_PARA   PolicyPara;
 	CERT_CHAIN_POLICY_STATUS PolicyStatus;
 	CERT_CHAIN_PARA          ChainPara;
 	PCCERT_CHAIN_CONTEXT     pChainContext = NULL;
-	LPWSTR                    wszServerName = NULL;
-	DWORD                    cszServerName;
-	LPWSTR                    wszSubjectName = NULL;
-
-	if( 0 == WideCharToMultiByte(
-					CP_ACP,
-					0,
-					wszSvr,
-					-1,
-					szServerName,
-					sizeof(szServerName),
-					NULL,
-					NULL
-					))
-	{
-		scRet = GetLastError();
-
-		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, scRet );
-
-		goto Exit;
-	}
+	WCHAR                    wszServerName[NI_MAXHOST +1];
+	DWORD                    cwszServerName = 0;
+	WCHAR*                    wszSubjectName = NULL;
 
 	// Authenticate server's credentials.
 	// Get server's certificate.
@@ -4940,41 +4924,35 @@ DWORD Ssl::Validate(WCHAR * wszSvr)
 
 	Assert( pServerCert );
 
-	char AddrName[ NI_MAXHOST ];
-
-	scRet = Tcp::GetDnsName( szServerName, AddrName, sizeof( AddrName ));
+	scRet = Tcp::GetDnsName( wszSvr, wszServerName, ARRAYSIZE( wszServerName ));
 
 	if( ERROR_SUCCESS != scRet )
 	{
 		goto Exit;
 	}
 
-	int cbMultiByte;
-
-	cbMultiByte = (int) strlen( AddrName ) + 1;
-
+	cwszServerName = wcslen(wszServerName) + 1;
+	Assert(cwszServerName < ARRAYSIZE(wszServerName));
 
 OACR_WARNING_PUSH
 OACR_WARNING_DISABLE(SYSTEM_LOCALE_MISUSE , " INTERNATIONALIZATION BASELINE AT KATMAI RTM. FUTURE ANALYSIS INTENDED. ")
-	DWORD cch = LCMapStringA(LOCALE_SYSTEM_DEFAULT,
+	DWORD cch = LCMapStringEx(LOCALE_NAME_SYSTEM_DEFAULT,
 							LCMAP_UPPERCASE,
-							AddrName,
-							cbMultiByte,
-							AddrName,
-							cbMultiByte
-							);
+							wszServerName,
+							cwszServerName,
+							wszServerName,
+							ARRAYSIZE(wszServerName),
+							NULL, NULL, NULL);
 OACR_WARNING_POP
-	Assert(cch == cbMultiByte);
-	if( 0 >= cch || cch != cbMultiByte)
+	Assert(cch == cwszServerName);
+	if( 0 >= cch || cch != cwszServerName)
 	{
 		scRet = GetLastError();
 		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, scRet );
 		goto Exit;
 	}		
 	
-	// Convert Dns name to unicode
-	cszServerName = MultiByteToWideChar(CP_ACP, 0, AddrName, cbMultiByte, NULL, 0);
-	if(cszServerName == 0)
+	if(cwszServerName == 0)
 	{
 		scRet = GetLastError();
 
@@ -4983,27 +4961,7 @@ OACR_WARNING_POP
 		goto Exit;
 	}
 
-	wszServerName = NewNoX(gpmo) WCHAR[cszServerName];
-	if(wszServerName == NULL)
-	{
-		scRet = ERROR_OUTOFMEMORY;
-
-		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_4, scRet );
-		
-		goto Exit;
-	}
-
-	cszServerName = MultiByteToWideChar(CP_ACP, 0, AddrName, cbMultiByte, wszServerName, cszServerName);
-	if(cszServerName == 0)
-	{
-		scRet = GetLastError();
-
-		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, scRet );
-
-		goto Exit;
-	}
-
-	wszServerName[cszServerName - 1] = 0;	
+	wszServerName[cwszServerName - 1] = L'\0';	
 
 
 	// Get the dns name of the server machine from the subject field
@@ -5012,11 +4970,11 @@ OACR_WARNING_POP
 	DWORD cwszSubjectName = 0;
 
 	if( 1 == (cwszSubjectName = CertGetNameStringW( pServerCert,
-                                 CERT_NAME_ATTR_TYPE,
-                                  0,
-                                  szOID_COMMON_NAME,
-                                  NULL,
-                                  0)) )
+								 CERT_NAME_ATTR_TYPE,
+								  0,
+								  szOID_COMMON_NAME,
+								  NULL,
+								  0)) )
 	{
 		scRet = SEC_E_INTERNAL_ERROR;
 		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, scRet );
@@ -5033,11 +4991,11 @@ OACR_WARNING_POP
 	}
 	
 	if( cwszSubjectName != CertGetNameStringW( pServerCert,
-                                 CERT_NAME_ATTR_TYPE,
-                                 0,
-                                 szOID_COMMON_NAME,
-                                  wszSubjectName,
-                                  cwszSubjectName) )
+								 CERT_NAME_ATTR_TYPE,
+								 0,
+								 szOID_COMMON_NAME,
+								  wszSubjectName,
+								  cwszSubjectName) )
 	{
 		scRet = SEC_E_INTERNAL_ERROR;
 		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, scRet );
@@ -5077,7 +5035,7 @@ OACR_WARNING_POP
 		}		
 	}
 
-	wszSubjectName[cwszSubjectName-1] = 0;
+	wszSubjectName[cwszSubjectName-1] = L'\0';
 
 	//	Verify that the servername matches the entire FQDN in the cert subject 
 	//	or at least the servername portion of the  FQDN.
@@ -5086,7 +5044,7 @@ OACR_WARNING_POP
 	//
 	//	Server name should never be bigger than the FQDN in cert subject
 	//
-	if (cszServerName > cwszSubjectName)
+	if (cwszServerName > cwszSubjectName)
 	{
 		scRet = CERT_E_CN_NO_MATCH;
 		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, scRet );
@@ -5101,9 +5059,9 @@ OACR_WARNING_POP
 	//	in the comparison, or our comparison will fail if the server name is
 	//	not the FQDN and hence smaller than the cert subject
 	//
-	Assert (0 == wszSubjectName[cwszSubjectName-1] );
-	Assert (0 == wszServerName[cszServerName - 1] );
-	if (0 != wcsncmp (wszSubjectName, wszServerName, cszServerName-1))
+	Assert (L'\0' == wszSubjectName[cwszSubjectName-1] );
+	Assert (L'\0' == wszServerName[cwszServerName - 1] );
+	if (0 != wcsncmp (wszSubjectName, wszServerName, cwszServerName-1))
 	{
 		scRet = CERT_E_CN_NO_MATCH;
 		SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, scRet );
@@ -5117,10 +5075,10 @@ OACR_WARNING_POP
 	//	character following the server name is a '.'. This will avoid
 	//	having server name ab match abc.corp.company.com
 	//
-	if (cszServerName != cwszSubjectName)
+	if (cwszServerName != cwszSubjectName)
 	{
-		Assert (cszServerName < cwszSubjectName);
-		if (L'.' != wszSubjectName[cszServerName-1])
+		Assert (cwszServerName < cwszSubjectName);
+		if (L'.' != wszSubjectName[cwszServerName-1])
 		{
 			scRet = CERT_E_CN_NO_MATCH;
 			SNI_SET_LAST_ERROR( SSL_PROV, SNIE_10, scRet );
@@ -5207,9 +5165,6 @@ Exit:
 	if( wszSubjectName )
 		delete [] wszSubjectName;
 	
-	if( wszServerName )
-		delete [] wszServerName;
-	
 	if( pChainContext )
 		CertFreeCertificateChain(pChainContext);
 
@@ -5219,4 +5174,264 @@ Exit:
 	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), scRet);
 
 	return scRet;
+}
+
+//---------------------------------------------------------------------
+// NAME: Ssl::AdjustProtocolFields
+//
+// PURPOSE:
+//		Based on the cryptomode, increments the provider sizes in the connection
+//
+// PARAMETERS:
+//
+// RETURNS:
+//		Error code, e.g. OOM
+//
+// NOTES:
+//	If any leftover packets are present, copies them to have the correct packets in place.
+//
+DWORD Ssl::AdjustProtocolFields()
+{
+	BidxScopeAutoSNI1( SNIAPI_TAG _T("%u#\n"), GetBidId() );
+
+	DWORD dwError = ERROR_SUCCESS;
+
+	IncConnBufSize();
+
+	// If leftover is present we need to copy it into a larger packet
+	if (m_pLeftOver)
+	{
+		SNI_Packet* pTemp = NULL;
+
+		dwError = CopyPacket(m_pLeftOver, &pTemp, SNIPacketGetKey(m_pLeftOver), SNI_Packet_Read);
+
+		// Success or failure, we always release the left over and null the member variable
+		SNIPacketRelease(m_pLeftOver);
+		m_pLeftOver = NULL;
+
+		if (ERROR_SUCCESS != dwError)
+		{
+			Assert(NULL == pTemp);
+			SNI_SET_LAST_ERROR( m_Prot, SNIE_4, dwError );
+			goto ErrorExit;
+		}
+
+		m_pLeftOver = pTemp;
+	}
+
+ErrorExit:
+	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), dwError);
+
+	return dwError;
+}
+
+//---------------------------------------------------------------------
+// NAME: Ssl::CopyPacket
+//
+// PURPOSE:
+//		Copies a packet into a newly allocated one to accomodate new provider sizes and offset
+//
+// PARAMETERS:
+//	pOldPacket	-	Pointer to the original packet. 
+//	ppNewPacket	-	Pointer to pointer to return the new packet
+//	pPacketKey	-	Packet key
+//	ioType		-	IO type for the new packet allocation
+//
+// RETURNS:
+//		Success, invalid data or OOM
+//
+// NOTES:
+// 	It's a responsibility of the caller to release pOldPacket and NULL its pointers.
+DWORD Ssl::CopyPacket( __inout SNI_Packet * pOldPacket, 
+								__deref_out SNI_Packet ** ppNewPacket, 
+								__in_opt LPVOID pPacketKey,
+								SNI_Packet_IOType ioType)
+{
+	DWORD dwRet = ERROR_SUCCESS;
+	BYTE * pbLeftOver = NULL; 
+	DWORD cbLeftOver = 0; 
+	
+	*ppNewPacket = NULL; 
+
+	// The packet sizes might have changed since the left-over
+	// was stored.  We will allocate a new packet conforming
+	// to the new sizes, and copy the data over.  That way
+	// the buffer size of the returned packet is correct in 
+	// case the upper layer will call PartialReadAsync() on it.  
+	//
+	SNI_Packet * pNewPacket = SNIPacketAllocate( m_pConn, ioType );
+		
+	if( NULL == pNewPacket )
+	{
+		dwRet = ERROR_OUTOFMEMORY;
+		goto ErrorExit;
+	}
+
+	// Get the pointer to the left-over data and its size.  
+	//
+	SNIPacketGetData( pOldPacket, &pbLeftOver, &cbLeftOver ); 
+
+	Assert( NULL != pbLeftOver ); 
+	Assert( cbLeftOver == SNIPacketGetBufferSize( pOldPacket ) ); 
+
+
+	// SQL BU DT 373408 - for Yukon we assume that:
+	//	- There are no providers below SSL that have non-zero headers or 
+	//	  trailers (this guarantees that the check below ensures that
+	//	  the amount of data delivered to consumer is <= the amount
+	//	  requested by the consumer)
+	//	- The SSL provider is used only by the TDS consumer.  
+	//	- If TDS removes the SSL provider it does it immediately after 
+	//	  the first login packet.  
+	//	- If a well-behaving TDS client sends a first login packet smaller 
+	//	  than 4KB then the amount of data it can send before receiving 
+	//	  the login response is not more than the minimum TDS packet size.  
+	//	  Examples are:
+	//		- MDAC/SNAC client tagging an Attention packet to Login 
+	//		  packet.  
+	//		- DB-Lib client sending a 2-packet login (and possibly
+	//		  an additional tagged Attention packet).  
+	//
+	//	  As a result we assume that any plaintext left-over received
+	//	  from a well-behaved client fits into one packet according
+	//	  to the buffer sizes at this point.  
+	//
+	//	  If the amount of data is larger we return an error.  
+	//
+	if( cbLeftOver > SNIPacketGetBufActualSize( pNewPacket ) )
+	{
+		BidTrace2(ERROR_TAG _T("Left-over is too large. ")
+			_T("cbLeftOver: %d{DWORD}, ")
+			_T("Buffer Actual Size: %d{DWORD}\n"),
+			cbLeftOver,
+			SNIPacketGetBufActualSize( pNewPacket ) );
+
+		dwRet = ERROR_INVALID_DATA;
+		goto ErrorExit;
+	}
+
+	// Copy all left-over data.
+	// Note: it is important that read packets are allocated
+	// with 0 offset.  Otherwise, we could overrun the
+	// new packet's buffer. 
+	//
+	SNIPacketSetData( pNewPacket, pbLeftOver, cbLeftOver );
+
+	*ppNewPacket = (SNI_Packet *) pNewPacket;
+
+	SNIPacketSetKey(*ppNewPacket, pPacketKey);
+
+	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), ERROR_SUCCESS);
+
+	return ERROR_SUCCESS; 
+
+
+ErrorExit:
+
+	if( NULL != pNewPacket )
+	{	
+		SNIPacketRelease( pNewPacket ); 
+	}
+
+	SNI_SET_LAST_ERROR( m_Prot, SNIE_4, dwRet );
+
+	BidTraceU1( SNI_BID_TRACE_ON, RETURN_TAG _T("%d{WINERR}\n"), dwRet);
+
+	return dwRet;
+}
+
+//---------------------------------------------------------------------
+// NAME: Ssl::DecConnBufSize
+//
+// PURPOSE:
+//		Used at SNIRemoveProvider to adjust provider sizes in connection's properties
+//
+// PARAMETERS:
+//
+// RETURNS:
+//		Nothing
+//
+// NOTES:
+//
+void Ssl::DecConnBufSize()
+{
+    BidxScopeAutoSNI1( SNIAPI_TAG _T("%u#\n"), GetBidId() );
+
+    if (m_fConnBufSizeIncremented)
+    {
+        SNI_PROVIDER_INFO ProvInfo;
+        GetSSLProvInfo(&ProvInfo);
+        
+        DecrementConnBufSize(m_pConn, &ProvInfo);
+            
+        m_fConnBufSizeIncremented = FALSE;
+    }
+
+    return;
+}
+
+//---------------------------------------------------------------------
+// NAME: Ssl::IncConnBufSize
+//
+// PURPOSE:
+//		Does the actual provider sizes adjustment in the connection's properties
+//
+// PARAMETERS:
+//
+// RETURNS:
+//		Nothing
+//
+// NOTES:
+//
+void Ssl::IncConnBufSize()
+{
+	BidxScopeAutoSNI1( SNIAPI_TAG _T("%u#\n"), GetBidId() );
+
+	if (!m_fConnBufSizeIncremented)
+	{
+		SNI_PROVIDER_INFO ProvInfo;
+		GetSSLProvInfo(&ProvInfo);
+
+		IncrementConnBufSize(m_pConn, &ProvInfo);
+
+		m_fConnBufSizeIncremented = TRUE;
+	}
+
+	return;
+}
+
+//---------------------------------------------------------------------
+// NAME: Ssl::GetSSLProvInfo
+//
+// PURPOSE:
+//		Fills a passed SNI_PROVIDER_INFO struct with the header/trailer length 
+//		information for this Ssl Provider instance.
+//
+// PARAMETERS:
+//		pProvInfo 	Pointer to the struct to be filled - must not be NULL.
+//
+// RETURNS:
+//		Nothing
+//
+// NOTES:
+//
+void Ssl::GetSSLProvInfo(SNI_PROVIDER_INFO *pProvInfo)
+{
+	pProvInfo->ProvNum = m_Prot;
+	pProvInfo->fBaseProv = FALSE;
+	pProvInfo->fInitialized = TRUE;
+
+	// To handle split SSL records, we'll need to allocate a bigger packet buffer to fit the additional header and trailer,
+	// and mark the header. 
+	// 
+	// An interesting note: dealing with split records effectively means dealing with variable-length "headers",
+	// since the trailer is variable-length, and we now have a whole SSL record in the "header", since we want to align
+	// the bytes of the packet at the second record, not the first, since the split is always 0/N or 1/(N-1)
+
+	// Total additional space for a single packet is now *two* headers and *two* trailers
+	pProvInfo->Size = 2 * (m_cbHeaderLength + m_cbTrailerLength);
+	
+	// Header offset may be as high as two full headers and one full trailer, since we'll align the bytes to start
+	// at the second record, minus the length of the user data in the first record (which is either 0 or 1).
+	pProvInfo->Offset = m_cbHeaderLength;
 }

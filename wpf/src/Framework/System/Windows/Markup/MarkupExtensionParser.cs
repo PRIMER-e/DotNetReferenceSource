@@ -1310,6 +1310,15 @@ namespace System.Windows.Markup
                                                         dynamicObject);
 
                     list[k+2] = strValue;
+                    if (data.IsUnknownExtension)
+                    {
+                        // For unknown extensions, no more work should be done.  
+                        // In pass1, we don't yet have the context to make sense of the nested properties, 
+                        // so recursing into them would lead to spurious parse errors (
+
+                        return;
+                    }
+
                     if (nestedAttrData != null)
                     {
                         if (nestedAttrData.IsSimple)
@@ -1326,11 +1335,11 @@ namespace System.Windows.Markup
                         }
                         else
                         {
-                            // Bug: Need to check validity of property by calling GetAttributeContext here?
+                            // 
                             CompileAttribute(xamlNodes, nestedAttrData);
                         }
                     }
-                    else if (!data.IsUnknownExtension)
+                    else
                     {
                         CompileProperty(xamlNodes,
                                         propertyName,

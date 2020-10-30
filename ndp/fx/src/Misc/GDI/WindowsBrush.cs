@@ -8,7 +8,7 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="System.Windows.Forms.Internal.WindowsBrush.FromHdc(System.IntPtr):System.Windows.Forms.Internal.WindowsBrush")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="System.Windows.Forms.Internal.WindowsBrush.FromBrush(System.Drawing.Brush):System.Windows.Forms.Internal.WindowsBrush")]
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -29,7 +29,7 @@ namespace System.Experimental.Gdi
     ///         Encapsulates a GDI Brush object.
     ///     </para>
     /// </devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -133,7 +133,7 @@ namespace System.Experimental.Gdi
             }
         }
 
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
 
         /// <devdoc>
         ///     Derived classes implement this method to get a native GDI brush wrapper with the same
@@ -153,10 +153,10 @@ namespace System.Experimental.Gdi
             }
 
             /* 
-            if(originalBrush is System.Drawing.Drawing2D.TextureBrush) {
-                System.Drawing.Drawing2D.TexttureBrush textureBrush = (System.Drawing.Drawing2D.TexttureBrush) originalBrush;
-                return new WindowsTextureBrush( originalBrush.);
-            }*/
+
+
+
+*/
             Debug.Fail("Don't know how to convert this brush!");
             return null;
         }

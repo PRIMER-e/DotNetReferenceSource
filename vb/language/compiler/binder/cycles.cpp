@@ -236,11 +236,11 @@ void Cycles::CheckCyclesOnNode
                             BCSYM *MemberType = StructMember->PVariable()->GetType()->DigThroughAlias();
                             if ( MemberType && !MemberType->IsBad() && MemberType->IsNamedRoot() && MemberType->PNamedRoot()->GetCompilerFile()->IsMetaDataFile())
                             {
-                                // Bug #223813, #153794, #157083 // We only look at embedded value types - exclude intrinsics
-                                // system.int32, etc. have this interesting property where the struct has an embedded member of itself as the first field.  We don't allow
-                                // that in VB, at least VB shouldn't be able to produce them.  So skip all those and any others that could be built by another language
-                                // with this 'interesting' property - which would be anybody brought in from metadata.  The assumption is that if the thing made it to
-                                // metadata, it must be correct by the rules of whatever language produced it so just consume it...
+                                // 
+
+
+
+
                                 IsFromMetaData = true;
                             }
 

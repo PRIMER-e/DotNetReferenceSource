@@ -298,7 +298,7 @@ namespace System.Windows.Forms {
 
             DataGrid grid = owner;
             if (grid != null) {
-                /* FOR DEMO: [....]: TableStylesCollection::OnCollectionChanged: set the datagridtble
+                /* FOR DEMO: Microsoft: TableStylesCollection::OnCollectionChanged: set the datagridtble
                 DataView dataView = ((DataView) grid.DataSource);
                 if (dataView != null) {
                     DataTable dataTable = dataView.Table;

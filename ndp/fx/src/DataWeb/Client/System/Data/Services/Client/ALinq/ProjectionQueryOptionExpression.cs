@@ -6,7 +6,7 @@
 //      Respresents a projection query option in resource bound expression tree.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

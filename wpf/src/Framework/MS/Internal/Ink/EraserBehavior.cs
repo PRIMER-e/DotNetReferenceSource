@@ -307,7 +307,8 @@ namespace MS.Internal.Ink
                             xf = Matrix.Identity;
                         }
                     }
-                    _cachedPointEraserCursor = PenCursorManager.GetPointEraserCursor(_cachedStylusShape, xf);
+                    DpiScale dpi = this.InkCanvas.GetDpi();
+                    _cachedPointEraserCursor = PenCursorManager.GetPointEraserCursor(_cachedStylusShape, xf, dpi.DpiScaleX, dpi.DpiScaleY);
                 }
 
                 return _cachedPointEraserCursor;

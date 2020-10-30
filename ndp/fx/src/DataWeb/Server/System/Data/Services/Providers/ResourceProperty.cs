@@ -6,7 +6,7 @@
 //      Provides a type to describe properties on resources.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

@@ -9,7 +9,7 @@
 //  07/23/2003 : mleonov - Big rewrite to change cache structure.
 //  03/04/2004 : mleonov - Cache layout and interface changes for font enumeration.
 //  11/04/2005 : mleonov - Refactoring to support font disambiguation.
-//  08/08/2008 : [....] - Integrating with DWrite.
+//  08/08/2008 : Microsoft - Integrating with DWrite.
 //
 //---------------------------------------------------------------------------
 

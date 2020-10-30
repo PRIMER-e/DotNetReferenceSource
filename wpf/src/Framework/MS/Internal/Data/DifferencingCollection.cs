@@ -14,7 +14,7 @@
     to initialize the collection with the items in the enumerable.  When the
     user of the class has reason to believe the enumerable has changed, he
     should call Update.  This re-enumerates the enumerable and brings the
-    collection up to [....], and also raises appropriate collection-change
+    collection up to sync, and also raises appropriate collection-change
     notifications.  A differencing algorithm detects simple changes, such
     as adding/removing a single item, moving a single item, or replacing an
     item, and raises the corresponding Add, Remove, Move or Replace event.

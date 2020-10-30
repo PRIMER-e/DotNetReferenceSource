@@ -206,7 +206,7 @@ namespace System.Windows.Forms {
         public void Show(Control control, Point pos, LeftRightAlignment alignment)  {
 
             // This code below looks wrong but it's correct. 
-            // [....] Left alignment means we want the menu to show up left of the point it is invoked from.
+            // Microsoft Left alignment means we want the menu to show up left of the point it is invoked from.
             // We specify TPM_RIGHTALIGN which tells win32 to align the right side of this 
             // menu with the point (which aligns it Left visually)
             if (alignment == LeftRightAlignment.Left) {

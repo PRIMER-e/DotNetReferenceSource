@@ -7,7 +7,7 @@
 // Description: Debug helpers for TextFlow. 
 //
 // History:  
-//  08/19/2003 : [....] - created.
+//  08/19/2003 : grzegorz - created.
 //
 //---------------------------------------------------------------------------
 using System;

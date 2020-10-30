@@ -180,8 +180,8 @@ namespace System.Management
     public class ManagementBaseObject : Component, ICloneable, ISerializable
     {
         // This field holds onto a WbemContext for the lifetime of the appdomain.  This should
-        // preven Fastprox.dll from unloading prematurely (WMI bugs # 2998 and # 4118 - URT bug # 90889)
-        // 
+        // preven Fastprox.dll from unloading prematurely (WMI bugs # 2998 and # 4118 - URT 
+
 
         private static WbemContext lockOnFastProx = System.Management.Instrumentation.WMICapabilities.IsWindowsXPOrHigher()?null:new WbemContext();
 
@@ -704,8 +704,8 @@ namespace System.Management
                 {
                     //we could wind up here if Initialize() throws (either here or inside CompareTo())
                     //Since we cannot throw from Equals() imprelemtation and it is invalid to assume
-                    //that two objects are different because they fail to initialize (this assumption causes bug 100527)
-                    //so, we can just compare these invalid paths "by value"
+                    //that two objects are different because they fail to initialize (this assumption causes 
+
 
                     if (this is ManagementObject && obj is ManagementObject)
                     {

@@ -355,8 +355,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security threat, see bug#411899 for more info..
-                //
+                // SECREVIEW : Late-binding does not represent a security threat, see 
+
                 dataGridViewColumn = (DataGridViewLinkColumn)System.Activator.CreateInstance(thisType);
             }
             if (dataGridViewColumn != null)

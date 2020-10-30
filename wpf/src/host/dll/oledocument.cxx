@@ -8,11 +8,11 @@
 //  History:
 //     2002/06/12-murrayw
 //          Created
-//     2003/06/30-[....]
+//     2003/06/30-Microsoft
 //          Ported ByteRangeDownloader to WCP
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
-//     2007/12/xx-[....]
+//     2007/12/xx-Microsoft
 //          Introduced the native progress page, which required changing parts of the activation sequence.
 //
 // ------------------------------------------------------------------------

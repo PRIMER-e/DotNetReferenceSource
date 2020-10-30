@@ -6,7 +6,7 @@
 //      Provides a type to parse expressions in request queries.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Parsing
@@ -2167,7 +2167,7 @@ namespace System.Data.Services.Parsing
             /// <returns>The created expression.</returns>
             private Expression CreateLiteral(object value, string text)
             {
-                // DEVNOTE([....]):
+                // DEVNOTE(Microsoft):
                 // The following code rely on Expression.Constant returning UNIQUE instances for every call to it
                 // i.e., Expression.Constant(1) does not reference equals to Expression.Constant(1)
                 ConstantExpression expr = Expression.Constant(value);

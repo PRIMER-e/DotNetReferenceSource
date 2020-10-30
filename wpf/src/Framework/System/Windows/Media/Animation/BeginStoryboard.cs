@@ -121,9 +121,9 @@ public sealed class BeginStoryboard : TriggerAction
         }
     }
     
-    // Bug #1329664 workaround to make beta 2
-    // Remove thread affinity when sealed, but before doing that, snapshot the
-    //  current Storyboard value and remove *its* thread affinity too.
+    // 
+
+
     internal override void Seal()
     {
         if( !IsSealed )

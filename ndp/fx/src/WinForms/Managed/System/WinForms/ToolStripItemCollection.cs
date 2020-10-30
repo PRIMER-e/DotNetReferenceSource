@@ -33,7 +33,7 @@ namespace System.Windows.Forms {
         /// A caching mechanism for key accessor
         /// We use an index here rather than control so that we don't have lifetime
         /// issues by holding on to extra references.
-        /// Note this is not Thread Safe - but [....] has to be run in a STA anyways.
+        /// Note this is not Thread Safe - but Microsoft has to be run in a STA anyways.
         private int lastAccessedIndex = -1;
 
 
@@ -69,7 +69,6 @@ namespace System.Windows.Forms {
         /// <para></para>
         /// </devdoc>
         public new virtual ToolStripItem this[int index] {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return (ToolStripItem)(InnerList[index]);
             }

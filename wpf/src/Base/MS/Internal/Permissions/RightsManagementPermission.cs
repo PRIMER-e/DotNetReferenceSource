@@ -19,7 +19,7 @@
 //                      permission without agreement from this code owners.
 // 
 // History:  
-//  09/12/05 : [....] - Created
+//  09/12/05 : Microsoft - Created
 //---------------------------------------------------------------------------
 
 using System;

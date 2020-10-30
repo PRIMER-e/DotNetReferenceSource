@@ -490,8 +490,8 @@ namespace System.Windows.Forms
             }
             else
             {
-                // SECREVIEW : Late-binding does not represent a security thread, see bug#411899 for more info..
-                //
+                // SECREVIEW : Late-binding does not represent a security thread, see 
+
                 dataGridViewCell = (DataGridViewCheckBoxCell)System.Activator.CreateInstance(thisType);
             }
             base.CloneInternal(dataGridViewCell);
@@ -660,22 +660,22 @@ namespace System.Windows.Forms
                     {
                         value = CheckState.Indeterminate;
                     }
-                    /* Commenting out because of bug VSWhidbey 300778
-                    else if (this.DataGridView != null && 
-                             this.FormattedValueType != null &&
-                             !(value is System.DBNull) &&
-                             !this.FormattedValueType.IsAssignableFrom(value.GetType()))
-                    {
-                        DataGridViewDataErrorEventArgs dgvdee = new DataGridViewDataErrorEventArgs(
-                            new FormatException(SR.GetString(SR.DataGridViewCheckBoxCell_InvalidValueType)), this.ColumnIndex,
-                            rowIndex, context);
-                        RaiseDataError(dgvdee);
-                        if (dgvdee.ThrowException)
-                        {
-                            throw dgvdee.Exception;
-                        }
-                    }
-                    */
+                    /* Commenting out because of 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
                 }
                 else
                 {
@@ -689,22 +689,22 @@ namespace System.Windows.Forms
                     {
                         value = false;
                     }
-                    /* Commenting out because of bug VSWhidbey 300778
-                    else if (this.DataGridView != null && 
-                             this.FormattedValueType != null &&
-                             !(value is System.DBNull) &&
-                             !this.FormattedValueType.IsAssignableFrom(value.GetType()))
-                    {
-                        DataGridViewDataErrorEventArgs dgvdee = new DataGridViewDataErrorEventArgs(
-                            new FormatException(SR.GetString(SR.DataGridViewCheckBoxCell_InvalidValueType)), this.ColumnIndex,
-                            rowIndex, context);
-                        RaiseDataError(dgvdee);
-                        if (dgvdee.ThrowException)
-                        {
-                            throw dgvdee.Exception;
-                        }
-                    }
-                    */
+                    /* Commenting out because of 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
                 }
             }
 
@@ -851,12 +851,12 @@ namespace System.Windows.Forms
                 if (freeDimension != DataGridViewFreeDimension.Height)
                 {
                     preferredSize.Width = Math.Max(preferredSize.Width,
-                                                   borderAndPaddingWidths + DATAGRIDVIEWCELL_iconMarginWidth * 2 + DATAGRIDVIEWCELL_iconsWidth);
+                                                   borderAndPaddingWidths + DATAGRIDVIEWCELL_iconMarginWidth * 2 + iconsWidth);
                 }
                 if (freeDimension != DataGridViewFreeDimension.Width)
                 {
                     preferredSize.Height = Math.Max(preferredSize.Height,
-                                                    borderAndPaddingHeights + DATAGRIDVIEWCELL_iconMarginHeight * 2 + DATAGRIDVIEWCELL_iconsHeight);
+                                                    borderAndPaddingHeights + DATAGRIDVIEWCELL_iconMarginHeight * 2 + iconsHeight);
                 }
             }
             return preferredSize;

@@ -27,11 +27,11 @@ using SRID=MS.Internal.PresentationCore.SRID;
 
 //------------------------------------------------------------------------------
 // Todo:
-//  - Bug: There is an exception thrown inside of ConnectChild which could render
-//         the collection inconsistent.
-//  - Performance: RemoveRange moves and nulls entry. It is better to null out
-//    after we moved all the items.
-//------------------------------------------------------------------------------
+//  - 
+
+
+
+
 
 
 // Since we disable PreSharp warnings in this file, we first need to disable
@@ -348,7 +348,7 @@ namespace System.Windows.Media
         {
             get
             {
-                // ([....]) I think we should skip the context checks here for performance reasons.
+                // (Microsoft) I think we should skip the context checks here for performance reasons.
                 //     MediaSystem.VerifyContext(_owner); The guy who gets the Visual won't be able to access the context
                 //     the Visual anyway if he is in the wrong context.
 
@@ -566,7 +566,7 @@ namespace System.Windows.Media
                 {
                     // If the Visual is not in this collection we silently return without
                     // failing. This is the same behavior that ArrayList implements. See
-                    // also Windows OS Bug #1100006.
+                    // also Windows OS 
                     return; 
                 }
 
@@ -806,7 +806,7 @@ namespace System.Windows.Media
         {
             VerifyAPIReadWrite();
 
-            // ([....]) Do I need this extra check index >= _size.
+            // (Microsoft) Do I need this extra check index >= _size.
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException("index");

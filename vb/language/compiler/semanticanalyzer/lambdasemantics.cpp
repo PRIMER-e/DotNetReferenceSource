@@ -140,7 +140,7 @@ Semantics::InterpretLambdaParameters
     Parameter * retval = FirstParam;
 
     // MakeParamsFromLambda doesn't set the type for parameters, let's set it here
-    // [....]:2008.09.20 - with respect to the above comment: really???! it does seem to set the type for parameters!
+    // Microsoft:2008.09.20 - with respect to the above comment: really???! it does seem to set the type for parameters!
     ParseTree::ParameterList *CurrentParsedParam = LambdaParameters;
     BCSYM_Param* CurrentParam = FirstParam;
     while (CurrentParam != NULL && CurrentParsedParam != NULL)
@@ -558,14 +558,14 @@ Mismatch:
         // Then we want to infer the return type of the lambda from its return statements.
         //
 
-        // [....]:
-        // Bug 485730 - in the case where you do
-        // Dim x As Action = Function()
-        //                       Return 1
-        //                   End Function
-        // This code path infers a type, which will generate errors. We must do something similar to
-        // Semantics::InterpretExpression where we will set m_ReportMultilineLambdaReturnTypeInferenceErrors
-        // to false if we run this.
+        // Microsoft:
+        // 
+
+
+
+
+
+
 
         DelegateReturnTypeToInterpret = InferMultilineLambdaReturnTypeFromReturnStatements(UnboundLambda);
         m_ReportMultilineLambdaReturnTypeInferenceErrors.SetValue(false);
@@ -600,9 +600,9 @@ Mismatch:
         MethodConversionClass ReturnTypeConversion = MethodConversionIdentity;
         ClassifyReturnTypeForMethodConversion(DelegateReturnTypeToInterpret, DelegateReturnType, ReturnTypeConversion);
         RelaxationLevel = DetermineDelegateRelaxationLevel(ReturnTypeConversion);
-        // [....] 2009.06.07 -- this is likely a bug. We should be doing RelaxationLevel = max(RelaxationLevel, DetermineDelegateRelaxationLevel(...))
-        // All the way down from MatchArguments through to ConvertWithErrorChecking, people only ever do max(..) on RelaxationLevel;
-        // they don't reset it.
+        // Microsoft 2009.06.07 -- this is likely a 
+
+
     }
 
 
@@ -614,11 +614,11 @@ Mismatch:
     }
 
 
-    // Bug: 139544. When we are assigning a lambda to a void type and we are going to relax the return type
-    // we need to check if the body is a lambda and forcefully interpret the lambda at this time
-    // otherwise it will be left int he parse tree since we will not try to convert the expression because the void type
-    // of the delegate matches the void of the unbound lambda.
     // 
+
+
+
+
 
     if (!IsBad(Result) &&
         AllowRelaxationSemantics &&
@@ -728,7 +728,7 @@ Mismatch:
             }
             else
             {
-                if(Result->ExactlyMatchExpressionResultType) // (Bug 73827 - DevDiv Bugs)
+                if(Result->ExactlyMatchExpressionResultType) // (
                 {
                     if ( !TypeHelpers::EquivalentTypes( pOriginalResultType, DelegateReturnType))
                     {
@@ -766,13 +766,13 @@ Mismatch:
                             RequiresUnwrappingNullable
                          );
 
-                    // Bug 35827 - DevDiv Bugs
+                    // 
                     if(pRequiresNarrowingConversion)
                     {
                         *pRequiresNarrowingConversion = RequiresNarrowingConversion;
                     }
 
-                    // Bug 68422 - DevDiv Bugs
+                    // 
                     if(pNarrowingFromNumericLiteral)
                     {
                         *pNarrowingFromNumericLiteral = NarrowingFromNumericLiteral;
@@ -929,10 +929,10 @@ Mismatch:
                 StubbedLambda->vtype = t_ref;
                 StubbedLambda->InterpretBodyFlags = ExprSkipOverloadResolution;
                 StubbedLambda->AllowRelaxationSemantics = true;
-                // [....].2009.03.17 -- the following line is WRONG! The stubbed lambda we generate should be a function
+                // Microsoft.2009.03.17 -- the following line is WRONG! The stubbed lambda we generate should be a function
                 // if the target delegate is a function, or a sub if the target delegate is a sub. It should not depend
                 // on whether the thing we bound to (Result) is a function or a sub. However, we end up not using the IsFunctionLambda
-                // field again, so this bug is never exercised.
+                // field again, so this 
                 StubbedLambda->IsFunctionLambda = Result->IsFunctionLambda;
                 StubbedLambda->IsStatementLambda = false;
                 StubbedLambda->IsSingleLine = true;
@@ -1324,9 +1324,9 @@ Semantics::InterpretUnboundLambda
             // at the start of LambdaBodyInterpretStatement::DoInterpretBody, called by CreateLambdaExpression.
             // As it interprets the body, and interprets return statements, it is updated.
             *RelaxationLevel = pBodyInterpreter->m_ReturnRelaxationLevel;
-            // [....] 2009.06.07 -- this is likely a bug. We should be doing RelaxationLevel = max(RelaxationLevel, m_ReturnRelaxationLevel)
-            // All the way down from MatchArguments through to ConvertWithErrorChecking, people only ever do max(..) on RelaxationLevel;
-            // they don't reset it.
+            // Microsoft 2009.06.07 -- this is likely a 
+
+
 
             // ASYNC: This mostly correctly deals with return relaxation level for async lambdas.
             // That's because m_ReturnRelaxationLevel is set by StatementSemantics::InterpretReturnExpression
@@ -1797,7 +1797,7 @@ Mismatch:
             m_Lookup = Lambda->GetLocalsHash();
             m_TemporaryManager = Lambda->TemporaryManager;
 
-            //undone : [....] - extmet DCR
+            //undone : Microsoft - extmet DCR
             //DO NOT 
 
 
@@ -1815,13 +1815,13 @@ Mismatch:
                     RequiresUnwrappingNullable
                 );
 
-            // Bug 35827 - DevDiv Bugs
+            // 
             if(pRequiresNarrowingConversionForReturnValue)
             {
                 *pRequiresNarrowingConversionForReturnValue = RequiresNarrowingConversion;
             }
 
-            // Bug 68422 - DevDiv Bugs
+            // 
             if(pNarrowingFromNumericLiteral)
             {
                 *pNarrowingFromNumericLiteral = NarrowingFromNumericLiteral;
@@ -1967,7 +1967,7 @@ Semantics::CreateRelaxedDelegateLambda
             ExpressionToInvokeTargetMethodOn = NULL;
 
             // Port SP1 CL 2954860 to VS10
-            // [....]:
+            // Microsoft:
             // fix for 163410: ObjectArgument is passed in, so we shouldn't dig it out.
             // ObjectArgument = MethodOperand->sxExtensionCall().ImplicitArgumentList->sxOp().Left->sxArg().Left;
 
@@ -2001,7 +2001,7 @@ Semantics::CreateRelaxedDelegateLambda
         }
         // Port SP1 CL 2955581 to VS10
         else if (IsMeReference(ObjectArgument) && 
-                    !TypeHelpers::IsValueType(ObjectArgument->ResultType)) // Bug #168248 - DevDiv Bugs: Should capture by value to mimic boxing behavior for non-relaxed delegates.
+                    !TypeHelpers::IsValueType(ObjectArgument->ResultType)) // 
         {
             // Optimization, no need to create temp for Me reference.
             // So no closure code needed. We do need to for MyBase and MyClass
@@ -2113,7 +2113,7 @@ Semantics::ConvertAnonymousDelegateToOtherDelegate
     Declaration* InvokeMethod = GetInvokeFromDelegate(Input->ResultType, m_Compiler);
     VSASSERT(InvokeMethod != NULL && InvokeMethod->IsProc(), "Not a proper delegate type.");
 
-    // [....]:
+    // Microsoft:
     // We have to do something similar to ConvertToDelegateType here, where we check that
     // the delegate type against the lambda type. This is cause ConvertWithErrorChecking
     // may call us.
@@ -2642,8 +2642,8 @@ Semantics::ConstructAnonymousDelegateClass
 
     // Don't register anonymous delegates when interpreting method bodies. They
     // will be reigstered later only if required for the eventual bound tree generated.
-    // Bug Devdiv 78381.
-    //
+    // 
+
     if (!m_InterpretingMethodBody)
     {
         RegisterTransientSymbol(DelegateClass);

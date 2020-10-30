@@ -254,7 +254,7 @@ ErrorExit:
 
 		// Load sqlUserInstance.dll
 		//
-		hUserInstDll = LoadLibrary( szDllPath);
+		hUserInstDll = LoadLibraryA( szDllPath);
 		if( NULL == hUserInstDll)
 		{
 			dwRet = GetLastError();

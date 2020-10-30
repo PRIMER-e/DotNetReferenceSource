@@ -7,7 +7,7 @@
 //      Data Service option for a store.
 // </summary>
 //
-// @owner  [....]
+// @owner  wbasheer
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

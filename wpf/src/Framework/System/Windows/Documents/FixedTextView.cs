@@ -8,7 +8,7 @@
 //
 // History:  
 //  10/29/2003 : zhenbinx - Created
-//  06/25/2004 : [....] - Performance work
+//  06/25/2004 : Microsoft - Performance work
 //  07/23/2004 : zhenbinx - Modify it to fit new per-DocumentPage TextView model
 // 
 //---------------------------------------------------------------------------

@@ -13,15 +13,15 @@
 //  05/20/2003: RogerCh:  Ported to WCP tree. Split CompoundFileSubStreamReference.cs
 //                          (2 classes) into individual files for ByteRange and Index
 //                          reference.
-//  08/11/2003: LGolding: Fix Bug 864168 (some of BruceMac's bug fixes were lost
-//                          in port to WCP tree).
-//
-// Notes:
-//  Persistence of specific classes is mostly hard-coded in this base class because
-//  the persistence must follow a shared binary implementation with Office.  It is
-//  also intentionally not polymorphic because we don't allow arbitrary subclasses
-//  to participate.
-//-----------------------------------------------------------------------------
+//  08/11/2003: LGolding: Fix 
+
+
+
+
+
+
+
+
 
 using System;
 using System.Collections.Specialized;       // for StringCollection class

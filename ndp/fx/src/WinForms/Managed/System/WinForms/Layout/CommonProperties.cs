@@ -89,7 +89,6 @@ namespace System.Windows.Forms.Layout {
         ///     property and not calling base.  If CommonProperties.GetAutoSize(element) is false,
         ///     a layout engine will treat it as AutoSize = false and not size the element to its
         ///     preferred size.        
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         internal static bool GetAutoSize(IArrangedElement element) {
             BitVector32 state = GetLayoutState(element);
             int value = state[_autoSizeSection];
@@ -102,7 +101,6 @@ namespace System.Windows.Forms.Layout {
         ///     We can not use our pattern of passing the default value into Margin because the
         ///     LayoutEngines read this property and do not know each element's DefaultMargin.
         ///     Instead the Element sets the Margin in its ctor.
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         internal static Padding GetMargin(IArrangedElement element) {
             bool found;
             Padding padding = element.Properties.GetPadding(_marginProperty, out found);
@@ -142,7 +140,6 @@ namespace System.Windows.Forms.Layout {
         ///
         /// NOTE:  LayoutEngines should never read this property.  Padding gets incorperated into
         ///        layout by modifying what the control reports for preferred size.
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         internal static Padding GetPadding(IArrangedElement element, Padding defaultPadding) {
             bool found;
             Padding padding = element.Properties.GetPadding(_paddingProperty, out found);
@@ -319,7 +316,6 @@ namespace System.Windows.Forms.Layout {
         ///     
 
 
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         internal static void xClearPreferredSizeCache(IArrangedElement element) {
             element.Properties.SetSize(_preferredSizeCacheProperty, LayoutUtils.InvalidSize);
 #if DEBUG
@@ -668,7 +664,6 @@ namespace System.Windows.Forms.Layout {
         /// GetLayoutState - returns the layout state bit vector from the property store.
         ///     CAREFUL: this is a copy of the state.  You need to SetLayoutState() to save your changes.
         ///
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         internal static BitVector32 GetLayoutState(IArrangedElement element) {
             return new BitVector32(element.Properties.GetInteger(_layoutStateProperty));
         }

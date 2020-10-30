@@ -436,8 +436,8 @@ namespace System.Windows.Data
             // This can happen if the sender raises the notification to a list of
             // clients and one of the earlier clients causes a later client to
             // unsubscribe.  The sender uses a copy of the list, so the later client
-            // will still get the notification.  (See Dev10 bug 715390)
-            // If this happens, simply ignore the notification.
+            // will still get the notification.  (See Dev10 
+
             if (IsDetached)
                 return;
 
@@ -1279,7 +1279,7 @@ namespace System.Windows.Data
                         {
                             // A binding for the Language property needs the value
                             // of the Language property.  This circularity is not
-                            // supported (bug 1274874).
+                            // supported (
                             if (TraceData.IsEnabled)
                             {
                                 TraceData.Trace(TraceEventType.Critical, TraceData.RequiresExplicitCulture, TargetProperty.Name, this);
@@ -1319,7 +1319,7 @@ namespace System.Windows.Data
                 // After a successful source update, always re-transfer the source value.
                 // This picks up changes that the source item may make in the setter,
                 // and applies the converter (if any) to the value.  This fixes
-                // the so-called "$10 bug".
+                // the so-called "$10 
 
                 // When the target is a TextBox with a composition in effect,
                 // do this asynchronously, to avoid confusing the composition's Undo stack
@@ -1932,22 +1932,22 @@ namespace System.Windows.Data
         //------------------------------------------------------
 
         // A BindingExpression cannot hold a strong reference to the target element - this
-        // leads to memory leaks (bug 871139).  The problem is that BindingExpression and its workers
-        // register for events from the data item, creating a reference from
-        // the data item to the BindingExpression.  The data item typically has a long lifetime,
-        // so if the BindingExpression held a SR to the target, the target element would
-        // also stay alive forever.
-        //      Instead, BindingExpression holds a WeakReference to the target.  This means we
-        // have to check it before dereferencing (here), and cope when the
-        // reference fails (in callers to this property).  Requests for the TargetElement
-        // are not trivial, so callers should request it once and cache the result
-        // in a local variable.  They should not save it in a global or instance
-        // variable of course;  that would defeat the purpose of the WR.
-        //      This allows the target element to be GC'd when it's no longer in
-        // use by the tree or application.  The next time the BindingExpression asks for
-        // its TargetElement, the WR will fail.  At this point, the BindingExpression is no
-        // longer useful, so it can sever all connections to the outside world (i.e.
-        // stop listening for events).  This allows the BindingExpression itself to be GC'd.
+        // leads to memory leaks (
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         internal DependencyObject TargetElement
         {
             get
@@ -2190,8 +2190,8 @@ namespace System.Windows.Data
 
                     // Catch all exceptions.  If we can't convert the fallback value, it doesn't
                     // matter why not;  we should always use the default value instead.
-                    // (See bug 1853628 for an example of a converter that throws
-                    // an exception not mentioned in the documentation for ConvertFrom.)
+                    // (See 
+
                     catch (Exception ex)
                     {
                         e = ex;
@@ -2412,7 +2412,7 @@ namespace System.Windows.Data
             else
                 ChangeSources(TargetElement, TargetProperty, newSources);
 
-            // store the sources with weak refs, so they don't cause memory leaks (bug 980041)
+            // store the sources with weak refs, so they don't cause memory leaks (
             _sources = newSources;
         }
 
@@ -2745,7 +2745,7 @@ namespace System.Windows.Data
 
         // To prevent memory leaks, we store WeakReferences to certain objects
         // in various places:  _dataItem, _sources, worker fields.  The logic
-        // for this is centralized in these two static methods.  (See bug 940041)
+        // for this is centralized in these two static methods.  (See 
 
         internal static object CreateReference(object item)
         {
@@ -2761,11 +2761,11 @@ namespace System.Windows.Data
             // bound back to the ContextMenu).
             //
             // For safety, we choose to use WeakRef all the time, unless the item is null.
-            // Exception (bug 1124954):  Keep a strong reference to
-            // BindingListCollectionView - this keeps the underlying DataView
-            // alive, when nobody else will.
-            // Exception (bug 1970505):  Don't allocate a WeakRef for the common
-            // case of the NullDataItem
+            // Exception (
+
+
+
+
 
             if (item != null &&
                 !(item is BindingListCollectionView) &&

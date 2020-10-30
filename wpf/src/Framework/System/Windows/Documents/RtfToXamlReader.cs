@@ -96,7 +96,7 @@ namespace System.Windows.Documents
 
     /// <summary>
     /// Document node type
-    /// WARNING: Keep in [....] with array used by GetTagName
+    /// WARNING: Keep in sync with array used by GetTagName
     /// </summary>
     internal enum DocumentNodeType
     {
@@ -3340,7 +3340,7 @@ namespace System.Windows.Documents
                     return -1;    // -1 means use ansicpg
                 case 77: // Mac
                     return 10000;
-                case 78:  // Shift JIS - bug in MacWord98J
+                case 78:  // Shift JIS - 
                 case 128: // Shift JIS
                     return 932;
                 case 129: // Hangul

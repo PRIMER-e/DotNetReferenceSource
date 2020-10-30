@@ -3,7 +3,7 @@ using System.Windows;
 using System.Threading;
 using MS.Internal.WindowsBase;               // FriendAccessAllowed
 
-namespace System.Windows.Threading 
+namespace System.Windows.Threading
 {
     /// <summary>
     ///     A DispatcherObject is an object associated with a
@@ -15,7 +15,7 @@ namespace System.Windows.Threading
     ///     safety by calling <see cref="VerifyAccess"/> on all their public
     ///     methods to ensure the calling thread is the appropriate thread.
     ///     <para/>
-    ///     DispatcherObject cannot be independently instantiated; that is, 
+    ///     DispatcherObject cannot be independently instantiated; that is,
     ///     all constructors are protected.
     /// </remarks>
     public abstract class DispatcherObject
@@ -30,7 +30,7 @@ namespace System.Windows.Threading
             get
             {
                 // This property is free-threaded.
-                
+
                 return _dispatcher;
             }
         }
@@ -41,7 +41,30 @@ namespace System.Windows.Threading
         internal void DetachFromDispatcher()
         {
             _dispatcher = null;
-         }
+        }
+
+        // Make this object a "sentinel" - it can be used in equality tests, but should
+        // not be used in any other way.  To enforce this and catch bugs, use a special
+        // sentinel dispatcher, so that calls to CheckAccess and VerifyAccess will
+        // fail;  this will catch most accidental uses of the sentinel.
+        [FriendAccessAllowed] // Built into Base, also used by Framework.
+        internal void MakeSentinel()
+        {
+            _dispatcher = EnsureSentinelDispatcher();
+        }
+
+        private static Dispatcher EnsureSentinelDispatcher()
+        {
+            if (_sentinelDispatcher == null)
+            {
+                // lazy creation - the first thread reaching here creates the sentinel
+                // dispatcher, all other threads use it.
+                Dispatcher sentinelDispatcher = new Dispatcher(isSentinel:true);
+                Interlocked.CompareExchange<Dispatcher>(ref _sentinelDispatcher, sentinelDispatcher, null);
+            }
+
+            return _sentinelDispatcher;
+        }
 
         /// <summary>
         ///     Checks that the calling thread has access to this object.
@@ -62,7 +85,7 @@ namespace System.Windows.Threading
 
             bool accessAllowed = true;
             Dispatcher dispatcher = _dispatcher;
-            
+
             // Note: a DispatcherObject that is not associated with a
             // dispatcher is considered to be free-threaded.
             if(dispatcher != null)
@@ -72,7 +95,7 @@ namespace System.Windows.Threading
 
             return accessAllowed;
         }
-        
+
         /// <summary>
         ///     Verifies that the calling thread has access to this object.
         /// </summary>
@@ -96,7 +119,7 @@ namespace System.Windows.Threading
                 dispatcher.VerifyAccess();
             }
         }
-    
+
         /// <summary>
         ///     Instantiate this object associated with the current Dispatcher.
         /// </summary>
@@ -106,6 +129,7 @@ namespace System.Windows.Threading
         }
 
         private Dispatcher _dispatcher;
+        private static Dispatcher _sentinelDispatcher;
     }
 }
 

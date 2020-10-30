@@ -3,13 +3,13 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 //
 // SignedXml.cs
 //
-// 21 [....] 2000
+// 21 Microsoft 2000
 // 
 
 namespace System.Security.Cryptography.Xml
@@ -20,6 +20,7 @@ namespace System.Security.Cryptography.Xml
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
@@ -52,6 +53,8 @@ namespace System.Security.Cryptography.Xml
 
         // Built in canonicalization algorithm URIs
         private static IList<string> s_knownCanonicalizationMethods = null;
+        // Built in transform algorithm URIs (excluding canonicalization URIs)
+        private static IList<string> s_defaultSafeTransformMethods = null;
 
         // additional HMAC Url identifiers
         private const string XmlDsigMoreHMACMD5Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-md5";
@@ -76,6 +79,16 @@ namespace System.Security.Cryptography.Xml
         public const string XmlDsigDSAUrl = "http://www.w3.org/2000/09/xmldsig#dsa-sha1";
         public const string XmlDsigRSASHA1Url = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
         public const string XmlDsigHMACSHA1Url = "http://www.w3.org/2000/09/xmldsig#hmac-sha1";
+
+        public const string XmlDsigSHA256Url = "http://www.w3.org/2001/04/xmlenc#sha256";
+        public const string XmlDsigRSASHA256Url = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+
+        // Yes, SHA384 is in the xmldsig-more namespace even though all the other SHA variants are in xmlenc. That's the standard.
+        public const string XmlDsigSHA384Url = "http://www.w3.org/2001/04/xmldsig-more#sha384";
+        public const string XmlDsigRSASHA384Url = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384";
+
+        public const string XmlDsigSHA512Url = "http://www.w3.org/2001/04/xmlenc#sha512";
+        public const string XmlDsigRSASHA512Url = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512";
 
         public const string XmlDsigC14NTransformUrl = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"; 
         public const string XmlDsigC14NWithCommentsTransformUrl = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"; 
@@ -295,41 +308,38 @@ namespace System.Security.Cryptography.Xml
         [ComVisible(false)]
         [SecuritySafeCritical]
         public bool CheckSignature(X509Certificate2 certificate, bool verifySignatureOnly) {
-            if (!CheckSignature(certificate.PublicKey.Key)) {
-                return false;
-            }
+            if (!verifySignatureOnly) {
+                // Check key usages to make sure it is good for signing.
+                foreach (X509Extension extension in certificate.Extensions) {
+                    if (String.Compare(extension.Oid.Value, CAPI.szOID_KEY_USAGE, StringComparison.OrdinalIgnoreCase) == 0) {
+                        X509KeyUsageExtension keyUsage = new X509KeyUsageExtension();
+                        keyUsage.CopyFrom(extension);
+                        SignedXmlDebugLog.LogVerifyKeyUsage(this, certificate, keyUsage);
 
-            if (verifySignatureOnly) {
-                SignedXmlDebugLog.LogVerificationResult(this, certificate, true);
-                return true;
-            }
+                        bool validKeyUsage = (keyUsage.KeyUsages & X509KeyUsageFlags.DigitalSignature) != 0 ||
+                                             (keyUsage.KeyUsages & X509KeyUsageFlags.NonRepudiation) != 0;
 
-            // Check key usages to make sure it is good for signing.
-            foreach (X509Extension extension in certificate.Extensions) {
-                if (String.Compare(extension.Oid.Value, CAPI.szOID_KEY_USAGE, StringComparison.OrdinalIgnoreCase) == 0) {
-                    X509KeyUsageExtension keyUsage = new X509KeyUsageExtension();
-                    keyUsage.CopyFrom(extension);
-                    SignedXmlDebugLog.LogVerifyKeyUsage(this, certificate, keyUsage);
-
-                    bool validKeyUsage = (keyUsage.KeyUsages & X509KeyUsageFlags.DigitalSignature) != 0 ||
-                                         (keyUsage.KeyUsages & X509KeyUsageFlags.NonRepudiation) != 0;
-
-                    if (!validKeyUsage) {
-                        SignedXmlDebugLog.LogVerificationFailure(this, SecurityResources.GetResourceString("Log_VerificationFailed_X509KeyUsage"));
-                        return false;
+                        if (!validKeyUsage) {
+                            SignedXmlDebugLog.LogVerificationFailure(this, SecurityResources.GetResourceString("Log_VerificationFailed_X509KeyUsage"));
+                            return false;
+                        }
+                        break;
                     }
-                    break;
+                }
+
+                // Do the chain verification to make sure the certificate is valid.
+                X509Chain chain = new X509Chain();
+                chain.ChainPolicy.ExtraStore.AddRange(BuildBagOfCerts());
+                bool chainVerified = chain.Build(certificate);
+                SignedXmlDebugLog.LogVerifyX509Chain(this, chain, certificate);
+
+                if (!chainVerified) {
+                    SignedXmlDebugLog.LogVerificationFailure(this, SecurityResources.GetResourceString("Log_VerificationFailed_X509Chain"));
+                    return false;
                 }
             }
 
-            // Do the chain verification to make sure the certificate is valid.
-            X509Chain chain = new X509Chain();
-            chain.ChainPolicy.ExtraStore.AddRange(BuildBagOfCerts());
-            bool chainVerified = chain.Build(certificate);
-            SignedXmlDebugLog.LogVerifyX509Chain(this, chain, certificate);
-
-            if (!chainVerified) {
-                SignedXmlDebugLog.LogVerificationFailure(this, SecurityResources.GetResourceString("Log_VerificationFailed_X509Chain"));
+            if (!CheckSignature(certificate.GetAnyPublicKey())) {
                 return false;
             }
 
@@ -484,27 +494,70 @@ namespace System.Security.Cryptography.Xml
             while (m_x509Enum.MoveNext()) {
                 X509Certificate2 certificate = (X509Certificate2) m_x509Enum.Current;
                 if (certificate != null)
-                    return certificate.PublicKey.Key;
+                    return certificate.GetAnyPublicKey();
             }
 
             return null;
         }
 
         public virtual XmlElement GetIdElement (XmlDocument document, string idValue) {
+            return DefaultGetIdElement(document, idValue);
+        }
+
+        internal static XmlElement DefaultGetIdElement(XmlDocument document, string idValue) {
             if (document == null)
                 return null;
 
+            if (Utils.RequireNCNameIdentifier()) {
+                try {
+                    XmlConvert.VerifyNCName(idValue);
+                } catch (XmlException) {
+                    // Identifiers are required to be an NCName
+                    //   (xml:id version 1.0, part 4, paragraph 2, bullet 1)
+                    //
+                    // If it isn't an NCName, it isn't allowed to match.
+                    return null;
+                }
+            }
+
             // Get the element with idValue
             XmlElement elem = document.GetElementById(idValue);
+
+            if (elem != null) {
+                if (!Utils.AllowAmbiguousReferenceTargets()) {
+                    // Have to check for duplicate ID values from the DTD.
+
+                    XmlDocument docClone = (XmlDocument)document.CloneNode(true);
+                    XmlElement cloneElem = docClone.GetElementById(idValue);
+
+                    // If it's null here we want to know about it, because it means that
+                    // GetElementById failed to work across the cloning, and our uniqueness
+                    // test is invalid.
+                    System.Diagnostics.Debug.Assert(cloneElem != null);
+
+                    // Guard against null anyways
+                    if (cloneElem != null) {
+                        cloneElem.Attributes.RemoveAll();
+
+                        XmlElement cloneElem2 = docClone.GetElementById(idValue);
+
+                        if (cloneElem2 != null) {
+                            throw new CryptographicException(
+                                SecurityResources.GetResourceString("Cryptography_Xml_InvalidReference"));
+                        }
+                    }
+                }
+
+                return elem;
+            }
+
+            elem = GetSingleReferenceTarget(document, "Id", idValue);
             if (elem != null)
                 return elem;
-            elem = document.SelectSingleNode("//*[@Id=\"" + idValue + "\"]") as XmlElement;
+            elem = GetSingleReferenceTarget(document, "id", idValue);
             if (elem != null)
                 return elem;
-            elem = document.SelectSingleNode("//*[@id=\"" + idValue + "\"]") as XmlElement;
-            if (elem != null)
-                return elem;
-            elem = document.SelectSingleNode("//*[@ID=\"" + idValue + "\"]") as XmlElement;
+            elem = GetSingleReferenceTarget(document, "ID", idValue);
 
             return elem;
         }
@@ -573,6 +626,46 @@ namespace System.Security.Cryptography.Xml
             return false;
         }
 
+        private bool ReferenceUsesSafeTransformMethods(Reference reference)
+        {
+            TransformChain transformChain = reference.TransformChain;
+            int transformCount = transformChain.Count;
+
+            for (int i = 0; i < transformCount; i++) {
+                Transform transform = transformChain[i];
+
+                if (!IsSafeTransform(transform.Algorithm)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool IsSafeTransform(string transformAlgorithm)
+        {
+            // All canonicalization algorithms are valid transform algorithms.
+            foreach (string safeAlgorithm in SafeCanonicalizationMethods) {
+                if (String.Equals(safeAlgorithm, transformAlgorithm, StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+
+            foreach (string safeAlgorithm in DefaultSafeTransformMethods) {
+                if (String.Equals(safeAlgorithm, transformAlgorithm, StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+
+            SignedXmlDebugLog.LogUnsafeTransformMethod(
+                this,
+                transformAlgorithm,
+                SafeCanonicalizationMethods,
+                DefaultSafeTransformMethods);
+
+            return false;
+        }
+
         // Get a list of the built in canonicalization algorithms, as well as any that the machine admin has
         // added to the valid set.
         private static IList<string> KnownCanonicalizationMethods
@@ -595,6 +688,32 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        private static IList<string> DefaultSafeTransformMethods
+        {
+            get {
+                if (s_defaultSafeTransformMethods == null) {
+                    List<string> safeAlgorithms = ReadAdditionalSafeTransformMethods();
+
+                    // And the built in algorithms
+
+                    // KnownCanonicalizationMethods don't need to be added here, because
+                    // the validator will automatically accept those.
+                    //
+                    // xmldsig 6.6.1:
+                    //     Any canonicalization algorithm that can be used for
+                    //     CanonicalizationMethod can be used as a Transform.
+                    safeAlgorithms.Add(XmlDsigEnvelopedSignatureTransformUrl);
+                    safeAlgorithms.Add(XmlDsigBase64TransformUrl);
+                    safeAlgorithms.Add(XmlLicenseTransformUrl);
+                    safeAlgorithms.Add(XmlDecryptionTransformUrl);
+
+                    s_defaultSafeTransformMethods = safeAlgorithms;
+                }
+
+                return s_defaultSafeTransformMethods;
+            }
+        }
+
         // Allow machine admins to add additional canonicalization algorithms that should be considered valid when
         // validating XML signatuers by supplying a list in the 
         // HKLM\Software\Microsoft\.NETFramework\Security\SafeCanonicalizationMethods
@@ -603,25 +722,39 @@ namespace System.Security.Cryptography.Xml
         [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
         [SecuritySafeCritical]
         private static List<string> ReadAdditionalSafeCanonicalizationMethods() {
-            List<string> additionalAlgorithms = new List<string>();
+            return ReadFxSecurityStringValues("SafeCanonicalizationMethods");
+        }
+
+        // Allow machine admins to add additional transform algorithms that should be considered valid when
+        // validating XML signatuers by supplying a list in the 
+        // HKLM\Software\Microsoft\.NETFramework\Security\SafeTransformMethods
+        // key.  Each REG_SZ entry in this key will be considered a transform algorithm URI that should be
+        // allowed by SignedXml instances on this machine.
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        private static List<string> ReadAdditionalSafeTransformMethods() {
+            return ReadFxSecurityStringValues("SafeTransformMethods");
+        }
+
+        private static List<string> ReadFxSecurityStringValues(string subkey) {
+            List<string> values = new List<string>();
 
             try {
-                using (RegistryKey canonicalizationAlgorithmsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\Security\SafeCanonicalizationMethods", false)) {
-                    if (canonicalizationAlgorithmsKey != null) {
-                        foreach (string value in canonicalizationAlgorithmsKey.GetValueNames()) {
-                            if (canonicalizationAlgorithmsKey.GetValueKind(value) == RegistryValueKind.String) {
-                                string additionalAlgorithm = canonicalizationAlgorithmsKey.GetValue(value) as string;
-                                if (!String.IsNullOrWhiteSpace(additionalAlgorithm)) {
-                                    additionalAlgorithms.Add(additionalAlgorithm);
+                using (RegistryKey stringListKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\Security\" + subkey, false)) {
+                    if (stringListKey != null) {
+                        foreach (string value in stringListKey.GetValueNames()) {
+                            if (stringListKey.GetValueKind(value) == RegistryValueKind.String) {
+                                string stringValue = stringListKey.GetValue(value) as string;
+                                if (!String.IsNullOrWhiteSpace(stringValue)) {
+                                    values.Add(stringValue);
                                 }
                             }
                         }
                     }
                 }
             }
-            catch (SecurityException) { /* we could not open the key - that's fine, we can proceed with no additional algorithms */ }
-
-            return additionalAlgorithms;
+            catch (SecurityException) { /* we could not open the key - that's fine, we can proceed with no additional values */ }
+            return values;
         }
 
         private byte[] GetC14NDigest (HashAlgorithm hash) {
@@ -746,22 +879,60 @@ namespace System.Security.Cryptography.Xml
             for (int i = 0; i < references.Count; ++i) {
                 Reference digestedReference = (Reference) references[i];
 
-                SignedXmlDebugLog.LogVerifyReference(this, digestedReference);
-                byte[] calculatedHash = digestedReference.CalculateHashValue(m_containingDocument, m_signature.ReferencedItems);
+                if (!ReferenceUsesSafeTransformMethods(digestedReference)) {
+                    return false;
+                }
 
+                SignedXmlDebugLog.LogVerifyReference(this, digestedReference);
+                byte[] calculatedHash = null;
+                try {
+                    calculatedHash = digestedReference.CalculateHashValue(m_containingDocument, m_signature.ReferencedItems);
+                }
+                catch (CryptoSignedXmlRecursionException) {
+                    SignedXmlDebugLog.LogSignedXmlRecursionLimit(this, digestedReference);
+                    return false;
+                }
                 // Compare both hashes
                 SignedXmlDebugLog.LogVerifyReferenceHash(this, digestedReference, calculatedHash, digestedReference.DigestValue);
-                if (calculatedHash.Length != digestedReference.DigestValue.Length) 
-                    return false;
 
-                byte[] rgb1 = calculatedHash;
-                byte[] rgb2 = digestedReference.DigestValue;
-                for (int j = 0; j < rgb1.Length; ++j) {
-                    if (rgb1[j] != rgb2[j]) return false;
+                if (!CryptographicEquals(calculatedHash, digestedReference.DigestValue)) {
+                    return false;
                 }
             }
 
             return true;
+        }
+
+        // Methods _must_ be marked both No Inlining and No Optimization to be fully opted out of optimization.
+        // This is because if a candidate method is inlined, its method level attributes, including the NoOptimization
+        // attribute, are lost. 
+        // This method makes no attempt to disguise the length of either of its inputs. It is assumed the attacker has 
+        // knowledge of the algorithms used, and thus the output length. Length is difficult to properly blind in modern CPUs.
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private static bool CryptographicEquals(byte[] a, byte[] b) {
+            System.Diagnostics.Debug.Assert(a != null);
+            System.Diagnostics.Debug.Assert(b != null);
+
+            int result = 0;
+
+            // Short cut if the lengths are not identical
+            if (a.Length != b.Length)
+                return false;
+
+            unchecked {
+                // Normally this caching doesn't matter, but with the optimizer off, this nets a non-trivial speedup.
+                int aLength = a.Length;
+
+                for (int i = 0; i < aLength; i++)
+                    // We use subtraction here instead of XOR because the XOR algorithm gets ever so
+                    // slightly faster as more and more differences pile up.
+                    // This cannot overflow more than once (and back to 0) because bytes are 1 byte
+                    // in length, and result is 4 bytes. The OR propagates all set bytes, so the differences
+                    // can't add up and overflow a second time.
+                    result = result | (a[i] - b[i]);
+            }
+
+            return (0 == result);
         }
 
         // If we have a signature format validation callback, check to see if this signature's format (not
@@ -793,9 +964,7 @@ namespace System.Security.Cryptography.Xml
 
             // Let's see if the key corresponds with the SignatureMethod 
             Type ta = Type.GetType(signatureDescription.KeyAlgorithm);
-            Type tb = key.GetType();
-            if ((ta != tb) && !ta.IsSubclassOf(tb) && !tb.IsSubclassOf(ta)) 
-                // Signature method key mismatch
+            if (!IsKeyTheCorrectAlgorithm(key, ta))
                 return false;
 
             HashAlgorithm hashAlgorithm = signatureDescription.CreateDigest();
@@ -843,6 +1012,71 @@ namespace System.Security.Cryptography.Xml
                 if (m_signature.SignatureValue[i] != hashValue[i]) return false;
             }
             return true; 
+        }
+
+        private static XmlElement GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue) {
+            // idValue has already been tested as an NCName (unless overridden for compatibility), so there's no
+            // escaping that needs to be done here.
+            string xPath = "//*[@" + idAttributeName + "=\"" + idValue + "\"]";
+
+            if (Utils.AllowAmbiguousReferenceTargets()) {
+                return document.SelectSingleNode(xPath) as XmlElement;
+            }
+
+            // http://www.w3.org/TR/xmldsig-core/#sec-ReferenceProcessingModel says that for the form URI="#chapter1":
+            //
+            //   Identifies a node-set containing the element with ID attribute value 'chapter1' ...
+            //
+            // Note that it uses the singular. Therefore, if the match is ambiguous, we should consider the document invalid.
+            //
+            // In this case, we'll treat it the same as having found nothing across all fallbacks (but shortcut so that we don't
+            // fall into a trap of finding a secondary element which wasn't the originally signed one).
+
+            XmlNodeList nodeList = document.SelectNodes(xPath);
+
+            if (nodeList == null || nodeList.Count == 0) {
+                return null;
+            }
+
+            if (nodeList.Count == 1) {
+                return nodeList[0] as XmlElement;
+            }
+
+            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidReference"));
+        }
+
+        private static bool IsKeyTheCorrectAlgorithm(AsymmetricAlgorithm key, Type expectedType)
+        {
+            Type actualType = key.GetType();
+
+            if (actualType == expectedType)
+                return true;
+
+            // This check exists solely for compatibility with 4.6. Normally, we would expect "expectedType" to be the superclass type and
+            // the actualType to be the subclass.
+            if (expectedType.IsSubclassOf(actualType))
+                return true;
+
+            //
+            // "expectedType" comes from the KeyAlgorithm property of a SignatureDescription. The BCL SignatureDescription classes have historically 
+            // denoted provider-specific implementations ("RSACryptoServiceProvider") rather than the base class for the algorithm ("RSA"). We could
+            // change those (at the risk of creating other compat problems) but we have no control over third party SignatureDescriptions.
+            //
+            // So, in the absence of a better approach, walk up the parent hierarchy until we find the ancestor that's a direct subclass of
+            // AsymmetricAlgorithm and treat that as the algorithm identifier.
+            //
+            while (expectedType != null && expectedType.BaseType != typeof(AsymmetricAlgorithm))
+            {
+                expectedType = expectedType.BaseType;
+            }
+
+            if (expectedType == null)
+                return false;   // SignatureDescription specified something that isn't even a subclass of AsymmetricAlgorithm. For compatibility with 4.6, return false rather throw.
+
+            if (actualType.IsSubclassOf(expectedType))
+                return true;
+
+            return false;
         }
     }
 }

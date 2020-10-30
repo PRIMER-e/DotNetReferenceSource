@@ -6,7 +6,7 @@
 //      Provides a syndication content that holds name/value pairs.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

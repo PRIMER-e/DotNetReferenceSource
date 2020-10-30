@@ -8,7 +8,7 @@
 // Description: Highlight render properties for selected text.
 //
 // History:  
-//  07/01/2004 : [....] - Created
+//  07/01/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

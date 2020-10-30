@@ -10,7 +10,7 @@
 //              Figures now are finite only.
 //
 // History:  
-//  05/05/2003 : [....] - moving from Avalon branch.
+//  05/05/2003 : Microsoft - moving from Avalon branch.
 //
 //---------------------------------------------------------------------------
 #pragma warning disable 1634, 1691  // avoid generating warnings about unknown 
@@ -154,7 +154,7 @@ namespace MS.Internal.PtsHost
             // If width on figure is specified, use the specified value.
             // Border and padding of the figure is extracted from available subpage width.
             // We use StructuralCache.CurrentFormatContext's page dimensions as limiting values for figure MBP
-            mbp = MbpInfo.FromElement(Element);            
+            mbp = MbpInfo.FromElement(Element, StructuralCache.TextFormatterHost.PixelsPerDip);            
             // We do not mirror margin as it's used to dist text left and right, and is unnecessary.
 
             durDistTextLeft = durDistTextRight = dvrDistTextTop = dvrDistTextBottom = 0;

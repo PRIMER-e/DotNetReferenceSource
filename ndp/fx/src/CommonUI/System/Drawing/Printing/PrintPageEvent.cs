@@ -5,12 +5,8 @@
 //------------------------------------------------------------------------------
 
 namespace System.Drawing.Printing {
-
-    using System.Diagnostics;
     using System;
     using System.Drawing;
-    using System.ComponentModel;
-    using Microsoft.Win32;
 
     /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs"]/*' />
     /// <devdoc>
@@ -26,6 +22,9 @@ namespace System.Drawing.Printing {
         private readonly Rectangle marginBounds;
         private readonly Rectangle pageBounds;
         private readonly PageSettings pageSettings;
+
+        // Apply page settings to the printer.
+        internal bool CopySettingsToDevMode = true;
 
 
         /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.PrintPageEventArgs"]/*' />

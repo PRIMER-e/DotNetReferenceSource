@@ -5,7 +5,7 @@
 // ==--==
 //
 // <OWNER>jeffcoop</OWNER>
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 //
 
 using System;
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
                 // Compute hash of the full purpose.  The full purpose is a concatination of all the
                 // parts - applicationName, primaryPurpose,and specificPurposes[].  We prefix each part with
                 // the length so we know the process is reversible
-                using (HashAlgorithm sha256 = SHA256.Create())
+                using (HashAlgorithm sha256 = HashAlgorithm.Create("System.Security.Cryptography.Sha256Cng"))
                 {
                     using (BinaryWriter stream = new BinaryWriter(new CryptoStream(new MemoryStream(), sha256, CryptoStreamMode.Write), new UTF8Encoding(false, true)))
                     {

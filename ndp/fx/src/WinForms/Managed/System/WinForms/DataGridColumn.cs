@@ -938,12 +938,12 @@ namespace System.Windows.Forms{
                 throw new InvalidOperationException(SR.GetString(SR.DataGridColumnDataSourceMismatch, Header));
             }
 
-            /* FOR DEMO: [....]: DataGridColumnStyle::CheckValidDataSource: make the check better */
+            /* FOR DEMO: Microsoft: DataGridColumnStyle::CheckValidDataSource: make the check better */
             if (((DataView) value.DataSource).Table == null) {
                 throw new InvalidOperationException(SR.GetString(SR.DataGridColumnNoDataTable, Header));
             }
             else {
-                /* FOR DEMO: [....]: DataGridColumnStyle::CheckValidDataSource: make the check better */
+                /* FOR DEMO: Microsoft: DataGridColumnStyle::CheckValidDataSource: make the check better */
                 if (!myTable.DataTable.Equals(((DataView) value.DataSource).Table)) {
                     throw new InvalidOperationException(SR.GetString(SR.DataGridColumnNoDataSource, Header, myTable.DataTable.TableName));
                 }

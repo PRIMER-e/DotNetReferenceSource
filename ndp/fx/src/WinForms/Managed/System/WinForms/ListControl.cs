@@ -558,7 +558,7 @@ namespace System.Windows.Forms {
             // !formattingEnabled == RTM behaviour
             if (!formattingEnabled) {
 
-                // [....] gave his blessing to this RTM breaking change
+                // Microsoft gave his blessing to this RTM breaking change
                 if (item == null) {
                     return String.Empty;
                 }
@@ -577,7 +577,7 @@ namespace System.Windows.Forms {
             ListControlConvertEventArgs e = new ListControlConvertEventArgs(filteredItem, typeof(String), item);
             OnFormat(e);
 
-            // [....]: we need a better check. Should add the Handled property on the ListControlConvertEventArgs?
+            // Microsoft: we need a better check. Should add the Handled property on the ListControlConvertEventArgs?
             if (e.Value != item && e.Value is String) {
                 return (string) e.Value;
             }

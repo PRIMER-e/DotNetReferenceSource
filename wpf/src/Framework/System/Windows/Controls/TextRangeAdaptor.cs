@@ -10,7 +10,7 @@
 // History:
 //  03/15/2004 : mmccr - created
 //  09/07/2004 : vsmirnov - refactored
-//  01/20/2004 : [....] - refactored
+//  01/20/2004 : Microsoft - refactored
 //
 //---------------------------------------------------------------------------
 
@@ -485,8 +485,8 @@ namespace MS.Internal.Automation
         /// If the position is inside a Hyperlink, it is being moved out of the hyperlink and to the previous
         /// insertion position which can be on the previous line (or unit) and this is creating problems
         /// This is a temporary solution until we find a better solution to handle the case
-        /// There is also a related bug in MoveToLineBoundary: PS#1742102
-        /// </summary>
+        /// There is also a related 
+
         internal static bool MoveToInsertionPosition(ITextPointer position, LogicalDirection direction)
         {
             if (!position.TextContainer.IsReadOnly ||
@@ -1810,11 +1810,12 @@ namespace MS.Internal.Automation
         object ITextRangeProvider.GetAttributeValue(int attributeId)
         {
             AutomationTextAttribute attribute = AutomationTextAttribute.LookupById(attributeId);
-            if (attribute == null)
-            {
-                throw new ArgumentNullException("attributeId");
-            }
-            if (!_textPatternAttributes.ContainsKey(attribute))
+
+            // DDVSO:173317
+            // In Windows 8, a new text attribute was introduced that WPF does not have any reference for
+            // this caused WPF to throw an ArgumentException.  This code path was strange as we already can
+            // return NotSupported, which is a valid response.  So change this to no longer throw.
+            if (attribute == null || !_textPatternAttributes.ContainsKey(attribute))
             {
                 return AutomationElementIdentifiers.NotSupported;
             }

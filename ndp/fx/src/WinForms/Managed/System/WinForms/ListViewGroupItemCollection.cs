@@ -99,7 +99,7 @@ namespace System.Windows.Forms
         /// </devdoc>
         private void CheckListViewItem(ListViewItem item) {
             if (item.ListView != null && item.ListView != this.group.ListView) {
-                // [....]: maybe we should throw an InvalidOperationException when we add an item from another listView
+                // Microsoft: maybe we should throw an InvalidOperationException when we add an item from another listView
                 // into this group's collection.
                 // But in a similar situation, ListViewCollection throws an ArgumentException. This is the v1.* behavior
                 throw new ArgumentException(SR.GetString(SR.OnlyOneControl, item.Text), "item");

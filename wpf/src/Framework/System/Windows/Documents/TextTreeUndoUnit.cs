@@ -8,7 +8,7 @@
 // Description: Base class for all TextContainer undo units.
 //
 // History:  
-//  03/03/2004 : [....] - Created
+//  03/03/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 
@@ -129,7 +129,7 @@ namespace System.Windows.Documents
             if (_tree.GetContentHashCode() != _treeContentHashCode)
             {
                 // Data is irrecoverably corrupted, shut down!
-                Invariant.Assert(false, "Undo unit is out of [....] with TextContainer!");
+                Invariant.Assert(false, "Undo unit is out of sync with TextContainer!");
             }
         }
 
@@ -207,9 +207,9 @@ namespace System.Windows.Documents
         private readonly int _symbolOffset;
 
         // Hash representing the state of the tree when the undo unit was
-        // created.  If the hash doesn't match when Do is called, there's a bug
-        // somewhere, and any TextContainer undo units on the stack are probably
-        // corrupted.
+        // created.  If the hash doesn't match when Do is called, there's a 
+
+
         private int _treeContentHashCode;
 
         #endregion Private Fields

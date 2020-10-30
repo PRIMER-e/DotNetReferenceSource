@@ -14,6 +14,7 @@ using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using MS.Internal;
 
 namespace System.Windows.Controls
@@ -749,7 +750,7 @@ namespace System.Windows.Controls
                 }
             }
 
-            // Keep realizedChildren in [....] w/ the visual tree.
+            // Keep realizedChildren in sync w/ the visual tree.
             if (IsVirtualizing && InRecyclingMode)
             {
                 _realizedChildren.Insert(childIndex, container);
@@ -1642,6 +1643,7 @@ namespace System.Windows.Controls
             get
             {
                 DataGridColumnCollection columns = (DataGridColumnCollection)ParentDataGrid.Columns;
+                EnsureRealizedChildren();   // necessary because this can be called before Measure (DevDiv2 1123429)
                 IList children = RealizedChildren;
 
                 // common case:  all columns are present
@@ -2115,7 +2117,7 @@ namespace System.Windows.Controls
         }
 
         /// <summary>
-        ///     Sets the _realizedChildren in [....] when children are cleared
+        ///     Sets the _realizedChildren in sync when children are cleared
         /// </summary>
         protected override void OnClearChildren()
         {
@@ -2155,6 +2157,13 @@ namespace System.Windows.Controls
                 throw new ArgumentOutOfRangeException("index");
             }
 
+            // if the column widths aren't known, try again when they are
+            if (parentDataGrid.InternalColumns.ColumnWidthsComputationPending)
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.Render, (Action<int>)BringIndexIntoView, index);
+                return;
+            }
+
             ScrollContentPresenter scrollContentPresenter = parentDataGrid.InternalScrollContentPresenter;
             IScrollInfo scrollInfo = null;
             if (scrollContentPresenter != null &&
@@ -2164,10 +2173,10 @@ namespace System.Windows.Controls
             }
             else
             {
-                DataGridRowsPresenter rowsPresenter = ParentRowsPresenter;
-                if (rowsPresenter != null)
+                ScrollViewer scrollViewer = parentDataGrid.InternalScrollHost;
+                if (scrollViewer != null)
                 {
-                    scrollInfo = rowsPresenter;
+                    scrollInfo = scrollViewer.ScrollInfo;
                 }
             }
 
@@ -2177,14 +2186,49 @@ namespace System.Windows.Controls
                 return;
             }
 
+            bool wasMeasureDirty = MeasureDirty;  //see comment below
+            bool needRetry = wasMeasureDirty;
             double newHorizontalOffset = 0.0;
             double oldHorizontalOffset = parentDataGrid.HorizontalScrollOffset;
             while (!IsChildInView(index, out newHorizontalOffset) &&
                    !DoubleUtil.AreClose(oldHorizontalOffset, newHorizontalOffset))
             {
+                needRetry = true;
                 scrollInfo.SetHorizontalOffset(newHorizontalOffset);
                 UpdateLayout();
                 oldHorizontalOffset = newHorizontalOffset;
+            }
+
+            // although the loop brings the desired column into view, the column
+            // widths might change due to deferred data binding, which can push
+            // the desired column out of view again.  To mitigate this, try
+            // again after deferred bindings run (at Loaded priority)
+            if (parentDataGrid.RetryBringColumnIntoView(needRetry))
+            {
+                DispatcherPriority priority = wasMeasureDirty ? DispatcherPriority.Background : DispatcherPriority.Loaded;
+                Dispatcher.BeginInvoke(priority, (Action<int>)BringIndexIntoView, index);
+
+                // The idea is to run deferred bindings, already posted at
+                // Loaded priority.  This may add content to a cell, causing a
+                // layout request (at Render).  During UpdateLayout, the columns may
+                // get new widths.  By the time we retry this method (at Loaded),
+                // we'll see the new widths.
+                //   But there's a subtle flaw.  MediaContext owns the task responsible
+                // for calling UpdateLayout.  It demotes this task from Render to
+                // Input priority when it hasn't seen Input in a while - see
+                // MediaContext.ScheduleNextRenderOp.  If this happens,
+                // the retry (at Loaded) will happen before the UpdateLayout (now at Input)
+                // and we won't see the new widths.  [This flaw was very difficult to
+                // diagnose, as it tended to go away when you set breakpoints or
+                // tracepoints.  It's quite sensitive to timing.]
+                //   To mitigate this, mark this panel as MeasureDirty.  Then during the
+                // retry, check if MeasureDirty is still true;  if so, UpdateLayout
+                // was demoted and we should reschedule the retry.  But this time
+                // use Background priority, to let the UpdateLayout happen.
+                //   This results in some flicker - the DataGrid redraws once with
+                // the old column widths, and again with the new.  But that's the
+                // best we can do given the arcane behavior of the layout system.
+                InvalidateMeasure();
             }
         }
 

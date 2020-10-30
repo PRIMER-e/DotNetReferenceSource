@@ -771,7 +771,7 @@ namespace System.Windows.Documents
 #if DEBUG
                 else
                 {
-                    DocumentsTrace.FixedFormat.FixedDocument.Trace(string.Format("====== GetPageSize {0}  Warning [....] call made while async outstanding =====", pageNumber));
+                    DocumentsTrace.FixedFormat.FixedDocument.Trace(string.Format("====== GetPageSize {0}  Warning sync call made while async outstanding =====", pageNumber));
                 }
 #endif
 

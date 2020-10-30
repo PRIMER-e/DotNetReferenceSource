@@ -159,7 +159,7 @@ namespace System.Windows.Interop
                 else
                 {
                     // This is the normal case.  We want to keep WPF keyboard
-                    // focus and Win32 keyboard focus in [....].
+                    // focus and Win32 keyboard focus in sync.
                     if(!checkOnly)
                     {
                         // Due to IsInExclusiveMenuMode, it is possible that an
@@ -336,7 +336,7 @@ namespace System.Windows.Interop
                 case WindowMessage.WM_EXITMENULOOP:
                 case WindowMessage.WM_EXITSIZEMOVE:
                 {
-                    // MITIGATION: KEYBOARD_STATE_OUT_OF_[....]
+                    // MITIGATION: KEYBOARD_STATE_OUT_OF_SYNC
                     //
                     // Avalon relies on keeping it's copy of the keyboard
                     // state.  This is for a number of reasons, including that
@@ -352,7 +352,7 @@ namespace System.Windows.Interop
                     // any one could enter a nested loop at any time for any
                     // reason, Win32 is nice enough to let us know when it is
                     // finished with the two common loops: menus and sizing.
-                    // We re-[....] our keyboard device in response to these.
+                    // We re-sync our keyboard device in response to these.
                     //
                     if(_active)
                     {
@@ -504,7 +504,7 @@ namespace System.Windows.Interop
                             false,
                             0);
 
-                // MITIGATION: KEYBOARD_STATE_OUT_OF_[....]
+                // MITIGATION: KEYBOARD_STATE_OUT_OF_SYNC
                 //
                 // This is how we deal with the fact that Win32 sometimes sends
                 // us a WM_SETFOCUS message BEFORE it has updated it's internal

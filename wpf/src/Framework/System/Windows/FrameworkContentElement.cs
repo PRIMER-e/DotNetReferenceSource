@@ -483,7 +483,7 @@ namespace System.Windows
             Storyboard.GetComplexPathValue(this, dp, ref newEntry, metadata);
         }
 
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         internal void GetRawValue(DependencyProperty dp, PropertyMetadata metadata, ref EffectiveValueEntry entry)
         {
             // Check if value was resolved by base. If so, run it by animations
@@ -504,7 +504,7 @@ namespace System.Windows
                 // If the parent element's style is changing, this instance is
                 // in a visual tree that is being removed, and the value request
                 // is simply a result of tearing down some information in that
-                // tree (e.g. a BindingExpression).  If so, just pretend there is no style (bug 991395).
+                // tree (e.g. a BindingExpression).  If so, just pretend there is no style (
 
                 if (GetValueFromTemplatedParent(dp, ref entry))
                 {

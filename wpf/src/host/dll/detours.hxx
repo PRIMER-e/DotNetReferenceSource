@@ -8,7 +8,7 @@
 //      The Detours library can be found on http://toolbox. It has a nice help file with it.
 //
 //  History:
-//      2009/04/09   [....]     Created
+//      2009/04/09   Microsoft     Created
 //
 //------------------------------------------------------------------------
 

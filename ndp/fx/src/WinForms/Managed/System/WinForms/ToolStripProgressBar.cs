@@ -259,7 +259,7 @@ namespace System.Windows.Forms {
         protected override void OnSubscribeControlEvents(Control control) {
             ProgressBar bar = control as ProgressBar;
             if (bar != null) {
-                // Please keep this alphabetized and in [....] with Unsubscribe
+                // Please keep this alphabetized and in sync with Unsubscribe
                 // 
                 bar.RightToLeftLayoutChanged += new EventHandler(HandleRightToLeftLayoutChanged);
             }
@@ -272,7 +272,7 @@ namespace System.Windows.Forms {
 
             ProgressBar bar = control as ProgressBar;
             if (bar != null) {
-                // Please keep this alphabetized and in [....] with Subscribe
+                // Please keep this alphabetized and in sync with Subscribe
                 // 
                 bar.RightToLeftLayoutChanged -= new EventHandler(HandleRightToLeftLayoutChanged);
             }

@@ -227,26 +227,26 @@ namespace System.Windows.Documents
         /// 
         /// There is code in TextStore.OnStartComposition that attempts to ensure character offsets
         /// always match in the case where an IME starts a non-empty composition.  Comments in the
-        /// method and in bug Dev10 bug 523435 have details.
-        /// 
-        /// However, that code only handles the case where the selection is empty (a caret/single
-        /// insertion point).  It will in fact cause problems if the composition is non-empty
-        /// because the initial selection was non-empty.  In that case, the code in
-        /// TextStore.OnStartComposition attempts to convert
-        /// elements like LineBreak that are normally invisible to the IME but round-trip as text
-        /// like "\r\n". This confuses the before/after playback state because character counts
-        /// do not match.
-        /// 
-        /// The code here is a work around -- if we detect a composition start request with a non-empty
-        /// selection, we preemtively remove the selected content before the IME has a chance to do
-        /// so.  We can't do that work later because once the IME has started a composition no
-        /// reentrant edits are allowed.
-        /// 
-        /// Modifying the document from PreviewKeyDown is not ideal.  A better long term solution
-        /// is to change the way we expose the document to the IME so that reentrancy is not an
-        /// issue.  However, we don't have time left in dev10 to do that work.  This solution is
-        /// a compromise that avoids serious crashes while typing over selected text with IMEs.
-        /// </remarks>
+        /// method and in 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         internal static void OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key != Key.ImeProcessed)
@@ -681,21 +681,21 @@ namespace System.Windows.Documents
                             backspacePosition = This.TextView.GetBackspaceCaretUnitPosition(position);
                             Invariant.Assert(backspacePosition != null);
 
-                            // bug 1733868
-                            // backspacePosition should always be less than position.
-                            // But backspacing before '\n' (no preceding '\r') exposes
-                            // this bug.
+                            // 
+
+
+
                             if (backspacePosition.CompareTo(position) == 0)
                             {
                                 // As of 6/30/2006 we're too close to ship to fix
-                                // this bug cleanly.  Ideally, we would stop referencing
-                                // the position at the end-of-line (which mil text does not
-                                // consider a valid position), and instead reference the start
-                                // of the next line (flipping the original position's gravity).
-                                //
-                                // As a work-around, take the previous insertion position,
-                                // ignoring glyph level backspace positions.
-                                //
+                                // this 
+
+
+
+
+
+
+
                                 This.Selection.ExtendToNextInsertionPosition(LogicalDirection.Backward);
                                 backspacePosition = null;
                             }

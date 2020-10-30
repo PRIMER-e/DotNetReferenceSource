@@ -97,10 +97,13 @@ namespace System.Drawing.Printing {
 
             base.OnStartPage(document, e);
 
-            
+
             try {
                 IntSecurity.AllPrintingAndUnmanagedCode.Assert();
-                e.PageSettings.CopyToHdevmode(modeHandle);
+                if (e.CopySettingsToDevMode) {
+                    e.PageSettings.CopyToHdevmode(modeHandle);
+                }
+
                 Size size = e.PageBounds.Size;
 
                 // Metafile framing rectangles apparently use hundredths of mm as their unit of measurement,

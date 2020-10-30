@@ -692,6 +692,34 @@ namespace System.Windows.Forms {
             }
         }
 
+        /// <include file='doc\TextBox.uex' path='docs/doc[@for="TextBox.ProcessCmdKey"]/*' />
+        /// <devdoc>
+        /// Process a command key.
+        /// Native "EDIT" control does not support "Select All" shorcut represented by Ctrl-A keys, when in multiline mode,
+        /// and historically Microsoft TextBox did not support it either.
+        /// We are adding support for this shortcut for application targeting 4.6.1 and newer and for applications targeting 4.0 and newer 
+        /// versions of the .NET Framework if they opt into this feature by adding the following config switch to the 'runtime' section of the app.config file:
+        ///   <runtime>
+        ///       <AppContextSwitchOverrides value = "Switch.System.Windows.Forms.DoNotSupportSelectAllShortcutInMultilineTextBox=false" />
+        ///   </ runtime>
+        /// To opt out of this feature, when targeting 4.6.1 and newer, please set the above mentioned switch to true. 
+        /// <para>
+        ///  m - the current windows message
+        /// keyData - bitmask containing one or more keys
+        /// </para>
+        /// </devdoc>
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
+        protected override bool ProcessCmdKey(ref Message m, Keys keyData) {
+            bool returnValue = base.ProcessCmdKey(ref m, keyData);
+            if (!returnValue && this.Multiline && !LocalAppContextSwitches.DoNotSupportSelectAllShortcutInMultilineTextBox 
+                && this.ShortcutsEnabled && (keyData == (Keys.Control | Keys.A))) {
+                SelectAll();
+                return true;
+            }
+
+            return returnValue;
+        }
+
         /// <devdoc>
         ///     Replaces the portion of the text specified by startPos and length with the one passed in,
         ///     without resetting the undo buffer (if any).

@@ -19,7 +19,7 @@ namespace System.Drawing.Imaging {
      *  bits 24-31 = reserved
      */
 
-    // Suggestion: don't use S----Edit to format this file -- it does a horrible job.
+    // Suggestion: don't use SlickEdit to format this file -- it does a horrible job.
     // Visual Studio works ok, though.
     //
     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

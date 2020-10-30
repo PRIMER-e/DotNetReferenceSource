@@ -8,7 +8,7 @@
 // Description: The root node of a TextContainer.
 //
 // History:  
-//  02/18/2004 : [....] - Created
+//  02/18/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

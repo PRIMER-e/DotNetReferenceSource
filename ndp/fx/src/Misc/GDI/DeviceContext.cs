@@ -7,7 +7,7 @@
 //#define TRACK_HDC
 //#define GDI_FINALIZATION_WATCH
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -35,7 +35,7 @@ namespace System.Experimental.Gdi
     ///     This class is divided into two files separating the code that needs to be compiled into
     ///     reatail builds and debugging code.
     /// </devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -52,7 +52,7 @@ namespace System.Experimental.Gdi
         ///     with the Win32 guideline that says if you call GetDC/CreateDC/CreatIC/CreateEnhMetafile, you are 
         ///     responsible for calling ReleaseDC/DeleteDC/DeleteEnhMetafile respectivelly.
         ///     
-        ///     This class implements some of the operations commonly performed on the properties of a dc  in [....], 
+        ///     This class implements some of the operations commonly performed on the properties of a dc  in Microsoft, 
         ///     specially for interacting with GDI+, like clipping and coordinate transformation.  
         ///     Several properties are not persisted in the dc but instead they are set/reset during a more comprehensive
         ///     operation like text rendering or painting; for instance text alignment is set and reset during DrawText (GDI), 
@@ -63,8 +63,8 @@ namespace System.Experimental.Gdi
         ///     before resetting it; these kinds of properties are the ones implemented in this class.
         ///     This kind of properties place an extra chanllenge in the scenario where a DeviceContext is obtained 
         ///     from a Graphics object that has been used with GDI+, because GDI+ saves the hdc internally, rendering the 
-        ///     DeviceContext underlying hdc out of [....].  DeviceContext needs to support these kind of properties to 
-        ///     be able to keep the GDI+ and GDI HDCs in [....].
+        ///     DeviceContext underlying hdc out of sync.  DeviceContext needs to support these kind of properties to 
+        ///     be able to keep the GDI+ and GDI HDCs in sync.
         ///     
         ///     A few other persisting properties have been implemented in DeviceContext2, among them:
         ///     1. Window origin.
@@ -401,7 +401,7 @@ namespace System.Experimental.Gdi
                     break;
 
                 // case DeviceContextType.Metafile: - not yet supported.
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
                 case DeviceContextType.Metafile:
                     IntUnsafeNativeMethods.CloseEnhMetaFile(new HandleRef(this, this.Hdc));
                     
@@ -478,7 +478,7 @@ namespace System.Experimental.Gdi
             {
                 return (DeviceContextGraphicsMode) IntUnsafeNativeMethods.GetGraphicsMode( new HandleRef( this, this.Hdc ) );
             }
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
             set
             {
                 SetGraphicsMode(value);
@@ -515,7 +515,7 @@ namespace System.Experimental.Gdi
             // Note: Don't use the Hdc property here, it would force handle creation.
             IntUnsafeNativeMethods.RestoreDC(new HandleRef(this, this.hDC), -1);
 #if TRACK_HDC
-            // Note: [....] may call this method during app exit at which point the DC may have been finalized already causing this assert to popup.
+            // Note: Microsoft may call this method during app exit at which point the DC may have been finalized already causing this assert to popup.
             Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("ret[0]=DC.RestoreHdc(hDc=0x{1:x8}, state={2})", result, unchecked((int) this.hDC), restoreState) ));
 #endif 
             Debug.Assert(contextStack != null, "Someone is calling RestoreHdc() before SaveHdc()");

@@ -371,6 +371,7 @@ namespace System.Windows.Media
         internal bool CheckFastPathNominalGlyphs(
             CharacterBufferRange    charBufferRange,
             double                  emSize,
+            float                   pixelsPerDip,
             double                  scalingFactor,
             double                  widthMax,
             bool                    keepAWord,
@@ -416,6 +417,7 @@ namespace System.Windows.Media
 
             glyphTypeface.GetGlyphMetricsOptimized(charBufferRange, 
                                                    emSize,
+                                                   pixelsPerDip,
                                                    glyphIndices,
                                                    glyphMetrics,
                                                    textFormattingMode,
@@ -453,7 +455,7 @@ namespace System.Windows.Media
                         glyph = glyphIndices[i-1];
                         if (!ignoreWidths)
                         {
-                            totalWidth += TextFormatterImp.RoundDip(glyphMetrics[i - 1].AdvanceWidth * designToEm, textFormattingMode) * scalingFactor;
+                            totalWidth += TextFormatterImp.RoundDip(glyphMetrics[i - 1].AdvanceWidth * designToEm, pixelsPerDip, textFormattingMode) * scalingFactor;
                         }
                     }
                 } while(
@@ -496,7 +498,7 @@ namespace System.Windows.Media
                     glyph = glyphIndices[i-1];
                     if (!ignoreWidths)
                     {
-                        totalWidth += TextFormatterImp.RoundDip(glyphMetrics[i - 1].AdvanceWidth * designToEm, textFormattingMode) * scalingFactor;
+                        totalWidth += TextFormatterImp.RoundDip(glyphMetrics[i - 1].AdvanceWidth * designToEm, pixelsPerDip, textFormattingMode) * scalingFactor;
                     }
                 }
             }
@@ -589,6 +591,7 @@ namespace System.Windows.Media
         internal void GetCharacterNominalWidthsAndIdealWidth(
             CharacterBufferRange charBufferRange,
             double               emSize,
+            float                pixelsPerDip,
             double               toIdeal,
             TextFormattingMode   textFormattingMode,
             bool                 isSideways,
@@ -599,6 +602,7 @@ namespace System.Windows.Media
             GetCharacterNominalWidthsAndIdealWidth(
                                 charBufferRange,
                                 emSize,
+                                pixelsPerDip,
                                 toIdeal,
                                 textFormattingMode,
                                 isSideways,
@@ -621,6 +625,7 @@ namespace System.Windows.Media
         internal void GetCharacterNominalWidthsAndIdealWidth(
             CharacterBufferRange charBufferRange,
             double               emSize,
+            float                pixelsPerDip,
             double               toIdeal,
             TextFormattingMode   textFormattingMode,
             bool                 isSideways,
@@ -637,6 +642,7 @@ namespace System.Windows.Media
 
             glyphTypeface.GetGlyphMetricsOptimized(charBufferRange, 
                                                    emSize,
+                                                   pixelsPerDip,
                                                    textFormattingMode,
                                                    isSideways,
                                                    glyphMetrics);
@@ -649,7 +655,7 @@ namespace System.Windows.Media
                 double designToEm = emSize / glyphTypeface.DesignEmHeight;
                 for (int i = 0; i < charBufferRange.Length; i++)
                 {
-                    nominalWidths[i] = (int)Math.Round(TextFormatterImp.RoundDipForDisplayMode(glyphMetrics[i].AdvanceWidth * designToEm) * toIdeal);
+                    nominalWidths[i] = (int)Math.Round(TextFormatterImp.RoundDipForDisplayMode(glyphMetrics[i].AdvanceWidth * designToEm, pixelsPerDip) * toIdeal);
                     idealWidth += nominalWidths[i];
                 }
             }

@@ -1033,7 +1033,7 @@ namespace System.Transactions.Oletx
 
             // Now make a local copy of the hash table of resource managers and tell each of them.  This is to
             // deal with Durable EDPR=true (phase0) enlistments.  Each RM will also get a TMDown, but it will
-            // come AFTER the "buggy" Phase0Request with abortHint=true - COMPlus bug 36760/36758.
+            // come AFTER the "buggy" Phase0Request with abortHint=true - COMPlus 
             Hashtable rmHashTable = null;
             if ( null != OletxTransactionManager.resourceManagerHashTable )
             {

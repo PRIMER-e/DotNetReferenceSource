@@ -7,7 +7,7 @@
 **
 ** Class:  Directory
 ** 
-** <OWNER>[....]</OWNER>
+** <OWNER>Microsoft</OWNER>
 **
 **
 ** Purpose: Exposes routines for enumerating through a 
@@ -57,11 +57,7 @@ namespace System.IO {
             return new DirectoryInfo(s);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static DirectoryInfo CreateDirectory(String path) {
@@ -119,14 +115,14 @@ namespace System.IO {
             // a demand at every level.
             String demandDir = GetDemandDir(fullPath, true);
 
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
             if (checkHost)
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, demandDir);
                 state.EnsureState(); // do the check on the AppDomainManager to make sure this is allowed  
             }
-#elif !FEATURE_CORECLR
-            new FileIOPermission(FileIOPermissionAccess.Read, new String[] { demandDir }, false, false).Demand();
+#else
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, demandDir, false, false);
 #endif
 
             InternalCreateDirectory(fullPath, path, null, checkHost);
@@ -152,7 +148,7 @@ namespace System.IO {
             // We attempt to create directories only after all the security checks have passed. This is avoid doing
             // a demand at every level.
             String demandDir = GetDemandDir(fullPath, true); 
-            new FileIOPermission(FileIOPermissionAccess.Read, new String[] { demandDir }, false, false ).Demand();
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, demandDir, false, false );
 
             InternalCreateDirectory(fullPath, path, directorySecurity);
             
@@ -173,23 +169,20 @@ namespace System.IO {
             if (thisDirOnly) {
                 if (fullPath.EndsWith( Path.DirectorySeparatorChar ) 
                     || fullPath.EndsWith( Path.AltDirectorySeparatorChar ) )
-                    demandPath = fullPath + '.';
+                    demandPath = fullPath + ".";
                 else
-                    demandPath = fullPath + Path.DirectorySeparatorChar + '.';
+                    demandPath = fullPath + Path.DirectorySeparatorCharAsString + ".";
             }
             else {
                 if (!(fullPath.EndsWith( Path.DirectorySeparatorChar ) 
                     || fullPath.EndsWith( Path.AltDirectorySeparatorChar )) )
-                    demandPath = fullPath + Path.DirectorySeparatorChar;
+                    demandPath = fullPath + Path.DirectorySeparatorCharAsString;
                 else
                     demandPath = fullPath;
             }
             return demandPath;
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         internal static void InternalCreateDirectory(String fullPath, String path, Object dirSecurityObj)
@@ -198,11 +191,7 @@ namespace System.IO {
         }
 
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         internal unsafe static void InternalCreateDirectory(String fullPath, String path, Object dirSecurityObj, bool checkHost)
@@ -219,11 +208,9 @@ namespace System.IO {
             
             int lengthRoot = Path.GetRootLength(fullPath);
 
-#if !PLATFORM_UNIX
             // For UNC paths that are only // or /// 
             if (length == 2 && Path.IsDirectorySeparator(fullPath[1]))
                 throw new IOException(Environment.GetResourceString("IO.IO_CannotCreateDirectory", path));
-#endif // !PLATFORM_UNIX
 
             // We can save a bunch of work if the directory we want to create already exists.  This also
             // saves us in the case where sub paths are inaccessible (due to ERROR_ACCESS_DENIED) but the
@@ -261,19 +248,27 @@ namespace System.IO {
 
             int count = stackDir.Count;
 
-            if (stackDir.Count != 0)
+            if (stackDir.Count != 0
+#if FEATURE_CAS_POLICY
+                // All demands in full trust domains are no-ops, so skip
+                //
+                // The full path went through validity checks by being passed through FileIOPermissions already.
+                // As a sub string of the full path can't fail the checks if the full path passes.
+                && !CodeAccessSecurityEngine.QuickCheckForAllDemands()
+#endif
+            )
             {
-                String [] securityList = new String[stackDir.Count];
+                String[] securityList = new String[stackDir.Count];
                 stackDir.CopyTo(securityList, 0);
                 for (int j = 0 ; j < securityList.Length; j++)
                     securityList[j] += "\\."; // leaf will never have a slash at the end
 
                 // Security check for all directories not present only.
-#if !FEATURE_PAL  && FEATURE_MACL
+#if !FEATURE_PAL && FEATURE_MACL
                 AccessControlActions control = (dirSecurity == null) ? AccessControlActions.None : AccessControlActions.Change;
-                new FileIOPermission(FileIOPermissionAccess.Write, control, securityList, false, false ).Demand();
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, control, securityList, false, false);
 #else
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
                 if (checkHost)
                 {
                     foreach (String demandPath in securityList) 
@@ -282,8 +277,8 @@ namespace System.IO {
                         state.EnsureState();
                     }
                 }
-#elif !FEATURE_CORECLR
-                new FileIOPermission(FileIOPermissionAccess.Write, securityList, false, false ).Demand();
+#else
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, securityList, false, false );
 #endif
 #endif //!FEATURE_PAL  && FEATURE_MACL
             }
@@ -311,8 +306,9 @@ namespace System.IO {
             while (stackDir.Count > 0) {
                 String name = stackDir[stackDir.Count - 1];
                 stackDir.RemoveAt(stackDir.Count - 1);
-                if (name.Length >= Path.MAX_DIRECTORY_PATH)
+                if (PathInternal.IsDirectoryTooLong(name))
                     throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
+
                 r = Win32Native.CreateDirectory(name, secAttrs);
                 if (!r && (firstError == 0)) {
                     int currentError = Marshal.GetLastWin32Error();
@@ -332,14 +328,14 @@ namespace System.IO {
                             firstError = currentError;
                             // Give the user a nice error message, but don't leak path information.
                             try {
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
                                 if (checkHost)
                                 {
                                     FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, GetDemandDir(name, true));
                                     state.EnsureState();
                                 }
-#elif !FEATURE_CORECLR
-                                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, GetDemandDir(name, true)).Demand();
+#else
+                                FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, GetDemandDir(name, true));
 #endif // FEATURE_CORECLR
                                 errorString = name;
                             }
@@ -405,14 +401,14 @@ namespace System.IO {
                 String fullPath = Path.GetFullPathInternal(path);
                 String demandPath = GetDemandDir(fullPath, true);
 
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
                 if (checkHost)
                 {
                     FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, path, demandPath);
                     state.EnsureState();
                 }
-#elif !FEATURE_CORECLR
-                new FileIOPermission(FileIOPermissionAccess.Read, new String[] { demandPath }, false, false).Demand();
+#else
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.Read, demandPath, false, false);
 #endif
 
 
@@ -425,7 +421,7 @@ namespace System.IO {
             catch (UnauthorizedAccessException)
             {
 #if !FEATURE_PAL
-                Contract.Assert(false, "Ignore this assert and send a repro to [....]. This assert was tracking purposes only.");
+                Contract.Assert(false, "Ignore this assert and send a repro to Microsoft. This assert was tracking purposes only.");
 #endif //!FEATURE_PAL
             }
             return false;
@@ -466,27 +462,19 @@ namespace System.IO {
         [ResourceConsumption(ResourceScope.Machine)]
         public unsafe static void SetCreationTimeUtc(String path,DateTime creationTimeUtc)
         {
-#if !FEATURE_PAL
-            if ((Environment.OSInfo & Environment.OSName.WinNT) == Environment.OSName.WinNT)
-#endif //!FEATURE_PAL
-            {
-                using (SafeFileHandle handle = Directory.OpenHandle(path)) {
-                    Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(creationTimeUtc.ToFileTimeUtc());
-                    bool r = Win32Native.SetFileTime(handle, &fileTime, null, null);
-                    if (!r)
-                    {
-                        int errorCode = Marshal.GetLastWin32Error();
-                        __Error.WinIOError(errorCode, path);
-                    }
+            using (SafeFileHandle handle = Directory.OpenHandle(path)) {
+                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(creationTimeUtc.ToFileTimeUtc());
+                bool r = Win32Native.SetFileTime(handle, &fileTime, null, null);
+                if (!r)
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    __Error.WinIOError(errorCode, path);
                 }
             }
         }
 
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         public static DateTime GetCreationTime(String path)
         {
             return File.GetCreationTime(path);
@@ -511,27 +499,19 @@ namespace System.IO {
         [ResourceConsumption(ResourceScope.Machine)]
         public unsafe static void SetLastWriteTimeUtc(String path,DateTime lastWriteTimeUtc)
         {
-#if !FEATURE_PAL
-            if ((Environment.OSInfo & Environment.OSName.WinNT) == Environment.OSName.WinNT)
-#endif //!FEATURE_PAL
-            {
-                using (SafeFileHandle handle = Directory.OpenHandle(path)) {
-                    Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(lastWriteTimeUtc.ToFileTimeUtc());
-                    bool r = Win32Native.SetFileTime(handle,  null, null, &fileTime);
-                    if (!r)
-                    {
-                        int errorCode = Marshal.GetLastWin32Error();
-                        __Error.WinIOError(errorCode, path);
-                    }
+            using (SafeFileHandle handle = Directory.OpenHandle(path)) {
+                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(lastWriteTimeUtc.ToFileTimeUtc());
+                bool r = Win32Native.SetFileTime(handle,  null, null, &fileTime);
+                if (!r)
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    __Error.WinIOError(errorCode, path);
                 }
             }
         }
 
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         public static DateTime GetLastWriteTime(String path)
         {
             return File.GetLastWriteTime(path);
@@ -556,27 +536,19 @@ namespace System.IO {
         [ResourceConsumption(ResourceScope.Machine)]
         public unsafe static void SetLastAccessTimeUtc(String path,DateTime lastAccessTimeUtc)
         {
-#if !FEATURE_PAL
-            if ((Environment.OSInfo & Environment.OSName.WinNT) == Environment.OSName.WinNT)
-#endif //!FEATURE_PAL
-            {
-                using (SafeFileHandle handle = Directory.OpenHandle(path)) {
-                    Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(lastAccessTimeUtc.ToFileTimeUtc());
-                    bool r = Win32Native.SetFileTime(handle,  null, &fileTime, null);
-                    if (!r)
-                    {
-                        int errorCode = Marshal.GetLastWin32Error();
-                        __Error.WinIOError(errorCode, path);
-                    }
+            using (SafeFileHandle handle = Directory.OpenHandle(path)) {
+                Win32Native.FILE_TIME fileTime = new Win32Native.FILE_TIME(lastAccessTimeUtc.ToFileTimeUtc());
+                bool r = Win32Native.SetFileTime(handle,  null, &fileTime, null);
+                if (!r)
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    __Error.WinIOError(errorCode, path);
                 }
             }
         }
 
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         public static DateTime GetLastAccessTime(String path)
         {
             return File.GetLastAccessTime(path);
@@ -621,9 +593,6 @@ namespace System.IO {
         // Returns an array of filenames in the DirectoryInfo specified by path
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [SecurityCritical]
-#endif
         public static String[] GetFiles(String path)
         {
             if (path == null)
@@ -638,9 +607,6 @@ namespace System.IO {
         // given search pattern (ie, "*.txt").
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [SecurityCritical]
-#endif
         public static String[] GetFiles(String path, String searchPattern)
         {
             if (path == null)
@@ -673,9 +639,6 @@ namespace System.IO {
 
         // Returns an array of Files in the current DirectoryInfo matching the 
         // given search pattern (ie, "*.txt") and search option
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         private static String[] InternalGetFiles(String path, String searchPattern, SearchOption searchOption)
@@ -702,9 +665,6 @@ namespace System.IO {
         // Returns an array of Directories in the current directory.
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [SecurityCritical]
-#endif
         public static String[] GetDirectories(String path)
         {
             if (path == null)
@@ -719,9 +679,6 @@ namespace System.IO {
         // given search criteria (ie, "*.txt").
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [SecurityCritical]
-#endif
         public static String[] GetDirectories(String path, String searchPattern)
         {
             if (path == null)
@@ -754,9 +711,6 @@ namespace System.IO {
 
         // Returns an array of Directories in the current DirectoryInfo matching the 
         // given search criteria (ie, "*.txt").
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         private static String[] InternalGetDirectories(String path, String searchPattern, SearchOption searchOption)
@@ -785,9 +739,6 @@ namespace System.IO {
         // Returns an array of strongly typed FileSystemInfo entries in the path
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [SecurityCritical]
-#endif
         public static String[] GetFileSystemEntries(String path)
         {
             if (path == null)
@@ -802,9 +753,6 @@ namespace System.IO {
         // given search criteria (ie, "*.txt"). We disallow .. as a part of the search criteria
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [SecurityCritical]
-#endif
         public static String[] GetFileSystemEntries(String path, String searchPattern)
         {
             if (path == null)
@@ -835,9 +783,6 @@ namespace System.IO {
             return InternalGetFileSystemEntries(path, searchPattern, searchOption);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         private static String[] InternalGetFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
@@ -876,9 +821,6 @@ namespace System.IO {
         // the given search criteria against every dir.
         // For all the dirs/files returned, it will then demand path discovery permission for 
         // their parent folders (it will avoid duplicate permission checks)
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         internal static String[] InternalGetFileDirectoryNames(String path, String userPathOriginal, String searchPattern, bool includeFiles, bool includeDirs, SearchOption searchOption, bool checkHost)
@@ -895,9 +837,6 @@ namespace System.IO {
             return fileList.ToArray();
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateDirectories(String path)
@@ -909,9 +848,6 @@ namespace System.IO {
             return InternalEnumerateDirectories(path, "*", SearchOption.TopDirectoryOnly);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateDirectories(String path, String searchPattern)
@@ -925,9 +861,6 @@ namespace System.IO {
             return InternalEnumerateDirectories(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateDirectories(String path, String searchPattern, SearchOption searchOption)
@@ -943,9 +876,6 @@ namespace System.IO {
             return InternalEnumerateDirectories(path, searchPattern, searchOption);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         private static IEnumerable<String> InternalEnumerateDirectories(String path, String searchPattern, SearchOption searchOption)
@@ -957,9 +887,6 @@ namespace System.IO {
             return EnumerateFileSystemNames(path, searchPattern, searchOption, false, true);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateFiles(String path)
@@ -972,9 +899,6 @@ namespace System.IO {
             return InternalEnumerateFiles(path, "*", SearchOption.TopDirectoryOnly);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateFiles(String path, String searchPattern)
@@ -989,9 +913,6 @@ namespace System.IO {
             return InternalEnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateFiles(String path, String searchPattern, SearchOption searchOption)
@@ -1008,9 +929,6 @@ namespace System.IO {
             return InternalEnumerateFiles(path, searchPattern, searchOption);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         private static IEnumerable<String> InternalEnumerateFiles(String path, String searchPattern, SearchOption searchOption)
@@ -1023,9 +941,6 @@ namespace System.IO {
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, false);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateFileSystemEntries(String path)
@@ -1038,9 +953,6 @@ namespace System.IO {
             return InternalEnumerateFileSystemEntries(path, "*", SearchOption.TopDirectoryOnly);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateFileSystemEntries(String path, String searchPattern)
@@ -1055,9 +967,6 @@ namespace System.IO {
             return InternalEnumerateFileSystemEntries(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static IEnumerable<String> EnumerateFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
@@ -1074,9 +983,6 @@ namespace System.IO {
             return InternalEnumerateFileSystemEntries(path, searchPattern, searchOption);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         private static IEnumerable<String> InternalEnumerateFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
@@ -1089,9 +995,6 @@ namespace System.IO {
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, true);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         private static IEnumerable<String> EnumerateFileSystemNames(String path, String searchPattern, SearchOption searchOption,
                                                             bool includeFiles, bool includeDirs)
         {
@@ -1109,7 +1012,6 @@ namespace System.IO {
         // 
         // Your application must have System Info permission.
         // 
-#if !PLATFORM_UNIX
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static String[] GetLogicalDrives()
         {
@@ -1141,20 +1043,8 @@ namespace System.IO {
             }
             return result;
         }
-#else
-        public static String[] GetLogicalDrives()
-        {   
-            // On Unix systems, GetLogicalDrives 
-            // should return an empty string array
-            return new String[0];
-        } 
-#endif // !PLATFORM_UNIX
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static String GetDirectoryRoot(String path) {
@@ -1166,11 +1056,11 @@ namespace System.IO {
             String root = fullPath.Substring(0, Path.GetRootLength(fullPath));
             String demandPath = GetDemandDir(root, true);
 
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
             FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, path, demandPath);
             state.EnsureState();
-#elif !FEATURE_CORECLR
-            new FileIOPermission(FileIOPermissionAccess.PathDiscovery, new String[] { demandPath }, false, false ).Demand();
+#else
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, demandPath, false, false);
 #endif
                      
             return root;
@@ -1188,11 +1078,7 @@ namespace System.IO {
         **Arguments: The current DirectoryInfo to which to switch to the setter.
         **Exceptions: 
         ==============================================================================*/
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static String GetCurrentDirectory()
@@ -1208,48 +1094,87 @@ namespace System.IO {
             return InternalGetCurrentDirectory(false);
         }
 
-        [System.Security.SecurityCritical]
+        [System.Security.SecuritySafeCritical]
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        private static String InternalGetCurrentDirectory(bool checkHost)
+        private static string InternalGetCurrentDirectory(bool checkHost)
         {
-            StringBuilder sb = StringBuilderCache.Acquire(Path.MAX_PATH + 1);
-            if (Win32Native.GetCurrentDirectory(sb.Capacity, sb) == 0)
-                __Error.WinIOError();
-            String currentDirectory = sb.ToString();
-            // Note that if we have somehow put our command prompt into short
-            // file name mode (ie, by running edlin or a DOS grep, etc), then
-            // this will return a short file name.
-            if (currentDirectory.IndexOf('~') >= 0) {
-                int r = Win32Native.GetLongPathName(currentDirectory, sb, sb.Capacity);
-                if (r == 0 || r >= Path.MAX_PATH) {                    
-                    int errorCode = Marshal.GetLastWin32Error();
-                    if (r >= Path.MAX_PATH)
-                        errorCode = Win32Native.ERROR_FILENAME_EXCED_RANGE;
-                    if (errorCode != Win32Native.ERROR_FILE_NOT_FOUND &&
-                        errorCode != Win32Native.ERROR_PATH_NOT_FOUND &&
-                        errorCode != Win32Native.ERROR_INVALID_FUNCTION &&  // by design - enough said.
-                        errorCode != Win32Native.ERROR_ACCESS_DENIED)
-                        __Error.WinIOError(errorCode, String.Empty);
-                }
-                currentDirectory = sb.ToString();
-            }
-            StringBuilderCache.Release(sb);
-            String demandPath = GetDemandDir(currentDirectory, true);
+            string currentDirectory = AppContextSwitches.UseLegacyPathHandling ? LegacyGetCurrentDirectory() : NewGetCurrentDirectory();
+            string demandPath = GetDemandDir(currentDirectory, true);
 
-            
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
             if (checkHost) 
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPath);
                 state.EnsureState();
             }
-#elif !FEATURE_CORECLR
-            new FileIOPermission( FileIOPermissionAccess.PathDiscovery, new String[] { demandPath }, false, false ).Demand();
+#else
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, demandPath, false, false);
 #endif
             return currentDirectory;
         }
 
+        [System.Security.SecurityCritical]
+        [ResourceExposure(ResourceScope.Machine)]
+        [ResourceConsumption(ResourceScope.Machine)]
+        private static string LegacyGetCurrentDirectory()
+        {
+            StringBuilder sb = StringBuilderCache.Acquire(PathInternal.MaxShortPath + 1);
+            if (Win32Native.GetCurrentDirectory(sb.Capacity, sb) == 0)
+                __Error.WinIOError();
+            string currentDirectory = sb.ToString();
+            // Note that if we have somehow put our command prompt into short
+            // file name mode (ie, by running edlin or a DOS grep, etc), then
+            // this will return a short file name.
+            if (currentDirectory.IndexOf('~') >= 0)
+            {
+                int r = Win32Native.GetLongPathName(currentDirectory, sb, sb.Capacity);
+                if (r == 0 || r >= PathInternal.MaxShortPath)
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    if (r >= PathInternal.MaxShortPath)
+                        errorCode = Win32Native.ERROR_FILENAME_EXCED_RANGE;
+                    if (errorCode != Win32Native.ERROR_FILE_NOT_FOUND &&
+                        errorCode != Win32Native.ERROR_PATH_NOT_FOUND &&
+                        errorCode != Win32Native.ERROR_INVALID_FUNCTION &&  // by design - enough said.
+                        errorCode != Win32Native.ERROR_ACCESS_DENIED)
+                        __Error.WinIOError(errorCode, string.Empty);
+                }
+                currentDirectory = sb.ToString();
+            }
+            StringBuilderCache.Release(sb);
+            return currentDirectory;
+        }
+
+        [System.Security.SecurityCritical]
+        [ResourceExposure(ResourceScope.Machine)]
+        [ResourceConsumption(ResourceScope.Machine)]
+        private static string NewGetCurrentDirectory()
+        {
+            using (StringBuffer buffer = new StringBuffer(PathInternal.MaxShortPath))
+            {
+                uint result = 0;
+                while ((result = Win32Native.GetCurrentDirectoryW(buffer.CharCapacity, buffer.GetHandle())) > buffer.CharCapacity)
+                {
+                    // Reported size is greater than the buffer size. Increase the capacity.
+                    // The size returned includes the null only if more space is needed (this case).
+                    buffer.EnsureCharCapacity(result);
+                }
+
+                if (result == 0)
+                {
+                    __Error.WinIOError();
+                }
+
+                buffer.Length = result;
+                if (buffer.Contains('~'))
+                {
+                    return LongPathHelper.GetLongPathName(buffer);
+                }
+
+                return buffer.ToString();
+            }
+        }
 
         #if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
@@ -1259,15 +1184,16 @@ namespace System.IO {
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static void SetCurrentDirectory(String path)
-        {        
+        {
             if (path==null)
                 throw new ArgumentNullException("value");
             if (path.Length==0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"));
             Contract.EndContractBlock();
-            if (path.Length >= Path.MAX_PATH)
+
+            if (PathInternal.IsPathTooLong(path))
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
-                
+
             // This will have some large effects on the rest of the runtime
             // and other appdomains in this process.  Demand unmanaged code.
 #pragma warning disable 618
@@ -1287,11 +1213,7 @@ namespace System.IO {
             }
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static void Move(String sourceDirName,String destDirName) {
@@ -1301,19 +1223,19 @@ namespace System.IO {
         [System.Security.SecurityCritical]
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        internal static void UnsafeMove(String sourceDirName,String destDirName) {
+        internal static void UnsafeMove(String sourceDirName, String destDirName) {
             InternalMove(sourceDirName, destDirName, false);
         }
 
         [System.Security.SecurityCritical]
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
-        private static void InternalMove(String sourceDirName,String destDirName,bool checkHost) {
+        private static void InternalMove(String sourceDirName, String destDirName, bool checkHost) {
             if (sourceDirName==null)
                 throw new ArgumentNullException("sourceDirName");
             if (sourceDirName.Length==0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "sourceDirName");
-            
+
             if (destDirName==null)
                 throw new ArgumentNullException("destDirName");
             if (destDirName.Length==0)
@@ -1322,26 +1244,26 @@ namespace System.IO {
 
             String fullsourceDirName = Path.GetFullPathInternal(sourceDirName);
             String sourcePath = GetDemandDir(fullsourceDirName, false);
-            
-            if (sourcePath.Length >= Path.MAX_DIRECTORY_PATH)
+
+            if (PathInternal.IsDirectoryTooLong(sourcePath))
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
 
             String fulldestDirName = Path.GetFullPathInternal(destDirName);
             String destPath = GetDemandDir(fulldestDirName, false);
 
-            if (destPath.Length >= Path.MAX_DIRECTORY_PATH)
+            if (PathInternal.IsDirectoryTooLong(sourcePath))
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
-            
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+
+#if FEATURE_CORECLR
             if (checkHost) {
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, sourceDirName, sourcePath);
                 FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destDirName, destPath);
                 sourceState.EnsureState();
                 destState.EnsureState();
             }
-#elif !FEATURE_CORECLR
-            new FileIOPermission(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, new String[] { sourcePath }, false, false ).Demand();
-            new FileIOPermission(FileIOPermissionAccess.Write, new String[] { destPath }, false, false ).Demand();
+#else
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write | FileIOPermissionAccess.Read, sourcePath, false, false);
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, destPath, false, false);
 #endif
            
             if (String.Compare(sourcePath, destPath, StringComparison.OrdinalIgnoreCase) == 0)
@@ -1367,11 +1289,7 @@ namespace System.IO {
             }
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static void Delete(String path)
@@ -1380,11 +1298,7 @@ namespace System.IO {
             Delete(fullPath, path, false, true);
         }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         [ResourceExposure(ResourceScope.Machine)]
         [ResourceConsumption(ResourceScope.Machine)]
         public static void Delete(String path, bool recursive)
@@ -1415,15 +1329,15 @@ namespace System.IO {
             // else check for the whole directory structure rooted below 
             demandPath = GetDemandDir(fullPath, !recursive);
             
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
             if (checkHost) 
             {
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Write, userPath, demandPath);
                 state.EnsureState();
             }
-#elif !FEATURE_CORECLR
+#else
             // Make sure we have write permission to this directory
-            new FileIOPermission(FileIOPermissionAccess.Write, new String[] { demandPath }, false, false ).Demand();
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, demandPath, false, false);
 #endif
 
             // Do not recursively delete through reparse points.  Perhaps in a 
@@ -1470,7 +1384,7 @@ namespace System.IO {
                 Win32Native.WIN32_FIND_DATA data = new Win32Native.WIN32_FIND_DATA();
                 
                 // Open a Find handle
-                using (SafeFindHandle hnd = Win32Native.FindFirstFile(fullPath+Path.DirectorySeparatorChar+"*", data)) {
+                using (SafeFindHandle hnd = Win32Native.FindFirstFile(fullPath+Path.DirectorySeparatorCharAsString+"*", data)) {
                     if (hnd.IsInvalid) {
                         hr = Marshal.GetLastWin32Error();
                         __Error.WinIOError(hr, fullPath);
@@ -1594,16 +1508,13 @@ namespace System.IO {
         [ResourceConsumption(ResourceScope.Machine)]
         private static SafeFileHandle OpenHandle(String path)
         {
-#if !FEATURE_PAL
-            Contract.Assert((Environment.OSInfo & Environment.OSName.WinNT) == Environment.OSName.WinNT,"Not running on Winnt OS");
-#endif //!FEATURE_PAL
             String fullPath = Path.GetFullPathInternal(path);
             String root = Path.GetPathRoot(fullPath);
             if (root == fullPath && root[1] == Path.VolumeSeparatorChar)
                 throw new ArgumentException(Environment.GetResourceString("Arg_PathIsVolume"));
 
 #if !FEATURE_CORECLR
-            new FileIOPermission(FileIOPermissionAccess.Write, new String[] { GetDemandDir(fullPath, true) }, false, false ).Demand();
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, GetDemandDir(fullPath, true), false, false);
 #endif
 
             SafeFileHandle handle = Win32Native.SafeCreateFile (

@@ -6,6 +6,7 @@
 
 namespace System.Net {
 
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -222,6 +223,13 @@ namespace System.Net {
 
         private const int CRLFSize = 2;
         private const long c_InvalidContentLength = -2L;
+        
+        //
+        // Buffer manager that allocates and reuses 4k buffers.
+        //
+        private const int CachedBufferSize = 4096;
+        private static PinnableBufferCache s_PinnableBufferCache = new PinnableBufferCache("System.Net.Connection", CachedBufferSize);
+        
         //
         // Little status line holder.
         //
@@ -264,6 +272,7 @@ namespace System.Net {
 
         internal int                m_IISVersion = -1; //-1 means unread
         private byte[]              m_ReadBuffer;
+        private bool                m_ReadBufferFromPinnableCache; // If we get our m_readBuffer from the Pinnable cache we have to explicitly free it
         private int                 m_BytesRead;
         private int                 m_BytesScanned;
         private int                 m_TotalResponseHeadersLength;
@@ -463,7 +472,8 @@ namespace System.Net {
             }
             m_ResponseData = new CoreResponseData();
             m_ConnectionGroup = connectionGroup;
-            m_ReadBuffer = new byte[4096];    // Using a fixed 4k read buffer.
+            m_ReadBuffer = s_PinnableBufferCache.AllocateBuffer();
+            m_ReadBufferFromPinnableCache = true;
             m_ReadState = ReadState.Start;
             m_WaitList = new List<WaitListItem>();
             m_WriteList = new ArrayList();
@@ -478,6 +488,39 @@ namespace System.Net {
             m_ReadDone = true;
             m_WriteDone = true;
             m_Error = WebExceptionStatus.Success;
+            if (PinnableBufferCacheEventSource.Log.IsEnabled())
+            {
+                PinnableBufferCacheEventSource.Log.DebugMessage1("CTOR: In System.Net.Connection.Connnection", this.GetHashCode());
+            }
+        }
+
+        ~Connection() {
+            if (m_ReadBufferFromPinnableCache)
+            {
+                if (PinnableBufferCacheEventSource.Log.IsEnabled())
+                {
+                    PinnableBufferCacheEventSource.Log.DebugMessage1("DTOR: ERROR Needing to Free m_ReadBuffer in Connection Destructor", m_ReadBuffer.GetHashCode());
+                }
+            }
+            FreeReadBuffer();
+        }
+
+        // If the buffer came from the the pinnable cache, return it to the cache.
+        // NOTE: This method is called from this object's finalizer and should not access any member objects.
+        void FreeReadBuffer() {
+            if (m_ReadBufferFromPinnableCache) {
+                s_PinnableBufferCache.FreeBuffer(m_ReadBuffer);
+                m_ReadBufferFromPinnableCache = false;
+            }
+            m_ReadBuffer = null;
+        }
+
+        protected override void Dispose(bool disposing) {
+            if (PinnableBufferCacheEventSource.Log.IsEnabled()) {
+                PinnableBufferCacheEventSource.Log.DebugMessage1("In System.Net.Connection.Dispose()", this.GetHashCode());
+            }
+            FreeReadBuffer();
+            base.Dispose(disposing);
         }
 
         internal int BusyCount {
@@ -627,6 +670,7 @@ namespace System.Net {
                         PrepareCloseConnectionSocket(ref returnResult);
                         // Hard Close the socket.
                         Close(0);
+                        FreeReadBuffer();	// Do it after close completes to insure buffer not in use
                     }
                 }
                 else {
@@ -658,7 +702,7 @@ namespace System.Net {
             if (startRequestResult != TriState.Unspecified) {
                 CompleteStartRequest(true, request, startRequestResult);
             }
-            // On [....], we wait for the Connection to be come availble here,
+            // On Sync, we wait for the Connection to be come availble here,
             if (!request.Async)
             {
                 object responseObject = request.ConnectionAsyncResult.InternalWaitForCompletion();
@@ -868,7 +912,7 @@ namespace System.Net {
 
             //
             // From now on the request.SetRequestSubmitDone must be called or it may hang
-            // For a [....] request the write side reponse windowwas opened in HttpWebRequest.SubmitRequest
+            // For a sync request the write side reponse windowwas opened in HttpWebRequest.SubmitRequest
             if (request.Async)
                 request.OpenWriteSideResponseWindow();
 
@@ -1034,7 +1078,7 @@ namespace System.Net {
             WebExceptionStatus ws = WebExceptionStatus.ConnectFailure;
             //
             // From now on the request.SetRequestSubmitDone must be called or it may hang
-            // For a [....] request the write side reponse windowwas opened in HttpWebRequest.SubmitRequest
+            // For a sync request the write side reponse windowwas opened in HttpWebRequest.SubmitRequest
             if (request.Async)
                 request.OpenWriteSideResponseWindow();
 
@@ -1197,7 +1241,15 @@ namespace System.Net {
                 Buffer.BlockCopy(buffer, bufferOffset, buffer, 0, bufferCount);
             }
 
-            m_ReadBuffer = buffer;
+            // If we had to reallocate the buffer, we are going to clobber the one that was allocated from the pin friendly cache.  
+            // give it back
+            if (m_ReadBuffer != buffer)
+            {
+                // if m_ReadBuffer is from the pinnable cache, give it back
+                FreeReadBuffer();
+                m_ReadBuffer = buffer;
+            }
+
             m_BytesScanned = 0;
             m_BytesRead = bufferCount;
         }
@@ -1320,7 +1372,7 @@ namespace System.Net {
                                     if (nextRequest != null )
                                     {
                                         // We cannot have HeadersCompleted on the request that was not placed yet on the write list
-                                        if(nextRequest.HeadersCompleted) // TODO: change to be Assert but only when stress got stable-stable
+                                        if(nextRequest.HeadersCompleted) // 
                                             throw new InternalException();
 
                                         // This codepath doesn't handle the case where the server has closed the
@@ -2072,7 +2124,7 @@ quit:
                 //    IIS6 does not close the connection on 403 so all subsequent requests will fail to be authorized on THAT connection.
                 //-----------------------------------------------------------------------------------------------
                 //5/15/2006
-                //[....]
+                //Microsoft
                 //The DTS Issue 595216 claims that we are unnecessarily closing the
                 //connection on 403 - even if it is a non SSL request. It seems
                 //that the original intention is to close the request for SSL requests
@@ -2101,7 +2153,7 @@ quit:
                 else
                 {
                     //QFE: 4599.
-                    //Author: [....]
+                    //Author: Microsoft
                     //in v2.0, in case of SSL Requests through proxy that require NTLM authentication,
                     //we are not honoring the Proxy-Connection: Keep-Alive header and
                     //closing the connection.
@@ -2690,6 +2742,7 @@ quit:
                 PrepareCloseConnectionSocket(ref result);
                 // Hard Close the socket.
                 Close(0);
+                FreeReadBuffer();	// Do it after close completes to insure buffer not in use
 #if DEBUG
                 }
                 catch (Exception exception)
@@ -2730,6 +2783,7 @@ quit:
             lock (this)
             {
                 Close(0);
+                FreeReadBuffer();	// Do it after close completes to insure buffer not in use
             }
 
             GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::Abort", "isAbortState:" + isAbortState.ToString());
@@ -2874,7 +2928,7 @@ quit:
                         {
                             if (m_Error == WebExceptionStatus.Success)
                             {
-                                throw new InternalException();              // TODO: replace it with a generic error for the product bits
+                                throw new InternalException();              // 
                                 //m_Error = WebExceptionStatus.UnknownError;
                             }
 
@@ -2948,6 +3002,7 @@ quit:
                 m_RemovedFromConnectionList = true;
                 ConnectionGroup.Disassociate(this);
             }
+
             GlobalLog.Leave("Connection#" + ValidationHelper.HashString(this) + "::PrepareCloseConnectionSocket");
         }
 
@@ -3016,6 +3071,7 @@ quit:
                 // This will kill the socket
                 // Must be done inside the lock.  (Stream Close() isn't threadsafe.)
                 Close(0);
+                FreeReadBuffer();	// Do it after close completes to insure buffer not in use
             }
         }
 
@@ -3107,7 +3163,7 @@ quit:
             }
         }
         //
-        //    Peforms a [....] Read and calls the ReadComplete to process the result
+        //    Peforms a Sync Read and calls the ReadComplete to process the result
         //    The reads are done iteratively, until the Request has received enough
         //    data to contruct a response, or a 100-Continue is read, allowing the HttpWebRequest
         //    to return a write stream
@@ -3216,7 +3272,7 @@ quit:
 
             if (probeRead)
             {
-                // [....] 100-Continue wait only
+                // Sync 100-Continue wait only
                 request.FinishContinueWait();
                 if (pollSuccess)
                 {
@@ -3365,6 +3421,9 @@ quit:
                             //
                             byte[] newReadBuffer = new byte[m_ReadBuffer.Length * 2 /*+ ReadBufferSize*/];
                             Buffer.BlockCopy(m_ReadBuffer, 0, newReadBuffer, 0, m_BytesRead);
+
+                            // if m_ReadBuffer is from the pinnable cache, give it back
+                            FreeReadBuffer();
                             m_ReadBuffer = newReadBuffer;
                         }
                         else
@@ -3409,7 +3468,7 @@ quit:
             }
             //
             // Any exception is processed by HandleError() and ----ed to avoid throwing on a thread pool
-            // In the [....] case the HandleError() will abort the request so the caller will pick up the result.
+            // In the sync case the HandleError() will abort the request so the caller will pick up the result.
             //
             catch (Exception exception) {
                 if (NclUtilities.IsFatal(exception)) throw;

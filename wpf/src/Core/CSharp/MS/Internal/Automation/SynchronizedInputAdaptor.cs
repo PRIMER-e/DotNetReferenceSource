@@ -7,7 +7,7 @@
 //
 // Description: Synchronized Input pattern adaptor
 // History:
-//  07/28/2009 : [....] - created
+//  07/28/2009 : Microsoft - created
 // 
 //---------------------------------------------------------------------------
 using System;

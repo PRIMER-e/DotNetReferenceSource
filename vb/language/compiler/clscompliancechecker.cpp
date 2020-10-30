@@ -976,7 +976,7 @@ bool CLSComplianceChecker::IsAccessibleOutsideAssembly(BCSYM_NamedRoot * Member)
         // If the containing class is notinheritable, then the protected members are
         // not accessible outside the assembly since nobody can inherit the class.
         //
-        // Confirmed this with [....] and jsmiller
+        // Confirmed this with Microsoft and jsmiller
         //
         if (ContainerOfMember->IsClass() &&
             ContainerOfMember->PClass()->IsNotInheritable())

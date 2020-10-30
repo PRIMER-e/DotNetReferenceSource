@@ -104,8 +104,9 @@ namespace System.Windows.Forms
                 return null;
             }
 
-            StringBuilder path = new StringBuilder(NativeMethods.MAX_PATH);
-            int result = UnsafeNativeMethods.Shell32.SHGetFolderPathEx(ref folderGuid, 0, IntPtr.Zero, path, (uint)path.Capacity);
+            StringBuilder path = new StringBuilder();
+
+            int result = UnsafeNativeMethods.Shell32.SHGetFolderPathEx(ref folderGuid, 0, IntPtr.Zero, path);
             if (NativeMethods.S_OK == result) 
             {
                 string ret = path.ToString();

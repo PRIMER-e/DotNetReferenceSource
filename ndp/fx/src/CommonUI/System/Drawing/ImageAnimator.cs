@@ -66,23 +66,23 @@ namespace System.Drawing {
         /// <devdoc>
         ///     Flag to avoid a deadlock when waiting on a write-lock and a an attemp to acquire a read-lock is 
         ///     made in the same thread. The following comments are from WeiWen Liu (CLR team):
-        ///     <[....]: If RWLock is currently owned by another thread, the current thread is going to wait on an 
+        ///     <Microsoft: If RWLock is currently owned by another thread, the current thread is going to wait on an 
         ///     event using CoWaitForMultipleHandles while pumps message/>. 
         ///     The comment above refers to the COM STA message pump, not to be confused with the UI message pump.
         ///     However, the effect is the same, the COM message pump will pump messages and dispatch them to the
         ///     window while waiting on the writer lock; this has the potential of creating a re-entrancy situation 
         //      that if during the message processing a wait on a reader lock is originated the thread will be block 
         //      on itself - see call stack attached to VSW#465562.
-        ///     <[....]: While processing STA message, the thread may call back into managed code. We do this because 
+        ///     <Microsoft: While processing STA message, the thread may call back into managed code. We do this because 
         ///     we can not block finalizer thread.  Finalizer thread may need to release STA objects on this thread. If 
         ///     the current thread does not pump message, finalizer thread is blocked, and AD  unload is blocked while 
         ///     waiting for finalizer thread. RWLock is a fair lock. If a thread waits for a writer lock, then it needs
         ///     a reader lock while pumping message, the thread is blocked forever/>.
-        ///     See Bug VSW#364535 which was due to the above situation.
-        ///     
-        ///     This TLS variable is used to flag the above situation and avoid the deadlock, it is ThreadStatic so each
-        ///     thread calling into ImageAnimator is garded against this problem.
-        /// </devdoc>
+        ///     See 
+
+
+
+
         [ThreadStatic]
         static int threadWriterLockWaitCount;
 

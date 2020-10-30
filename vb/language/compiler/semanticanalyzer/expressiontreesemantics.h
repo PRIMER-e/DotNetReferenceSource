@@ -109,11 +109,11 @@ protected:
     // ----------------------------------------------------------------------------
 
 #ifdef HOSTED
-    // Dev10 bug 822565 - Need to make this method virtual for hosted compiler
-    // so that its impl can be overridden in the hosted compiler for non-expr tree
-    // lambda scenarios in order to ensure compat with core compiler for decimal
-    // conversions.
-    //
+    // Dev10 
+
+
+
+
     virtual
 #else
     static
@@ -155,10 +155,10 @@ protected:
     // tree to generate a node with the method info for the runtime type.
     // ----------------------------------------------------------------------------
 
-    // Dev10 bug 822565 - Need to make this method non-static for hosted compiler
-    // due to the fix for this bug since one of the methods invoked by its impl has
-    // been made a non-static (and virtual) as part of this bug fix.
-    //
+    // Dev10 
+
+
+
 #ifndef HOSTED
     static
 #endif
@@ -2843,9 +2843,9 @@ ExpressionTreeSemantics<TREE_TYPE>::ConvertCall
                 ) :
             NULL;
 
-        // Bug 491598
-        // If ptreeThis is not null, and ThisExpression is NULL, it may be that the target
-        // was a multiline lambda.
+        // 
+
+
 
         if( Input->AsCallExpression().ptreeThis != NULL &&
             ThisExpression == NULL )
@@ -2875,23 +2875,23 @@ ExpressionTreeSemantics<TREE_TYPE>::ConvertCall
 
 ////////////////////////////////////////////////////
 //
-// The following lines have been commented out as a fix for TFS bug 367903 (PS #: 171027).
-// The commented lines will be removed entirely once the C# team has made a fix in System.Core.dll so that
-// we do not throw a runtime exception when we try to compile an Expression.Property().
-//
-// The commented code below causes to call conversion method to ensure that the method type
-// and the argument types match. This is bad because it causes boxing when we do not want boxing 
-// to occur. NOT performing this conversion is ok with Expression.Call, but not performing the conversion 
-// with an Expression.Property causes an exception to be thrown by System.Core.dll.
-/////////////////////////////////////////////////////
-//            if( SymbolForThis->vtype == t_generic )
-//            {
-//                targetType = TargetMethod->PProc()->GetContainingClassOrInterface();
-//                VSASSERT( targetType != NULL, "How can the containing class be NULL?" );
-//            }
-// NOTE: The If statement below (if (TypeHelpers...) should be an else if, if we decide to reintroduce
-//           the above code.
-//////////////////////////////////////////////////////
+// The following lines have been commented out as a fix for TFS 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             // In the case where the method is one of the ones defined on Object or ValueType,
             // emit a cast to that symbol.
@@ -3546,7 +3546,7 @@ ExpressionTreeSemantics<TREE_TYPE>::ConvertLambda
 
     // We need to see whether the lambda expression is a sub or a func.
     // Turns out that C# will support Sub types and throw away the return.
-    // Linked bug over to C#.
+    // Linked 
 
     Declaration* InvokeMethod = NULL;
     InvokeMethod = GetInvokeFromDelegate(Lambda->ResultType, m_Compiler);
@@ -4084,10 +4084,10 @@ ExpressionTreeSemantics<TREE_TYPE>::ConvertNewObjectInitializer(
 
             Initializer->AsExpressionWithChildren().Left->AsSymbolReferenceExpression().pnamed = SetAccessor;
 
-            // MQ Bug 855193
-            // New Outer { .Inner = New Inner(1,2)}, where Inner is a Structure with user defined constructor.
-            // The initializer is different from Class, the InitInfo.Member should be MeArgument of Initializer, 
-            // InitValue should be Initializer. 
+            // MQ 
+
+
+
             if (Initializer->AsExpressionWithChildren().Left->AsSymbolReferenceExpression().pnamed->PProc()->IsAnyConstructor())
             {
 
@@ -4109,7 +4109,7 @@ ExpressionTreeSemantics<TREE_TYPE>::ConvertNewObjectInitializer(
 
         ILTree::SymbolReferenceExpression *SymbolRef = NULL;
 
-        // MQ Bug 855193
+        // MQ 
         if (Initializer->bilop == SX_CALL && 
             Initializer->AsExpressionWithChildren().Left->AsSymbolReferenceExpression().pnamed->PProc()->IsAnyConstructor())
         {
@@ -4681,7 +4681,7 @@ ExpressionTreeSemantics<TREE_TYPE>::ConvertLambaExpressionFromSeqOp2
 //
 //        new XElement("x", Content1, ... ContentN)
 //
-//    Note, this funciton must be kept in [....] with the xmlsemantics code generation.
+//    Note, this funciton must be kept in sync with the xmlsemantics code generation.
 // ----------------------------------------------------------------------------
 
 template<class TREE_TYPE> TREE_TYPE*
@@ -5933,11 +5933,11 @@ ExpressionTreeSemantics<TREE_TYPE>::CreateLambdaForCoalesce(
         
     // If the flag is set, we need to quote.
 
-    // Bug 114270: not quoting since quoting the lambda for the coalesce operator
-    // since that will cahnge the type of Result from LambdaExpression to UnaryExpression.
-    // This will fail the call to Coalesc whose signature is (Expresion,Expression,LambdaExpression)
-    // since Expressions.UnaryExpresion is not convertable to Expressions.LambdaExpression
-    // this call will fail.
+    // 
+
+
+
+
 
     return( Result );
 }
@@ -6226,7 +6226,7 @@ ExpressionTreeSemantics<TREE_TYPE>::ConvertInternalToExpressionTree(
     // method so that the conversion semantics can then be overridden in any
     // specialization of ExpressionTreeSemantics.
 
-    // [....]: we should never be an expression tree that has been converted.
+    // Microsoft: we should never be an expression tree that has been converted.
     // If we are an expression tree here, it means that we want to encode an access
     // to it.
 

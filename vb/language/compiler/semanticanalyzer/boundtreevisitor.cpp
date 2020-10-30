@@ -273,7 +273,7 @@ void BoundTreeVisitor::ProcessRightSkewedTree(ILTree::Expression* ExprLoc)
     const BILOP SeqType = ExprLoc->bilop;
     AssertIfFalse(SeqType == SX_SEQ || SeqType == SX_LIST);
 
-    //[....] Process a sequence iteratively, otherwise long sequences
+    //Microsoft Process a sequence iteratively, otherwise long sequences
     //can result in deep recursion and ---- the stack.
     while (true)
     {
@@ -476,7 +476,7 @@ void BoundTreeVisitor::ProcessExpression(_In_ ILTree::Expression *Expr)
             VisitExpression(&Expr->AsExpressionWithChildren().Left);
             break;
 
-            //[....] handle lists and sequences iteratively to conserve stack.
+            //Microsoft handle lists and sequences iteratively to conserve stack.
 		case SX_SEQ:
             ProcessRightSkewedTree(Expr);
             break;
@@ -620,9 +620,9 @@ void BoundTreeVisitor::ProcessExpression(_In_ ILTree::Expression *Expr)
             break;
         }
         case SX_BOGUS:
-            // (Bug 71364 - DevDiv Bugs) ignore SX_BOGUS by default
-            // !!! Consider to handle this node specially when you implement your own BoundTreeVisitor. 
-            // !!! You probably don't want to ignore it.            
+            // (
+
+
             break;
 
 #if DEBUG
@@ -3121,7 +3121,7 @@ void  DeferredTempIterator::EndExpression(ILTree::Expression **)
 {
     // During processing in the iterator, all SX_DEFERRED_TEMPs should be removed.
     // If the method still has deferred temps then they were created during iterate.
-    // This is a bug in the iterate code. 
+    // This is a 
 
     ThrowIfTrue(m_semantics->m_methodDeferredTempCount != 0);
 }

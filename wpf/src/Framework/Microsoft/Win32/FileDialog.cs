@@ -735,7 +735,7 @@ namespace Microsoft.Win32
                             //
                             // As an aside, this only seems to work the first time we show
                             // a dialog - after that, Windows remembers the position of the
-                            // dialog.   But that's the [....] behavior too, so it's fine.
+                            // dialog.   But that's the Microsoft behavior too, so it's fine.
 
                             MoveToScreenCenter(new HandleRef(this, _hwndFileDialog));
                             break;
@@ -1164,7 +1164,7 @@ namespace Microsoft.Win32
         ///  We have to do this instead of just calling MessageBox because
         ///  of an issue where keyboard navigation would fail after showing
         ///  a message box.  See http://bugcheck/default.asp?URL=/Bugs/URT/84016.asp
-        ///  ([....] ASURT 80262)
+        ///  (Microsoft ASURT 80262)
         /// </summary>
         /// <SecurityNote>
         ///    Critical: We call GetFocus() and SetFocus() in
@@ -1537,11 +1537,11 @@ namespace Microsoft.Win32
                                      // 0 is reserved for the custom filter functionality
                                      // provided by Windows, which we do not expose to the user.
 
-            // Variables used for bug workaround:
-            // When the selected file is locked for writing, we get a sharing violation notification
-            // followed by *two* CDN_FILEOK notifications.  These flags are used to track the multiple
-            // notifications so we only show one error message box to the user.  
-            // For a more complete explanation and PS bug information, see HookProc.
+            // Variables used for 
+
+
+
+
             _ignoreSecondFileOkNotification = false;
             _fileOkNotificationCount = 0;
 
@@ -1557,21 +1557,21 @@ namespace Microsoft.Win32
         {
             if (String.IsNullOrEmpty(s))
             {
-                // Workaround for VSWhidbey bug #95338 (carried over from [....] implementation)
-                // Apparently, when filter is null, the common dialogs in Windows XP will not dereference
-                // links properly.  The work around is to provide a default filter;  " |*.*" is used to 
-                // avoid localization issues from description text.
-                //
-                // This behavior is now documented in MSDN on the OPENFILENAME structure, so I don't
-                // expect it to change anytime soon.
+                // Workaround for VSWhidbey 
+
+
+
+
+
+
                 if (dereferenceLinks && System.Environment.OSVersion.Version.Major >= 5)
                 {
                     s = " |*.*";
                 }
                 else
                 {
-                    // Even if we don't need the bug workaround, change empty
-                    // strings into null strings.
+                    // Even if we don't need the 
+
                     return null;
                 }
             }

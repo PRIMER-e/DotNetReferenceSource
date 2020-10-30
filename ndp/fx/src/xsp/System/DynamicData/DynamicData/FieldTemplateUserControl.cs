@@ -421,11 +421,11 @@ namespace System.Web.DynamicData {
         private void SetUpRequiredFieldValidator(RequiredFieldValidator validator, MetaColumn column) {
             var requiredAttribute = column.Metadata.RequiredAttribute;
             if (requiredAttribute!= null && requiredAttribute.AllowEmptyStrings) {
-                // Dev10 Bug 749744
-                // If somone explicitly set AllowEmptyStrings = true then we assume that they want to
-                // allow empty strings to go into a database even if the column is marked as required.
-                // Since ASP.NET validators always get an empty string, this essential turns of
-                // required field validation.
+                // Dev10 
+
+
+
+
                 IgnoreModelValidationAttribute(typeof(RequiredAttribute));
             } else if (column.IsRequired) {
                 validator.Enabled = true;
@@ -516,7 +516,8 @@ namespace System.Web.DynamicData {
             validator.MaximumValue = converter(rangeAttribute.Maximum);
 
             if (String.IsNullOrEmpty(validator.ErrorMessage)) {
-                validator.ErrorMessage = HttpUtility.HtmlEncode(rangeAttribute.FormatErrorMessage(column.DisplayName));
+                validator.ErrorMessage = HttpUtility.HtmlEncode(
+                    StringLocalizerUtil.GetLocalizedString(rangeAttribute, column.DisplayName));
             }
         }
 
@@ -533,7 +534,8 @@ namespace System.Web.DynamicData {
             validator.ValidationExpression = regexAttribute.Pattern;
 
             if (String.IsNullOrEmpty(validator.ErrorMessage)) {
-                validator.ErrorMessage = HttpUtility.HtmlEncode(regexAttribute.FormatErrorMessage(column.DisplayName));
+                validator.ErrorMessage = HttpUtility.HtmlEncode(
+                    StringLocalizerUtil.GetLocalizedString(regexAttribute, column.DisplayName));
             }
         }
 

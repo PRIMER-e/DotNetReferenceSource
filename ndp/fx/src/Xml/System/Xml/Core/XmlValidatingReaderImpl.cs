@@ -3,7 +3,7 @@
 // <copyright file="XmlValidatingReaderImpl.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
-// <owner current="true" primary="true">[....]</owner>
+// <owner current="true" primary="true">Microsoft</owner>
 //------------------------------------------------------------------------------
 
 using System;
@@ -897,9 +897,22 @@ namespace System.Xml
             coreReaderImpl.ValidationEventHandling = (validationType == ValidationType.None) ? null : eventHandling;
         }
 
+        static XmlResolver s_tempResolver;
+
         // This is needed because we can't have the setter for XmlResolver public and with internal getter.
         private XmlResolver GetResolver() {
-            return coreReaderImpl.GetResolver();
+            XmlResolver tempResolver = coreReaderImpl.GetResolver();
+
+            if (tempResolver == null && !coreReaderImpl.IsResolverSet &&
+                !System.Xml.XmlReaderSettings.EnableLegacyXmlSettings())
+            {
+                // it is safe to return valid resolver as it'll be used in the schema validation 
+                if (s_tempResolver == null)
+                    s_tempResolver = new XmlUrlResolver();
+                return s_tempResolver;
+            }
+
+            return tempResolver;
         }
 
 //

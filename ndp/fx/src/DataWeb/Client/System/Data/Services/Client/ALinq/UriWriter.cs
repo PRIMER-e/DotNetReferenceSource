@@ -6,7 +6,7 @@
 //      Translates resource bound expression trees into URIs.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Client

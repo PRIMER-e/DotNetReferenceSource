@@ -8,9 +8,9 @@
 // Request Queue
 //      queues up the requests to avoid thread pool starvation,
 //      making sure that there are always available threads to process requests
-//<STRIP>
-// This code has been taken from the XSP code base and modified for Remoting.
-//</STRIP>
+//<
+
+
 
 namespace System.Runtime.Remoting.Channels {
     using System.Threading;

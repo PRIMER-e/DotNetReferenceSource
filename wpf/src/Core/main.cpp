@@ -55,7 +55,6 @@ SetProcessDPIAware_Internal(
 
 #define WINNT_VISTA_VERSION     0x06
 #define WPFGFX_40_DLLNAME       L"wpfgfx_v0400.dll"
-#define WPFTXT_40_DLLNAME       L"wpftxt_v0400.dll"
 #define NATIVE_40_DLLNAME       L"PresentationNative_v0400.dll"
 
  namespace MS { namespace Internal {
@@ -79,26 +78,17 @@ public:
     static void LoadCommonDLLsAndDwrite( )
     {
         WCHAR wpfInstallPath[MAX_PATH];
-        WCHAR dllPath[MAX_PATH];
 
         HRESULT hr = WPFUtils::GetWPFInstallPath(wpfInstallPath, ARRAYSIZE(wpfInstallPath));
         if (FAILED(hr))
             Marshal::ThrowExceptionForHR(hr);
 
-        //
-        // wpfgfx will try to load wpftxt as well, but it won't know the full path so we'll
-        // load wpftxt first here so when wpfgfx tries to load wpftxt it will already be in
-        // proc
-        //
         // We load dwrite here because it's cleanup logic is different from the other native dlls
         // and don't want to abstract that
-#pragma prefast(suppress:25025, "We don't know of a better API to use in place of PathCombine. The OACR spreadsheet and MSDN do not suggest any either.")
-        if (!::PathCombine(dllPath, wpfInstallPath, WPFTXT_40_DLLNAME))
-            throw gcnew System::IO::PathTooLongException();
         VOID *pTemp = NULL;
-        m_hDWrite = System::IntPtr(WPFUtils::LoadDWriteLibraryAndGetProcAddress(dllPath, &pTemp));
+        m_hDWrite = System::IntPtr(WPFUtils::LoadDWriteLibraryAndGetProcAddress(&pTemp));
         if (m_hDWrite == IntPtr::Zero)
-            throw gcnew DllNotFoundException(gcnew String(L"dwrite.dll or wpftxt_v0400.dll"), gcnew Win32Exception());        
+            throw gcnew DllNotFoundException(gcnew String(L"dwrite.dll"), gcnew Win32Exception());        
         if (pTemp == NULL)
             throw gcnew InvalidOperationException();
         m_pfnDWriteCreateFactory = pTemp;
@@ -140,7 +130,7 @@ public:
     
     // <SecurityNote>
     // Critical -- Calls critical FreeLibrary to unload a native library
-    // TreatAsSafe -- A known\trusted handle wpftxt_v0400.dll is passed
+    // TreatAsSafe -- A known\trusted handle to dwrite.dll is passed
     // </SecurityNote>    
     [SecuritySafeCritical]
      __declspec(noinline) 
@@ -356,15 +346,15 @@ private :
 void CleanUp();
 
 /// <summary>
-/// This method is a workaround to an ugly bug in the compiler that caused Jitting.
-/// The compiler generates a static unsafe method to initialize cmiStartupRunner
-/// which is not properly annotated with security tags.
-/// To work around this issue we create our own static method that is properly annotated.
-/// </summary>
-/// <SecurityNote>
-/// Critical: Contains unverifiable native code.
-/// Safe    : The code is safe and only returns a new object.
-/// </SecurityNote>
+/// This method is a workaround to an ugly 
+
+
+
+
+
+
+
+
 [SecuritySafeCritical]
 __declspec(noinline) static System::IntPtr CreateCModuleInitialize()
 {

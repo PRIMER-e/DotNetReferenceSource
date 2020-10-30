@@ -6,7 +6,7 @@
 //      Provides a writer implementation for Json format
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

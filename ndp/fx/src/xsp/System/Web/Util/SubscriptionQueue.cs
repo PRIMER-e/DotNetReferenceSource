@@ -21,6 +21,10 @@ namespace System.Web.Util {
 
         private LinkedList<T> _list;
 
+        public bool IsEmpty {
+            get { return (_list == null || _list.Count == 0); }
+        }
+
         public ISubscriptionToken Enqueue(T value) {
             if (_list == null) {
                 // lazily instantiate the list

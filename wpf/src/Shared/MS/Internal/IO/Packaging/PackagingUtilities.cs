@@ -7,7 +7,7 @@
 // Description:
 //
 // History:
-//  05/13/2004: [....]   Creation
+//  05/13/2004: Microsoft   Creation
 //
 //---------------------------------------------------------------------------
 
@@ -94,10 +94,10 @@ namespace MS.Internal.IO.Packaging
 
             //if the XmlDeclaration is not present, or encoding attribute is not present, we
             //base our decision on byte order marking. reader.Encoding will take that into account
-            //and return the correct value. 
+            //and return the correct value.
             //Note: For Byte order markings that require additional information to be specified in
             //the encoding attribute in XmlDeclaration have already been ruled out by the check above.
-            //Note: If not encoding attribute is present or no byte order marking is present the 
+            //Note: If not encoding attribute is present or no byte order marking is present the
             //encoding default to UTF8
             if (!(reader.Encoding is UnicodeEncoding || reader.Encoding is UTF8Encoding))
                 throw new FileFormatException(SR.Get(SRID.EncodingNotSupported));
@@ -214,7 +214,7 @@ namespace MS.Internal.IO.Packaging
             Invariant.Assert(checked(offset + requestedCount <= buffer.Length));
             Invariant.Assert(requiredCount <= requestedCount);
 
-            // let's read the whole block into our buffer 
+            // let's read the whole block into our buffer
             int totalBytesRead = 0;
             while (totalBytesRead < requiredCount)
             {
@@ -269,7 +269,7 @@ namespace MS.Internal.IO.Packaging
             Invariant.Assert(checked(offset + requestedCount <= buffer.Length));
             Invariant.Assert(requiredCount <= requestedCount);
 
-            // let's read the whole block into our buffer 
+            // let's read the whole block into our buffer
             int totalBytesRead = 0;
             while (totalBytesRead < requiredCount)
             {
@@ -292,11 +292,11 @@ namespace MS.Internal.IO.Packaging
         /// <param name="sourceStream">stream to read from</param>
         /// <param name="targetStream">stream to write to </param>
         /// <param name="bytesToCopy">number of bytes to be copied(use Int64.MaxValue if the whole stream needs to be copied)</param>
-        /// <param name="bufferSize">number of bytes to be copied (usually it is 4K for scenarios where we expect a lot of data 
+        /// <param name="bufferSize">number of bytes to be copied (usually it is 4K for scenarios where we expect a lot of data
         ///  like in SparseMemoryStream case it could be larger </param>
         /// <returns>bytes copied (might be less than requested if source stream is too short</returns>
         /// <remarks>Neither source nor target stream are seeked; it is up to the caller to make sure that their positions are properly set.
-        ///  Target stream isn't truncated even if it has more data past the area that was copied.</remarks> 
+        ///  Target stream isn't truncated even if it has more data past the area that was copied.</remarks>
         internal static long CopyStream(Stream sourceStream, Stream targetStream, long bytesToCopy, int bufferSize)
         {
             Invariant.Assert(sourceStream != null);
@@ -306,7 +306,7 @@ namespace MS.Internal.IO.Packaging
 
             byte[] buffer = new byte[bufferSize];
 
-            // let's read the whole block into our buffer 
+            // let's read the whole block into our buffer
             long bytesLeftToCopy = bytesToCopy;
             while (bytesLeftToCopy > 0)
             {
@@ -328,7 +328,7 @@ namespace MS.Internal.IO.Packaging
             return bytesToCopy;
         }
 
-        
+
         /// <summary>
         /// Create a User-Domain Scoped IsolatedStorage file (or Machine-Domain scoped file if current user has no profile)
         /// </summary>
@@ -357,7 +357,10 @@ namespace MS.Internal.IO.Packaging
 
                     lock (IsoStoreSyncRoot)
                     {
-                        s = GetDefaultIsolatedStorageFile().GetStream(fileName);
+                        lock (IsolatedStorageFileLock)
+                        {
+                            s = GetDefaultIsolatedStorageFile().GetStream(fileName);
+                        }
                     }
 
                     // if we get to here we have a success condition so we can safely exit
@@ -418,7 +421,7 @@ namespace MS.Internal.IO.Packaging
             //If true, reader moves to the attribute
             //If false, there are no more attributes (or none)
             //and in that case the position of the reader is unchanged.
-            //First time through, since the reader will be positioned at an Element, 
+            //First time through, since the reader will be positioned at an Element,
             //MoveToNextAttribute is the same as MoveToFirstAttribute.
             while (reader.MoveToNextAttribute())
             {
@@ -444,6 +447,35 @@ namespace MS.Internal.IO.Packaging
             }
         }
 
+        /// <summary>
+        /// IsolatedStorageFile (in mscorlib) has a deadlock (see Dev11 992845).
+        /// To work around that deadlock, we apply our own locking around calls
+        /// that invoke the problematic methods (IsolatedStorageFile.Lock and Unlock),
+        /// using this object as the lock token.  See Dev11 880952.
+        /// If and when the CLR fixes 992845, this object and all its uses can
+        /// presumably be removed.
+        /// Caution:  This workaround has two weaknesses:
+        ///     1. It depends on knowing how the problematic methods are used.
+        ///         They are internal, and outside our control.   The workaround
+        ///         is based on the state of the CLR code as of July 2014.  If
+        ///         CLR changes it, WPF may have to change as well.   However, it
+        ///         looks like the CLR code hasn't changed (in ways that would
+        ///         affect us) in many many years, and it seems unlikely it would.
+        ///     2. It only touches WPF's direct usage of IsolatedStorage.  An app
+        ///         could use IsolatedStorage directly - such usage risks
+        ///         deadlock, independent of the workaround.
+        /// There's nothing WPF can do about either of these;  the only way to
+        /// address them is by fixing 992845 at the CLR level.  Fortunately, they
+        /// both seem unlikely to matter in practice.
+        /// </summary>
+        internal static Object IsolatedStorageFileLock
+        {
+            get
+            {
+                return _isolatedStorageFileLock;
+            }
+        }
+
         #endregion Internal Methods
 
         //------------------------------------------------------
@@ -451,7 +483,7 @@ namespace MS.Internal.IO.Packaging
         //  Private Methods
         //
         //------------------------------------------------------
-        
+
         /// <summary>
         /// Delete file created using CreateUserScopedIsolatedStorageFileStreamWithRandomName()
         /// </summary>
@@ -461,23 +493,26 @@ namespace MS.Internal.IO.Packaging
         {
             lock (IsoStoreSyncRoot)
             {
-                GetDefaultIsolatedStorageFile().IsoFile.DeleteFile(fileName);
+                lock (IsolatedStorageFileLock)
+                {
+                    GetDefaultIsolatedStorageFile().IsoFile.DeleteFile(fileName);
+                }
             }
         }
 
 
         /// <summary>
         /// Returns the IsolatedStorageFile scoped to Assembly, Domain and User
-        /// </summary>  
+        /// </summary>
         /// <remarks>Callers must lock on IsoStoreSyncRoot before calling this for thread-safety.
         /// For example:
-        /// 
+        ///
         ///   lock (IsoStoreSyncRoot)
         ///   {
         ///       // do something with the returned IsolatedStorageFile
         ///       PackagingUtilities.DefaultIsolatedStorageFile.DeleteFile(_isolatedStorageStreamFileName);
         ///   }
-        /// 
+        ///
         ///</remarks>
         private static ReliableIsolatedStorageFileFolder GetDefaultIsolatedStorageFile()
         {
@@ -490,7 +525,7 @@ namespace MS.Internal.IO.Packaging
             return _defaultFile;
         }
 
-       
+
         ///<summary>
         /// Determine if current user has a User Profile so we can determine the appropriate
         /// scope to use for IsolatedStorage functionality.
@@ -537,7 +572,7 @@ namespace MS.Internal.IO.Packaging
         //  Private Classes
         //
         //------------------------------------------------------
-        
+
         /// <summary>
         /// This class extends IsolatedStorageFileStream by adding a finalizer to ensure that
         /// the underlying file is deleted when the stream is closed.
@@ -580,7 +615,7 @@ namespace MS.Internal.IO.Packaging
                         base.Dispose(disposing);
 
                         if (_path != null)
-                        {                           
+                        {
                             PackagingUtilities.DeleteIsolatedStorageFile(_path);
                             _path = null;
                         }
@@ -591,7 +626,7 @@ namespace MS.Internal.IO.Packaging
                         GC.SuppressFinalize(this);
                     }
                     _disposed = true;
-                }             
+                }
             }
 
             //------------------------------------------------------
@@ -722,7 +757,10 @@ namespace MS.Internal.IO.Packaging
                             {
                                 using (_file)
                                 {
-                                    _file.Remove();
+                                    lock (IsolatedStorageFileLock)
+                                    {
+                                        _file.Remove();
+                                    }
                                 }
                                 _disposed = true;
                             }
@@ -743,7 +781,7 @@ namespace MS.Internal.IO.Packaging
                 catch (IsolatedStorageException)
                 {
                     // IsolatedStorageException can be thrown if the files that are being deleted, are
-                    // currently in use. These files will not get cleaned up.                
+                    // currently in use. These files will not get cleaned up.
                 }
             }
 
@@ -756,6 +794,9 @@ namespace MS.Internal.IO.Packaging
             /// Call this sparingly as it allocates resources
             /// </summary>
             /// <returns></returns>
+            // Note:  For workaround (Dev11 880952), nothing is needed here;
+            // Of the 6 convenience methods around ISF.GetStore, only
+            // GetUserStoreForApplication uses the problematic locking.
             private IsolatedStorageFile GetCurrentStore()
             {
                 if (_userHasProfile)
@@ -800,6 +841,7 @@ namespace MS.Internal.IO.Packaging
         /// </summary>
         /// <remarks>See PS 1468964 for details.</remarks>
         private static Object _isoStoreSyncObject = new Object();
+        private static Object _isolatedStorageFileLock = new Object();   // see Dev11 880952
         private static ReliableIsolatedStorageFileFolder _defaultFile;
         private const string XmlNamespace = "xmlns";
         private const string _encodingAttribute = "encoding";

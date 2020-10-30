@@ -148,9 +148,9 @@ namespace Microsoft.Tools.ServiceModel.WsatConfig
                         throw new WsatAdminException(WsatAdminErrorCode.CANNOT_GET_MSDTC_NETWORK_ACCESS_SETTING,
                              SR.GetString(SR.ErrorCannotGetMsdtcNetworkAccessSetting, e.Message), e);
                     }
-                    // Otherwise, it's very likely that, due to WinOS bug 1455344, we are not able to call 
-                    // proxy.GetNetworkTransactionAccess on a local DTC TM of a LHS cluster.
-                    // The workaround is to determine network transaction access by msdtc security registry settings
+                    // Otherwise, it's very likely that, due to WinOS 
+
+
                 }
                 catch (UnauthorizedAccessException e)
                 {

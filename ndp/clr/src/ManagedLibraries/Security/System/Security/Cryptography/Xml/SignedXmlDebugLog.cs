@@ -3,7 +3,7 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 using System;
@@ -150,6 +150,12 @@ namespace System.Security.Cryptography.Xml {
             ///     a canonicalization algorithm which is not on the known valid list.
             /// </summary>
             UnsafeCanonicalizationMethod,
+
+            /// <summary>
+            ///     The signature is being rejected by the signature verifier due to having
+            ///     a transform algorithm which is not on the known valid list.
+            /// </summary>
+            UnsafeTransformMethod,
         }
 
         /// <summary>
@@ -453,6 +459,50 @@ namespace System.Security.Cryptography.Xml {
             }
         }
 
+        /// <summary>
+        ///     Log that a signature is being rejected as having an invalid signature due to a transform
+        ///     algorithm not being on the valid list.
+        /// </summary>
+        /// <param name="signedXml">SignedXml object doing the signature verification</param>
+        /// <param name="algorithm">Transform algorithm that was not allowed</param>
+        /// <param name="validC14nAlgorithms">The valid C14N algorithms</param>
+        /// <param name="validTransformAlgorithms">The valid C14N algorithms</param>
+        internal static void LogUnsafeTransformMethod(
+            SignedXml signedXml,
+            string algorithm,
+            IEnumerable<string> validC14nAlgorithms,
+            IEnumerable<string> validTransformAlgorithms)
+        {
+            Debug.Assert(signedXml != null, "signedXml != null");
+            Debug.Assert(validC14nAlgorithms != null, "validC14nAlgorithms != null");
+            Debug.Assert(validTransformAlgorithms != null, "validTransformAlgorithms != null");
+
+            if (InformationLoggingEnabled) {
+                StringBuilder validAlgorithmBuilder = new StringBuilder();
+                foreach (string validAlgorithm in validC14nAlgorithms) {
+                    if (validAlgorithmBuilder.Length != 0) {
+                        validAlgorithmBuilder.Append(", ");
+                    }
+
+                    validAlgorithmBuilder.AppendFormat("\"{0}\"", validAlgorithm);
+                }
+
+                foreach (string validAlgorithm in validTransformAlgorithms) {
+                    if (validAlgorithmBuilder.Length != 0) {
+                        validAlgorithmBuilder.Append(", ");
+                    }
+
+                    validAlgorithmBuilder.AppendFormat("\"{0}\"", validAlgorithm);
+                }
+
+                string logMessage = String.Format(CultureInfo.InvariantCulture,
+                                                  SecurityResources.GetResourceString("Log_UnsafeTransformMethod"),
+                                                  algorithm,
+                                                  validAlgorithmBuilder.ToString());
+
+                WriteLine(signedXml, TraceEventType.Information, SignedXmlDebugEvent.UnsafeTransformMethod, logMessage);
+            }
+        }
 
         /// <summary>
         ///     Log namespaces which are being propigated into the singature
@@ -898,6 +948,31 @@ namespace System.Security.Cryptography.Xml {
                           TraceEventType.Verbose,
                           SignedXmlDebugEvent.X509Verification,
                           chainElements.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Write informaiton when user hits the Signed XML recursion depth limit issue.
+        /// This is helpful in debugging this kind of issues.
+        /// </summary>
+        /// <param name="signedXml">SignedXml object verifying the signature</param>
+        /// <param name="reference">reference being verified</param>
+        internal static void LogSignedXmlRecursionLimit(SignedXml signedXml,
+                                                        Reference reference) {
+            Debug.Assert(signedXml != null, "signedXml != null");
+            Debug.Assert(reference != null, "reference != null");
+
+            if (InformationLoggingEnabled) {
+                string logMessage = String.Format(CultureInfo.InvariantCulture,
+                                                    SecurityResources.GetResourceString("Log_SignedXmlRecursionLimit"),
+                                                    GetObjectId(reference),
+                                                    reference.DigestMethod,
+                                                    CryptoConfig.CreateFromName(reference.DigestMethod).GetType().Name);
+
+                WriteLine(signedXml,
+                            TraceEventType.Information,
+                            SignedXmlDebugEvent.VerifySignedInfo,
+                            logMessage);
             }
         }
 

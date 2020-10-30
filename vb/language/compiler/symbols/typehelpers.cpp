@@ -718,7 +718,7 @@ bool TypeHelpers::IsReferenceType(
     // See also the comments for ConversionResolution.cpp::ClassifyPredefinedCLRConversion.
     // The correctness of that function depends crucially on which types are counted as reference types.
     // If you make any additions or changes here, then the conversion code will have to change as well.
-    // If you have doubts, please talk with [....] (31/May/2008)
+    // If you have doubts, please talk with Microsoft (31/May/2008)
 
     Vtypes TypeCode = T->GetVtype();
 
@@ -1388,7 +1388,7 @@ bool TypeHelpers::EquivalentTypes
     IDE_ARG(bool ConsiderOpenGenericParamsEqual)
 )
 {
-    // [....], 17 June 2008
+    // Microsoft, 17 June 2008
     //
     // BCSYM::AreTypesEqual avoids the diamond-reference-problem by checking, in the case
     // where both T1 and T2 come from metadata, by checking that they have the same fully-qualified
@@ -1402,8 +1402,8 @@ bool TypeHelpers::EquivalentTypes
     // under "#if IDE" (and similarly for anonymous types); TypeHelpers::EquivalentTypes doesn't have
     // that feature.
     //
-    // Suggestion: we should investigate merging these two functions. It's likely a bug that
-    // AreTypesEqual has the special "anonymous" functionality but EquivalentTypes doesn't.
+    // Suggestion: we should investigate merging these two functions. It's likely a 
+
 
 
     if (BCSYM::AreTypesEqual(T1, T2, false /* Don't dig into arrays and generic bindings. We will dig later. */))
@@ -1436,7 +1436,7 @@ bool TypeHelpers::EquivalentTypes
                         ProjectForT2
                         IDE_ARG(ConsiderOpenGenericParamsEqual));
 
-                VPASSERT(IgnoreProjectEquivalence || IDE_CODE(true ||) ret == BCSYM::AreTypesEqual(T1,T2),"EquivalentTypes/AreTypesEqual mismatch for generic enums; please tell [....]");
+                VPASSERT(IgnoreProjectEquivalence || IDE_CODE(true ||) ret == BCSYM::AreTypesEqual(T1,T2),"EquivalentTypes/AreTypesEqual mismatch for generic enums; please tell Microsoft");
                 return ret;
             }
         }
@@ -1466,7 +1466,7 @@ bool TypeHelpers::EquivalentTypes
                             ProjectForT2
                             IDE_ARG(ConsiderOpenGenericParamsEqual));
 
-                    VPASSERT(IgnoreProjectEquivalence || IDE_CODE(true ||) ret == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for arrays; please tell [....]");
+                    VPASSERT(IgnoreProjectEquivalence || IDE_CODE(true ||) ret == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for arrays; please tell Microsoft");
                     return ret;
                 }
 
@@ -1491,17 +1491,17 @@ bool TypeHelpers::EquivalentTypes
                                 ProjectForT2
                                 IDE_ARG(ConsiderOpenGenericParamsEqual));
 
-                        VPASSERT(IgnoreProjectEquivalence || IDE_CODE(true ||) ret == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for ref/struct generic bindings: please tell [....]");
+                        VPASSERT(IgnoreProjectEquivalence || IDE_CODE(true ||) ret == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for ref/struct generic bindings: please tell Microsoft");
                         return ret;
                     }
 
                     goto Mismatch;
 
                 case t_ptr:
-                    VSFAIL("Unexpected t_ptr in EquivalentTypes: please tell [....]");
+                    VSFAIL("Unexpected t_ptr in EquivalentTypes: please tell Microsoft");
             }
 
-            VPASSERT(true == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for equal typecodes; please tell [....]");
+            VPASSERT(true == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for equal typecodes; please tell Microsoft");
             return true;
         }
     }
@@ -1520,11 +1520,11 @@ Mismatch:
                 ProjectForT1,
                 ProjectForT2);
 
-        VPASSERT(IDE_CODE(true ||) ret == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for mismatch; please tell [....]");
+        VPASSERT(IDE_CODE(true ||) ret == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for mismatch; please tell Microsoft");
         return ret;
     }
 
-    VPASSERT(IDE_CODE(true ||) false == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for endcase; please tell [....]");
+    VPASSERT(IDE_CODE(true ||) false == BCSYM::AreTypesEqual(T1,T2), "EquivalentTypes/AreTypesEqual mismatch for endcase; please tell Microsoft");
     return false;
 }
 
@@ -2317,12 +2317,12 @@ presence of a TypeIdentifierAttribute. If a type contains such an attribute, we 
 copy of an original type, imported from some other assembly. Local types must have the same qualified 
 name and GUID as the original type, so we can use simple string comparisons to match them. Equivalence 
 is transitive, so this comparison applies if either type or both has the TypeIdentifierAttribute.
-This fixes bug #513539. This has nothing to do with the diamond-reference problem, despite the use of
-a qualified-name comparison in both places (see the comment in TypeHelpers::EquivalentTypes). That is
-a very narrowly-defined situation where we end up with different pointers to the same type; in the
-TypeIdentifier situation we are dealing with here, there are two completely different .NET types which 
-are considered to be semantically equivalent because they both stand for the same external COM type.
-******************************************************************************/
+This fixes 
+
+
+
+
+*/
 bool TypeHelpers::AreTypeIdentitiesEquivalent
 (
     _In_ BCSYM *ptyp1, 
@@ -2356,12 +2356,12 @@ presence of a TypeIdentifierAttribute. If a type contains such an attribute, we 
 copy of an original type, imported from some other assembly. Local types must have the same qualified 
 name and GUID as the original type, so we can use simple string comparisons to match them. Equivalence 
 is transitive, so this comparison applies if either type or both has the TypeIdentifierAttribute.
-This fixes bug #513539. This has nothing to do with the diamond-reference problem, despite the use of
-a qualified-name comparison in both places (see the comment in TypeHelpers::EquivalentTypes). That is
-a very narrowly-defined situation where we end up with different pointers to the same type; in the
-TypeIdentifier situation we are dealing with here, there are two completely different .NET types which 
-are considered to be semantically equivalent because they both stand for the same external COM type.
-******************************************************************************/
+This fixes 
+
+
+
+
+*/
 bool TypeHelpers::AreTypeIdentitiesEquivalent
 (
     _In_ BCSYM_Container *ptyp1, 

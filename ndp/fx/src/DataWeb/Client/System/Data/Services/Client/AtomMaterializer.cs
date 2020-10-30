@@ -1511,7 +1511,7 @@ namespace System.Data.Services.Client
                     }
                 }
 
-                Debug.Assert(segments.Count == elements.Count, "segments.Count == elements.Count -- otherwise they're out of [....]");
+                Debug.Assert(segments.Count == elements.Count, "segments.Count == elements.Count -- otherwise they're out of sync");
             }
         }
 

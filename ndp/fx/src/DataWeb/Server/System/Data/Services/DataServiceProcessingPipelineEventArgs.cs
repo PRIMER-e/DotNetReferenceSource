@@ -6,7 +6,7 @@
 //      Event argument class for DataServiceProcessingPipeline events.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

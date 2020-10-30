@@ -24,7 +24,7 @@ using MS.Win32;
 
 namespace MS.Internal.AutomationProxies
 {
-    // [....] NumericUpDown proxy
+    // Microsoft NumericUpDown proxy
     class WinformsSpinner : ProxyHwnd, IRawElementProviderHwndOverride, IRangeValueProvider, IValueProvider
     {
         // ------------------------------------------------------
@@ -122,7 +122,7 @@ namespace MS.Internal.AutomationProxies
 
         internal static IRawElementProviderSimple Create(IntPtr hwnd, int idChild)
         {
-            // If idChild is not zero this can't be a [....] spinner.  The way this
+            // If idChild is not zero this can't be a Microsoft spinner.  The way this
             // code is called, the passed in hwnd could be some other control and in
             // that case the calling code should continue looking for a valid proxy.
             if (idChild != 0)
@@ -239,7 +239,7 @@ namespace MS.Internal.AutomationProxies
                 }
                 else if (iid == SelectionPattern.Pattern)
                 {
-                    // Special case for a [....] domain spinner. It is supposed to support
+                    // Special case for a Microsoft domain spinner. It is supposed to support
                     // SelectionPattern, but because it is based on an edit control, this is
                     // not possible unless each of the items in the spinner have been reviewed
                     // at least once. Call out this unusual case by throwing the following

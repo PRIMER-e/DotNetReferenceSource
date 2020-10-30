@@ -15,7 +15,7 @@
 //  07/31/2002: RogerCh: Add LockBytes support, suppress unmanaged code security.
 //  05/20/2003: RogerCh: Ported to WCP tree.
 //  05/28/2003: RogerCh: Removed name checks - now handled by LongNameManager
-//  02/10/2006: [....]: Separated all constants related to CompoundFile
+//  02/10/2006: YoungGK: Separated all constants related to CompoundFile
 //
 //-----------------------------------------------------------------------------
 

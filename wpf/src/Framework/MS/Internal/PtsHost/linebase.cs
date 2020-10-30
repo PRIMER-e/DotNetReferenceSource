@@ -107,7 +107,8 @@ namespace MS.Internal.PtsHost
             // 
 
 
-            TextProperties textProps = new TextProperties(element, position, false /* inline objects */, true /* get background */);
+            TextProperties textProps = new TextProperties(element, position, false /* inline objects */, true /* get background */,
+                _paraClient.Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
             // Calculate the end of the run by finding either:
             //      a) the next intersection of highlight ranges, or
@@ -177,7 +178,8 @@ namespace MS.Internal.PtsHost
                 // Empty TextElement should affect line metrics.
                 // TextFormatter does not support this feature right now, so as workaround
                 // TextRun with ZERO WIDTH SPACE is used.
-                TextProperties textProps = new TextProperties(element, position, false /* inline objects */, true /* get background */);
+                TextProperties textProps = new TextProperties(element, position, false /* inline objects */, true /* get background */,
+                    _paraClient.Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
                 char[] textBuffer = new char[_elementEdgeCharacterLength * 2];
                 
@@ -317,7 +319,8 @@ namespace MS.Internal.PtsHost
             if (embeddedObject is UIElement)
             {
                 // Extract the aggregated properties into something that the textrun can use.
-                TextRunProperties textProps = new TextProperties(embeddedObject, position, true /* inline objects */, true /* get background */);
+                TextRunProperties textProps = new TextProperties(embeddedObject, position, true /* inline objects */, true /* get background */,
+                    _paraClient.Paragraph.StructuralCache.TextFormatterHost.PixelsPerDip);
 
                 // Create inline object run.
                 run = new InlineObjectRun(TextContainerHelper.EmbeddedObjectLength, (UIElement)embeddedObject, textProps, _paraClient.Paragraph as TextParagraph);

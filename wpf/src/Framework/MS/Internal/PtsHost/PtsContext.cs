@@ -142,7 +142,7 @@ namespace MS.Internal.PtsHost
                                 obj is BaseParagraph ||
                                 obj is Section ||
                                 obj is MS.Internal.PtsHost.LineBreakRecord,  // Suppress line break record leak, looks like a PTS issue but we cannot 
-                                                                             // get a firm repro for now. Workaround for bug #1294210.
+                                                                             // get a firm repro for now. Workaround for 
                                 "One of PTS Client objects is not properly disposed.");
 
 #if DEBUG
@@ -599,7 +599,7 @@ namespace MS.Internal.PtsHost
         ///     to point to the next free entry.
         /// </summary>
         /// <remarks>
-        /// See: http://blogs.msdn.com/[....]/archive/2004/02/20/77460.aspx
+        /// See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
         /// According to this article the entire reachable graph from 
         /// a finalizable object is promoted, and it is safe to access its 
         /// members if they do not have their own finalizers.
@@ -612,7 +612,7 @@ namespace MS.Internal.PtsHost
         /// have to be disposed.
         /// </summary>
         /// <remarks>
-        /// See: http://blogs.msdn.com/[....]/archive/2004/02/20/77460.aspx
+        /// See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
         /// According to this article the entire reachable graph from 
         /// a finalizable object is promoted, and it is safe to access its 
         /// members if they do not have their own finalizers.
@@ -630,7 +630,7 @@ namespace MS.Internal.PtsHost
         /// have to be disposed.
         /// </summary>
         /// <remarks>
-        /// See: http://blogs.msdn.com/[....]/archive/2004/02/20/77460.aspx
+        /// See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
         /// According to this article the entire reachable graph from 
         /// a finalizable object is promoted, and it is safe to access its 
         /// members if they do not have their own finalizers.

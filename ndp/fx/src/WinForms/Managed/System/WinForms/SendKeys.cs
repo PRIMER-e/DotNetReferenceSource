@@ -1049,7 +1049,7 @@ namespace System.Windows.Forms {
         /// </devdoc>
         private class SendKeysHookProc {
 
-            // [....]:  There appears to be a timing issue where setting and removing and then setting
+            // Microsoft:  There appears to be a timing issue where setting and removing and then setting
             // these hooks via SetWindowsHookEx / UnhookWindowsHookEx can cause messages to be left
             // in the queue and sent after the re hookup happens.  This puts us in a bad state as we
             // get an HC_SKIP before an HC_GETNEXT.  So in that case, we just ignore the HC_SKIP calls

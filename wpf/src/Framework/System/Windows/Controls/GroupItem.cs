@@ -139,9 +139,9 @@ namespace System.Windows.Controls
         //
         //------------------------------------------------------
 
-        internal ItemContainerGenerator Generator 
-        { 
-            get { return _generator; } 
+        internal ItemContainerGenerator Generator
+        {
+            get { return _generator; }
             set { _generator = value; }
         }
 
@@ -154,7 +154,7 @@ namespace System.Windows.Controls
         internal void PrepareItemContainer(object item, ItemsControl parentItemsControl)
         {
             if (Generator == null)
-                return;     // user-declared GroupItem - ignore (bug 108423)
+                return;     // user-declared GroupItem - ignore (
 
             // If a GroupItem is being recycled set back IsItemsHost
             if (_itemsHost != null)
@@ -163,7 +163,7 @@ namespace System.Windows.Controls
             }
 
             bool isVirtualizingWhenGrouping = (parentItemsControl != null && VirtualizingPanel.GetIsVirtualizingWhenGrouping(parentItemsControl));
-            
+
             // Release any previous containers. Also ensures Items and GroupStyle are hooked up correctly
             if (Generator != null)
             {
@@ -204,8 +204,11 @@ namespace System.Windows.Controls
             }
 
             // forward the header template information
-            if (!HasNonDefaultValue(ContentProperty))
+            if (ContentIsItem || !HasNonDefaultValue(ContentProperty))
+            {
                 this.Content = item;
+                ContentIsItem = true;
+            }
             if (!HasNonDefaultValue(ContentTemplateProperty))
                 this.ContentTemplate = groupStyle.HeaderTemplate;
             if (!HasNonDefaultValue(ContentTemplateSelectorProperty))
@@ -235,19 +238,7 @@ namespace System.Windows.Controls
         internal void ClearItemContainer(object item, ItemsControl parentItemsControl)
         {
             if (Generator == null)
-                return;     // user-declared GroupItem - ignore (bug 108423)
-
-            ItemContainerGenerator generator = Generator.Parent;
-            GroupStyle groupStyle = generator.GroupStyle;
-
-            if (Object.Equals(this.Content, item))
-                ClearValue(ContentProperty);
-            if (this.ContentTemplate == groupStyle.HeaderTemplate)
-                ClearValue(ContentTemplateProperty);
-            if (this.ContentTemplateSelector == groupStyle.HeaderTemplateSelector)
-                ClearValue(ContentTemplateSelectorProperty);
-            if (this.ContentStringFormat == groupStyle.HeaderStringFormat)
-                ClearValue(ContentStringFormatProperty);
+                return;     // user-declared GroupItem - ignore (
 
             //
             // ItemValueStorage:  save off values for this container if we're a virtualizing Group.
@@ -255,7 +246,7 @@ namespace System.Windows.Controls
             if (parentItemsControl != null && VirtualizingPanel.GetIsVirtualizingWhenGrouping(parentItemsControl))
             {
                 Helper.StoreItemValues((IContainItemStorage)parentItemsControl, this, item);
-                
+
                 if (_expander != null)
                 {
                     Helper.StoreItemValues((IContainItemStorage)parentItemsControl, _expander, item);
@@ -277,10 +268,12 @@ namespace System.Windows.Controls
             {
                 Generator.Release();
             }
+
+            ClearContentControl(item);
         }
 
         #region IHierarchicalVirtualizationAndScrollInfo
-        
+
         HierarchicalVirtualizationConstraints IHierarchicalVirtualizationAndScrollInfo.Constraints
         {
             get { return HierarchicalVirtualizationConstraintsField.GetValue(this); }
@@ -480,13 +473,13 @@ namespace System.Windows.Controls
         private Panel _itemsHost;
         FrameworkElement _header;
         Expander _expander;
-        
+
         internal static readonly UncommonField<bool> MustDisableVirtualizationField = new UncommonField<bool>();
         internal static readonly UncommonField<bool> InBackgroundLayoutField = new UncommonField<bool>();
 
         internal static readonly UncommonField<Thickness> DesiredPixelItemsSizeCorrectionFactorField = new UncommonField<Thickness>();
 
-        internal static readonly UncommonField<HierarchicalVirtualizationConstraints> HierarchicalVirtualizationConstraintsField = 
+        internal static readonly UncommonField<HierarchicalVirtualizationConstraints> HierarchicalVirtualizationConstraintsField =
             new UncommonField<HierarchicalVirtualizationConstraints>();
         internal static readonly UncommonField<HierarchicalVirtualizationHeaderDesiredSizes> HierarchicalVirtualizationHeaderDesiredSizesField =
             new UncommonField<HierarchicalVirtualizationHeaderDesiredSizes>();

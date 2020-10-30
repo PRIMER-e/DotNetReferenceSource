@@ -15,15 +15,15 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Scope="member", Target="System.Windows.Markup.ReflectionHelper.LoadAssemblyHelper(System.String,System.String):System.Reflection.Assembly", MessageId="System.String.EndsWith(System.String)")]
 #endif
 
 //**************************************************************************************************************************
 // Bug ID: 1050487
-// Developer: ChaiwatP ([....])
+// Developer: ChaiwatP (bchapman)
 // Reason: 
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", Scope="member", Target="MS.Win32.HwndWrapper..ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.String,System.IntPtr,MS.Win32.HwndWrapperHook[])")]
@@ -44,7 +44,7 @@ using System.Diagnostics.CodeAnalysis;
 //***************************************************************************************************************************
 // **************************************************************************************************************************
 // Bug ID: 731486
-// Developer: [....]
+// Developer: kedecond
 // Reason: Issue with fxcop rule, shows error even with Unicode charset. Can be removed when issue is fixed(Bug 735418).
 //*************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization", "CA2101:SpecifyMarshalingForPInvokeStringArguments", MessageId = "LOGFONT.lfFaceName", Scope = "member", Target = "MS.Win32.UnsafeNativeMethods.#SystemParametersInfo(System.Int32,System.Int32,MS.Win32.NativeMethods+ICONMETRICS,System.Int32)")]
@@ -53,7 +53,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // **************************************************************************************************************************
 // Bug ID: 731486
-// Developer: [....]
+// Developer: pantal
 // Reason: Issue with fxcop rule, shows error even with Unicode charset. Can be removed when issue is fixed(Bug 735418).
 //*************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Globalization","CA2101:SpecifyMarshalingForPInvokeStringArguments", MessageId="OPENFILENAME_I.lpTemplateName", Scope="member", Target="MS.Win32.UnsafeNativeMethods.#GetOpenFileName(MS.Win32.NativeMethods+OPENFILENAME_I)")]

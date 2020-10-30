@@ -501,7 +501,7 @@ namespace System.Windows.Forms {
         /// <devdoc>
         ///    <para>
         ///       An option button, also known as a
-        ///       radio button. All objects sharing a ---- that have this attribute are
+        ///       radio button. All objects sharing a single parent that have this attribute are
         ///       assumed to be part of a single mutually exclusive group. You can use
         ///       grouped objects to divide option buttons into separate groups when
         ///       necessary.

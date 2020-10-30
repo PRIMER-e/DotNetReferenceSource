@@ -350,7 +350,7 @@ namespace System.Windows.Forms {
                 if (element.ParticipatesInLayout) {
                     ToolStripPanelCell cell = element as ToolStripPanelCell;
                     element.SetBounds(cell.CachedBounds, BoundsSpecified.None);
-//                    Debug.Assert( cell.Control == null || cell.CachedBounds.Location == cell.Control.Bounds.Location, "CachedBounds out of [....] with bounds!");
+//                    Debug.Assert( cell.Control == null || cell.CachedBounds.Location == cell.Control.Bounds.Location, "CachedBounds out of sync with bounds!");
                 }           
             }
         }

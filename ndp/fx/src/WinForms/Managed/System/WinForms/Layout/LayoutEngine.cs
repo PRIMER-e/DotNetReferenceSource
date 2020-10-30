@@ -28,7 +28,6 @@ namespace System.Windows.Forms.Layout {
         internal virtual Size GetPreferredSize(IArrangedElement container, Size proposedConstraints) { return Size.Empty; }
     
         /// <include file='doc\LayoutEngine.uex' path='docs/doc[@for="LayoutEngine.InitLayout"]/*' />
-        [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
         public virtual void InitLayout(object child, BoundsSpecified specified) {
             InitLayoutCore(CastToArrangedElement(child), specified);
         }

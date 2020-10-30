@@ -7,8 +7,8 @@
 // Description: Access to calculated information of a line of text. 
 //
 // History:  
-//  04/25/2003 : [....] - Moving from Avalon branch.
-//  06/25/2004 : [....] - Performance work.
+//  04/25/2003 : grzegorz - Moving from Avalon branch.
+//  06/25/2004 : grzegorz - Performance work.
 //
 //---------------------------------------------------------------------------
 

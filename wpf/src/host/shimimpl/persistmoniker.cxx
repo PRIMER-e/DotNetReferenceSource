@@ -8,9 +8,9 @@
 //  History:
 //     2002/06/19-murrayw
 //          Created
-//     2003/06/30/03-[....]
+//     2003/06/30/03-Microsoft
 //          Ported ByteRangeDownloader to WCP
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //          Removed dependence on ByteWrapper[Impl] and DownloadInfo for PresentationHost.exe.
 //
@@ -178,8 +178,8 @@ STDMETHODIMP CPersistMoniker::Load(BOOL fFullyAvailable,
             hr = S_FALSE;     // S_FALSE
         }
 
-        //Returning E_NOTIMPL for now to work around a urlmon bug
-        //hr = E_NOTIMPL;
+        //Returning E_NOTIMPL for now to work around a urlmon 
+
 
         //We will allow IPersistFile::Load only for local files. If IPersistMoniker::Load
         //fails for http urls, urlmon will then call IPersistFile::Load with the 

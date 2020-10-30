@@ -8,11 +8,11 @@
 //      WebBrowserSite is a sub-class of ActiveXSite. 
 //      Used to implement IDocHostUIHandler. 
 //
-//      Copied from WebBrowser.cs in [....]
+//      Copied from WebBrowser.cs in Microsoft
 //
 // History
 //      06/16/05 - marka - Created
-//      04/24/08 - [....] - Implemented hosting the WebOC in the browser process for IE 7+ Protected Mode.
+//      04/24/08 - Microsoft - Implemented hosting the WebOC in the browser process for IE 7+ Protected Mode.
 // 
 //------------------------------------------------------------------------------
 

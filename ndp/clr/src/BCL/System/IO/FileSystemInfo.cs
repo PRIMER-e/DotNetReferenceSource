@@ -7,7 +7,7 @@
 **
 ** Class:  FileSystemInfo    
 ** 
-** <OWNER>[....]</OWNER>
+** <OWNER>Microsoft</OWNER>
 **
 **
 ** Purpose: 
@@ -89,11 +89,7 @@ namespace System.IO {
 
         // Full path of the direcory/file
         public virtual String FullName {
-#if FEATURE_LEGACYNETCFIOSECURITY
-            [System.Security.SecurityCritical]
-#else
             [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             get 
             {
                 String demandDir;
@@ -101,11 +97,11 @@ namespace System.IO {
                     demandDir = Directory.GetDemandDir(FullPath, true);
                 else
                     demandDir = FullPath;
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCFIOSECURITY
+#if FEATURE_CORECLR
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandDir);
                 sourceState.EnsureState();
-#elif !FEATURE_CORECLR
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, demandDir).Demand();
+#else
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, demandDir);
 #endif
                 return FullPath;
             }
@@ -122,7 +118,7 @@ namespace System.IO {
                 else
                     demandDir = FullPath;
 #if !FEATURE_CORECLR
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, demandDir).Demand();
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, demandDir);
 #endif
                 return FullPath;
             }
@@ -158,24 +154,15 @@ namespace System.IO {
         }
 
         // Delete a file/directory
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
         public abstract void Delete();
 
         public DateTime CreationTime
         {
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             get {
                     // depends on the security check in get_CreationTimeUtc
                     return CreationTimeUtc.ToLocalTime();
             }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             set {
                 CreationTimeUtc = value.ToUniversalTime();
             }
@@ -183,18 +170,12 @@ namespace System.IO {
 
        [ComVisible(false)]
        public DateTime CreationTimeUtc {
-#if FEATURE_LEGACYNETCFIOSECURITY
-           [System.Security.SecurityCritical]
-#else
            [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             get {
 #if FEATURE_CORECLR
-#if !FEATURE_LEGACYNETCFIOSECURITY
                 // get_CreationTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
                 sourceState.EnsureState();
-#endif //!FEATURE_LEGACYNETCFIOSECURITY
 #endif
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
@@ -223,16 +204,10 @@ namespace System.IO {
 
         public DateTime LastAccessTime
        {
-#if FEATURE_LEGACYNETCFIOSECURITY
-           [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
            get {
                 // depends on the security check in get_LastAccessTimeUtc
                 return LastAccessTimeUtc.ToLocalTime();
            }
-#if FEATURE_LEGACYNETCFIOSECURITY
-           [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
            set {
                 LastAccessTimeUtc = value.ToUniversalTime();
             }
@@ -240,18 +215,12 @@ namespace System.IO {
 
         [ComVisible(false)]
         public DateTime LastAccessTimeUtc {
-#if FEATURE_LEGACYNETCFIOSECURITY
-            [System.Security.SecurityCritical]
-#else
             [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             get {
 #if FEATURE_CORECLR
-#if !FEATURE_LEGACYNETCFIOSECURITY
                 // get_LastAccessTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
                 sourceState.EnsureState();
-#endif //!FEATURE_LEGACYNETCFIOSECURITY
 #endif
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
@@ -279,17 +248,11 @@ namespace System.IO {
 
         public DateTime LastWriteTime
         {
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             get {
                 // depends on the security check in get_LastWriteTimeUtc
                 return LastWriteTimeUtc.ToLocalTime();
             }
 
-#if FEATURE_LEGACYNETCFIOSECURITY
-        [System.Security.SecurityCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             set {
                 LastWriteTimeUtc = value.ToUniversalTime();
             }
@@ -297,18 +260,12 @@ namespace System.IO {
 
         [ComVisible(false)]
         public DateTime LastWriteTimeUtc {
-#if FEATURE_LEGACYNETCFIOSECURITY
-            [System.Security.SecurityCritical]
-#else
             [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             get {
 #if FEATURE_CORECLR
-#if !FEATURE_LEGACYNETCFIOSECURITY
                 // get_LastWriteTime also depends on this security check
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
                 sourceState.EnsureState();
-#endif //!FEATURE_LEGACYNETCFIOSECURITY
 #endif
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
@@ -343,18 +300,12 @@ namespace System.IO {
         }
 
         public FileAttributes Attributes {
-#if FEATURE_LEGACYNETCFIOSECURITY
-            [System.Security.SecurityCritical]
-#else
             [System.Security.SecuritySafeCritical]
-#endif //FEATURE_LEGACYNETCFIOSECURITY
             get
             {
 #if FEATURE_CORECLR
-#if !FEATURE_LEGACYNETCFIOSECURITY
                 FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
                 sourceState.EnsureState();
-#endif //!FEATURE_LEGACYNETCFIOSECURITY
 #endif
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
@@ -373,7 +324,7 @@ namespace System.IO {
             #endif
             set {
 #if !FEATURE_CORECLR
-                new FileIOPermission(FileIOPermissionAccess.Write, FullPath).Demand();
+                FileIOPermission.QuickDemand(FileIOPermissionAccess.Write, FullPath);
 #endif
                 bool r = Win32Native.SetFileAttributes(FullPath, (int) value);
                 if (!r) {
@@ -398,7 +349,7 @@ namespace System.IO {
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
 #if !FEATURE_CORECLR
-            new FileIOPermission(FileIOPermissionAccess.PathDiscovery, FullPath).Demand();
+            FileIOPermission.QuickDemand(FileIOPermissionAccess.PathDiscovery, FullPath);
 #endif
 
             info.AddValue("OriginalPath", OriginalPath, typeof(String));

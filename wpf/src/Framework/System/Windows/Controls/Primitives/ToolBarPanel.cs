@@ -143,7 +143,7 @@ namespace System.Windows.Controls.Primitives
                                 childrenCount++;
                             }
 
-                            Debug.Assert(children[childrenIndex] == child, "InternalChildren is out of [....] with _generatedItemsCollection.");
+                            Debug.Assert(children[childrenIndex] == child, "InternalChildren is out of sync with _generatedItemsCollection.");
                             childrenIndex++;
                         }
                     }
@@ -190,7 +190,7 @@ namespace System.Windows.Controls.Primitives
                         // If the child is in this panel's visual tree, remove it.
                         if (visualParent == this)
                         {
-                            Debug.Assert(children[childrenIndex] == child, "InternalChildren is out of [....] with _generatedItemsCollection.");
+                            Debug.Assert(children[childrenIndex] == child, "InternalChildren is out of sync with _generatedItemsCollection.");
                             children.RemoveNoVerify(child);
                             childrenCount--;
                             overflowNeedsInvalidation = true;

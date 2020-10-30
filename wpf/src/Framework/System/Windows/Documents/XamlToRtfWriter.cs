@@ -863,10 +863,10 @@ namespace System.Windows.Documents
             }
 
             // Write child contents
-            int nStart = documentNode.Index + 1;
-            int nEnd = documentNode.Index + documentNode.ChildCount;
-
-            for (; nStart <= nEnd; nStart++)
+            int nIndex = documentNode.Index;
+            int nStart = nIndex + 1;
+            
+            for (; nStart <= nIndex + documentNode.ChildCount; nStart++)
             {
                 DocumentNode documentNodeChild = dna.EntryAt(nStart);
 
@@ -897,10 +897,10 @@ namespace System.Windows.Documents
             DocumentNodeArray dna = _converterState.DocumentNodeArray;
 
             // Write child contents
-            int nStart = documentNode.Index + 1;
-            int nEnd = documentNode.Index + documentNode.ChildCount;
+            int nIndex = documentNode.Index;
+            int nStart = nIndex + 1;
 
-            for (; nStart <= nEnd; nStart++)
+            for (; nStart <= nIndex + documentNode.ChildCount; nStart++)
             {
                 DocumentNode documentNodeChild = dna.EntryAt(nStart);
 
@@ -924,8 +924,8 @@ namespace System.Windows.Documents
 
         private void WriteSection(DocumentNode dnThis)
         {
-            int nStart = dnThis.Index + 1;
-            int nEnd = dnThis.Index + dnThis.ChildCount;
+            int nIndex = dnThis.Index;
+            int nStart = nIndex + 1;
             int nAt;
 
             FormatState fsThis = dnThis.FormatState;
@@ -1003,7 +1003,7 @@ namespace System.Windows.Documents
             }
 
             // Now write out the direct children.
-            for (nAt = nStart; nAt <= nEnd; nAt++)
+            for (nAt = nStart; nAt <= nIndex + dnThis.ChildCount; nAt++)
             {
                 DocumentNode dnChild = dna.EntryAt(nAt);
 
@@ -1021,8 +1021,8 @@ namespace System.Windows.Documents
 
         private void WriteParagraph(DocumentNode dnThis)
         {
-            int nStart = dnThis.Index + 1;
-            int nEnd = dnThis.Index + dnThis.ChildCount;
+            int nIndex = dnThis.Index;
+            int nStart = nIndex + 1;
             int nAt;
 
             FormatState fsThis = dnThis.FormatState;
@@ -1060,7 +1060,7 @@ namespace System.Windows.Documents
             }
 
             // OK, now write out the inline children.
-            for (nAt = nStart; nAt <= nEnd; nAt++)
+            for (nAt = nStart; nAt <= nIndex + dnThis.ChildCount; nAt++)
             {
                 DocumentNode dnChild = dna.EntryAt(nAt);
 
@@ -1180,8 +1180,8 @@ namespace System.Windows.Documents
 
         private bool WriteParagraphFontInfo(DocumentNode dnThis, FormatState fsThis, FormatState fsParent)
         {
-            int nStart = dnThis.Index + 1;
-            int nEnd = dnThis.Index + dnThis.ChildCount;
+            int nIndex = dnThis.Index;
+            int nStart = nIndex + 1;
             int nAt;
             DocumentNodeArray dna = _converterState.DocumentNodeArray;
 
@@ -1190,7 +1190,7 @@ namespace System.Windows.Documents
             // In order to minimize RTF output, pull fontsize and font info into paragraph level if possible
             long fsAll = -2;
             long fontAll = -2;
-            for (nAt = nStart; nAt <= nEnd; nAt++)
+            for (nAt = nStart; nAt <= nIndex + dnThis.ChildCount; nAt++)
             {
                 DocumentNode dnChild = dna.EntryAt(nAt);
 
@@ -1223,11 +1223,11 @@ namespace System.Windows.Documents
                 fsThis.Font = fontAll;
             }
 
-            // Workaround for Word 11 \f behavior.  See bug 1636475.
-            // Word 11 does not respect \f applied above the paragraph
-            // level with \rtlpara.  This is a targeted work-around
-            // which is probably not complete, but additional repros
-            // are currently lacking.
+            // Workaround for Word 11 \f behavior.  See 
+
+
+
+
             bool isTopLevelParagraph = dnThis.Type == DocumentNodeType.dnParagraph &&
                                        dnThis.Parent != null &&
                                        dnThis.Parent.Type == DocumentNodeType.dnSection &&
@@ -1928,10 +1928,10 @@ namespace System.Windows.Documents
             // Write direct children, except for row
             if (dnThis.Type != DocumentNodeType.dnRow)
             {
-                int nStart = dnThis.Index + 1;
-                int nEnd = dnThis.Index + dnThis.ChildCount;
+                int nIndex = dnThis.Index;
+                int nStart = nIndex + 1;
 
-                for (; nStart <= nEnd; nStart++)
+                for (; nStart <= nIndex + dnThis.ChildCount; nStart++)
                 {
                     DocumentNode dnChild = dna.EntryAt(nStart);
 

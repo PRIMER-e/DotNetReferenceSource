@@ -8,17 +8,19 @@ namespace System.Net {
     using System.Collections;
     using System.Collections.Generic;
     using System.Configuration;
+    using System.IO;
     using System.Net.Configuration;
     using System.Net.Sockets;
     using System.Net.Security;
+    using System.Security;
     using System.Security.Permissions;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.Diagnostics.CodeAnalysis;
-
-
+    using Microsoft.Win32;
+    
     // This turned to be a legacy type name that is simply forwarded to System.Security.Authentication.SslProtocols defined values.
 #if !FEATURE_PAL
     [Flags]
@@ -202,7 +204,7 @@ namespace System.Net {
 
         /// <devdoc>
         ///    <para>
-        ///       The number of non-persistant connections allowed on a <see cref='System.Net.ServicePoint'/>.
+        ///       The number of non-persistent connections allowed on a <see cref='System.Net.ServicePoint'/>.
         ///    </para>
         /// </devdoc>
         public const int DefaultNonPersistentConnectionLimit = 4;
@@ -215,7 +217,7 @@ namespace System.Net {
 
         /// <devdoc>
         ///    <para>
-        ///       The default number of persistent connections when runninger under ASP+.
+        ///       The default number of persistent connections when running under ASP+.
         ///    </para>
         /// </devdoc>
         private const int DefaultAspPersistentConnectionLimit = 10;
@@ -223,7 +225,6 @@ namespace System.Net {
 
         internal static readonly string SpecialConnectGroupName = "/.NET/NetClasses/HttpWebRequest/CONNECT__Group$$/";
         internal static readonly TimerThread.Callback s_IdleServicePointTimeoutDelegate = new TimerThread.Callback(IdleServicePointTimeoutCallback);
-
 
         //
         // data  - only statics used
@@ -243,12 +244,27 @@ namespace System.Net {
 #if !FEATURE_PAL
         private static volatile CertPolicyValidationCallback s_CertPolicyValidationCallback = new CertPolicyValidationCallback();
         private static volatile ServerCertValidationCallback s_ServerCertValidationCallback = null;
+
+        private const string sendAuxRecordValueName = "SchSendAuxRecord";
+        private const string sendAuxRecordAppSetting = "System.Net.ServicePointManager.SchSendAuxRecord";
+        private const string strongCryptoValueName = "SchUseStrongCrypto";
+        private const string secureProtocolAppSetting = "System.Net.ServicePointManager.SecurityProtocol";
+
+        private static object configurationLoadedLock = new object();
+        private static volatile bool configurationLoaded = false;
+        private static bool disableStrongCrypto = false;
+        private static bool disableSendAuxRecord = false;
+
+        private static SecurityProtocolType s_SecurityProtocolType = SecurityProtocolType.Tls | SecurityProtocolType.Ssl3;
+
+        private const string reusePortValueName = "HWRPortReuseOnSocketBind";
+        private static object reusePortLock = new object();
+        private static volatile bool reusePortSettingsInitialized = false;
+        private static bool reusePort = false;
+        private static bool? reusePortSupported = null;
 #endif // !FEATURE_PAL
         private static volatile Hashtable s_ConfigTable = null;
         private static volatile int s_ConnectionLimit = PersistentConnectionLimit;
-#if !FEATURE_PAL
-        private static SecurityProtocolType s_SecurityProtocolType = SecurityProtocolType.Tls|SecurityProtocolType.Ssl3;
-#endif // !FEATURE_PAL
 
         internal static volatile bool s_UseTcpKeepAlive = false;
         internal static volatile int s_TcpKeepAliveTime;
@@ -412,17 +428,25 @@ namespace System.Net {
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety")]
         public static SecurityProtocolType SecurityProtocol {
             get {
+                EnsureConfigurationLoaded();
                 return s_SecurityProtocolType;
             }
             set {
-                // Do not allow Ssl2 (and others) as explicit SSL version request
-                SecurityProtocolType allowed = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls 
-                    | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-
-                if ((value & ~allowed) != 0) {
-                    throw new NotSupportedException(SR.GetString(SR.net_securityprotocolnotsupported));
-                }
+                EnsureConfigurationLoaded();
+                ValidateSecurityProtocol(value);
                 s_SecurityProtocolType = value;
+            }
+        }
+
+        private static void ValidateSecurityProtocol(SecurityProtocolType value)
+        {
+            // Do not allow Ssl2 (and others) as explicit SSL version request
+            SecurityProtocolType allowed = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls
+                | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+
+            if ((value & ~allowed) != 0)
+            {
+                throw new NotSupportedException(SR.GetString(SR.net_securityprotocolnotsupported));
             }
         }
 #endif // !FEATURE_PAL
@@ -612,6 +636,174 @@ namespace System.Net {
         internal static ServerCertValidationCallback ServerCertValidationCallback {
             get {
                 return s_ServerCertValidationCallback;
+            }
+        }
+
+        internal static bool DisableStrongCrypto {
+            get {
+                EnsureConfigurationLoaded();
+                return disableStrongCrypto; 
+            }
+        }
+
+        internal static bool DisableSendAuxRecord {
+            get {
+                EnsureConfigurationLoaded();
+                return disableSendAuxRecord;
+            }
+        }
+
+        private static void EnsureConfigurationLoaded() {
+            if (configurationLoaded) {
+                return;
+            }
+
+            lock (configurationLoadedLock) {
+                if (configurationLoaded) {
+                    return;
+                }
+
+                LoadDisableStrongCryptoConfiguration();
+                LoadDisableSendAuxRecordConfiguration();
+
+                configurationLoaded = true;
+            }
+        }
+
+        private static void LoadDisableStrongCryptoConfiguration() {
+            try {
+                bool disableStrongCryptoInternal = false;
+                int schUseStrongCryptoKeyValue = 0;
+
+                if (LocalAppContextSwitches.DontEnableSchUseStrongCrypto) {
+                    //.Net 4.5.2 and below will default to false unless the registry key is specifically set to 1.
+                    schUseStrongCryptoKeyValue =
+                        RegistryConfiguration.GlobalConfigReadInt(strongCryptoValueName, 0);
+
+                    disableStrongCryptoInternal = schUseStrongCryptoKeyValue != 1;
+                }
+                else {
+                    // .Net 4.6 and above will default to true unless the registry key is specifically set to 0.
+                    schUseStrongCryptoKeyValue =
+                        RegistryConfiguration.GlobalConfigReadInt(strongCryptoValueName, 1);
+
+                    disableStrongCryptoInternal = schUseStrongCryptoKeyValue == 0;
+                }
+
+                if (disableStrongCryptoInternal) {
+                    // Revert the SecurityProtocol selection to the legacy combination.
+                    s_SecurityProtocolType = SecurityProtocolType.Tls | SecurityProtocolType.Ssl3;
+                }
+                else {
+                    s_SecurityProtocolType =
+                        SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+
+                    string appSetting = RegistryConfiguration.AppConfigReadString(secureProtocolAppSetting, null);
+
+                    SecurityProtocolType value;
+                    try {
+                        value = (SecurityProtocolType)Enum.Parse(typeof(SecurityProtocolType), appSetting);
+                        ValidateSecurityProtocol(value);
+                        s_SecurityProtocolType = value;
+                    }
+                    // Ignore all potential exceptions caused by Enum.Parse.
+                    catch (ArgumentNullException) { }
+                    catch (ArgumentException) { }
+                    catch (NotSupportedException) { }
+                    catch (OverflowException) { }
+                }
+
+                disableStrongCrypto = disableStrongCryptoInternal;
+            }
+            catch (Exception e)
+            {
+                if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException)
+                {
+                    throw;
+                }
+            }
+        }
+
+        private static void LoadDisableSendAuxRecordConfiguration() {
+            try { 
+                if (LocalAppContextSwitches.DontEnableSchSendAuxRecord) {
+                    disableSendAuxRecord = true;
+                    return;
+                }
+
+                int schSendAuxRecordKeyValue = 1;
+                schSendAuxRecordKeyValue = RegistryConfiguration.AppConfigReadInt(sendAuxRecordAppSetting, 1);
+                if (schSendAuxRecordKeyValue == 0) {
+                    disableSendAuxRecord = true;
+                    return;
+                }
+            
+                schSendAuxRecordKeyValue = RegistryConfiguration.GlobalConfigReadInt(sendAuxRecordValueName, 1);
+                if (schSendAuxRecordKeyValue == 0) {
+                    disableSendAuxRecord = true;
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException)
+                {
+                    throw;
+                }
+            }
+        }
+
+        public static bool ReusePort {
+            get {
+                EnsureReusePortSettingsInitialized();
+                return reusePort;
+            }
+            set {
+                EnsureReusePortSettingsInitialized();
+                reusePort = value;
+            }
+        }
+        
+        internal static bool? ReusePortSupported {
+            get {
+                return reusePortSupported;
+            }
+            set {
+                reusePortSupported = value;
+            }
+        }
+
+        private static void EnsureReusePortSettingsInitialized() {
+            
+            if (reusePortSettingsInitialized) {
+                return;
+            }
+
+            lock (reusePortLock) {
+                if (reusePortSettingsInitialized) {
+                    return;
+                }
+
+                int reusePortKeyValue = 0;
+                try {
+                    reusePortKeyValue = RegistryConfiguration.GlobalConfigReadInt(reusePortValueName, 0);
+                }
+                catch (Exception e) {
+                    if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException) {
+                        throw;
+                    }
+                }
+
+                bool reusePortInternal = false;
+                if (reusePortKeyValue == 1) {
+                    if (Logging.On) { 
+                        Logging.PrintInfo(Logging.Web, typeof(ServicePointManager), SR.GetString(SR.net_log_set_socketoption_reuseport_default_on));
+                    }
+                    reusePortInternal = true;
+                }
+
+                reusePort = reusePortInternal;
+                reusePortSettingsInitialized = true;
             }
         }
 #endif // !FEATURE_PAL

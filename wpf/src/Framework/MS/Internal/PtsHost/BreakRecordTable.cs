@@ -6,7 +6,7 @@
 //              break records of FlowDocument contnet.
 //
 // History:  
-//  01/24/2004 : [....] - Created
+//  01/24/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

@@ -546,7 +546,7 @@ namespace System.Windows.Forms {
 
                             // If the check box is clicked as a result of AccObj::DoDefaultAction
                             // then the native check box does not fire OBJ_STATE_CHANGE event when going to Indeterminate state.
-                            // So the [....] layer fires the OBJ_STATE_CHANGE event.
+                            // So the Microsoft layer fires the OBJ_STATE_CHANGE event.
                             // vsw 543351.
                             if (this.AccObjDoDefaultAction) {
                                 AccessibilityNotifyClients(AccessibleEvents.StateChange, -1);
@@ -588,8 +588,8 @@ namespace System.Windows.Forms {
         /// </devdoc>
         /// <internalonly/>
         protected override void OnKeyDown(KeyEventArgs e) {
-            //this fixes bug 235019, but it will be a breaking change from Everett
-            //see the comments attached to bug 235019
+            //this fixes 
+
             /*
             if (Enabled) {
                 if (e.KeyCode == Keys.Oemplus || e.KeyCode == Keys.Add) {
@@ -674,7 +674,7 @@ namespace System.Windows.Forms {
         public override string ToString() {
 
             string s = base.ToString();
-            // C#R cpb: 14744 ([....]) We shouldn't need to convert the enum to int -- EE M10 workitem.
+            // C#R cpb: 14744 (Microsoft) We shouldn't need to convert the enum to int -- EE M10 workitem.
             int checkState = (int)CheckState;
             return s + ", CheckState: " + checkState.ToString(CultureInfo.InvariantCulture);
         }

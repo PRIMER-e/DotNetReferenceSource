@@ -231,7 +231,7 @@ namespace MS.Internal.Automation
         }
 
         // Call IsCriticalException w/in a catch-all-exception handler to allow critical exceptions
-        // to be thrown (this is copied from exception handling code in [....] but feel free to
+        // to be thrown (this is copied from exception handling code in Microsoft but feel free to
         // add new critical exceptions).  Usage:
         //      try
         //      {

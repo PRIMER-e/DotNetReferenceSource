@@ -7,7 +7,7 @@
 // Description: Contains the DialogResultConverter: TypeConverter for the DialogResult class.
 //
 // History:  
-//  10/31/2003 : [....]  - Created
+//  10/31/2003 : Microsoft  - Created
 //
 //---------------------------------------------------------------------------
 

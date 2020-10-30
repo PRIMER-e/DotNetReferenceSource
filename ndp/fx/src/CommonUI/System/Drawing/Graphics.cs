@@ -55,8 +55,8 @@ namespace System.Drawing {
         private GraphicsContext previousContext;
 
         /// <devdoc>
-        ///     Object to lock on for static methods - DO NOT use the Type, see bug#464117.
-        /// </devdoc>
+        ///     Object to lock on for static methods - DO NOT use the Type, see 
+
         private static readonly object syncObject = new Object();
 
         /// <devdoc>
@@ -254,7 +254,6 @@ namespace System.Drawing {
         /// </devdoc>
         internal IntPtr NativeGraphics
         {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get
             {
                 Debug.Assert( this.nativeGraphics != IntPtr.Zero, "this.nativeGraphics == IntPtr.Zero." );

@@ -13,11 +13,11 @@
 //
 //  History:
 //     2005/03/10 - Created the file based on code we got from Anantha Ganjam in the IE team.
-//     2007/07/06 - [....] - Switched to using the LSA APIs to replace the use of LookupPrivilegeValue()
+//     2007/07/06 - Microsoft - Switched to using the LSA APIs to replace the use of LookupPrivilegeValue()
 //          with a more efficient version for our scenario.
 //          In lieu of SDK documentation of the LSA APIs, there's this KB article:
 //          http://support.microsoft.com/kb/132958.
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

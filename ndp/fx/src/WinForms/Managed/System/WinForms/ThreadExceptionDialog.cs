@@ -136,12 +136,12 @@ namespace System.Windows.Forms {
 
                     try {
                         
-                        // bug 113573 -- if there's a path with an escaped value in it 
-                        // like c:\temp\foo%2fbar, the AssemblyName call will unescape it to
-                        // c:\temp\foo\bar, which is wrong, and this will fail.   It doesn't look like the 
-                        // assembly name class handles this properly -- even the "CodeBase" property is un-escaped
-                        // so we can't circumvent this.
-                        //
+                        // 
+
+
+
+
+
                         if (name.EscapedCodeBase != null && name.EscapedCodeBase.Length > 0) {
                             Uri codeBase = new Uri(name.EscapedCodeBase);
                             if (codeBase.Scheme == "file") {

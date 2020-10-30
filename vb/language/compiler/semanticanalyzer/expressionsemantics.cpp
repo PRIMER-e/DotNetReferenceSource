@@ -193,7 +193,7 @@ Semantics::InterpretNameExpression
         if (!NameBinding)
         {
 
-            // [....]:
+            // Microsoft:
             // To fix the "inaccessible name binding" issues, InterpretName may report errors
             // for inaccessible types. Use a temporary error table to keep these errors, and throw them
             // out if we don't need them.
@@ -384,7 +384,7 @@ Semantics::InterpretNameExpression
                 Location* locToUse = NULL;
 
                 // DevDiv #699
-                // [....]: if option infer is on, we are creating an explicitly scoped variable,
+                // Microsoft: if option infer is on, we are creating an explicitly scoped variable,
                 // so get the location. If option infer is off, this will create an implicit
                 // variable, which requires no location.
 
@@ -664,7 +664,7 @@ Semantics::InterpretNameExpression
                 if( circular )
                 {
                     if( !circular->CircularReferenceDetected ||
-                        !(m_Errors && m_Errors->HasThisErrorWithLocation(ERRID_CircularInference2, Input->TextSpan))) //(Bug 56031 - DevDiv Bugs)
+                        !(m_Errors && m_Errors->HasThisErrorWithLocation(ERRID_CircularInference2, Input->TextSpan))) //(
                     {
                         ReportSemanticError(
                                 ERRID_CircularInference2,
@@ -890,8 +890,8 @@ Semantics::InterpretGenericQualifiedExpression
                 if (m_ReportErrors)
                 {
                     // Check for restricted types in type arguments passed to late bound expression.
-                    // Bug VSWhidbey 258600.
-                    //
+                    // 
+
                     CheckRestrictedType(
                         ERRID_RestrictedType1,
                         BoundArguments[ArgumentIndex],
@@ -1085,15 +1085,15 @@ Semantics::InterpretExpression
     BackupValue<bool> backup_m_InConstantExpressionContext(&m_InConstantExpressionContext);
     if (HasFlag(Flags, ExprMustBeConstant))
     {
-        // Temporary fix for Bug 36881 - DevDiv Bugs
-        // We are disallowing some new features like Query Expressions and
-        // Aggregate Initializers in context of a constant expression because
-        // their interpretation allocates new symbols, which in some scenarios
-        // may cause a crash later on. So, we need to track whether we are
-        // in context of a constant expression and that is what this flag is used
-        // for. Other non-constant expressions are still going to be allowed when
-        // this flag is set to TRUE, but we are going to make it a warning (separate
-        // bug is opened) for this release and convert it to an error for the next release.
+        // Temporary fix for 
+
+
+
+
+
+
+
+
         m_InConstantExpressionContext = true;
     }
 
@@ -2089,7 +2089,7 @@ Semantics::InterpretExpression
 
             if (!IsBad(Value) &&
                 !TypeHelpers::IsReferenceType(Value->ResultType) &&
-                !TypeHelpers::IsGenericParameter(Value->ResultType))     // Bug VSWhidbey 422580
+                !TypeHelpers::IsGenericParameter(Value->ResultType))     // 
             {
                 ReportSemanticError(
                     ERRID_TypeOfRequiresReferenceType1,
@@ -2114,9 +2114,9 @@ Semantics::InterpretExpression
             VSASSERT(TypeHelpers::IsReferenceType(Value->ResultType) || TypeHelpers::IsGenericParameter(Value->ResultType),
                         "How did a non-reference type or non-generic param type get here?");
 
-            // Bug VSWhidbey 473058.
-            // Detect never possible conversions and give errors.
-            //
+            // 
+
+
             if (ClassifyTryCastConversion(IsType, Value->ResultType) == ConversionError)
             {
                 // Expression of type '|1' can never be of type '|2'.
@@ -2148,7 +2148,7 @@ Semantics::InterpretExpression
                             SourceTypeProject,
                             m_Compiler,
                             m_Errors,
-                            SourceTypeProject->GetFileName(),     // Bug VSWhidbey 395158 - Extra information used by error correction.
+                            SourceTypeProject->GetFileName(),     // 
                             &Input->TextSpan,
                             ExtractErrorName(Value->ResultType, TextBuffer1),
                             ExtractErrorName(IsType, TextBuffer1));
@@ -3583,7 +3583,7 @@ Semantics::InterpretCollectionInitializer
     // are considered to be higher-rank arrays rather than jagged arrays.
     //
     // There's one odditity. You'd have thought that { {}, {} } would succesfully invoke an argument-less
-    // Add method. But we specifically check for this case and disallow it. ([....]: I don't understand why?)
+    // Add method. But we specifically check for this case and disallow it. (Microsoft: I don't understand why?)
     //
     // We would like to give informative messages to the user if they get it wrong.
     // For every top-level element which fails to match in arity to any of the available Add methods,
@@ -3609,18 +3609,18 @@ Semantics::InterpretCollectionInitializer
 
     // Verification of collection type: first we ensure that the collection type really is a collection, i.e.
     // basically that once we've created the collection then people will be able to "for each" over it.
-    // [....]: WHY? All we're doing is invoking the "Add" method on something. Why even care
+    // Microsoft: WHY? All we're doing is invoking the "Add" method on something. Why even care
     // that people can enumerate it afterwards? Was this intended to support "new Collection from MyEnumerable"?
     // But here we're checking the collection pNewExpression, rather than "From" expression pInput->Initializer...
     // Answer: that's what the decision was when the spec was designed. The motive was that this "From"
     // is really intended to be used for collections, and not just for arbitrary classes that happen
     // to have an "Add" method.
 
-    // Spec $10.9 (this comment is in answer to bug Dev10#531849): a type is considered a collection type if
-    //    (1) it satisfies MatchesForEachCollectionDesignPattern (i.e. has a method named GetEnumerator() which
-    //        returns a type with MoveNext/Current); or
-    //    (2) it implements System.Collections.Generic.IEnumerable(Of T); or
-    //    (3) it implements System.Collections.IEnumerable.
+    // Spec $10.9 (this comment is in answer to 
+
+
+
+
 
 
     if (MatchesForEachCollectionDesignPattern(pNewExpression, NULL))
@@ -4420,7 +4420,7 @@ Semantics::ConvertExpressionToDominantType
 //      [UnboundType]   --  The unbound type to create a Type object of
 //      [Flags]     --  Expresion eval flags
 //
-//  History:    3-2-2005    [....]     Moved code from InterpretExpression
+//  History:    3-2-2005    Microsoft     Moved code from InterpretExpression
 //---------------------------------------------------------------------------
 ILTree::Expression *
 Semantics::InterpretGetType
@@ -4475,7 +4475,7 @@ Semantics::InterpretGetType
 //      [ExpressionLocation]    --  The loc of the entire GetType(type) expression
 //      [TypeLocation]  --  The loc of the value passed to GetType
 //
-//  History:    3-2-2005    [....]     Moved code from InterpretExpression
+//  History:    3-2-2005    Microsoft     Moved code from InterpretExpression
 //---------------------------------------------------------------------------
 ILTree::Expression *
 Semantics::InterpretGetType
@@ -4539,7 +4539,7 @@ Semantics::InterpretGetType
 //      [UnboundPrefix] --  The unbound prefix to create an XmlNamespace from
 //      [Flags]         --  Expresion eval flags
 //
-//  History:    7-26-2006    [....]     Created
+//  History:    7-26-2006    Microsoft     Created
 //---------------------------------------------------------------------------
 ILTree::Expression *
 Semantics::InterpretGetXmlNamespace
@@ -4674,7 +4674,7 @@ Semantics::ApplyContextSpecificSemantics
             Result->AsPropertyReferenceExpression().Left->AsSymbolReferenceExpression().BaseReference &&
             !HasFlag32(Result->AsPropertyReferenceExpression().Left->AsSymbolReferenceExpression().BaseReference, SXF_LVALUE) &&
             TypeHelpers::IsValueType(Result->AsPropertyReferenceExpression().Left->AsSymbolReferenceExpression().BaseReference->ResultType)&&
-            // make sure Me.SomeProperty() still works for value types(bug 32804)
+            // make sure Me.SomeProperty() still works for value types(
             !(Result->AsPropertyReferenceExpression().Left->AsSymbolReferenceExpression().BaseReference->bilop == SX_SYM &&
              Result->AsPropertyReferenceExpression().Left->AsSymbolReferenceExpression().BaseReference->AsSymbolReferenceExpression().Symbol->PVariable()->IsMe()))))
     {
@@ -5171,7 +5171,7 @@ Semantics::InterpretQualifiedExpression
                 // Object return type), processed it a second time to interpret the lambda. And now we go on
                 // to the Replacing phase, and still might encounter the problem, and still have to report it.
                 //   Dim y = New With {.a = 1, .b = Function() : Dim z = .a : End Function}
-                // [....]: consider making it so the lambda itself is marked as bad if it has bad
+                // Microsoft: consider making it so the lambda itself is marked as bad if it has bad
                 // content. That would avoid us revisiting it a second time, and result in the same code-path
                 // for single-line as for multi-line lambdas. This suggestion has been logged as Dev10#520603.
 
@@ -5425,7 +5425,7 @@ Semantics::InterpretQualifiedExpression
         }
 
         // Check for Xml member binding (including the special-case of the extension Value property)
-        else if(BaseReference && // Bug #112539 - DevDiv Bugs
+        else if(BaseReference && // 
                 (Opcode != ParseTree::Expression::DotQualified ||
                 (StringPool::IsEqual(MemberIdentifier->Name, STRING_CONST(m_Compiler, Value)) &&
                  m_XmlSymbols.GetXElement() &&
@@ -5654,7 +5654,7 @@ Semantics::InterpretQualifiedExpression
             }
             else if (TypeHelpers::IsEmbeddedLocalType(BaseReferenceType->DigThroughAlias()))
             {
-                // This branch is added for bug 705898
+                // This branch is added for 
                 ReportSemanticError(
                     ERRID_MemberNotFoundForNoPia,
                     TextSpan,
@@ -9612,7 +9612,7 @@ Semantics::InterpretDelegateBinding
                     DelegateBinding->GetContainingProject(),
                     m_Compiler,
                     m_Errors,
-                    DelegateBinding->GetContainingProject()->GetFileName(),     // Bug VSWhidbey 395158 - Extra information used by error correction.
+                    DelegateBinding->GetContainingProject()->GetFileName(),     // 
                     &MethodOperand->Loc,
                     ExtractErrorName(DelegateBinding, TextBuffer1),
                     GetErrorProjectName(DelegateBinding->GetContainingProject()),
@@ -9772,10 +9772,10 @@ Semantics::InterpretDelegateBinding
             }
 
             // Port SP1 CL 2955581 to VS10
-            // Bug #168248 - DevDiv Bugs
-            // If we are going to generate a relaxation stub,  we should NOT box the target object. 
-            // We are going to capture it's value in a closure, which is equivalent to boxing for the 
-            // purpose of the delegate creation.
+            // 
+
+
+
             if (!isStubRequiredForMethodConversion)
             {
                 ObjectArgument =
@@ -9934,7 +9934,7 @@ Semantics::CreateExtensionMethodValueTypeDelegateLambda
     ParseTree::ArgumentList * pLastArgument = NULL;
 
     // Port SP1 CL 2954860 to VS10
-    // [....]: We want to capture the objectargument into a short lived temporary so that
+    // Microsoft: We want to capture the objectargument into a short lived temporary so that
     // for expressions like x.Prop().Foo() we lift x.Prop(), and not just x.
 
     Variable * var = NULL;
@@ -12168,9 +12168,9 @@ Semantics::EnforceArgumentNarrowing
         ILTree::Expression * Lambda = Argument;
         Type * GenericExpressionType = NULL;
 
-        // Bug 40321 - DevDiv Bugs
-        // Report correct error when we use narrowing conversion for Lambda's body,
-        // both in cases when the lambda is converted to a Delegate and to an expression tree.
+        // 
+
+
         if(!NarrowingIsInCopyBack &&
             OriginalArgument && OriginalArgument->bilop == SX_LAMBDA &&
             (OriginalArgumentType == TypeHelpers::GetVoidType() || OriginalArgumentType->IsAnonymousDelegate()) && // We would try to covert
@@ -12278,7 +12278,7 @@ Semantics::MakeRValueArgument
     else
     {
         Argument = MakeRValue(Argument, TargetType);
-        // [....] 2008.Aug.29. Dev10#487876: actually, that's a bad way of looking at it. Consider passing
+        // Microsoft 2008.Aug.29. Dev10#487876: actually, that's a bad way of looking at it. Consider passing
         // argument "AddressOf Main" to a parameter type "Action()". If we tried to turn
         // AddressOf Main into an RValue then it'd fail. The above code takes advantage
         // of the fact that MakeRValue doesn't actually MakeRValue when given AddressOf/Lambda/Nothing.
@@ -13349,14 +13349,14 @@ Semantics::MatchArguments4
 
     // 
     // Port SP1 CL 2941063 to VS10
-    // Bug 153317
-    // Record the current m_ReportErrors value. This is necessary to report an error/warning if a
-    // lambda is passed to a generic method that takes a delegate as an argument. This flag is passed
-    // down the call stack to Semantics::InferenceNamedNode::InferTypeAndPropagateHints which will
-    // report an error if the flag is true. This is necessary because normally we do not report errors during
-    // type inference, unless type inference fails; however, we DO want to report this error/warning even
-    // if type inference is successful.
-    //
+    // 
+
+
+
+
+
+
+
     bool originalReportErrors = m_ReportErrors;
     
     BackupValue<bool> backup_report_errors(&m_ReportErrors);
@@ -13392,11 +13392,11 @@ Semantics::MatchArguments4
 
     // For procedures that cannot accept the number of supplied arguments, the not enough arguments
     // error has higher priority than type inference failure errors because the missing arguments
-    // might be causing the type inference failures. Bug VSWhidbey 137926
-    //
-    // Unless it is for addressof... dd 122092 #4
-    // Incidentally, when doing collection-initializers and m_ReportErrors has been turned off,
-    // we still want to go down this path so as to pick up the ArgumentArityErrors flag.
+    // might be causing the type inference failures. 
+
+
+
+
     if (!TypeInferenceSucceeded && (m_ReportErrors || HasFlag(CallFlags, ExprCreateColInitElement)) &&
         !HasFlag(OvrldFlags, OvrldReportErrorsForAddressOf))
     {
@@ -13478,7 +13478,7 @@ Semantics::MatchArguments4
         // This is why we check if the binding context is only a type binding.
         // If we do not do this, it's possible to be in a case where we call CheckGenericConstraints, only
         // checking the type constraints, and not emitting an error.
-        // See ddb 156803 for more details, and [....] has the full details of this bug.
+        // See ddb 156803 for more details, and Microsoft has the full details of this 
         if (!(GenericBindingContext.IsNull() || GenericBindingContext.IsGenericTypeBinding()))
         {
             Location * TypeArgumentLocations = NULL;
@@ -13560,8 +13560,8 @@ Semantics::MatchArguments4
         VSASSERT(!TypeInferenceSucceeded, "Type inference inconsistency detected!!!");
 
         // Port SP1 CL 2943055 to VS10
-        // Bug #165844 - DevDiv Bugs
-        // Bad things may happen if we don't have an error at this point. Let's report compiler internal error in this case.
+        // 
+
         if ( m_ReportErrors && m_Errors && !m_Errors->HasErrors() )
         {
             ReportSemanticError(ERRID_InternalCompilerError, CallLocation);
@@ -13935,7 +13935,7 @@ Semantics::MatchArguments4
             {
                 // An Optional Parameter with no default value signifies a COM call
                 // with one of two param types, a VB6 Variant or VB6 Object.
-                // [....] 2009.01.18: ...no it doesn't! It only does if the type is a COM type.
+                // Microsoft 2009.01.18: ...no it doesn't! It only does if the type is a COM type.
                 // If it's an Object we load Nothing.  For Variant, we load
                 // System.Missing.Value unless a custom attribute exists directing us
                 // to make a Dispatch or Unknown wrapper.  Metaimport has already determined
@@ -14242,7 +14242,7 @@ Semantics::MatchArguments4
                     // But it can be hand-written in IL, and we don't want to crash if it happens!
                     // So we pick "Object" type as the type of that default.
                     TypeOfDefaultValue = GetFXSymbolProvider()->GetObjectType();
-                    // [....] 2009.01.18 - consider: the above cases "struct/nullable" should be rolled into this one,
+                    // Microsoft 2009.01.18 - consider: the above cases "struct/nullable" should be rolled into this one,
                     // for clarity.
                 }
                 else
@@ -14312,7 +14312,7 @@ Semantics::MatchArguments4
                 break;
             }
 
-            // Bug: 122092 doesn't want omitted argument errors for overload resolution.
+            // 
             if (m_ReportErrors && !HasFlag(OvrldFlags, OvrldReportErrorsForAddressOf))
             {
                 StringBuffer textBuffer;
@@ -14466,8 +14466,8 @@ Semantics::GenerateNonPropertyAssignment
             TypeHelpers::IsDateType(TargetType) ||
             TypeHelpers::IsDecimalType(TargetType))) 
     {
-        // Bug VSWhidbey 270278
-        //
+        // 
+
         if (Source->bilop == SX_SEQ_OP2 && Source->AsBinaryExpression().Left->bilop == SX_CALL)
         {
             ILTree::CallExpression *PossibleConstructorCall = &Source->AsBinaryExpression().Left->AsCallExpression();
@@ -15544,8 +15544,8 @@ Semantics::MakeCallLateBound
             if (m_ReportErrors)
             {
                 // Check for restricted types in type arguments passed to late bound expression.
-                // Bug VSWhidbey 258600.
-                //
+                // 
+
                 CheckRestrictedType(
                     ERRID_RestrictedType1,
                     TypeArguments[TypeArgumentIndex],
@@ -16207,11 +16207,11 @@ Semantics::InterpretCallExpression
             {
                 if (m_Procedure &&
                     !m_Procedure->IsShared() &&                             // - in shared methods, don't try to use Me. Try to bind among only the shared methods because Me cannot be loaded
-                                                                            //      This although different from early bound behavior is consistent with today's latebound behavior. Separate bug on this issue (VisualStudio7 558350)
+                                                                            //      This although different from early bound behavior is consistent with today's latebound behavior. Separate 
                     !m_DisallowMeReferenceInConstructorCall &&              // - cannot use instance methods in Mybase.New. so should we let it bind to shared methods only ? - seems wrong ?
                                                                             //      but for now to be consistent with the rest of our late bound behavior where in shared contexts,
                                                                             //      we consider only the shared methods when doing overload resolution. This is not consistent with early bound,
-                                                                            //      but there is a separate bug (VisualStudio7 558350) on this different issue. spoke to [....] about this.
+                                                                            //      but there is a separate 
                     !HasFlag(Flags, (unsigned)ExprSuppressMeSynthesis) &&    // - verify that if using TypeName.SharedMethod syntax. In this case, we don't want to use Me, but only bind to shared methods
                     IsOrInheritsFrom(ContainingClass(), TargetProcedure->GetParent())) // - verify that this method belongs to the current class or one of its bases. We should not do this this Foo() where Foo is from another type like a Module
                 {
@@ -16269,7 +16269,7 @@ Semantics::InterpretCallExpression
                     TargetProcedure->GetContainingProject(),
                     m_Compiler,
                     m_Errors,
-                    TargetProcedure->GetContainingProject()->GetFileName(),     // Bug VSWhidbey 395158 - Extra information used by error correction.
+                    TargetProcedure->GetContainingProject()->GetFileName(),     // 
                     &CallLocation,
                     ExtractErrorName(TargetProcedure, TextBuffer1),
                     GetErrorProjectName(TargetProcedure->GetContainingProject()),
@@ -16669,14 +16669,14 @@ Semantics::InterpretCallExpression
         }
     }
     // Since we don't want our users to use a null reference to call
-    // member functions, (i.e., dim a as class1 : a.foo() ) we won't mark this call as non-virtual (bug VS#110842).
-    // This will result in the generation of a 'callvirt' opcode instead of 'call'.  Callvirt does an
-    // implicit null reference check, regardless of whether it devirtualizes the call or not.  It
-    // is undesireable to rely on callvirt to do our null check when we know the call cannot possibly
-    // be virtual, but this is the best option available to us at the moment.  A future design request
-    // would be for an opcode that does the null reference check ("cknullref"), and we would generate this
-    // opcode instead of using callvirt.
-    //
+    // member functions, (i.e., dim a as class1 : a.foo() ) we won't mark this call as non-virtual (
+
+
+
+
+
+
+
 #if 0
     else if (!TargetProcedure->IsVirtual())
     {
@@ -17876,7 +17876,7 @@ Semantics::MakeRValue
     {
         // AddressOf, pure lambda expressions, and array literals have no type, and change to another opcode in
         // conversion to a target type. They need to slip through here.
-        // [....] 2008.Jul.22: consider: I've changed it so MakeRValue takes a TargetType. So do these cases
+        // Microsoft 2008.Jul.22: consider: I've changed it so MakeRValue takes a TargetType. So do these cases
         // still need to slip through? None of them are rvalues...
         // Also consider: SX_NOTHING should really have Void type as well, but it doesn't. We should consider
         // changing it to Void type, and here and now we could SetResultType(Input,TargetType) in that case.
@@ -18809,7 +18809,7 @@ Semantics::Convert
                 return ProduceConstantExpression(Zero, Input->Loc, TargetType IDE_ARG(0));
             }
 
-            // [....]: It is ok for floating points to come here with DirectCast because we will
+            // Microsoft: It is ok for floating points to come here with DirectCast because we will
             // attempt to type convert between single/double and it may overflow.
 
             // VSASSERT(!HasFlag(Flags, ExprHasDirectCastSemantics) && !HasFlag(Flags, ExprHasTryCastSemantics),
@@ -19063,10 +19063,10 @@ Semantics::Convert
         {
             Type *SourceElementType = SourceType->ChaseToType();
 
-                // Bug VSWhidbey 415020
+                // 
             if ((TargetType->IsArrayType() &&
                  (TypeHelpers::IsGenericParameter(SourceElementType) || TypeHelpers::IsGenericParameter(TargetType->ChaseToType()))) ||
-                // Bug VSWhidbey 517458. Special case for IList(Of T), ICollection(Of T) and IEnumerable(Of T).
+                // 
                 (TypeHelpers::IsGenericParameter(SourceElementType) &&
                  TargetType->IsGenericTypeBinding() &&
                  TargetType->PGenericBinding()->GetGeneric()->IsInterface() &&
@@ -19089,11 +19089,11 @@ Semantics::Convert
     // At this point it is known that the conversion involves a coercion.
     ILTree::Expression *CoerceOperand = Input;
 
-    // Note that the fix for Bug VSWhidbey 544126 might need to be changed
-    // if this condition is changed. Once the dependency between codegen
-    // and semantics for a specific temporary is eliminated in orcas
-    // (see comments below), this condition can be independent.
-    //
+    // Note that the fix for 
+
+
+
+
     if ((!TypeHelpers::IsRootObjectType(TargetType) && TypeHelpers::IsGenericParameter(SourceType)) ||
         (TypeHelpers::IsInterfaceType(TargetType) && TypeHelpers::IsValueType(SourceType)) ||
         (TypeHelpers::IsGenericParameter(TargetType) && TypeHelpers::IsValueType(SourceType)))
@@ -19119,14 +19119,14 @@ Semantics::Convert
     }
 
 
-    // The fix for bug 843955 depends on the following code, when changing this code also check the fix for bug 843955.
+    // The fix for 
     ILTree::Expression *Result =
         AllocateExpression(
             HasFlag(Flags, ExprHasDirectCastSemantics) ?
                 SX_DIRECTCAST :
                 HasFlag(Flags, ExprHasTryCastSemantics) ?
                     SX_TRYCAST :
-                    (TypeHelpers::IsRecordType(TargetType) && TypeHelpers::IsGenericParameter(SourceType)) ?  // Bug VSWhidbey 544126
+                    (TypeHelpers::IsRecordType(TargetType) && TypeHelpers::IsGenericParameter(SourceType)) ?  // 
                         SX_DIRECTCAST :
                         SX_CTYPE,
             TargetType,
@@ -19528,7 +19528,7 @@ Semantics::ConvertArrayLiteral
 
     else if(TypeHelpers::IsStringType(pTargetType) && TypeHelpers::IsCharArrayRankOne(pArrayLiteralType))
     {
-        // This is added for bug 843955. This code copies the code of conversion from Char() to String in the function Convert.        
+        // This is added for 
         pIntermediateElementType = pArrayLiteralType->GetRoot();
         ILTree::ArrayLiteralExpression * pIntermediateArrayExpression = 
             AllocateArrayLiteralExpression(ConvertArrayLiteralElements(pLiteral, pIntermediateElementType,
@@ -19862,9 +19862,9 @@ Semantics::ConvertWithErrorChecking
                     &DroppedAsyncReturnTask
                 );
 
-                // MQ Bug 838858
-                // If it is first conversion of lambda or explicit conversion. The next conversion of the lambda should be treated as normal 
-                // generic type conversion.
+                // MQ 
+
+
                 if (Binding->bilop == SX_LAMBDA && HasFlag(Flags, ( ExprCreateDelegateInstance | ExprIsExplicitCast)))
                 {
                     Binding->AsLambdaExpression().IsExplicitlyConverted = true;
@@ -19891,30 +19891,30 @@ Semantics::ConvertWithErrorChecking
                     // Port SP1 CL 2939886 to VS10.
                     // 
 
-                    // Some varification for Bug 838839
-                    //     Let N = Input->ResultType == NULL 
-                    //          A = Input->ResultType->IsAnonymousDelegate()
-                    //          P = Input->AsLambdaExpression().IsPartOfQuery
-                    //          S = Input->AsLambdaExpression().IsStatementLambda
-                    //          V = TypeHelpers::IsVoidType(Input->ResultType)  
-                    //     Before Bug 838839, the condition is 
-                    //                (!N && A && !P) || S 
-                    //     After Bug 838839, we modified the condition to
-                    //                (!N && A && !P) || S || (!S IMPLIES (!N && !P && !A && !V))
-                    //         <=> Expand IMPLIES, X IMPLIES Y <=> !X || Y
-                    //                (!N && A && !P) || S || (S || (!N && !P && !A && !V))   
-                    //         <=> Simplification
-                    //                (!N && A && !P) || S || (!N && !P&& !A && !V)
-                    //         <=> Distributivity
-                    //                (!N && !P && (A || (!A && !V)) || S
-                    //         <=> Distributivity
-                    //                (!N && !P && ( (A || !A) && (A || !V)) || S                   
-                    //         <=> True = X || !X, True && Y = Y 
-                    //                (!N && !P && (A || !V)) || S
-                    //     Also we know A IMPLIES !V, then
-                    //                 (!N && !P && (A || !V)) || S
-                    //         <=>  
-                    //                 (!N && !P &&  !V) || S
+                    // Some varification for 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     
                     else if (
                         (Input->ResultType != NULL && 
@@ -19924,9 +19924,9 @@ Semantics::ConvertWithErrorChecking
                     {
                         Binding = ConvertAnonymousDelegateToOtherDelegate(Input, TargetType);
 
-                        // MQ Bug 838858
-                        // If it is first conversion of lambda or explicit conversion. The next conversion of the lambda should be treated as normal 
-                        // generic type conversion.
+                        // MQ 
+
+
                         if (Binding->bilop == SX_LAMBDA && HasFlag(Flags, ( ExprCreateDelegateInstance | ExprIsExplicitCast)))
                         {
                             Binding->AsLambdaExpression().IsExplicitlyConverted = true;
@@ -19966,13 +19966,13 @@ Semantics::ConvertWithErrorChecking
 
 
 
-                        //VSASSERT(Input->AsLambdaExpression().IsPartOfQuery, "This lambda should be part of a query, and it is not. This requires investigation. See bug dev10 496875.");
+                        //VSASSERT(Input->AsLambdaExpression().IsPartOfQuery, "This lambda should be part of a query, and it is not. This requires investigation. See 
                         Binding = ConvertToDelegateType( &Input->AsLambdaExpression(), TargetType, true, delegateRelaxationLevel, 
                                                          &RequiresNarrowingConversion, &NarrowingFromNumericLiteral );
                         
-                        // MQ Bug 838858
-                        // If it is first conversion of lambda or explicit conversion. The next conversion of the lambda should be treated as normal 
-                        // generic type conversion.
+                        // MQ 
+
+
                         if (Binding->bilop == SX_LAMBDA && HasFlag(Flags, ( ExprCreateDelegateInstance | ExprIsExplicitCast)))
                         {
                             Binding->AsLambdaExpression().IsExplicitlyConverted = true;
@@ -20092,7 +20092,7 @@ NotCreatableDelegateType:
          )
        )
     {
-        // [....]: ClassifyPredefinedCLRConversion will return ConversionNarrowing if SourceType is an
+        // Microsoft: ClassifyPredefinedCLRConversion will return ConversionNarrowing if SourceType is an
         // interface type and TargetType is a class type (or vice versa). We want to do the following:
         // 1. If this is XML scenario, generate an error.
         // 2. Otherwise, leave it as a narrowing conversion, but emit a warning.
@@ -22076,7 +22076,7 @@ Semantics::PerformCompileTimeBinaryOperation
                     {
                         ResultValue = (unsigned __int64)LeftValue % (unsigned __int64)RightValue;
                     }
-                    // 64-bit processors crash on 0, -1 (Bug: dd71694)
+                    // 64-bit processors crash on 0, -1 (
                     else if (RightValue != ~(__int64)0)
                     {
                         ResultValue = LeftValue % RightValue;
@@ -23087,13 +23087,13 @@ Semantics::UseTwiceImpl
                     break;
                 }
         else if((Value->AsExpressionWithChildren().Left->bilop == SX_CALL ||
-                           Value->AsExpressionWithChildren().Left->bilop == SX_SEQ ) &&     // Bug #100522 - DevDiv Bugs
+                           Value->AsExpressionWithChildren().Left->bilop == SX_SEQ ) &&     // 
                         TypeHelpers::IsVoidType(Value->AsExpressionWithChildren().Left->ResultType) &&
                         Value->AsExpressionWithChildren().Right->bilop == SX_SYM &&
                         !TypeHelpers::IsVoidType(Value->ResultType) &&
                         !FirstResult)
                 {
-                    // Bug 26712 - DevDiv Bugs
+                    // 
                 Variable *Temporary = NULL;
 
                     FirstResult = UseLongLivedTemporaries ?
@@ -23182,17 +23182,17 @@ Semantics::UseTwiceImpl
                 block);
 
             
-            // Dev11 Bug 429962, when compiling "Function() If(y.SS, String.Empty)"
-            // where y is a free variable(will be lifted) and y is a struct.
-            // UseTwiceImpl should not produce a SX_SEQ_OP2 after SX_ADR,
-            // otherwise GenerateAdr will assert. 
-            // SX_ADR
-            //    |
-            //   SX_SEQ_OP2
-            //       |
-            //     SX_ASG
-            //        |  \
-            //      ...   ...
+            // Dev11 
+
+
+
+
+
+
+
+
+
+
             if (Value->bilop == SX_ADR && 
                 FirstResultUsedAsValue && 
                 FirstResult->AsExpressionWithChildren().Left != nullptr && 
@@ -23247,7 +23247,7 @@ Semantics::UseTwiceImpl
             // SecondResult. If the method is void-returning however, it doesn't make sense to 
             // create a temp of type void. Therefore, we simply make the call in FirstResult and
             // do nothing in the SecondResult, thus avoiding any sideeffects of the call from happening
-            // twice. This is Dev11 bug 413517.
+            // twice. This is Dev11 
 
             if (Value->bilop == SX_CALL && //Guard against fallthrough from previous cases
                 TypeHelpers::IsVoidType(Value->ResultType))
@@ -23433,8 +23433,8 @@ Semantics::CreateImplicitDeclaration
 
     if( OptionInferOn() && m_CreateExplicitScopeForLoop > 0 )
     {
-        // Fix for bug 470778. We do not always have a location for the
-        // implicit variable we are creating.
+        // Fix for 
+
         if (HasFlag(Flags, ExprInferLoopControlVariableExplicit))
         {
             AssertIfNull( loc );
@@ -24959,11 +24959,11 @@ Semantics::CreateInitializedObject
 #if IDE
         if (m_IsGeneratingXML)
         {
-            // Bug DevDiv 26540.
-            // For UI services, even if there is an error in the initializer,
-            // return at least the expression representing the constructed object
-            // so that tool tips etc. can still show information based on types
-            // inferred from this expression.
+            // 
+
+
+
+
 
             return MakeBad(ObjectToInitialize);
         }
@@ -25304,7 +25304,7 @@ Semantics::InterpretCallOrIndex
                             TypeCharacter,
                             (ExpressionList *)NULL,
                             false,
-                            ExprNoFlags | (Flags & ExprCreateColInitElement), // [....]: why was this ExprNoFlags rather than Flags? at least for CollectionInitializers we have to propagate that flag.
+                            ExprNoFlags | (Flags & ExprCreateColInitElement), // Microsoft: why was this ExprNoFlags rather than Flags? at least for CollectionInitializers we have to propagate that flag.
                             NULL),
                         ExprAccessDefaultProperty | ExprPropagatePropertyReference | ExprIsExplicitCallTarget,
                         NULL);
@@ -25901,7 +25901,7 @@ Semantics::CreateCoalesceIIF
     // nothing else.
     // Dev10#489077: the above list has to include lambdas as well!
     // Dev10#489150: and calls to subs!
-    // [....]: consider: really, what this function should be doing is MakeRValue on all of its arguments.
+    // Microsoft: consider: really, what this function should be doing is MakeRValue on all of its arguments.
     // It's a (bad) historical accident that MakeRValue fails to make rvalues out of SX_ADDRESSOF/SX_UNBOUND_LAMBDA.
     // That only happens through ConvertWithErrorChecking (which is called by ConvertExpressionToDominantType).
     if (!MarkResultAsBad)
@@ -26429,13 +26429,13 @@ Semantics::IsConvertibleToExpressionTree
     // There are further issues arising. Our plan for creating expression trees is (1) create the lambda
     // closures and fixup symbol references, (2) then turn them into expression-trees. To fixup symbol
     // references we need to know the parent of each symbol. Parents for multiline lambdas haven't yet
-    // been implemented properly. Search for bug Dev10#530887 in this codebase. You'll see that we
-    // provide at least a working parent inside the ClosureRoot::StartExpression tree-visitor, so that
-    // subsequently inside ClosureRoot::FixupSymbolReferences it doesn't complain.
-    //
-    // NOTE: If we ever allow general expressions to be converted, please look
-    // through SDV history and ensure that the check for anonymous types is
-    // included, because anonymous type binding is not complete at this point.
+    // been implemented properly. Search for 
+
+
+
+
+
+
 
     if( m_CompilerHost->GetFXSymbolProvider()->IsTypeAvailable(FX::GenericExpressionType) &&
         IsLambdaExpressionTree( TargetType ) &&
@@ -26474,10 +26474,10 @@ Semantics::IsLambdaExpressionTree
         ( !IsAnonymousType( TargetType ) &&
           IsOrInheritsFrom( TargetType, GetFXSymbolProvider()->GetGenericExpressionType() ) ) )
     {
-        // Bug #174056 (371834 in TFS)
-        //For an expression tree that involves Expression(Of T), T must be a delegate type. Thus, we are
-        // checking to see if T is a delegate type or a generic parameter (which means that the type of T
-        // has not been resolved yet.
+        // 
+
+
+
         if (TargetType->IsGenericTypeBinding())
         {
             BCSYM *pGenericArg = TargetType->PGenericTypeBinding()->GetArgument(0);

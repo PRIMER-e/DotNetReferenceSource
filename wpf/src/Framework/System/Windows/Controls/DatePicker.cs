@@ -101,9 +101,8 @@ namespace System.Windows.Controls
             InitializeCalendar();
             this._defaultText = string.Empty;
 
-            // Binding to FirstDayOfWeek and DisplayDate wont work
             this.SetCurrentValueInternal(FirstDayOfWeekProperty, DateTimeHelper.GetCurrentDateFormat().FirstDayOfWeek);
-            this.DisplayDate = DateTime.Today;
+            this.SetCurrentValueInternal(DisplayDateProperty, DateTime.Today);
         }
 
         #region Public properties
@@ -344,11 +343,11 @@ namespace System.Windows.Controls
                 {
                     dp._originalSelectedDate = dp.SelectedDate;
 
-                    // When the popup is opened set focus to the DisplayDate button. 
-                    // Do this asynchronously because the IsDropDownOpen could 
-                    // have been set even before the template for the DatePicker is 
+                    // When the popup is opened set focus to the DisplayDate button.
+                    // Do this asynchronously because the IsDropDownOpen could
+                    // have been set even before the template for the DatePicker is
                     // applied. And this would mean that the visuals wouldn't be available yet.
-                    
+
                     dp.Dispatcher.BeginInvoke(DispatcherPriority.Input, (Action)delegate()
                         {
                             // setting the focus to the calendar will focus the correct date.
@@ -362,12 +361,12 @@ namespace System.Windows.Controls
         {
             DatePicker dp = d as DatePicker;
             Debug.Assert(dp != null);
-            
+
             dp.CoerceValue(IsDropDownOpenProperty);
-            
+
             OnVisualStatePropertyChanged(d, e);
         }
-        
+
         #endregion IsDropDownOpen
 
         #region IsTodayHighlighted
@@ -435,7 +434,7 @@ namespace System.Windows.Controls
 
             addedDate = (DateTime?)e.NewValue;
             removedDate = (DateTime?)e.OldValue;
-            
+
             if (dp.SelectedDate.HasValue)
             {
                 DateTime day = dp.SelectedDate.Value;
@@ -615,7 +614,7 @@ namespace System.Windows.Controls
         #endregion Protected Properties
 
         #region Internal Properties
-        
+
         internal Calendar Calendar
         {
             get

@@ -25,7 +25,7 @@ namespace MS { namespace Internal { namespace Text { namespace TextInterface
                                        [System::Runtime::InteropServices::Out] unsigned int%   index
                                        )
     {
-        pin_ptr<const WCHAR> familyNameWchar = Util::GetPtrToStringChars(familyName);
+        pin_ptr<const WCHAR> familyNameWchar = Native::Util::GetPtrToStringChars(familyName);
         BOOL exists        = FALSE;
         UINT32 familyIndex = 0;
         HRESULT hr = _fontCollection->Value->FindFamilyName(

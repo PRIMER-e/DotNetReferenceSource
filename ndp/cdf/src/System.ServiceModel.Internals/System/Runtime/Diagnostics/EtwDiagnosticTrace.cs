@@ -267,7 +267,7 @@ namespace System.Runtime.Diagnostics
                         this.TraceSource.TraceTransfer(0, null, newId);
                     }
                     //also emit to ETW
-                    if (this.IsEtwEventEnabled(ref EtwDiagnosticTrace.transferEventDescriptor))
+                    if (this.IsEtwEventEnabled(ref EtwDiagnosticTrace.transferEventDescriptor, false))
                     {
                         this.etwProvider.WriteTransferEvent(ref EtwDiagnosticTrace.transferEventDescriptor, new EventTraceActivity(oldId), newId,
                             EtwDiagnosticTrace.traceAnnotation == null ? string.Empty : EtwDiagnosticTrace.traceAnnotation(),
@@ -288,6 +288,7 @@ namespace System.Runtime.Diagnostics
 
         [Fx.Tag.SecurityNote(Critical = "Usage of EventDescriptor, which is protected by a LinkDemand")]
         [SecurityCritical]
+        [SuppressMessage("Microsoft.Security.Xml", "CA3057:DoNotUseLoadXml", Justification = "It is internal code. No security concern.")]
         public void WriteTraceSource(ref EventDescriptor eventDescriptor, string description, TracePayload payload)
         {
             if (this.TracingEnabled)
@@ -510,6 +511,25 @@ namespace System.Runtime.Diagnostics
         [SecuritySafeCritical]
         public bool IsEtwEventEnabled(ref EventDescriptor eventDescriptor)
         {
+            return IsEtwEventEnabled(ref eventDescriptor, true);
+        }
+
+        [Fx.Tag.SecurityNote(Critical = "Usage of EventDescriptor, which is protected by a LinkDemand",
+            Safe = "Only queries the status of the provider - does not modify the state")]
+        [SecuritySafeCritical]
+        public bool IsEtwEventEnabled(ref EventDescriptor eventDescriptor, bool fullCheck)
+        {
+            // A full check queries ETW via a p/invoke call to see if the event is really enabled.
+            // Checking against the level and keywords passed in the ETW callback can provide false positives,
+            // but never a false negative.
+            // The only code which specifies false is two generated classes, System.Runtime.TraceCore and 
+            // System.Activities.EtwTrackingParticipantTrackRecords, and the method EtwDiagnosticTrace.TraceTransfer().
+            // FxTrace uses IsEtwEventEnabled without the boolean, which then calls this method specifying true.
+            if (fullCheck)
+            {
+                return (this.EtwTracingEnabled && this.etwProvider.IsEventEnabled(ref eventDescriptor));
+            }
+
             return (this.EtwTracingEnabled && this.etwProvider.IsEnabled(eventDescriptor.Level, eventDescriptor.Keywords));
         }
 
@@ -623,7 +643,7 @@ namespace System.Runtime.Diagnostics
                 {
                     this.etwProvider.Dispose();
                     //no need to set this.etwProvider as null as Dispose() provides the necessary guard
-                    //leaving it non-null protects trace calls from NullReferenceEx, CSDMain Bug 136228
+                    //leaving it non-null protects trace calls from NullReferenceEx, CSDMain 
                 }
             }
             catch (Exception exception)
@@ -652,30 +672,48 @@ namespace System.Runtime.Diagnostics
             switch (type)
             {
                 case TraceEventType.Critical:
-                    TraceCore.TraceCodeEventLogCritical(this, traceRecord);
+                    if (TraceCore.TraceCodeEventLogCriticalIsEnabled(this))
+                    {
+                        TraceCore.TraceCodeEventLogCritical(this, traceRecord);
+                    }
                     break;
 
                 case TraceEventType.Verbose:
-                    TraceCore.TraceCodeEventLogVerbose(this, traceRecord);
+                    if (TraceCore.TraceCodeEventLogVerboseIsEnabled(this))
+                    {
+                        TraceCore.TraceCodeEventLogVerbose(this, traceRecord);
+                    }
                     break;
 
                 case TraceEventType.Information:
-                    TraceCore.TraceCodeEventLogInfo(this, traceRecord);
+                    if (TraceCore.TraceCodeEventLogInfoIsEnabled(this))
+                    {
+                        TraceCore.TraceCodeEventLogInfo(this, traceRecord);
+                    }
                     break;
 
                 case TraceEventType.Warning:
-                    TraceCore.TraceCodeEventLogWarning(this, traceRecord);
+                    if (TraceCore.TraceCodeEventLogWarningIsEnabled(this))
+                    {
+                        TraceCore.TraceCodeEventLogWarning(this, traceRecord);
+                    }
                     break;
 
                 case TraceEventType.Error:
-                    TraceCore.TraceCodeEventLogError(this, traceRecord);
+                    if (TraceCore.TraceCodeEventLogErrorIsEnabled(this))
+                    {
+                        TraceCore.TraceCodeEventLogError(this, traceRecord);
+                    }
                     break;
             }
         }
 
         protected override void OnUnhandledException(Exception exception)
         {
-            TraceCore.UnhandledException(this, exception != null ? exception.ToString() : string.Empty, exception);
+            if (TraceCore.UnhandledExceptionIsEnabled(this))
+            {
+                TraceCore.UnhandledException(this, exception != null ? exception.ToString() : string.Empty, exception);
+            }
         }
 
         internal static string ExceptionToTraceString(Exception exception, int maxTraceStringLength)
@@ -814,7 +852,15 @@ namespace System.Runtime.Diagnostics
                         {
                             xml.WriteStartElement(DiagnosticStrings.DataTag);
                             xml.WriteElementString(DiagnosticStrings.KeyTag, XmlEncode(dataItem.ToString()));
-                            xml.WriteElementString(DiagnosticStrings.ValueTag, XmlEncode(exception.Data[dataItem].ToString()));
+                            if (exception.Data[dataItem] == null)
+                            {
+                                xml.WriteElementString(DiagnosticStrings.ValueTag, string.Empty);
+                            }
+                            else
+                            {
+                                xml.WriteElementString(DiagnosticStrings.ValueTag, XmlEncode(exception.Data[dataItem].ToString()));
+                            }
+                            
                             xml.WriteEndElement();
                         }
                         xml.WriteEndElement();

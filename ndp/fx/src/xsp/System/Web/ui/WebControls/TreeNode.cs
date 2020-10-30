@@ -1213,9 +1213,18 @@ namespace System.Web.UI.WebControls {
                     if (imageToolTip.Length > 0) {
                         writer.AddAttribute(HtmlTextWriterAttribute.Alt,
                             String.Format(CultureInfo.CurrentCulture, imageToolTip, Text));
+			            //fix 
+			            if (BinaryCompatibility.Current.TargetsAtLeastFramework461) {
+                            writer.AddAttribute(HtmlTextWriterAttribute.Title,
+                                String.Format(CultureInfo.CurrentCulture, imageToolTip, Text));
+			            }
                     }
                     else {
                         writer.AddAttribute(HtmlTextWriterAttribute.Alt, String.Empty);
+			            //fix 
+			            if (BinaryCompatibility.Current.TargetsAtLeastFramework461) {
+                        	writer.AddAttribute(HtmlTextWriterAttribute.Title, String.Empty);
+			            }
                     }
                     writer.RenderBeginTag(HtmlTextWriterTag.Img);
                     writer.RenderEndTag();
@@ -1362,9 +1371,17 @@ namespace System.Web.UI.WebControls {
                 writer.AddStyleAttribute(HtmlTextWriterStyle.BorderWidth, "0");
                 if (ImageToolTip.Length > 0) {
                     writer.AddAttribute(HtmlTextWriterAttribute.Alt, ImageToolTip);
+		            //fix 
+	                if (BinaryCompatibility.Current.TargetsAtLeastFramework461) {
+                        writer.AddAttribute(HtmlTextWriterAttribute.Title, ImageToolTip);
+		            }
                 }
                 else {
                     writer.AddAttribute(HtmlTextWriterAttribute.Alt, String.Empty);
+		    	    //fix 
+			        if (BinaryCompatibility.Current.TargetsAtLeastFramework461) {
+	                    writer.AddAttribute(HtmlTextWriterAttribute.Title, String.Empty);
+			        }
                 }
                 writer.RenderBeginTag(HtmlTextWriterTag.Img);
                 writer.RenderEndTag();

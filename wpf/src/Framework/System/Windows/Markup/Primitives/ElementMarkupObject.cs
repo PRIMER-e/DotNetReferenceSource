@@ -8,7 +8,7 @@
 //  Contents:  MarkupObject and MarkupProperty implementation for 
 //             DependencyObject
 //
-//  Created:   04/28/2005 [....]
+//  Created:   04/28/2005 Microsoft
 //
 //
 //  Class hierarchy in this file:

@@ -4,14 +4,13 @@
 // 
 // ==--==
 //
-// <OWNER>[....]</OWNER>
-// <OWNER>[....]</OWNER>
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
+// <OWNER>Microsoft</OWNER>
+// <OWNER>Microsoft</OWNER>
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -1203,7 +1202,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return false;
         }
 
-#if FEATURE_COMINTEROP_MANAGED_ACTIVATION
+#if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
         // Get an IActivationFactory * for a managed type
         [SecurityCritical]
         internal static IntPtr GetActivationFactoryForType(Type type)
@@ -1222,7 +1221,46 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Marshal.InitializeManagedWinRTFactoryObject(activationFactory, (RuntimeType)type);
             return activationFactory;
         }
-#endif
+
+#if FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
+        // Currently we use only a single class activator since we have a requirement that all class activations come from the same
+        // app base and we haven't sorted through the various code sharing implications of spinning up multiple AppDomains.  This
+        // holds the IWinRTClassActivator* that is used for the process
+        private static IntPtr s_pClassActivator = IntPtr.Zero;
+
+        [SecurityCritical]
+        internal static IntPtr GetClassActivatorForApplication(string appBase)
+        {
+            if (s_pClassActivator == IntPtr.Zero)
+            {
+                AppDomainSetup hostDomainSetup = new AppDomainSetup()
+                {
+                    ApplicationBase = appBase,
+                };
+
+                AppDomain hostDomain = AppDomain.CreateDomain(Environment.GetResourceString("WinRTHostDomainName", appBase), null, hostDomainSetup);
+                WinRTClassActivator activator = (WinRTClassActivator)hostDomain.CreateInstanceAndUnwrap(typeof(WinRTClassActivator).Assembly.FullName, typeof(WinRTClassActivator).FullName);
+                IntPtr pActivator = activator.GetIWinRTClassActivator();
+
+                if (Interlocked.CompareExchange(ref s_pClassActivator, pActivator, IntPtr.Zero) != IntPtr.Zero)
+                {
+                    Marshal.Release(pActivator);
+                    activator = null;
+
+                    try
+                    {
+                        AppDomain.Unload(hostDomain);
+                    }
+                    catch (CannotUnloadAppDomainException) { }
+                }
+            }
+
+            Marshal.AddRef(s_pClassActivator);
+            return s_pClassActivator;
+        }
+#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
+
+#endif // FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
 
         //
         // Get activation factory object for a specified WinRT type
@@ -1240,25 +1278,18 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (type == null)
                 throw new ArgumentNullException("type");
 
-#if !FEATURE_CORECLR           
-            if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.DynamicTypeUsage))
-            {
-                FrameworkEventSource.Log.WindowsRuntimeMarshalGetActivationFactory(type.GetFullNameForEtw());
-            }
-#endif
-
             if (type.IsWindowsRuntimeObject && type.IsImport)
             {
                 return (IActivationFactory)Marshal.GetNativeActivationFactory(type);
             }
             else
             {
-#if !FEATURE_CORECLR
+#if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
                 return GetManagedActivationFactory(type);
-#else // FEATURE_CORECLR                
+#else 
                 // Managed factories are not supported so as to minimize public surface (and test effort)
                 throw new NotSupportedException();
-#endif // !FEATURE_CORECLR                
+#endif
             }
         }
 

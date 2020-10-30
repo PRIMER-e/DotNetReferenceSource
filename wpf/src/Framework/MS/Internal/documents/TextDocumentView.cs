@@ -7,9 +7,9 @@
 // Description: TextView implementation for FlowDocument pages. 
 //
 // History:  
-//  03/04/2003 : [....] - Created
-//  06/18/2003 : [....] - Ported to wcp tree
-//  06/25/2004 : [....] - Performance work
+//  03/04/2003 : Microsoft - Created
+//  06/18/2003 : Microsoft - Ported to wcp tree
+//  06/25/2004 : Microsoft - Performance work
 //
 //---------------------------------------------------------------------------
 

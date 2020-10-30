@@ -565,7 +565,7 @@ namespace System.Windows.Data
                 }
             }
 
-            GC.KeepAlive(target);   // keep target alive during activation (bug 956831)
+            GC.KeepAlive(target);   // keep target alive during activation (
             return true;
         }
 
@@ -847,7 +847,7 @@ namespace System.Windows.Data
             else    // singular BindingExpressions and those in MultiBindingExpressions should always activate
                 Activate(source);
 
-            GC.KeepAlive(target);   // keep target alive during activation (bug 956831)
+            GC.KeepAlive(target);   // keep target alive during activation (
         }
 
         // Detach from things that may require tree context
@@ -1034,7 +1034,7 @@ namespace System.Windows.Data
                 UpdateValue();
             }
 
-            GC.KeepAlive(target);   // keep target alive during activation (bug 956831)
+            GC.KeepAlive(target);   // keep target alive during activation (
         }
 
         // return the value for the initial data transfer.  Specifically:
@@ -1300,8 +1300,8 @@ namespace System.Windows.Data
                 if (!UseDefaultValueConverter)
                 {
                     // if there's a user-defined converter, call it without catching
-                    // exceptions (bug 992237).  It can return DependencyProperty.UnsetValue
-                    // to indicate a failure to convert.
+                    // exceptions (
+
                     value = Converter.Convert(value, targetType, ParentBinding.ConverterParameter, GetCulture());
 
                     if (IsDetached)
@@ -1374,8 +1374,8 @@ namespace System.Windows.Data
                         {
                             value = DependencyProperty.UnsetValue;
                             // The 3.5 code failed to set the status to UpdateTargetError in this
-                            // case.  It's a bug, but we have to maintain the buggy behavior for
-                            // back-compat.
+                            // case.  It's a 
+
                             doNotSetStatus = true;
                         }
 
@@ -1508,7 +1508,7 @@ namespace System.Windows.Data
         Done:
             IsInTransfer = false;
 
-            GC.KeepAlive(target);   // keep target alive during transfer (bug 956831)
+            GC.KeepAlive(target);   // keep target alive during transfer (
         }
 
         // run the validation rules marked as ValidateOnTargetUpdated
@@ -1776,7 +1776,7 @@ namespace System.Windows.Data
                         // while attaching a normal (not style-defined) BindingExpression,
                         // we must defer raising the event until after the
                         // property has been invalidated, so that the event handler
-                        // gets the right value if it asks (bug 1036862)
+                        // gets the right value if it asks (
                         if (IsAttaching && RootBindingExpression == target.ReadLocalValue(TargetProperty))
                         {
                             Engine.AddTask(this, TaskOps.RaiseTargetUpdatedEvent);
@@ -1845,8 +1845,8 @@ namespace System.Windows.Data
                 if (!UseDefaultValueConverter)
                 {
                     // if there's a user-defined converter, call it without catching
-                    // exceptions (bug 992237).  It can return DependencyProperty.UnsetValue
-                    // to indicate a failure to convert.
+                    // exceptions (
+
                     value = Converter.ConvertBack(value, sourceType, ParentBinding.ConverterParameter, culture);
 
                     if (IsDetached)
@@ -2476,7 +2476,7 @@ namespace System.Windows.Data
             {
                 // retry bindings immediately when InheritanceContext changes,
                 // so that triggers, animations, and rendering see the bound
-                // value when they initialize their own local cache (bug DD 139838).
+                // value when they initialize their own local cache (
                 Engine.CancelTask(this, TaskOps.AttachToContext);   // cancel existing task
                 AttachToContext(AttachAttempt.Again);
 
@@ -2640,7 +2640,7 @@ namespace System.Windows.Data
                 DependencyObject contextElement = ContextElement;
                 if (d == contextElement)
                 {
-                    IsTransferPending = false;  // clear this flag, even if data context isn't changing (bug Dev11 162254)
+                    IsTransferPending = false;  // clear this flag, even if data context isn't changing (
                     OnDataContextChanged(contextElement);
                 }
             }

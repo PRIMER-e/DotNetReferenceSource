@@ -585,7 +585,7 @@ namespace MS.Internal.Documents
 
         /// <summary>
         /// Invoked when Page Layout has changed in order to keep
-        /// the TextView in [....].
+        /// the TextView in sync.
         /// </summary>
         internal void OnPageLayoutChanged()
         {

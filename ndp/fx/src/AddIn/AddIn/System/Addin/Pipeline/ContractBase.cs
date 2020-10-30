@@ -122,8 +122,8 @@ namespace System.AddIn.Pipeline
                 if (m_lifetimeTokens.Count == 1)
                 {
                     // Register as a sponsor the first time a token is aquired.
-                    // need to do this here instead of in InitializeLifetimeService because of a bug in remoting
-                    // involving security.
+                    // need to do this here instead of in InitializeLifetimeService because of a 
+
                     RegisterAsSponsor();
 
                     // Increment ref count on appdomain owner if needed
@@ -166,10 +166,10 @@ namespace System.AddIn.Pipeline
                         {
                             // Create a separate thread to unload this appdomain, because we 
                             // cannot shut down an appdomain from the Finalizer thread (though there
-                            // is a bug that allows us to do so after the first appdomain has been
-                            // unloaded, but let's not rely on that).  
-                            // We can consider using an threadpool thread to do this, but that would add
-                            // test burden.
+                            // is a 
+
+
+
 
                             SecurityPermission permission = new SecurityPermission(SecurityPermissionFlag.ControlThread);
                             permission.Assert();

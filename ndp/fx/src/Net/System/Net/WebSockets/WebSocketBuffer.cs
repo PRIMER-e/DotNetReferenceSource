@@ -135,14 +135,16 @@ namespace System.Net.WebSockets
         internal WebSocketProtocolComponent.Property[] CreateProperties(bool useZeroMaskingKey)
         {
             ThrowIfDisposed();
+
             // serialize marshaled property values in the property segment of the internal buffer
+            // m_GCHandle.AddrOfPinnedObject() points to the address of m_InternalBuffer.Array
             IntPtr internalBufferPtr = m_GCHandle.AddrOfPinnedObject();
             int offset = m_PropertyBuffer.Offset;
             Marshal.WriteInt32(internalBufferPtr, offset, m_ReceiveBufferSize);
             offset += s_SizeOfUInt;
             Marshal.WriteInt32(internalBufferPtr, offset, m_SendBufferSize);
             offset += s_SizeOfUInt;
-            Marshal.WriteIntPtr(internalBufferPtr, offset, internalBufferPtr);
+            Marshal.WriteIntPtr(internalBufferPtr, offset, internalBufferPtr + m_InternalBuffer.Offset);
             offset += IntPtr.Size;
             Marshal.WriteInt32(internalBufferPtr, offset, useZeroMaskingKey ? (int)1 : (int)0);
 
@@ -273,7 +275,7 @@ namespace System.Net.WebSockets
         }
 
         // This method is not thread safe. It must only be called after enforcing at most 1 outstanding send operation
-        private bool IsPinnedSendPayloadBuffer(WebSocketProtocolComponent.Buffer buffer,
+        internal bool IsPinnedSendPayloadBuffer(WebSocketProtocolComponent.Buffer buffer,
             WebSocketProtocolComponent.BufferType bufferType)
         {
             if (m_SendBufferState != SendBufferState.SendPayloadSpecified)
@@ -596,22 +598,27 @@ namespace System.Net.WebSockets
             return Math.Max(m_ReceiveBufferSize, m_SendBufferSize);
         }
 
+        // This method is actually checking whether the array "buffer" is located
+        // within m_NativeBuffer not m_InternalBuffer
         internal bool IsInternalBuffer(byte[] buffer, int offset, int count)
         {
             Contract.Assert(buffer != null, "'buffer' MUST NOT be NULL.");
-            Contract.Assert(m_InternalBuffer.Array != null, "'m_InternalBuffer.Array' MUST NOT be NULL.");
+            Contract.Assert(m_NativeBuffer.Array != null, "'m_NativeBuffer.Array' MUST NOT be NULL.");
             Contract.Assert(offset >= 0, "'offset' MUST NOT be negative.");
             Contract.Assert(count >= 0, "'count' MUST NOT be negative.");
             Contract.Assert(offset + count <= buffer.Length, "'offset + count' MUST NOT exceed 'buffer.Length'.");
-
-            return object.ReferenceEquals(buffer, m_InternalBuffer.Array);
+            
+            return object.ReferenceEquals(buffer, m_NativeBuffer.Array) &&
+                offset >= m_NativeBuffer.Offset &&
+                offset + count <= m_NativeBuffer.Offset + m_NativeBuffer.Count;
         }
 
         internal IntPtr ToIntPtr(int offset)
         {
             Contract.Assert(offset >= 0, "'offset' MUST NOT be negative.");
-            Contract.Assert(m_StartAddress + offset <= m_EndAddress, "'offset' is TOO BIG.");
-            return new IntPtr(m_StartAddress + offset);
+            Contract.Assert(m_StartAddress + offset - m_InternalBuffer.Offset <= m_EndAddress, "'offset' is TOO BIG.");
+            
+            return new IntPtr(m_StartAddress + offset - m_InternalBuffer.Offset);
         }
 
         private bool IsNativeBuffer(IntPtr pBuffer, uint bufferSize)

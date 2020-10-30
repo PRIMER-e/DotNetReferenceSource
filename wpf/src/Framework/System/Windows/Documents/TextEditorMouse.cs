@@ -58,7 +58,7 @@ namespace System.Windows.Documents
             }
 
             // Disable mouse move feeding on mouse down + mouse wheel to workaround scroll-into-view problems.
-            // See bug 1639819.
+            // See 
 #if DISABLED_FOR_BUG_1639819
             EventManager.RegisterClassHandler(controlType, ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(OnScrollChanged));
 #endif
@@ -468,7 +468,7 @@ namespace System.Windows.Documents
             // Update mouse cursor shape
             TextEditorMouse.UpdateCursor(This, mouseMovePoint);
 
-            // For bug 1547567, remove when resolved.
+            // For 
             Invariant.Assert(This.Selection != null);
 
             // We're only interested in moves when the left button is down.
@@ -496,13 +496,13 @@ namespace System.Windows.Documents
                 // Consider event handled
                 e.Handled = true;
 
-                // For bug 1547567, remove when resolved.
+                // For 
                 Invariant.Assert(This.Selection != null);
 
                 // Find a text position for this mouse point
                 ITextPointer snappedCursorPosition = This.TextView.GetTextPositionFromPoint(mouseMovePoint, /*snapToText:*/true);
 
-                // For bug 1547567, remove when resolved.
+                // For 
                 Invariant.Assert(This.Selection != null);
 
                 if (snappedCursorPosition == null)
@@ -513,7 +513,7 @@ namespace System.Windows.Documents
                 {
                     This.CancelExtendSelection();
 
-                    // For bug 1547567, remove when resolved.
+                    // For 
                     Invariant.Assert(This.Selection != null);
 
                     if (!This._dragDropProcess.SourceOnMouseMove(mouseMovePoint))

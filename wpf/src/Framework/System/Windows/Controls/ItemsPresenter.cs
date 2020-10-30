@@ -298,13 +298,13 @@ namespace System.Windows.Controls
             }
         }
 
-        // workaround, pending bug 953483.  The panel is
-        // being removed from the tree, so it should release
-        // its resources (chiefly - stop listening for generator's
-        // ItemsChanged event).  Until there's a mechanism for
-        // this, just mark the panel as a non-ItemsHost, so
-        // that the next time it gets ItemsChanged it will
-        // stop listening.  (See also bug 942265)
+        // workaround, pending 
+
+
+
+
+
+
         private void ClearPanel()
         {
             Panel oldPanel = (this.VisualChildrenCount > 0) ? this.GetVisualChild(0) as Panel : null;

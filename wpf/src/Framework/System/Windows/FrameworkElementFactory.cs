@@ -655,7 +655,7 @@ namespace System.Windows
         //  instantiated here will be added to this chain.
         // The tree is instantiated in a depth-first traversal, so children nodes
         //  are added to the chain in depth-first order as well.
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         internal DependencyObject InstantiateTree(
                 UncommonField<HybridDictionary[]>           dataField,
                 DependencyObject                            container,

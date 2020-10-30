@@ -506,7 +506,7 @@ namespace System.Windows.Data
                     TraceData.Trace(TraceEventType.Error, TraceData.ObjDPCreateFailed, _objectType.Name, error, e);
 
                 // in async mode we pass all exceptions to main thread;
-                // in [....] mode we don't handle unknown exceptions.
+                // in sync mode we don't handle unknown exceptions.
                 if (!IsAsynchronous && error == null)
                     throw e;
             }
@@ -592,7 +592,7 @@ namespace System.Windows.Data
                     TraceData.Trace(TraceEventType.Error, TraceData.ObjDPInvokeFailed, MethodName, _objectType.Name, error, e);
 
                 // in async mode we pass all exceptions to main thread;
-                // in [....] mode we don't handle unknown exceptions.
+                // in sync mode we don't handle unknown exceptions.
                 if (!IsAsynchronous && error == null)
                     throw e;
             }

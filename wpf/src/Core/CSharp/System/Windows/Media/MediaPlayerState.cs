@@ -767,9 +767,9 @@ namespace System.Windows.Media
 
             SetSource(source);
 
-            // Workaround for bug 107397: Resuing one instance of MediaElement and
-            // calling play() wont result in seek to zero, Media Freezes.  Ensure
-            // we set Media to play from the beginning.
+            // Workaround for 
+
+
             SetPosition(TimeSpan.Zero);
         }
 

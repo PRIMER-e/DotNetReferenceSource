@@ -103,6 +103,32 @@ namespace System.Windows.Media
         }
 
         /// <summary>
+        /// Returns the DPI information at which this Visual is measured and rendered.
+        /// </summary>
+        public static DpiScale GetDpi(Visual visual)
+        {
+            return visual.GetDpi();
+        }
+
+
+        /// <summary>
+        /// This method updates the DPI information of a visual. It can only be called on a Visual with no parent.
+        /// </summary>
+        public static void SetRootDpi(Visual visual, DpiScale dpiInfo)
+        {
+            if ((object)dpiInfo == null)
+            {
+                throw new NullReferenceException("dpiInfo cannot be null");
+            }
+            if (visual.InternalVisualParent != null)
+            {
+                throw new InvalidOperationException("UpdateDPI should only be called on the root of a Visual tree");
+            }
+            DpiFlags dpiFlags = DpiUtil.UpdateDpiScalesAndGetIndex(dpiInfo.PixelsPerInchX, dpiInfo.PixelsPerInchY);
+            visual.RecursiveSetDpiScaleVisualFlags(new DpiRecursiveChangeArgs(dpiFlags, visual.GetDpi(), dpiInfo));
+        }
+
+        /// <summary>
         /// Visual parent of this Visual.
         /// </summary>
         public static DependencyObject GetParent(DependencyObject reference)

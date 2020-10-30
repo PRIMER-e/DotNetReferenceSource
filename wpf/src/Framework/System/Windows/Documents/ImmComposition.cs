@@ -130,8 +130,14 @@ namespace System.Windows.Documents
         ///   TreatAsSafe:Removing the handler is a safe operation
         /// </SecurityNote>
         [SecurityCritical, SecurityTreatAsSafe]
-        internal void OnDetach()
+        internal void OnDetach(TextEditor editor)
         {
+            if (editor != _editor)
+            {
+                // ignore calls from editors that aren't the one we're attached to
+                return;
+            }
+
             if (_editor != null)
             {
                 PresentationSource.RemoveSourceChangedHandler(UiScope, new SourceChangedEventHandler(OnSourceChanged));
@@ -350,6 +356,20 @@ namespace System.Windows.Documents
         [SecurityCritical]
         private void UpdateSource(HwndSource oldSource, HwndSource newSource)
         {
+            // If this object is moving directly from one source to another
+            // without passing through null, problems could arise.  This object
+            // becomes the ImmComposition for the new source (_list[newSource] = this),
+            // but the new source may already have an ImmComposition.  This can
+            // lead to confusion when handling composition messages or when
+            // shutting down the source.
+            // Fortunately this can't happen - the visual tree doesn't support re-parenting
+            // in one step (you have to detach child, then reattach it to a new parent).
+            // If that should change, this method will need some rethinking.
+            Debug.Assert(oldSource == null || newSource == null,
+                        "ImmComposition doesn't support changing source directly");
+
+            // Detach the TextEditor.  This avoids leaks and crashes (DevDiv2 1162020, 1201925).
+            OnDetach(_editor);
 
             if (_source != null)
             {
@@ -1237,12 +1257,15 @@ namespace System.Windows.Documents
                     ITextRange range;
                     string text;
 
+                    // DevDiv.1106868 We need to set ignoreTextUnitBoundaries to true in the TextRange constructor in case we are dealing with
+                    // a supplementary character (a pair of surrogate characters that together form a single character), otherwise TextRange
+                    // will break us out of the compound sequence
                     if (composition._ResultStart != null)
                     {
                         //
                         // If we're here it means composition is being finalized
                         //
-                        range = new TextRange(composition._ResultStart, composition._ResultEnd);
+                        range = new TextRange(composition._ResultStart, composition._ResultEnd, true /* ignoreTextUnitBoundaries */);
                         text = this._editor._FilterText(composition.Text, range);
                         isTextFiltered = (text != composition.Text);
                         if (isTextFiltered)
@@ -1256,7 +1279,7 @@ namespace System.Windows.Documents
                     }
                     else
                     {
-                        range = new TextRange(composition._CompositionStart, composition._CompositionEnd);
+                        range = new TextRange(composition._CompositionStart, composition._CompositionEnd, true /* ignoreTextUnitBoundaries */);
                         text = composition.CompositionText;
                     }
 

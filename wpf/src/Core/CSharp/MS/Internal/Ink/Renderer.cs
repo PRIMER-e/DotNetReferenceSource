@@ -175,9 +175,9 @@ namespace System.Windows.Ink
         {
             // Initialize the data members.
             // We intentionally don't use lazy initialization for the core members to avoid
-            // hidden bug situations when one thing has been created while another not.
-            // If the user is looking for lazy initialization, she should do that on her
-            // own and create Renderer only when there's a need for it.
+            // hidden 
+
+
 
             // Create visuals that'll be the containers for all other visuals
             // created by the Renderer. This visuals are created once and are
@@ -477,7 +477,7 @@ namespace System.Windows.Ink
             // Deal with removed strokes first
             foreach (Stroke stroke in removed)
             {
-                // Verify that the event is in [....] with the view
+                // Verify that the event is in sync with the view
                 StrokeVisual visual = null;
                 if (_visuals.TryGetValue(stroke, out visual))
                 {

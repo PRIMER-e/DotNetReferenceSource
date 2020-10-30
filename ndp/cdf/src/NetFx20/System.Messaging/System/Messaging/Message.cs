@@ -1866,7 +1866,7 @@ namespace System.Messaging
                         // 
                         // One idea is to add a new native API, 
                         // MQGetDefaultPropertyValue, to retrieve default values.
-                        // ([....], Nov 3 2004)
+                        // (Microsoft, Nov 3 2004)
                         return false;
                     }
 

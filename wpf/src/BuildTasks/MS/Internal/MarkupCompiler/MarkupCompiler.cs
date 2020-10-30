@@ -596,13 +596,16 @@ namespace MS.Internal
                     {
                         cnsImports.Imports.Add(new CodeNamespaceImport(u));
                     }
-
-                    _usingNS.Clear();
-                    _usingNS = null;
                 }
 
                 //  } end SubClass
                 _ccRoot.CodeNS.Types.Add(_ccRoot.CodeClass);
+            }
+
+            if (_usingNS != null)
+            {
+                _usingNS.Clear();
+                _usingNS = null;
             }
 
             if (IsCompilingEntryPointClass)
@@ -959,7 +962,7 @@ namespace MS.Internal
                 if (!_hasEmittedEventSetterDeclaration)
                 {
                     _hasEmittedEventSetterDeclaration = true;
-                    
+
                     // EventSetter eventSetter;
                     //
                     CodeVariableDeclarationStatement cvdsES = new CodeVariableDeclarationStatement(KnownTypes.Types[(int)KnownElements.EventSetter], EVENTSETTER);
@@ -1148,7 +1151,6 @@ namespace MS.Internal
 
             if ((elementName == null || !isAllowedNameScope) && (events == null || events.Count == 0))
             {
-                _typeArgsList = null;
                 return;
             }
 
@@ -1224,7 +1226,12 @@ namespace MS.Internal
                 ccsConnector.TrueStatements.Add(new CodeMethodReturnStatement());
                 _ccRoot.HookupFn.Statements.Add(ccsConnector);
             }
+        }
 
+        // called from ParserExtension.WriteEndAttributes at the end of an element
+        // that has x:TypeArguments, to clear the state used to support them.
+        internal void ClearGenericTypeArgs()
+        {
             _typeArgsList = null;
         }
 
@@ -1867,7 +1874,7 @@ namespace MS.Internal
             cdce.TargetObject = new CodeThisReferenceExpression();
             CodeExpression cDelExp = cdce;
 
-            // NOTE: workaround for VB CodeDom bug which does not produce correct Delegate expression code
+            // NOTE: workaround for VB CodeDom 
             if (IsLanguageVB)
             {
                 CodeExpression[] delParams = { cdce };
@@ -1875,9 +1882,9 @@ namespace MS.Internal
                 cDelExp = coce;
             }
 
-//            The bug that this chunk of code works around (VS#542946) was fixed but
-//            exposes a different bug (VS#572060)   To work around the second bug, we
-//            remove the workaround for the first one.  (RogerCh 20020918)
+//            The 
+
+
 
 //            Note that #542946 was not fixed for VB, so the code block above remains.
 
@@ -2151,7 +2158,7 @@ namespace MS.Internal
                          new CodeTypeReference("System.Diagnostics.CodeAnalysis.SuppressMessageAttribute"),
                          new CodeAttributeArgument(new CodePrimitiveExpression("Microsoft.Performance")),
                          new CodeAttributeArgument(new CodePrimitiveExpression("CA1823:AvoidUnusedPrivateFields"))));
-                
+
 
             // Generate WithEvents ID fields in VB for objects supporting events
             field.UserData["WithEvents"] = true;
@@ -2559,13 +2566,13 @@ namespace MS.Internal
             // Generate canonicalized string as resource id.
             bool requestExtensionChange = false;
             string resourceID = ResourcesGenerator.GetResourceIdForResourceFile(
-                    SourceFileInfo.RelativeSourceFilePath + XAML, 
-                    SourceFileInfo.OriginalFileLinkAlias, 
+                    SourceFileInfo.RelativeSourceFilePath + XAML,
+                    SourceFileInfo.OriginalFileLinkAlias,
                     SourceFileInfo.OriginalFileLogicalName,
                     TargetPath,
                     Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar,
                     requestExtensionChange);
-            
+
             string uriPart = string.Empty;
 
             string version = String.IsNullOrEmpty(AssemblyVersion) ? String.Empty : COMPONENT_DELIMITER + VER + AssemblyVersion;

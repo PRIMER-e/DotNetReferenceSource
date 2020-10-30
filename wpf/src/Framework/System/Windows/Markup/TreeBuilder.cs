@@ -239,7 +239,7 @@ namespace System.Windows.Markup
 
 #if !PBTCOMPILER
         /// <summary>
-        /// Mode we are loading the file in [....], Async
+        /// Mode we are loading the file in Sync, Async
         /// </summary>
         internal XamlParseMode XamlParseMode
         {

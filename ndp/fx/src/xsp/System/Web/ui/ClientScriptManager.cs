@@ -205,7 +205,12 @@ namespace System.Web.UI {
                 eventValidationField = formatter.Deserialize(unsafeField, Purpose.WebForms_ClientScriptManager_EventValidation);
             }
             catch (Exception ex) {
-                ViewStateException.ThrowViewStateError(ex, unsafeField);
+                // DevDiv #461378: Ignore validation errors for cross-page postbacks. Since the ValidateEvent method
+                // is most likely on the call stack right now, this will result in an event validation failure rather
+                // than a MAC validation failure.
+                if (!_owner.ShouldSuppressMacValidationException(ex)) {
+                    ViewStateException.ThrowViewStateError(ex, unsafeField);
+                }
             }
 
             // Step 3: Load the event validation field into the appropriate provider

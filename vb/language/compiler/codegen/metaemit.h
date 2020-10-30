@@ -48,7 +48,7 @@ struct ArrayValue
     mdTypeSpec m_tkTypeSpec;
 };
 
-// NOTE:[....],2/2002,this class is used by pebuilder and encbuilder.PEBuilder is
+// NOTE:Microsoft,2/2002,this class is used by pebuilder and encbuilder.PEBuilder is
 // to build a VB program with its own IMetaDataEmit/Import and IMetaDataAssemblyEmit/Import.
 // ENCBuilder is to build delta meta data, IL block, and PDB with the IMetaDataEmit from
 // the debuggee process.

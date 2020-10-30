@@ -1,5 +1,6 @@
 
 using MS.Internal;
+using MS.Internal.Interop;
 using MS.Internal.KnownBoxes;
 using MS.Internal.PresentationCore;
 using MS.Utility;
@@ -490,7 +491,18 @@ namespace System.Windows
         /// </summary>
         public bool Focus()
         {
-            return Keyboard.Focus(this) == this;
+            if (Keyboard.Focus(this) == this)
+            {
+                // DDVSO:178044
+                // In order to show the touch keyboard we need to prompt the WinRT InputPane API.
+                // We only do this when the keyboard focus has changed as the keyboard focus dictates
+                // our current input targets for the touch and physical keyboards.
+                TipTsfHelper.Show(this);
+
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

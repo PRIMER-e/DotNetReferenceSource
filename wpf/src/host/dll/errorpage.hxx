@@ -6,9 +6,9 @@
 //     Defines the ErrorPage class of PresentationHost.
 //
 //  History:
-//     2005/10/10 - [....]
+//     2005/10/10 - Microsoft
 //          Created
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

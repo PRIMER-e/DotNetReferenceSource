@@ -1992,7 +1992,7 @@ namespace System.Management
         public static object CreateInMTA(Type type)
         {
             // If we are currently in the MTA, we can directly create the object
-            if(IsNoContextMTA())  // Bug#110141 - Checking for MTA is not enough.  We need to make sure we are not in a COM+ Context
+            if(IsNoContextMTA())  // 
                 return Activator.CreateInstance(type);
 
             // We need to create the object in the MTA by using a worker thread
@@ -2093,7 +2093,7 @@ namespace System.Management
         static bool CanCallCoGetObjectContext = IsWindows2000OrHigher();
 
         // This method will tell us if the calling thread is in the MTA and we are not in a 'context'
-        // Added for Bug#110141
+        // Added for 
         public static bool IsNoContextMTA()
         {
             // If the runtime says we are not an MTA thread, we'll trust it and return false

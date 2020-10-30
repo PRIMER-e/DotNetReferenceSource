@@ -396,7 +396,7 @@ namespace System.ServiceModel.Channels
             }
         }
 
-        class BinaryMessageEncoder : MessageEncoder, ICompressedMessageEncoder
+        class BinaryMessageEncoder : MessageEncoder, ICompressedMessageEncoder, ITraceSourceStringProvider
         {
             const string SupportedCompressionTypesMessageProperty = "BinaryMessageEncoder.SupportedCompressionTypes";
 
@@ -988,6 +988,11 @@ namespace System.ServiceModel.Channels
                     }
                 }
                 return compressionFormat;
+            }
+
+            string ITraceSourceStringProvider.GetSourceString()
+            {
+                return base.GetTraceSourceString();
             }
         }
 
@@ -1662,7 +1667,7 @@ namespace System.ServiceModel.Channels
                 get
                 {
                     if (IsDisposed)
-#pragma warning suppress 56503 // [....], Invalid State after dispose
+#pragma warning suppress 56503 // Microsoft, Invalid State after dispose
 
                     {
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateMessageDisposedException());
@@ -1676,7 +1681,7 @@ namespace System.ServiceModel.Channels
                 get
                 {
                     if (IsDisposed)
-#pragma warning suppress 56503 // [....], Invalid State after dispose
+#pragma warning suppress 56503 // Microsoft, Invalid State after dispose
 
                     {
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateMessageDisposedException());
@@ -1691,7 +1696,7 @@ namespace System.ServiceModel.Channels
                 {
                     if (IsDisposed)
                     {
-#pragma warning suppress 56503 // [....], Invalid State after dispose
+#pragma warning suppress 56503 // Microsoft, Invalid State after dispose
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateMessageDisposedException());
                     }
                     return headers.MessageVersion;

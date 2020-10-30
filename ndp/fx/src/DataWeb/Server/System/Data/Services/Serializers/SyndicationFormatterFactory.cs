@@ -7,7 +7,7 @@
 //      writers for a given content type.
 // </summary>
 //
-// @owner [....]
+// @owner mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

@@ -131,7 +131,7 @@ namespace System.AddIn.Hosting
             // don't initialize remoting in this version.  Therefore we don't need to be Full Trust.
         }
 
-        // We should keep processId and Guid in [....].  That is, either
+        // We should keep processId and Guid in sync.  That is, either
         // both are null or neither are null.
         public int ProcessId
         {

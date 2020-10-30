@@ -223,8 +223,8 @@ namespace System.AddIn.Hosting
                 // we do type comparisons by comparing the fully qualified assembly 
                 // name.)  LoadFrom unfortunately respects policy.  Assembly's
                 // ReflectionOnlyLoad(byte[]) doesn't.  ReflectionOnlyLoadFrom(String)
-                // does respect policy if you've set DEVPATH, but only as a bug.
-                // We don't think setting DEVPATH is interesting.
+                // does respect policy if you've set DEVPATH, but only as a 
+
                 Assembly a = Assembly.ReflectionOnlyLoadFrom(_assemblyFileName);
                 publicTypes = a.GetTypes();
                 assemblyName = a.FullName;

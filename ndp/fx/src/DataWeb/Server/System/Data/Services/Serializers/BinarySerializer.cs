@@ -6,7 +6,7 @@
 //      Provides a serializer for binary content.
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

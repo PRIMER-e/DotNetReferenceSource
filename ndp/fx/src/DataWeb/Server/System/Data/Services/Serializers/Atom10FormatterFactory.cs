@@ -6,7 +6,7 @@
 //      Provides a formatter factory for ATOM 1.0.
 // </summary>
 //
-// @owner [....]
+// @owner Microsoft
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Serializers

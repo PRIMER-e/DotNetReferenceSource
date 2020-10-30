@@ -242,7 +242,7 @@ Bindable::GenSyntheticCode
 
         if (CodeBlockLength > 0)
         {
-            // [....] 9/13/2004: Don't need to check allocation for overflow, since allocation size would match that of a string already allocated.
+            // Microsoft 9/13/2004: Don't need to check allocation for overflow, since allocation size would match that of a string already allocated.
             CodeForSynthMethod = CodeBlock.AllocateBufferAndCopy(CurrentAllocator());
         }
         else
@@ -269,7 +269,7 @@ Bindable::GenSyntheticCode
 
                 if (CodeBlockLengthDbg > 0)
                 {
-                    // [....] 9/13/2004: Don't need to check allocation for overflow, since allocation size would match that of a string already allocated.
+                    // Microsoft 9/13/2004: Don't need to check allocation for overflow, since allocation size would match that of a string already allocated.
                     CodeForSynthMethod = CodeBlock.AllocateBufferAndCopy(CurrentAllocator());
                 }
             }
@@ -1317,11 +1317,11 @@ Bindable::ConflictsWithOtherProperties
         // CS_TypesEmitted error table and ensure that the TypesEmitted error table does not get purged when moving from CS_Bound to
         // CS_TypesEmitted.
         //
-        // See Bug VSWhidbey 273696.
-        //
+        // See 
+
         ReportErrorOnSymbol(
             ERRID_PropertyNameConflictInMyCollection,
-            GroupMemberClass->GetErrorTableForContext(),    // See Bug VSWhidbey 273696
+            GroupMemberClass->GetErrorTableForContext(),    // See 
             GroupMemberClass,
             GroupMemberClass->GetName());
         return true;
@@ -1339,7 +1339,7 @@ Bindable::GetMyGroupScrambledName
 {
     STRING* qualifiedName = GroupMemberClass->GetQualifiedName();
 
-    // [....] 9/13/2004: We are allocating space to match that of an already allocated, NULL-terminated string,
+    // Microsoft 9/13/2004: We are allocating space to match that of an already allocated, NULL-terminated string,
     // and so we need not worry about overflow.
     size_t count = 1 + StringPool::StringLength(qualifiedName);
     WCHAR* ScratchQualifiedNameString = (WCHAR*)Scratch->Alloc(sizeof(WCHAR) * count);

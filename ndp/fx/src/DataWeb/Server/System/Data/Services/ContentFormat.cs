@@ -6,7 +6,7 @@
 //      List of content formats that data web service supports
 // </summary>
 //
-// @owner  [....]
+// @owner  pratikp
 //---------------------------------------------------------------------
 
 namespace System.Data.Services

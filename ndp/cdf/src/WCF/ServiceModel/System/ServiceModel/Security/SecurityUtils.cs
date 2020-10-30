@@ -18,6 +18,7 @@ namespace System.ServiceModel.Security
     using System.Net.Security;
     using System.Runtime;
     using System.Security;
+    using System.Security.Authentication;
     using System.Security.Authentication.ExtendedProtection;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
@@ -102,6 +103,28 @@ namespace System.ServiceModel.Security
             }
             else
                 return 1;
+        }
+    }
+
+    static class SslProtocolsHelper
+    {
+        internal static bool IsDefined(SslProtocols value)
+        {
+            SslProtocols allValues = SslProtocols.None;
+            foreach (var protocol in Enum.GetValues(typeof(SslProtocols)))
+            {
+                allValues |= (SslProtocols)protocol;
+            }
+            return (value & allValues) == value;
+        }
+
+        internal static void Validate(SslProtocols value)
+        {
+            if (!IsDefined(value))
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidEnumArgumentException("value", (int)value,
+                    typeof(SslProtocols)));
+            }
         }
     }
 
@@ -261,7 +284,7 @@ namespace System.ServiceModel.Security
         volatile static bool isSslValidationRequirementDetermined = false;
         static readonly int MinimumSslCipherStrength = 128;
 
-        // these are kept in [....] with IIS70
+        // these are kept in sync with IIS70
         public const string AuthTypeNTLM = "NTLM";
         public const string AuthTypeNegotiate = "Negotiate";
         public const string AuthTypeKerberos = "Kerberos";
@@ -876,8 +899,45 @@ namespace System.ServiceModel.Security
         [SecuritySafeCritical]
         static bool CanKeyDoKeyExchange(X509Certificate2 certificate)
         {
-            CspKeyContainerInfo info = GetKeyContainerInfo(certificate);
-            return info != null && info.KeyNumber == KeyNumber.Exchange;
+            bool canDoKeyExchange = false;
+
+            if (!LocalAppContextSwitches.DisableCngCertificates)
+            {
+                X509KeyUsageExtension keyUsageExtension = null;
+                for (int i = 0; i < certificate.Extensions.Count; i++)
+                {
+                    keyUsageExtension = certificate.Extensions[i] as X509KeyUsageExtension;
+                    if (keyUsageExtension != null)
+                    {
+                        break;
+                    }
+                }
+
+                // No KeyUsage extension means most usages are permitted including key exchange.
+                // See RFC 5280 section 4.2.1.3 (Key Usage) for details. If the extension is non-critical
+                // then it's non-enforcing and meant as an aid in choosing the best certificate when
+                // there are multiple certificates to choose from. 
+                if (keyUsageExtension == null || !keyUsageExtension.Critical)
+                {
+                    return true;
+                }
+
+                // One of KeyAgreement, KeyEncipherment or DigitalSignature need to be allowed depending on the cipher
+                // being used. See RFC 5246 section 7.4.6 for more details.
+                // Additionally, according to msdn docs for PFXImportCertStore, the key specification is set to AT_KEYEXCHANGE
+                // when the data encipherment usage is set.
+                canDoKeyExchange = (keyUsageExtension.KeyUsages &
+                    (X509KeyUsageFlags.KeyAgreement | X509KeyUsageFlags.KeyEncipherment |
+                     X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.DataEncipherment)) != X509KeyUsageFlags.None;
+            }
+
+            if (!canDoKeyExchange)
+            {
+                CspKeyContainerInfo info = GetKeyContainerInfo(certificate);
+                canDoKeyExchange = info != null && info.KeyNumber == KeyNumber.Exchange;
+            }
+
+            return canDoKeyExchange;
         }
 
         [Fx.Tag.SecurityNote(Critical = "Elevates to call properties: X509Certificate2.PrivateKey and CspKeyContainerInfo. Caller must protect the return value.")]
@@ -1378,7 +1438,7 @@ namespace System.ServiceModel.Security
             }
         }
 
-        // work-around to Windows SE Bug 141614
+        // work-around to Windows SE 
         [Fx.Tag.SecurityNote(Critical = "Uses unsafe critical method UnsafeGetPassword to access the credential password without a Demand.",
             Safe = "Only uses the password to construct a cloned NetworkCredential instance, does not leak password value.")]
         [SecuritySafeCritical]
@@ -1412,7 +1472,7 @@ namespace System.ServiceModel.Security
             }
         }
 
-        // WORKAROUND, [....], VSWhidbey 561276: The first NetworkCredential must be created in a lock.
+        // WORKAROUND, Microsoft, VSWhidbey 561276: The first NetworkCredential must be created in a lock.
         internal static void PrepareNetworkCredential()
         {
             if (dummyNetworkCredential == null)
@@ -1632,7 +1692,7 @@ namespace System.ServiceModel.Security
                 {
                     thisPtr.communicationObject.EndOpen(result);
                 }
-#pragma warning suppress 56500 // [....], transferring exception to another thread
+#pragma warning suppress 56500 // Microsoft, transferring exception to another thread
                 catch (Exception e)
                 {
                     if (Fx.IsFatal(e))
@@ -1707,7 +1767,7 @@ namespace System.ServiceModel.Security
                 {
                     thisPtr.communicationObject.EndClose(result);
                 }
-#pragma warning suppress 56500 // [....], transferring exception to another thread
+#pragma warning suppress 56500 // Microsoft, transferring exception to another thread
                 catch (Exception e)
                 {
                     if (Fx.IsFatal(e))
@@ -1840,6 +1900,52 @@ namespace System.ServiceModel.Security
             else
             {
                 return credential;
+            }
+        }
+
+        public static bool CanReadPrivateKey(X509Certificate2 certificate)
+        {
+            if (!certificate.HasPrivateKey)
+                return false;
+
+            try
+            {
+                // CNG key, CNG permissions tests
+                using (RSA rsa = CngLightup.GetRSAPrivateKey(certificate))
+                {
+                    if (rsa != null)
+                    {
+                        return true;
+                    }
+                }
+
+                using (DSA dsa = CngLightup.GetDSAPrivateKey(certificate))
+                {
+                    if (dsa != null)
+                    {
+                        return true;
+                    }
+                }
+
+                using (ECDsa ecdsa = CngLightup.GetECDsaPrivateKey(certificate))
+                {
+                    if (ecdsa != null)
+                    {
+                        return true;
+                    }
+                }
+
+                // CAPI key, CAPI permissions test
+                if (certificate.PrivateKey != null)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            catch (CryptographicException)
+            {
+                return false;
             }
         }
 
@@ -2156,7 +2262,7 @@ namespace System.ServiceModel.Security
             if (keyIdentifierClause is EncryptedKeyIdentifierClause)
             {
                 EncryptedKeyIdentifierClause keyClause = (EncryptedKeyIdentifierClause)keyIdentifierClause;
-                // PreSharp Bug: Parameter 'keyClause' to this public method must be validated: A null-dereference can occur here.
+                // PreSharp 
 #pragma warning suppress 56506 // keyClause will not be null due to the if condition above.
                 for (int i = 0; i < keyClause.EncryptingKeyIdentifier.Count; i++)
                 {

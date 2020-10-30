@@ -105,7 +105,7 @@ namespace MS.Internal.Controls
                     // don't call VerifyUnchanged if we're returning false anyway.
                     // This permits users to change the Content after enumerating
                     // the content (e.g. in the invalidation callback of an inherited
-                    // property).  See bug 955389.
+                    // property).  See 
 
                     VerifyUnchanged();
                     return true;

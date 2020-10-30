@@ -37,7 +37,6 @@ namespace System.Windows.Forms.Layout {
         }
 
         internal virtual IArrangedElement this[int index] {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get { return (IArrangedElement) InnerList[index]; }
         }
 
@@ -137,7 +136,6 @@ namespace System.Windows.Forms.Layout {
         #region ICollection Members
         /// <include file='doc\ArrangedElementCollection.uex' path='docs/doc[@for="ArrangedElementCollection.Count"]/*' />
         public virtual int Count { 
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get { return InnerList.Count; }
         }
         object ICollection.SyncRoot { get { return InnerList.SyncRoot; }}

@@ -10,7 +10,7 @@
 //
 // Purpose:
 //     This file will define some of sos classes on the client side to enable us
-// keep the sources in [....].
+// keep the sources in sync.
 //
 // Notes:
 //          

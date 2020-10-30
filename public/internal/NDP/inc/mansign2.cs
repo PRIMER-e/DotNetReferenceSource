@@ -21,9 +21,19 @@ using System.Security.Cryptography.Pkcs;
 using Microsoft.Win32;
 
 using _FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
+using System.Collections;
 
 namespace System.Deployment.Internal.CodeSigning
 {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct BLOBHEADER 
+    {
+        internal byte bType;
+        internal byte bVersion;
+        internal short reserved;
+        internal uint aiKeyAlg;
+    };
+
     internal class ManifestSignedXml2 : SignedXml
     {
         private bool m_verify = false;
@@ -515,13 +525,13 @@ namespace System.Deployment.Internal.CodeSigning
             }
 
             // get public key from signing keyInfo
-            byte[] signingPublicKey = null;
-            RSACryptoServiceProvider rsaProvider = keyValue.Key as RSACryptoServiceProvider;
+            RSAParameters signingPublicKey;
+            RSA rsaProvider = keyValue.Key;
             if (rsaProvider != null)
             {
-                signingPublicKey = rsaProvider.ExportCspBlob(false);
+                signingPublicKey = rsaProvider.ExportParameters(false);
             }
-            if (signingPublicKey == null)
+            else
             {
                 m_authenticodeSignerInfo.ErrorCode = Win32.TRUST_E_CERT_SIGNATURE;
                 throw new CryptographicException(Win32.TRUST_E_CERT_SIGNATURE);
@@ -555,24 +565,13 @@ namespace System.Deployment.Internal.CodeSigning
                     continue;
                 }
 
-                RSACryptoServiceProvider p = (RSACryptoServiceProvider)certificate.PublicKey.Key;
-                byte[] certificatePublicKey = p.ExportCspBlob(false);
-                bool noMatch = false;
-                if (signingPublicKey.Length == certificatePublicKey.Length)
+                RSA publicKey = CngLightup.GetRSAPublicKey(certificate);
+                RSAParameters certificatePublicKey = publicKey.ExportParameters(false);
+                if ((StructuralComparisons.StructuralEqualityComparer.Equals(signingPublicKey.Exponent, certificatePublicKey.Exponent))
+                   && (StructuralComparisons.StructuralEqualityComparer.Equals(signingPublicKey.Modulus, certificatePublicKey.Modulus)))
                 {
-                    for (int i = 0; i < signingPublicKey.Length; i++)
-                    {
-                        if (signingPublicKey[i] != certificatePublicKey[i])
-                        {
-                            noMatch = true;
-                            break;
-                        }
-                    }
-                    if (!noMatch)
-                    {
-                        signingCertificate = certificate;
-                        break;
-                    }
+                    signingCertificate = certificate;
+                    break;
                 }
             }
 
@@ -1188,6 +1187,13 @@ namespace System.Deployment.Internal.CodeSigning
                 return oldCsp;
             }
 
+            // 3rd party crypto providers in general don't need to be forcefully upgraded.
+            // This is not an ideal way to check for that but is the best we have available.
+            if (!oldCsp.CspKeyContainerInfo.ProviderName.StartsWith("Microsoft", StringComparison.Ordinal))
+            {
+                return oldCsp;
+            }
+
             const int PROV_RSA_AES = 24;    // CryptoApi provider type for an RSA provider supporting sha-256 digital signatures
             CspParameters csp = new CspParameters();
             csp.ProviderType = PROV_RSA_AES;
@@ -1219,10 +1225,23 @@ namespace System.Deployment.Internal.CodeSigning
                 throw new CryptographicException(Win32.TRUST_E_SUBJECT_FORM_UNKNOWN);
             }
 
-            byte[] cspPublicKeyBlob = (GetFixedRSACryptoServiceProvider((RSACryptoServiceProvider)snKey, useSha256)).ExportCspBlob(false);
-            if (cspPublicKeyBlob == null || cspPublicKeyBlob.Length == 0)
+            byte[] cspPublicKeyBlob;
+
+            if (snKey is RSACryptoServiceProvider)
             {
-                throw new CryptographicException(Win32.NTE_BAD_KEY);
+                cspPublicKeyBlob = (GetFixedRSACryptoServiceProvider((RSACryptoServiceProvider)snKey, useSha256)).ExportCspBlob(false);
+                if (cspPublicKeyBlob == null || cspPublicKeyBlob.Length == 0)
+                {
+                    throw new CryptographicException(Win32.NTE_BAD_KEY);
+                }
+            }
+            else
+            {
+                using (RSACryptoServiceProvider rsaCsp = new RSACryptoServiceProvider())
+                {
+                    rsaCsp.ImportParameters(((RSA)snKey).ExportParameters(false));
+                    cspPublicKeyBlob = rsaCsp.ExportCspBlob(false);
+                }
             }
 
             // Now compute the public key token.
@@ -1404,25 +1423,21 @@ namespace System.Deployment.Internal.CodeSigning
         private static void AuthenticodeSignLicenseDom(XmlDocument licenseDom, CmiManifestSigner2 signer, string timeStampUrl, bool useSha256)
         {
             // Make sure it is RSA, as this is the only one Fusion will support.
-            if (signer.Certificate.PublicKey.Key.GetType() != typeof(RSACryptoServiceProvider))
-            {
-                throw new NotSupportedException();
-            }
-
-            if (signer.Certificate.PrivateKey.GetType() != typeof(RSACryptoServiceProvider))
+            RSA rsaPrivateKey = CngLightup.GetRSAPrivateKey(signer.Certificate);
+            if (rsaPrivateKey == null)
             {
                 throw new NotSupportedException();
             }
 
             // Setup up XMLDSIG engine.
             ManifestSignedXml2 signedXml = new ManifestSignedXml2(licenseDom);
-            signedXml.SigningKey = GetFixedRSACryptoServiceProvider(signer.Certificate.PrivateKey as RSACryptoServiceProvider, useSha256);
+            signedXml.SigningKey = rsaPrivateKey;
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
             if (signer.UseSha256)
                 signedXml.SignedInfo.SignatureMethod = Sha256SignatureMethodUri;
 
             // Add the key information.
-            signedXml.KeyInfo.AddClause(new RSAKeyValue(GetFixedRSACryptoServiceProvider(signer.Certificate.PrivateKey as RSACryptoServiceProvider, useSha256) as RSA));
+            signedXml.KeyInfo.AddClause(new RSAKeyValue(rsaPrivateKey));
             signedXml.KeyInfo.AddClause(new KeyInfoX509Data(signer.Certificate, signer.IncludeOption));
 
             // Add the enveloped reference.
@@ -1529,14 +1544,21 @@ namespace System.Deployment.Internal.CodeSigning
                 throw new CryptographicException(Win32.TRUST_E_SUBJECT_FORM_UNKNOWN);
             }
 
-            if (signer.StrongNameKey.GetType() != typeof(RSACryptoServiceProvider))
+            if (!(signer.StrongNameKey is RSA))
             {
                 throw new NotSupportedException();
             }
 
             // Setup up XMLDSIG engine.
             ManifestSignedXml2 signedXml = new ManifestSignedXml2(signatureParent);
-            signedXml.SigningKey = GetFixedRSACryptoServiceProvider(signer.StrongNameKey as RSACryptoServiceProvider, useSha256);
+            if (signer.StrongNameKey is RSACryptoServiceProvider)
+            {
+                signedXml.SigningKey = GetFixedRSACryptoServiceProvider(signer.StrongNameKey as RSACryptoServiceProvider, useSha256);
+            }
+            else
+            {
+                signedXml.SigningKey = signer.StrongNameKey;
+            }
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
             if (signer.UseSha256)
                 signedXml.SignedInfo.SignatureMethod = Sha256SignatureMethodUri;

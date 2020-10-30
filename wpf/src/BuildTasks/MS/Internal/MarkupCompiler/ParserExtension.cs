@@ -30,16 +30,16 @@ using System.ComponentModel;
 using MS.Utility;   // for SR
 
 namespace MS.Internal
-{ 
+{
     #region ParserCallbacks
 
     internal class ParserExtension : XamlParser
     {
         #region Constructor
 
-        internal ParserExtension(MarkupCompiler compiler, 
-            ParserContext parserContext, 
-            BamlRecordWriter bamlWriter, 
+        internal ParserExtension(MarkupCompiler compiler,
+            ParserContext parserContext,
+            BamlRecordWriter bamlWriter,
             Stream xamlStream,
             bool pass2) :
             base(parserContext, bamlWriter, xamlStream, false)
@@ -77,24 +77,24 @@ namespace MS.Internal
                      serializer = new XamlTemplateSerializer(ParserHooks);
                  }
                  else
-                 {            
+                 {
                      serializer = Activator.CreateInstance(
-                                         xamlObjectNode.SerializerType, 
-                                         BindingFlags.Instance | BindingFlags.Public | 
+                                         xamlObjectNode.SerializerType,
+                                         BindingFlags.Instance | BindingFlags.Public |
                                          BindingFlags.NonPublic | BindingFlags.CreateInstance,
                                          null, null, null) as XamlSerializer;
                  }
-                 
+
                  if (serializer == null)
                  {
-                    ThrowException(SRID.ParserNoSerializer, 
+                    ThrowException(SRID.ParserNoSerializer,
                                    xamlObjectNode.TypeFullName,
                                    xamlObjectNode.LineNumber,
                                    xamlObjectNode.LinePosition);
                  }
                  else
                  {
-                    serializer.ConvertXamlToBaml(TokenReader, 
+                    serializer.ConvertXamlToBaml(TokenReader,
                                        ParserContext, xamlObjectNode,
                                        BamlRecordWriter);
                     _compiler.EndElement(_pass2);
@@ -133,7 +133,7 @@ namespace MS.Internal
             }
         }
 
-        public override void WriteProperty(XamlPropertyNode xamlPropertyNode) 
+        public override void WriteProperty(XamlPropertyNode xamlPropertyNode)
         {
             MemberInfo memberInfo = xamlPropertyNode.PropInfo;
 
@@ -284,7 +284,7 @@ namespace MS.Internal
                     }
                     else
                     {
-                        typeAndSerializer = XamlTypeMapper.GetTypeOnly(xamlUnknownAttributeNode.XmlNamespace, 
+                        typeAndSerializer = XamlTypeMapper.GetTypeOnly(xamlUnknownAttributeNode.XmlNamespace,
                                                                ownerTagName);
 
                         if (typeAndSerializer != null)
@@ -303,7 +303,7 @@ namespace MS.Internal
                             if (miKnownEvent == null)
                             {
                                 // Not an attached event, so try for a clr event.
-                                miKnownEvent = ownerTagType.GetEvent(localAttribName, 
+                                miKnownEvent = ownerTagType.GetEvent(localAttribName,
                                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy);
                             }
 
@@ -414,7 +414,7 @@ namespace MS.Internal
                                                       localName);
             }
 
-            bool foundElement = base.GetElementType(xmlReader, localName, namespaceUri, 
+            bool foundElement = base.GetElementType(xmlReader, localName, namespaceUri,
                 ref assemblyName, ref typeFullName, ref baseType, ref serializerType);
 
             if (!ProcessedRootElement)
@@ -697,6 +697,9 @@ namespace MS.Internal
                 _compiler.CheckForNestedNameScope();
             }
 
+            // Clear the compiler's generic type argument list (see Dev11 923).
+            _compiler.ClearGenericTypeArgs();
+
             base.WriteEndAttributes(xamlEndAttributesNode);
         }
 
@@ -760,7 +763,7 @@ namespace MS.Internal
                   || string.IsNullOrEmpty(((ClrNamespaceAssemblyPair)XamlTypeMapper.PITable[xamlPIMappingNode.XmlNamespace]).AssemblyName);
                 if (addMapping)
                 {
-                    ClrNamespaceAssemblyPair namespaceMapping = new ClrNamespaceAssemblyPair(xamlPIMappingNode.ClrNamespace, 
+                    ClrNamespaceAssemblyPair namespaceMapping = new ClrNamespaceAssemblyPair(xamlPIMappingNode.ClrNamespace,
                                                                                              xamlPIMappingNode.AssemblyName);
 
                     namespaceMapping.LocalAssembly = true;
@@ -782,7 +785,7 @@ namespace MS.Internal
         public override void WriteDefAttribute(XamlDefAttributeNode xamlDefAttributeNode)
         {
             if (xamlDefAttributeNode.AttributeUsage == BamlAttributeUsage.RuntimeName)
-            {                                                
+            {
                 string attributeValue = xamlDefAttributeNode.Value;
 
                 if (!_pass2)
@@ -906,7 +909,7 @@ namespace MS.Internal
                 _compiler.GenerateBamlFile(bamlMemStream);
             }
         }
-  
+
         internal override bool CanResolveLocalAssemblies()
         {
             return _pass2;
@@ -943,7 +946,7 @@ namespace MS.Internal
         private const string CLASSMODIFIER = "ClassModifier";
         private const string FIELDMODIFIER = "FieldModifier";
         private const string STARTUPURI = "StartupUri";
-        
+
         #endregion Data
     }
 

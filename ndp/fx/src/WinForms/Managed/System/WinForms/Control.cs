@@ -193,7 +193,7 @@ namespace System.Windows.Forms {
         internal const int STATE_MOUSEPRESSED           = 0x08000000;
         internal const int STATE_VALIDATIONCANCELLED    = 0x10000000;
         internal const int STATE_PARENTRECREATING       = 0x20000000;
-        internal const int STATE_MIRRORED               = 0x40000000;
+        internal const int STATE_MIRRORED               = 0x40000000;        
 
         // HACK HACK HACK - when we change RightToLeft, we need to change the scrollbar thumb.
         // We can't do that until after the control has been created, and all the items added
@@ -216,6 +216,7 @@ namespace System.Windows.Forms {
         private  const int STATE2_UICUES                            = 0x00000200;
         private  const int STATE2_ISACTIVEX                         = 0x00000400;
         internal const int STATE2_USEPREFERREDSIZECACHE             = 0x00000800;
+        internal const int STATE2_TOPMDIWINDOWCLOSING               = 0x00001000;
 
         private static readonly object EventAutoSizeChanged           = new object();
         private static readonly object EventKeyDown                   = new object();
@@ -983,7 +984,6 @@ example usage
         // Public because this is interesting for ControlDesigners.
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Advanced)]
         public virtual LayoutEngine LayoutEngine {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get { return DefaultLayout.Instance; }
         }
 
@@ -1384,7 +1384,6 @@ example usage
         ///     control has its events frozen.
         /// </devdoc>
         protected override bool CanRaiseEvents {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 if (IsActiveX) {
                     return !ActiveXEventsFrozen;
@@ -1426,7 +1425,6 @@ example usage
         SRDescription(SR.ControlCaptureDescr)
         ]
         public bool Capture {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return CaptureInternal;
             }
@@ -1442,7 +1440,6 @@ example usage
 
         // SECURITY WARNING: This property bypasses a security demand. Use with caution!
         internal bool CaptureInternal {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return IsHandleCreated && UnsafeNativeMethods.GetCapture() == Handle;
             }
@@ -1900,7 +1897,7 @@ example usage
             bool valid = true;
             validatedControlAllowsFocusChange = false;
             IContainerControl c = GetContainerControlInternal();
-            if (c != null) {
+            if (c != null && this.CausesValidation) {
                 ContainerControl container = c as ContainerControl;
                 if (container != null) {
                     while (container.ActiveControl == null) {
@@ -1943,6 +1940,21 @@ example usage
 
                     return false;
                 }
+            }
+        }
+
+        /// <devdoc>
+        ///     returns bool indicating whether the Top MDI Window is closing.
+        ///     This property is set in the MDI children in WmClose method in form.cs when the top window is closing.
+        ///     This property will be used in ActiveControl to determine if we want to skip set focus and window handle re-creation for the control.
+        /// </devdoc>
+        /// <internalonly/>
+        internal bool IsTopMdiWindowClosing {
+            set {
+                SetState2(STATE2_TOPMDIWINDOWCLOSING, value);
+            }
+            get {
+                return GetState2(STATE2_TOPMDIWINDOWCLOSING);
             }
         }
 
@@ -3343,7 +3355,6 @@ example usage
 
         // SECURITY WARNING: This property bypasses a security demand. Use with caution!
         internal virtual Control ParentInternal {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return parent;
             }
@@ -3399,7 +3410,6 @@ example usage
         ///     space.
         /// </devdoc>
         internal PropertyStore Properties {
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             get {
                 return propertyStore;
             }
@@ -4104,9 +4114,9 @@ example usage
 
                 if ((uiCuesState & UISTATE_KEYBOARD_CUES_MASK) == 0) {
 
-                        // VSWhidbey 362408 -- if we get in here that means this is the windows bug where the first top
-                        // level window doesn't get notified with WM_UPDATEUISTATE
-                        //
+                        // VSWhidbey 362408 -- if we get in here that means this is the windows 
+
+
                         
                         if (SystemInformation.MenuAccessKeysUnderlined) {
                             uiCuesState |= UISTATE_KEYBOARD_CUES_SHOW;
@@ -4147,9 +4157,9 @@ example usage
                 // See "How this all works" in ShowKeyboardCues
                 
                 if ((uiCuesState & UISTATE_FOCUS_CUES_MASK) == 0) {
-                    // VSWhidbey 362408 -- if we get in here that means this is the windows bug where the first top
-                    // level window doesn't get notified with WM_UPDATEUISTATE
-                    //
+                    // VSWhidbey 362408 -- if we get in here that means this is the windows 
+
+
                     if (SystemInformation.MenuAccessKeysUnderlined) {
                         uiCuesState |= UISTATE_FOCUS_CUES_SHOW;
                     }
@@ -4319,16 +4329,18 @@ example usage
                 }
                 //If we didn't find the thread, or if GetExitCodeThread failed, we don't know the thread's state:
                 //if we don't know, we shouldn't throw.
-                if ((returnValue && exitCode != NativeMethods.STILL_ACTIVE) || AppDomain.CurrentDomain.IsFinalizingForUnload()) {
+                if ((returnValue && exitCode != NativeMethods.STILL_ACTIVE) || 
+                    (!returnValue && Marshal.GetLastWin32Error() == NativeMethods.ERROR_INVALID_HANDLE) ||
+                    AppDomain.CurrentDomain.IsFinalizingForUnload()) {
                     if (waitHandle.WaitOne(1, false)) {
                         break;
                     }
                     throw new InvalidAsynchronousStateException(SR.GetString(SR.ThreadNoLongerValid));
                 }
 
-                //Dev10 Bug 600316, 905126: Because Control.Invoke() is not fully thread safe, so it is possible that
-                //a ThreadMethodEntry can be sent to a control after it is disposed. In this case, we need to check
-                //if there is any ThreadMethodEntry in the queue. If so, we need "complete" them.
+                //Dev10 
+
+
                 if (IsDisposed && threadCallbackList != null && threadCallbackList.Count > 0) {
                     lock (threadCallbackList) {
                         Exception ex = new System.ObjectDisposedException(GetType().Name);
@@ -5230,7 +5242,7 @@ example usage
             key.Close();
 
             // Calculate MiscStatus bits.  Note that this is a static version
-            // of GetMiscStatus in ActiveXImpl below.  Keep them in [....]!
+            // of GetMiscStatus in ActiveXImpl below.  Keep them in sync!
             //
             int miscStatus = NativeMethods.OLEMISC_ACTIVATEWHENVISIBLE |
                              NativeMethods.OLEMISC_INSIDEOUT |
@@ -6040,23 +6052,23 @@ example usage
             int width = Math.Min(this.Width, targetBounds.Width);
             int height = Math.Min(this.Height, targetBounds.Height);
 
-            Bitmap image = new Bitmap(width, height, bitmap.PixelFormat);
+            using (Bitmap image = new Bitmap(width, height, bitmap.PixelFormat)) {
+                using (Graphics g = Graphics.FromImage(image)) {
+                    IntPtr hDc = g.GetHdc();
+                    //send the actual wm_print message
+                    UnsafeNativeMethods.SendMessage(new HandleRef(this, this.Handle), NativeMethods.WM_PRINT, (IntPtr)hDc,
+                        (IntPtr)(NativeMethods.PRF_CHILDREN | NativeMethods.PRF_CLIENT | NativeMethods.PRF_ERASEBKGND | NativeMethods.PRF_NONCLIENT));
 
-            using (Graphics g = Graphics.FromImage(image)) {
-                IntPtr hDc = g.GetHdc();
-                //send the actual wm_print message
-                UnsafeNativeMethods.SendMessage(new HandleRef(this, this.Handle), NativeMethods.WM_PRINT, (IntPtr)hDc,
-                    (IntPtr)(NativeMethods.PRF_CHILDREN | NativeMethods.PRF_CLIENT | NativeMethods.PRF_ERASEBKGND | NativeMethods.PRF_NONCLIENT));
+                    //now BLT the result to the destination bitmap.
+                    using (Graphics destGraphics = Graphics.FromImage(bitmap)) {
+                        IntPtr desthDC = destGraphics.GetHdc();
+                        SafeNativeMethods.BitBlt(new HandleRef(destGraphics, desthDC), targetBounds.X, targetBounds.Y, width, height,
+                                                 new HandleRef(g, hDc), 0, 0, 0xcc0020);
+                        destGraphics.ReleaseHdcInternal(desthDC);
+                    }
 
-                //now BLT the result to the destination bitmap.
-                using (Graphics destGraphics = Graphics.FromImage(bitmap)) {
-                    IntPtr desthDC = destGraphics.GetHdc();
-                    SafeNativeMethods.BitBlt(new HandleRef(destGraphics, desthDC), targetBounds.X, targetBounds.Y, width, height,
-                                             new HandleRef(g, hDc), 0, 0, 0xcc0020);
-                    destGraphics.ReleaseHdcInternal(desthDC);
+                    g.ReleaseHdcInternal(hDc);
                 }
-
-                g.ReleaseHdcInternal(hDc);
             }
         }
 
@@ -9680,7 +9692,7 @@ example usage
                 // VSWhidbey 464817 - we need to be careful
                 // about which LayoutEventArgs are used in
                 // SuspendLayout, PerformLayout, ResumeLayout() sequences.
-                // See bug for more info.
+                // See 
                 SetState2(STATE2_CLEARLAYOUTARGS, false);
             }
             else {
@@ -10955,7 +10967,7 @@ example usage
             // VSWhidbey 464817 - we need to be careful
             // about which LayoutEventArgs are used in
             // SuspendLayout, PerformLayout, ResumeLayout() sequences.
-            // See bug for more info.
+            // See 
             if (!performedLayout) {
                 SetState2(STATE2_CLEARLAYOUTARGS, true);
             }
@@ -11693,7 +11705,7 @@ example usage
 
                     if (recreate) {
                         // We will recreate later, when the MdiChild's visibility
-                        // is set to true (see bug 124232)
+                        // is set to true (see 
                         Form f = this as Form;
                         if (f != null) {
                             if (!f.CanRecreateHandle()) {
@@ -13040,6 +13052,10 @@ example usage
             //
             if (!GetStyle(ControlStyles.UserMouse)) {
                 DefWndProc(ref m);
+                // we might had re-entered the message loop and processed a WM_CLOSE message
+                if (IsDisposed) {
+                     return;
+                }  
             }
             else {
                 // DefWndProc would normally set the focus to this control, but
@@ -13248,9 +13264,14 @@ example usage
         private void WmOwnerDraw(ref Message m) {          
             bool reflectCalled = false;
 
-            IntPtr p = UnsafeNativeMethods.GetDlgItem(new HandleRef(null, m.HWnd), unchecked((int)(long)m.WParam));
+            int ctrlId = unchecked((int)(long)m.WParam);
+            IntPtr p = UnsafeNativeMethods.GetDlgItem(new HandleRef(null, m.HWnd), ctrlId);
             if (p == IntPtr.Zero) {
-                p = m.WParam;
+                // On 64-bit platforms wParam is already 64 bit but the control ID stored in it is only 32-bit
+                // Empirically, we have observed that the 64 bit HWND is just a sign extension of the 32-bit ctrl ID
+                // Since WParam is already 64-bit, we need to discard the high dword first and then re-extend the 32-bit value
+                // treating it as signed
+                p = (IntPtr)(long)ctrlId;
             }
             if (!ReflectMessageInternal(p, ref m)) {
                 //Additional Check For Control .... TabControl truncates the Hwnd value...
@@ -13297,6 +13318,9 @@ example usage
                     // is destroyed in an event handler (VSW#261657).
                     hWnd = this.Handle;
                     dc = UnsafeNativeMethods.BeginPaint(new HandleRef(this, hWnd), ref ps);
+                    if (dc == IntPtr.Zero) {
+                        return;
+                    }
                     needDisposeDC = true;
                     clip = new Rectangle(ps.rcPaint_left, ps.rcPaint_top,
                                          ps.rcPaint_right - ps.rcPaint_left,
@@ -13335,7 +13359,16 @@ example usage
 #endif
                             }
                             catch (Exception ex) {
-                                if (ClientUtils.IsCriticalException(ex)) {
+                                // BufferContext.Allocate will throw out of memory exceptions
+                                // when it fails to create a device dependent bitmap while trying to 
+                                // get information about the device we are painting on.
+                                // That is not the same as a system running out of memory and there is a 
+                                // very good chance that we can continue to paint successfully. We cannot
+                                // check whether double buffering is supported in this case, and we will disable it.
+                                // We could set a specific string when throwing the exception and check for it here
+                                // to distinguish between that case and real out of memory exceptions but we
+                                // see no reasons justifying the additional complexity.
+                                if (ClientUtils.IsCriticalException(ex) && !(ex is OutOfMemoryException)) {
                                     throw;
                                 }
 #if DEBUG
@@ -14198,7 +14231,6 @@ example usage
             }
 
             // IWindowTarget method
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             public void OnMessage(ref Message m) {
                 control.WndProc(ref m);
             }
@@ -14311,7 +14343,7 @@ example usage
             /// A caching mechanism for key accessor
             /// We use an index here rather than control so that we don't have lifetime
             /// issues by holding on to extra references.
-            /// Note this is not Thread Safe - but [....] has to be run in a STA anyways.
+            /// Note this is not Thread Safe - but Microsoft has to be run in a STA anyways.
             private int lastAccessedIndex = -1;
 
 
@@ -14554,7 +14586,6 @@ example usage
                 return foundControls;
             }
           
-            [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
             public override IEnumerator GetEnumerator() { 
                 return new ControlCollectionEnumerator(this); 
             }
@@ -14853,7 +14884,6 @@ example usage
                 }
 
                 public object Current {
-                    [System.Runtime.TargetedPatchingOptOutAttribute("Performance critical to inline across NGen image boundaries")]
                     get {
                         if (current == -1) {
                             return null;
@@ -19418,7 +19448,7 @@ example usage
             internal ExecutionContext executionContext;
 
             // Optionally store the synchronization context associated with the callee thread.
-            // This overrides the [....] context in the execution context of the caller thread.
+            // This overrides the sync context in the execution context of the caller thread.
             //
             internal SynchronizationContext syncContext = null;
 
@@ -19615,7 +19645,7 @@ example usage
 
                         // fake it
                         //
-                        if (productVersion.Length == 0) {
+                        if (productVersion == null || productVersion.Length == 0) {
                             productVersion = "1.0.0.0";
                         }
                     }

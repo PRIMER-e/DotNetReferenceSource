@@ -5,7 +5,7 @@
 // ==--==
 //==========================================================================
 //  File:       IpcHandler.cs
-//  Author:   [....]@Microsoft.com
+//  Author:   Microsoft@Microsoft.com
 //  Summary:    Class for managing a socket connection.
 //
 //==========================================================================

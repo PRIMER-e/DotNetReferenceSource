@@ -171,7 +171,7 @@ namespace System.Management.Instrumentation
 			codeToWMI.Line( "Marshal.QueryInterface(theClone, ref iidIWbemObjectAccess, out instWbemObjectAccessIP) ;" ) ;
 			codeToWMI.Line( "reflectionIWbemClassObjectField.SetValue ( reflectionInfoTempObj, theClone ) ;" ) ;
 
-			codeToWMI.Line(String.Format("{0} instNET = ({0})obj;", type.FullName.Replace('+', '.'))); // bug#92918 - watch for nested classes
+			codeToWMI.Line(String.Format("{0} instNET = ({0})obj;", type.FullName.Replace('+', '.'))); // 
 
 			// Explicit cast to IntPtr
 			CodeWriter codeIntPtrCast = codeClass.AddChild("public static explicit operator IntPtr("+codeClassName+" obj)");
@@ -279,7 +279,7 @@ namespace System.Management.Instrumentation
 						codeOneLineMembers.Line("static Hashtable mapTypeToConverter = new Hashtable();");
 						foreach(DictionaryEntry entry in mapTypeToConverterClassName)
 						{
-							codeCCTOR.Line(String.Format("mapTypeToConverter[typeof({0})] = typeof({1});", ((Type)entry.Key).FullName.Replace('+', '.'), (string)entry.Value)); // bug#92918 - watch for nested classes
+							codeCCTOR.Line(String.Format("mapTypeToConverter[typeof({0})] = typeof({1});", ((Type)entry.Key).FullName.Replace('+', '.'), (string)entry.Value)); // 
 						}
 					}
 
@@ -429,9 +429,9 @@ namespace System.Management.Instrumentation
 						{
 							needsNullObj = true;
 
-							// Bug#111623 - This line used to say 'nullObj = null;'  When nullObj was passed
-							// to IWOA.Put, this did NOT set the value of a string variable to NULL.  The correct
-							// thing to do was to pass a reference to DBNull.Value to IWOA.Put instead.
+							// 
+
+
 							codeOneLineMembers.Line("object nullObj = DBNull.Value;");
 						}
 					}
@@ -480,11 +480,11 @@ namespace System.Management.Instrumentation
 				try
 				{
 					PropertyData prop = newClass.Properties[propName];
-					// HACK for bug#96863 - The above line used to throw a
-					// not found exception.  This was changed with a recent
-					// checkin.  If this functionality is not reverted, the
-					// following statement should force the necessary 'not
-					// found' exception that we are looking for.
+					// HACK for 
+
+
+
+
 					CimType cimType = prop.Type;
 
 					// Make sure that if the property exists, it is inherited

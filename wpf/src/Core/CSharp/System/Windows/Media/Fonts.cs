@@ -8,7 +8,7 @@
 //
 // History:  
 //  03/02/2004 : mleonov - Created
-//  08/08/2008 : [....] - Integrating with DWrite.
+//  08/08/2008 : Microsoft - Integrating with DWrite.
 //
 //---------------------------------------------------------------------------
 

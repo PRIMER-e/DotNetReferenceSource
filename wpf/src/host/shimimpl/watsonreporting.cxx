@@ -6,8 +6,8 @@
 //      [see .hxx]
 //
 //  History:
-//      2007/07/20   [....]     Created
-//      2007/09/20   [....]     Ported Windows->DevDiv. See SourcesHistory.txt.
+//      2007/07/20   Microsoft     Created
+//      2007/09/20   Microsoft     Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
 
@@ -35,8 +35,8 @@ HRESULT CheckRegistryAccess()
         return S_OK;
     }
 
-    // Dev10 bug 707086 - HKCU\SOFTWARE\Classes may not exist on clean XP installations.
-    //                    ClickOnce will create it, so don't bother about it here.
+    // Dev10 
+
     if (error == ERROR_FILE_NOT_FOUND)
     {
         return S_OK;

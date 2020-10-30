@@ -548,7 +548,7 @@ namespace System.Windows.Controls
                         {
                             // How can this happen?
                             // Between the last measure was called and this update is called, there can be a
-                            // change done to the ColumnCollection and result in DesiredWidthList out of [....]
+                            // change done to the ColumnCollection and result in DesiredWidthList out of sync
                             // with the columnn collection. What can we do is end this call asap and the next
                             // measure will fix it.
                             desiredWidthChanged = true;

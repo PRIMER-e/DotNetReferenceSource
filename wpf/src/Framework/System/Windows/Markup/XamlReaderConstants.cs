@@ -5,7 +5,7 @@
 * Purpose:  Constants for XAML system.  Kept in XamlReaderHelper class.
 *
 * History:
-*    11/21/08:   [....]       Ported from XamlReaderHelper.cs as part of Parser migration
+*    11/21/08:   Microsoft       Ported from XamlReaderHelper.cs as part of Parser migration
 *
 * Copyright (C) 2008 by Microsoft Corporation.  All rights reserved.
 *
@@ -84,7 +84,7 @@ namespace System.Windows.Markup
         internal const string DefaultNamespaceURI = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
 
         // Default URI for Metro.  Note that this is used to map Key attribute for resource
-        // dictionaries only. Refer to Windows bug # 1100953 for more info.
+        // dictionaries only. Refer to Windows 
         internal const string DefinitionMetroNamespaceURI = "http://schemas.microsoft.com/xps/2005/06/resourcedictionary-key";
 
         // URI for WPF parsing options (currently only used for option to Freeze Freezables)

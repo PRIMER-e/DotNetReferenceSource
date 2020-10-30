@@ -10,7 +10,7 @@
 //              File Created : 26-Aug-2003
 //              Last Modified: 15-May-2005
 //
-//              <owner current="true" primary="true">[....]</owner>
+//              <owner current="true" primary="true">Microsoft</owner>
 //
 #ifndef __BIDAPIEX_H__ //////////////////////////////////////////////////////////////////////////
 #define __BIDAPIEX_H__

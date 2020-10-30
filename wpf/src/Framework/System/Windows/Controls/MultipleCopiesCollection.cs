@@ -42,7 +42,7 @@ namespace System.Windows.Controls
         #region Item Management
 
         /// <summary>
-        ///     Takes a collection change notifcation and causes the MultipleCopies collection to [....] to the changes.  For example,
+        ///     Takes a collection change notifcation and causes the MultipleCopies collection to sync to the changes.  For example,
         ///     if an item was removed at a given index, the MultipleCopiesCollection also removes an item at the same index and fires
         ///     its own collection changed event.
         /// </summary>
@@ -94,9 +94,9 @@ namespace System.Windows.Controls
         ///     (DataGridCells) based off this collection could be stale (wrong column).  The cells presenter updates them.  We could have also 
         ///     just fired a Reset event here and not bothered with work in the cells presenter, but that would cause all cells to be regenerated. 
         ///     
-        ///     Note that this method is designed to [....] up to ALL collection changes that may have happened.  
+        ///     Note that this method is designed to sync up to ALL collection changes that may have happened.  
         ///     The job of this method is made significantly easier by the fact that the MultipleCopiesCollection really only cares about
-        ///     the count of items in the given collection (since we keep it in [....] with the DataGrid Columns collection but host
+        ///     the count of items in the given collection (since we keep it in sync with the DataGrid Columns collection but host
         ///     a DataGridRow as the item).  This means we don't care about Move, Replace, etc.
         /// </remarks>
         internal void SyncToCount(int newCount)

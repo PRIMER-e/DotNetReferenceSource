@@ -11,7 +11,7 @@
 //
 // History:
 //  06/25/2003 : t-gregr - Created
-//  01/28/2005 : [....] - Renamed BrushMaterial to DiffuseMaterial
+//  01/28/2005 : Microsoft - Renamed BrushMaterial to DiffuseMaterial
 //
 //---------------------------------------------------------------------------
 

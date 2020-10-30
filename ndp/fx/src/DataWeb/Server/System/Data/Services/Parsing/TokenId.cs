@@ -6,7 +6,7 @@
 //      Provides a type to represent kinds of tokens.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Parsing

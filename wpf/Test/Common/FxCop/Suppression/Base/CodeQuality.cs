@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // Windows OS Bug: 1086750
 // VSWhidbey Bug:  469677
-// Contact:        [....]
+// Contact:        ChrisEck
 //
 // The FxCop violation states:
 // As it is declared in your code, parameter 'bAlpha' of PInvoke
@@ -27,7 +27,7 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Portability", "CA1901:PInvokeDeclarationsShouldBePortable", Scope="member", Target="MS.Win32.UnsafeNativeMethods.SetLayeredWindowAttributes(System.Runtime.InteropServices.HandleRef,System.Int32,System.Byte,System.Int32):System.Boolean")]
 
 // Windows OS Bug: 1086750
-// Contact:        [....]
+// Contact:        ChrisEck
 //
 // The FxCop violation states:
 // As it is declared in your code, parameter 'pt' of PInvoke
@@ -110,7 +110,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 140708
-// Developer: [....]
+// Developer: sambent
 // Reason: A new ShutDownListener is "used" because it listens to events like AppDomain.DomainUnload.
 //      The reference implicit in the event's delegate list keeps the object alive.  FxCop doesn't understand this.
 //***************************************************************************************************************************
@@ -118,21 +118,21 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug IDs: 202870
-// Developer: [....]
+// Developer: dwaynen
 // Reason: A new ShutDownListener is "used" because it listens to events like AppDomain.DomainUnload.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", Scope="member", Target="MS.Win32.ManagedWndProcTracker.#.cctor()", MessageId="MS.Win32.ManagedWndProcTracker+ManagedWndProcTrackerShutDownListener")]
 
 //**************************************************************************************************************************
 // Bug ID: 744160
-// Developer: [....]
+// Developer: brandf
 // Reason: In Justification field
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA1806:DoNotIgnoreMethodResults", MessageId="MS.Internal.ObservableCollectionDefaultValueFactory`1<type parameter.T>+ObservableCollectionDefaultPromoter", Scope="member", Target="MS.Internal.ObservableCollectionDefaultValueFactory`1.#CreateDefaultValue(System.Windows.DependencyObject,System.Windows.DependencyProperty)", Justification="Creating this object causes an event to be hooked.")]
 
 //**************************************************************************************************************************
 // Bug ID: 784238
-// Developer: [....]
+// Developer: bchapman
 // Reason: The GCNotificationToken object is created only for the executing code to be notified of a GC and is intended to be released immediately.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "MS.Internal.WindowsBase.GCNotificationToken", Scope = "member", Target = "MS.Internal.WindowsBase.GCNotificationToken.#RegisterCallback(System.Threading.WaitCallback,System.Object)", Justification = "The GCNotificationToken object is created only for the executing code to be notified of a GC and is intended to be released immediately")]

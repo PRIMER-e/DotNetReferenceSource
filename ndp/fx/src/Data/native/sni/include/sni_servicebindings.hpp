@@ -66,8 +66,8 @@ public:
 	//		Service Bindings.
 	//
 	// PARAMETERS:
-	//		ADDRINFO *paiClusterAddresses
-	//			An ADDRINFO linked list holding the cluster virtual IP Address(es)
+	//		ADDRINFOW *paiwClusterAddresses
+	//			An ADDRINFOW linked list holding the cluster virtual IP Address(es)
 	//
 	// RETURNS:
 	//			On successful assigning, ERROR_SUCCESS.
@@ -86,7 +86,7 @@ public:
 	//		1) This function overwrites some but not all of the information collected by SetHostNamesAndAcceptedSPNs.
 	//		It DOES overwrite the two IP address lists. It does NOT overwrite the SPN Approved List.
 	//----------------------------------------------------------------------------
-	static DWORD SetClusterAddresses(__in ADDRINFO *paiClusterAddresses);
+	static DWORD SetClusterAddresses(__in ADDRINFOW *paiwClusterAddresses);
 	
 	
 	//----------------------------------------------------------------------------
@@ -97,7 +97,7 @@ public:
 	//		Service Bindings.
 	//
 	// PARAMETERS:
-	//		LPSTR szClusterHostName
+	//		LPWSTR wszClusterHostName
 	//			A null-terminated string containing the Cluster Network Name
 	//
 	// RETURNS:
@@ -116,7 +116,7 @@ public:
 	//		1) Since BackConnectionHostNames applies to the physical node, this function does not
 	//		retrieve the BackConnectionHostNames list, after it clears the hostname list.
 	//----------------------------------------------------------------------------
-	static DWORD SetClusterNames(__in_z LPSTR szClusterHostName);
+	static DWORD SetClusterNames(__in_z LPWSTR wszClusterHostName);
 	
 	//----------------------------------------------------------------------------
 	// NAME: SNI_ServiceBindings::MatchSPN

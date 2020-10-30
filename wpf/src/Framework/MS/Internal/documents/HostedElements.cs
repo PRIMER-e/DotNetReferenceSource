@@ -7,7 +7,7 @@
 // Enumerator class for returning descendants of TextBlock and FlowDocumentPage
 //
 // History:  
-//  01/17/2005 : [....] - created.
+//  01/17/2005 : Microsoft - created.
 //
 //---------------------------------------------------------------------------
 

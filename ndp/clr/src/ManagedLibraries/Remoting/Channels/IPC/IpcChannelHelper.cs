@@ -5,7 +5,7 @@
 // ==--==
 //==========================================================================
 //  File:       IpcChannelHelper.cs
-//  Author:   [....]@Microsoft.Com
+//  Author:   Microsoft@Microsoft.Com
 //  Summary:    Implements helper methods for Ipc client and server channels.
 //
 //==========================================================================

@@ -555,7 +555,7 @@ namespace System.Security.Policy
                 ApplicationTrust matchingTrust = (ApplicationTrust) matchingTrusts[entry];
                 if (!matchingTrust.IsApplicationTrustedToRun)
                 {
-                    // [....]: Can this ever happen?  I have serious doubts...
+                    // Microsoft: Can this ever happen?  I have serious doubts...
                     matchingTrusts.RemoveAt(entry);
                 }
 
@@ -1096,7 +1096,7 @@ namespace System.Security.Policy
             catch {
             }
             finally {
-                Application.ExitThread(); //explicitly call Dispose [DevDiv2 bug 184375, OleUnitinialize not being called]
+                Application.ExitThread(); //explicitly call Dispose [DevDiv2 
             }
         }
     }

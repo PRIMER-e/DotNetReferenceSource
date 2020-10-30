@@ -19,7 +19,7 @@
 // 
 // History:
 //  05/16/2005: IgorBel: Initial creation.
-//  03/23/2006: [....]: Added support for Padding Extra Field
+//  03/23/2006: Microsoft: Added support for Padding Extra Field
 //
 //-----------------------------------------------------------------------------
 

@@ -11,7 +11,7 @@
 //          Created
 //     2003/06/03-kusumav
 //          Ported to WCP
-//     2007/09/20-[....]
+//     2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
@@ -29,7 +29,7 @@
 #include "..\inc\registry.hxx"
 
 
-// This macro will keep the types in [....] between the LoadHistoryHelper and SaveHistoryHelper methods.
+// This macro will keep the types in sync between the LoadHistoryHelper and SaveHistoryHelper methods.
 #define STARTUP_URI_LENGTH_TYPE ULONG
 
 //******************************************************************************
@@ -392,7 +392,7 @@ HRESULT ForwardTranslateAccelerator(MSG* pMsg, VARIANT_BOOL appUnhandled)
       see them out of order (because it hasn't yet seen the one for which the outgoing call is made).
       Alternatively, PENDINGMSG_WAITNOPROCESS could be returned, but it doesn't work as advertised.
       It has the same effect as PENDINGMSG_WAITDEFPROCESS, which eats input messages.
-    - Making the call as input-synchronous (by using the IDL [input_[....]] attribute). Then COM won't
+    - Making the call as input-synchronous (by using the IDL [input_sync] attribute). Then COM won't
       eat input messages. But both current callees need to make calls back into PresentationHost
       before returning, which leads to RPC_E_CANTCALLOUT_ININPUTSYNCCALL or a deadlock because
       reentrant calls are not dispatched.

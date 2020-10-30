@@ -8,7 +8,7 @@
 //  06/06/2002 : MikeOrr - Created.
 //  07/10/2002 : MikeOrr - Renamed element/class 'Phrase' -> 'Inline'.
 //  06/25/2003 : ZhenbinX - Ported to /Rewrote for WCP tree
-//  10/28/2004 : [....] - ContentElements refactoring.
+//  10/28/2004 : Microsoft - ContentElements refactoring.
 //
 //---------------------------------------------------------------------------
 using MS.Internal;

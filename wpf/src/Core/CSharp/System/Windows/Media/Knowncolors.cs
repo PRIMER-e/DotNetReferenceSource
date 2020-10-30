@@ -172,6 +172,17 @@ namespace System.Windows.Media
     internal static class KnownColors
     {
 #if !PBTCOMPILER
+
+        static KnownColors()
+        {
+            Array knownColorValues = Enum.GetValues(typeof(KnownColor));
+            foreach (KnownColor colorValue in knownColorValues)
+            {
+                string aRGBString = String.Format("#{0,8:X8}", (uint)colorValue);
+                s_knownArgbColors[aRGBString] = colorValue;
+            }
+        }
+
         /// Return the solid color brush from a color string.  If there's no match, null
         public static SolidColorBrush ColorStringToKnownBrush(string s)
         {
@@ -187,6 +198,14 @@ namespace System.Windows.Media
                 }
             }
             return null;
+        }
+
+        public static bool IsKnownSolidColorBrush(SolidColorBrush scp)
+        {
+            lock(s_solidColorBrushCache)
+            {
+                return s_solidColorBrushCache.ContainsValue(scp); 
+            }
         }
 
         public static SolidColorBrush SolidColorBrushFromUint(uint argb)
@@ -658,12 +677,22 @@ namespace System.Windows.Media
         }
 
 #if !PBTCOMPILER
+        internal static KnownColor ArgbStringToKnownColor(string argbString)
+        {
+            string argbUpper = argbString.Trim().ToUpper(System.Globalization.CultureInfo.InvariantCulture);
 
+            KnownColor color;
+            if (s_knownArgbColors.TryGetValue(argbUpper, out color))
+                return color;
+
+            return KnownColor.UnknownColor; 
+        }
 #if DEBUG
         private static int s_count = 0;
 #endif
 
         private static Dictionary<uint, SolidColorBrush> s_solidColorBrushCache = new Dictionary<uint, SolidColorBrush>();
+        private static Dictionary<string, KnownColor> s_knownArgbColors = new Dictionary<string, KnownColor>();
 #endif
     }
 

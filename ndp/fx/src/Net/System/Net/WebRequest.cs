@@ -10,10 +10,12 @@ namespace System.Net {
     using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics.Contracts;
+    using System.Diagnostics.Tracing;
     using System.Globalization;
     using System.IO;
     using System.Net.Cache;
     using System.Net.Configuration;
+    using System.Reflection;
     using System.Runtime.Serialization;
     using System.Security.Permissions;
     using System.Security.Principal;
@@ -979,7 +981,7 @@ namespace System.Net {
         // GetRequestStream() and the reading phase to GetResponse(), but if there's no request body, both phases
         // may happen inside GetResponse().
         //
-        // Return null only on [....] (if we're on the [....] thread).  Otherwise throw if no context is available.
+        // Return null only on Sync (if we're on the Sync thread).  Otherwise throw if no context is available.
         internal virtual ContextAwareResult GetConnectingContext()
         {
             throw ExceptionHelper.MethodNotImplementedException;
@@ -1172,6 +1174,72 @@ namespace System.Net {
             {
                 // If the protocol cache policy is not specifically configured, grab from the base class.
                 InternalSetCachePolicy(WebRequest.DefaultCachePolicy);
+            }
+        }
+
+        delegate void DelEtwFireBeginWRGet(object id, string uri, bool success, bool synchronous);
+        delegate void DelEtwFireEndWRGet(object id, bool success, bool synchronous);
+        delegate void DelEtwFireEndWRespGet(object id, bool success, bool synchronous, int statusCode);
+        static DelEtwFireBeginWRGet s_EtwFireBeginGetResponse;
+        static DelEtwFireEndWRespGet s_EtwFireEndGetResponse;
+        static DelEtwFireBeginWRGet s_EtwFireBeginGetRequestStream;
+        static DelEtwFireEndWRGet s_EtwFireEndGetRequestStream;
+        static volatile bool s_TriedGetEtwDelegates;
+
+        private static void InitEtwMethods()
+        {
+            Type fest = typeof(FrameworkEventSource);
+            var beginParamTypes = new Type[] { typeof(object), typeof(string), typeof(bool), typeof(bool) };
+            var bindingFlags = BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.Public;
+            var mi1 = fest.GetMethod("BeginGetResponse", bindingFlags, null, beginParamTypes, null);
+            var mi2 = fest.GetMethod("EndGetResponse", bindingFlags, null, new Type[] { typeof(object), typeof(bool), typeof(bool), typeof(int) }, null);
+            var mi3 = fest.GetMethod("BeginGetRequestStream", bindingFlags, null, beginParamTypes, null);
+            var mi4 = fest.GetMethod("EndGetRequestStream", bindingFlags, null, new Type[] { typeof(object), typeof(bool), typeof(bool) }, null);
+            if (mi1 != null && mi2 != null && mi3 != null && mi4 != null)
+            {
+                s_EtwFireBeginGetResponse = (DelEtwFireBeginWRGet) mi1.CreateDelegate(typeof(DelEtwFireBeginWRGet), FrameworkEventSource.Log);
+                s_EtwFireEndGetResponse = (DelEtwFireEndWRespGet)mi2.CreateDelegate(typeof(DelEtwFireEndWRespGet), FrameworkEventSource.Log);
+                s_EtwFireBeginGetRequestStream = (DelEtwFireBeginWRGet) mi3.CreateDelegate(typeof(DelEtwFireBeginWRGet), FrameworkEventSource.Log);
+                s_EtwFireEndGetRequestStream = (DelEtwFireEndWRGet) mi4.CreateDelegate(typeof(DelEtwFireEndWRGet), FrameworkEventSource.Log);
+            }
+            s_TriedGetEtwDelegates = true;
+        }
+
+        internal void LogBeginGetResponse(bool success, bool synchronous)
+        {
+            string uri = this.RequestUri.OriginalString;
+            if (!s_TriedGetEtwDelegates) 
+                InitEtwMethods();
+            if (s_EtwFireBeginGetResponse != null)
+            {
+                s_EtwFireBeginGetResponse(this, uri, success, synchronous);
+            }
+        }
+        internal void LogEndGetResponse(bool success, bool synchronous, int statusCode)
+        {
+            if (!s_TriedGetEtwDelegates) 
+                InitEtwMethods();
+            if (s_EtwFireEndGetResponse != null) {
+                s_EtwFireEndGetResponse(this, success, synchronous, statusCode);
+            }
+        }
+        internal void LogBeginGetRequestStream(bool success, bool synchronous)
+        {
+            string uri = this.RequestUri.OriginalString;
+            if (!s_TriedGetEtwDelegates) 
+                InitEtwMethods();
+            if (s_EtwFireBeginGetRequestStream != null)
+            {
+                s_EtwFireBeginGetRequestStream(this, uri, success, synchronous);
+            }
+        }
+        internal void LogEndGetRequestStream(bool success, bool synchronous)
+        {
+            if (!s_TriedGetEtwDelegates) 
+                InitEtwMethods();
+            if (s_EtwFireEndGetRequestStream != null) {
+
+                s_EtwFireEndGetRequestStream(this, success, synchronous);
             }
         }
     } // class WebRequest

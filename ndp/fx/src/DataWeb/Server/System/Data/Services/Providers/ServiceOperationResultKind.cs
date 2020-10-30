@@ -7,7 +7,7 @@
 //      that a service operation provides.
 // </summary>
 //
-// @owner  [....]
+// @owner  mruiz
 //---------------------------------------------------------------------
 
 namespace System.Data.Services.Providers

@@ -618,7 +618,7 @@ namespace System.Windows.Media.Animation
             {
                 ResolveDuration();
 
-                // A [....] clock with duration of zero or no begin time has no effect, so do skip it
+                // A sync clock with duration of zero or no begin time has no effect, so do skip it
                 if (!_resolvedDuration.HasTimeSpan || _resolvedDuration.TimeSpan > TimeSpan.Zero)
                 {
                     // Verify that we only use SlipBehavior in supported scenarios
@@ -873,7 +873,7 @@ namespace System.Windows.Media.Animation
 
             IsInteractivelyStopped = false;
             PendingInteractiveStop = false;   // Cancel preceding stop;
-            ResetNodesWithSlip();  // Reset [....] tracking
+            ResetNodesWithSlip();  // Reset sync tracking
             
             _rootData.PendingSeekDestination = destination;
             RootBeginPending = false; // cancel a previous begin call
@@ -914,7 +914,7 @@ namespace System.Windows.Media.Animation
             IsInteractivelyStopped = false;  // We have unset disabled status
             PendingInteractiveStop = false;
             RootBeginPending = false;        // Cancel a pending begin
-            ResetNodesWithSlip();            // Reset [....] tracking
+            ResetNodesWithSlip();            // Reset sync tracking
 
             _timeManager.InternalCurrentIntervals = TimeIntervalCollection.Empty;
 
@@ -989,7 +989,7 @@ namespace System.Windows.Media.Animation
             // Offset to the end; override preceding seek requests
             IsInteractivelyStopped = false;
             PendingInteractiveStop = false;
-            ResetNodesWithSlip();  // Reset [....] tracking
+            ResetNodesWithSlip();  // Reset sync tracking
 
             RootBeginPending = false;
             _rootData.PendingSeekDestination = effectiveDuration.Value;  // Seek to the end time
@@ -1011,7 +1011,7 @@ namespace System.Windows.Media.Animation
             // Cancel all non-persistent interactive requests
             _rootData.PendingSeekDestination = null;
             RootBeginPending = false;
-            ResetNodesWithSlip();  // Reset [....] tracking
+            ResetNodesWithSlip();  // Reset sync tracking
 
             NotifyNewEarliestFutureActivity();
         }
@@ -1190,7 +1190,7 @@ namespace System.Windows.Media.Animation
         {
             if (_syncData != null)
             {
-                _syncData.IsInSyncPeriod = false;  // Reset [....] tracking
+                _syncData.IsInSyncPeriod = false;  // Reset sync tracking
             }
         }
 
@@ -1847,7 +1847,7 @@ namespace System.Windows.Media.Animation
                      (_syncData == null || !_syncData.IsInSyncPeriod))
             // We were paused at the last tick, so move _beginTime by the delta from last tick to this one
             // Only perform this iff we are *continuously* moving, e.g. if we haven't seeked between ticks.
-            // [....] NOTE: If we are syncing, then the [....] code should be the one to make this adjustment
+            // SYNC NOTE: If we are syncing, then the sync code should be the one to make this adjustment
             // by using the Media's current time (which should already be paused).
             {
                 if (_beginTime.HasValue)
@@ -2386,10 +2386,10 @@ namespace System.Windows.Media.Animation
                         localSpeed = maxRate * t / userAcceleration;
                         t = maxRate * t * t / (2 * userAcceleration);
 
-                        // Fix for bug 118853: Animations with Deceleration cause the Timing system to
-                        // keep ticking while idle.  Only reset NextTickNeededTime when we are
-                        // Active.  When we (or our parent) is Filling, there is no non-linear
-                        // unpredictability to our behavior that requires us to reset NextTickNeededTime.
+                        // Fix for 
+
+
+
                         if (_currentClockState == ClockState.Active
                          && _parent._currentClockState == ClockState.Active)
                         {
@@ -2410,10 +2410,10 @@ namespace System.Windows.Media.Animation
                         localSpeed = maxRate * tc / userDeceleration;
                         t = 1 - maxRate * tc * tc / (2 * userDeceleration);
 
-                        // Fix for bug 118853: Animations with Deceleration cause the Timing system to
-                        // keep ticking while idle.  Only reset NextTickNeededTime when we are
-                        // Active.  When we (or our parent) is Filling, there is no non-linear
-                        // unpredictability to our behavior that requires us to reset NextTickNeededTime.
+                        // Fix for 
+
+
+
                         if (_currentClockState == ClockState.Active
                          && _parent._currentClockState == ClockState.Active)
                         {
@@ -2937,11 +2937,11 @@ namespace System.Windows.Media.Animation
                 }
             }
 
-            // Check whether we are entering a [....] period.  This includes cases when we have
-            // ticked before the beginning, then past the end of a [....] period; we still have to
+            // Check whether we are entering a sync period.  This includes cases when we have
+            // ticked before the beginning, then past the end of a sync period; we still have to
             // move back to the exact beginning of the tick period.  We handle cases where
             // we seek (HasSeekOccuredAfterLastTick) in a special way, by not synchronizing with the beginning.
-            // Also, if the parent has been paused prior to this tick, we cannot enter the [....] zone, so skip the call.
+            // Also, if the parent has been paused prior to this tick, we cannot enter the sync zone, so skip the call.
             if (_syncData != null && !_syncData.IsInSyncPeriod && _parent.CurrentState != ClockState.Stopped &&
                 (!parentIntervalCollection.IsEmptyOfRealPoints || HasSeekOccuredAfterLastTick))
             {
@@ -3166,9 +3166,9 @@ namespace System.Windows.Media.Animation
         // Abbreviations for variables expressing time units:
         //   PT: Parent time (e.g. our begin time is expressed in parent time coordinates)
         //   LT: Local time  (e.g. our duration is expressed in local time coordinates)
-        //   ST: [....] time -- this is the same as local time iff (_syncData.SyncClock == this) e.g. we are the [....] clock,
+        //   ST: Sync time -- this is the same as local time iff (_syncData.SyncClock == this) e.g. we are the sync clock,
         //       otherwise it is our child's time coordinates (this happens when we are a container with SlipBehavior.Slip).
-        //   SPT: The [....] clock's parent's time coordinates.  When this IS the [....] clock, this is our parent coordinates.
+        //   SPT: The sync clock's parent's time coordinates.  When this IS the sync clock, this is our parent coordinates.
         //       otherwise, it is our local coordinates.
         private void ComputeSyncEnter(ref TimeIntervalCollection parentIntervalCollection,
                                       TimeSpan currentParentTimePT)
@@ -3200,13 +3200,13 @@ namespace System.Windows.Media.Animation
                 TimeSpan previewCurrentOffsetPT = currentParentTimePT - relativeBeginTimePT;  // This is our time offset (not yet scaled by speed)
                 TimeSpan previewCurrentTimeLT = MultiplyTimeSpan(previewCurrentOffsetPT, _appliedSpeedRatio);  // This is what our time would be
 
-                // We can only enter [....] period if we are past the syncClock's begin time
+                // We can only enter sync period if we are past the syncClock's begin time
                 if (_syncData.SyncClock == this || previewCurrentTimeLT >= _syncData.SyncClockBeginTime)
                 {
                     // We have two very different scenarios: seek and non-seek enter
-                    if (HasSeekOccuredAfterLastTick)  // We have seeked, see if we fell into a [....] period
+                    if (HasSeekOccuredAfterLastTick)  // We have seeked, see if we fell into a sync period
                     {
-                        // If we haven't returned yet, we are not past the end of the [....] period on the child
+                        // If we haven't returned yet, we are not past the end of the sync period on the child
                         // Also, we are not Stopped prior to BeginTime.
                         TimeSpan? expirationTimePT;
                         ComputeExpirationTime(out expirationTimePT);
@@ -3223,7 +3223,7 @@ namespace System.Windows.Media.Animation
                             if (_syncData.SyncClock == this ||
                                 !syncClockEffectiveDurationST.HasValue || ourSyncTimeST < syncClockEffectiveDurationST)
                             {
-                                // If the [....] child has a specified duration
+                                // If the sync child has a specified duration
                                 Duration syncClockDuration = _syncData.SyncClockResolvedDuration;
 
                                 if (syncClockDuration.HasTimeSpan)
@@ -3258,7 +3258,7 @@ namespace System.Windows.Media.Animation
                         if (!previousSyncParentTimeSPT.HasValue
                             || _syncData.SyncClockDiscontinuousEvent
                             || previousSyncParentTimeSPT.Value <= _syncData.SyncClockBeginTime)
-                        // Not seeking this tick, different criteria for entering [....] period.
+                        // Not seeking this tick, different criteria for entering sync period.
                         // We don't care if we overshot the beginTime, because we will seek backwards
                         // to match the child's beginTime exactly.
                         // NOTE: _currentTime is actually our time at last tick, since it wasn't yet updated.
@@ -3270,7 +3270,7 @@ namespace System.Windows.Media.Animation
                                 timeIntoSyncPeriodPT -= DivideTimeSpan(_syncData.SyncClockBeginTime, _appliedSpeedRatio);
                             }
 
-                            // Offset our position to [....] with media begin
+                            // Offset our position to sync with media begin
                             if (_currentIterationBeginTime.HasValue)
                             {
                                 _currentIterationBeginTime += timeIntoSyncPeriodPT;
@@ -3300,9 +3300,9 @@ namespace System.Windows.Media.Animation
         // Abbreviations for variables expressing time units:
         //   PT: Parent time (e.g. our begin time is expressed in parent time coordinates)
         //   LT: Local time  (e.g. our duration is expressed in local time coordinates)
-        //   ST: [....] time -- this is the same as local time iff (_syncData.SyncClock == this) e.g. we are the [....] clock,
+        //   ST: Sync time -- this is the same as local time iff (_syncData.SyncClock == this) e.g. we are the sync clock,
         //       otherwise it is our child's time coordinates (this happens when we are a container with SlipBehavior.Slip).
-        //   SPT: The [....] clock's parent's time coordinates.  When this IS the [....] clock, this is our parent coordinates.
+        //   SPT: The sync clock's parent's time coordinates.  When this IS the sync clock, this is our parent coordinates.
         //       otherwise, it is our local coordinates.
         private void ComputeSyncSlip(ref TimeIntervalCollection parentIntervalCollection,
                                      TimeSpan currentParentTimePT, double currentParentSpeed)
@@ -3329,7 +3329,7 @@ namespace System.Windows.Media.Animation
                                                                                          : parentIntervalCollection.FirstNodeTime;
             TimeSpan parentElapsedTimePT = currentParentTimePT - previousParentTimePT;
             // Our elapsed time is assumed to be a simple linear scale of the parent's time,
-            // as long as we are inside of the [....] period.
+            // as long as we are inside of the sync period.
             TimeSpan ourProjectedElapsedTimeLT = MultiplyTimeSpan(parentElapsedTimePT, _appliedSpeedRatio);
 
             TimeSpan syncTimeST = _syncData.SyncClock.GetCurrentTimeCore();
@@ -3338,24 +3338,24 @@ namespace System.Windows.Media.Animation
             if (syncElapsedTimeST > TimeSpan.Zero)  // Only store the last value if it is greater than
                                                   //  the old value.  Note we can use either >= or > here.
             {
-                // Check whether [....] has reached the end of our effective duration
+                // Check whether sync has reached the end of our effective duration
                 TimeSpan? effectiveDurationST = _syncData.SyncClockEffectiveDuration;
                 Duration syncDuration = _syncData.SyncClockResolvedDuration;
 
                 if (effectiveDurationST.HasValue &&
                     (_syncData.PreviousRepeatTime + syncTimeST >= effectiveDurationST.Value))
                 {
-                    _syncData.IsInSyncPeriod = false;  // This is the last time we need to [....]
+                    _syncData.IsInSyncPeriod = false;  // This is the last time we need to sync
                     _syncData.PreviousRepeatTime = TimeSpan.Zero;
-                    _syncData.SyncClockDiscontinuousEvent = false;  // Make sure we don't reenter the [....] period
+                    _syncData.SyncClockDiscontinuousEvent = false;  // Make sure we don't reenter the sync period
                 }
                 // Else check if we should wrap the simple duration due to repeats, and set previous times accordingly                
                 else if (syncDuration.HasTimeSpan && syncTimeST >= syncDuration.TimeSpan)
                 {
                     // If we have a single repetition, then we would be done here;
                     // However, we may just have reached the end of an iteration on repeating media;
-                    // In this case, we still [....] this particular moment, but we should reset the
-                    // previous [....] clock time to zero, and increment the PreviousRepeatTime.
+                    // In this case, we still sync this particular moment, but we should reset the
+                    // previous sync clock time to zero, and increment the PreviousRepeatTime.
                     // This tick, media should pick up a corresponding DiscontinuousMovement caused
                     // by a repeat, and reset itself to zero as well.
                     _syncData.PreviousSyncClockTime = TimeSpan.Zero;
@@ -3366,12 +3366,12 @@ namespace System.Windows.Media.Animation
                     _syncData.PreviousSyncClockTime = syncTimeST;
                 }                
             }
-            else  // If the [....] timeline went backwards, pretend it just didn't move.
+            else  // If the sync timeline went backwards, pretend it just didn't move.
             {
                 syncElapsedTimeST = TimeSpan.Zero;
             }
 
-            // Convert elapsed time to local coordinates, not necessarily same as [....] clock coordinates
+            // Convert elapsed time to local coordinates, not necessarily same as sync clock coordinates
             TimeSpan syncElapsedTimeLT = (_syncData.SyncClock == this)
                                        ? syncElapsedTimeST
                                        : DivideTimeSpan(syncElapsedTimeST, _syncData.SyncClockSpeedRatio);
@@ -3380,9 +3380,9 @@ namespace System.Windows.Media.Animation
             TimeSpan parentTimeSlipPT = parentElapsedTimePT - DivideTimeSpan(syncElapsedTimeLT, _appliedSpeedRatio);
             // NOTE: The above line does the same as this:
             //     parentTimeSlip = syncSlip / _appliedSpeedRatio
-            // ...but it maintains greater accuracy and prevents a bug where parentTimeSlip ends up 1 tick greater
-            // that it should be, thus becoming larger than parentElapsedTimePT and causing us to suddenly fall out
-            // of our [....] period.
+            // ...but it maintains greater accuracy and prevents a 
+
+
             
             // Unless the media is exactly perfect, we will have non-zero slip time; we assume that it isn't
             // perfect, and always adjust our time accordingly.
@@ -3997,7 +3997,7 @@ namespace System.Windows.Media.Animation
         }
 
         /// <summary>
-        /// Holds [....]-related data when it is applicable
+        /// Holds sync-related data when it is applicable
         /// </summary>
         internal class SyncData
         {
@@ -4044,7 +4044,7 @@ namespace System.Windows.Media.Animation
             {
                 get
                 {
-                    if (_syncClockEffectiveDuration.HasValue)  // If the [....] clock has a finite duration
+                    if (_syncClockEffectiveDuration.HasValue)  // If the sync clock has a finite duration
                     {
                         return (_previousRepeatTime + _syncClock.GetCurrentTimeCore() >= _syncClockEffectiveDuration.Value);
                     }
@@ -4436,7 +4436,7 @@ namespace System.Windows.Media.Animation
         private ClockState          _currentClockState;     // Precalculated current clock state
 
         private RootData            _rootData = null;       // Keeps track of root-related data for DesiredFrameRate
-        internal SyncData           _syncData = null;       // Keeps track of [....]-related data for SlipBehavior
+        internal SyncData           _syncData = null;       // Keeps track of sync-related data for SlipBehavior
 
 
         // Stores the clock's begin time as an offset from the clock's

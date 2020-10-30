@@ -68,10 +68,10 @@ namespace System.Windows.Documents
         int GetTextInRun(LogicalDirection direction, char[] textBuffer, int startIndex, int count);
 
         // <see cref="TextPointer.GetAdjacentElement"/>
-        // 
-
-
-
+        // TODO:benwest:11/17/2004: this should return DependencyObject (which is
+        // either ContentElement or UIElement) for consistency with TextPointer.GetAdjacentElement.
+        // Blocking issue: DocumentSequenceTextPointer returns an object to break
+        // pages.
         object GetAdjacentElement(LogicalDirection direction);
 
         // <see cref="TextPointer.MoveToPosition"/>
@@ -123,7 +123,7 @@ namespace System.Windows.Documents
         void DeleteContentToPosition(ITextPointer limit);
 
         // <see cref="TextPointer.GetTextElement"/>
-        // 
+        // TODO: rename this method to match eventual TextPointer equivalent.
         Type GetElementType(LogicalDirection direction);
 
         // Returns a DP value on this ITextPointer's logical parent.
@@ -203,8 +203,8 @@ namespace System.Windows.Documents
         int Offset { get; }
 
         // Offset in unicode chars within the document.
-        // 
-
+        // TODO:benwest: this should probably be refactored out of ITextPointer
+        // since only TextStore supports it.
         int CharOffset { get; }
 
         #endregion Internal Properties

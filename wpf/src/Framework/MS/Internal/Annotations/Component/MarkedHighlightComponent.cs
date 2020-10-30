@@ -291,7 +291,7 @@ namespace MS.Internal.Annotations.Component
         #region Additional Public Properties
 
         /// <summary>
-        /// Used to [....] with another component focus (like StickyNote)
+        /// Used to sync with another component focus (like StickyNote)
         /// </summary>
         public bool Focused
         {
@@ -1201,7 +1201,7 @@ namespace MS.Internal.Annotations.Component
 
         private IAttachedAnnotation _attachedAnnotation;
         private PresentationContext _presentationContext;
-        private bool _isDirty = true; //shows if the annotation is in [....] with the content of the AnnotatedElement
+        private bool _isDirty = true; //shows if the annotation is in sync with the content of the AnnotatedElement
 
 
         //event sources

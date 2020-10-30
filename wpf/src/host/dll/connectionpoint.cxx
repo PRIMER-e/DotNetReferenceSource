@@ -8,7 +8,7 @@
 // History:
 //      2001/10/01-michdav
 //          Created
-//      2007/09/20-[....]
+//      2007/09/20-Microsoft
 //          Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------

@@ -9,7 +9,7 @@
 #define GDI_FONT_CACHE_TRACK
 #endif
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal
@@ -31,7 +31,7 @@ namespace System.Experimental.Gdi
     ///     Created to improve performance of TextRenderer.MeasureText methods that don't receive a WindowsGraphics.
     ///     This class mantains a cache of MRU WindowsFont objects in the process. (See VSWhidbey#301492).
     /// </devdoc>
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal
@@ -262,7 +262,7 @@ namespace System.Experimental.Gdi
         }
 
         
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
         /// The following methods are not needed in production code since the cached objects are meant to be reused and should not be explicitly disposed, 
         /// left here for testing purposes.
 

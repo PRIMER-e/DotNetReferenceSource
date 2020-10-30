@@ -179,7 +179,7 @@ namespace MS.Internal.AutomationProxies
 
         private static bool IsLinkLabel(IntPtr hwnd)
         {
-            // [[....]]:
+            // [Microsoft]:
             // could be a label or a linklabel
             // we differentiate based on whether the item has children or not
             Accessible acc = null;

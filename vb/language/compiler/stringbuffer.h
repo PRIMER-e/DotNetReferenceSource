@@ -165,7 +165,7 @@ public:
 
     WCHAR * AllocateBufferAndCopy(_Inout_ NorlsAllocator * allocator);
 
-    // [....]:
+    // Microsoft:
     // GetStringLength() returns long for Win64 sake. Strings are never larger that 2GB,
     // and most of Win API functions and VS Environment interfaces accept long or int
     // as a string length. I intentionally didn't change other methods such as AppendWithLength

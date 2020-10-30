@@ -4,14 +4,14 @@
 #define GDI_FONT_CACHE_TRACK
 #endif
 
-#if WINFORMS_NAMESPACE
+#if Microsoft_NAMESPACE
 namespace System.Windows.Forms.Internal {
 #elif DRAWING_NAMESPACE
 namespace System.Drawing.Internal {
 #else
 namespace System.Experimental.Gdi {
 #endif
-#if WINFORMS_PUBLIC_GRAPHICS_LIBRARY
+#if Microsoft_PUBLIC_GRAPHICS_LIBRARY
     public
 #else
     internal

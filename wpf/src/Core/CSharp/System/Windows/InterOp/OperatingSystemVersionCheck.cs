@@ -12,6 +12,10 @@ namespace System.Windows.Interop
     ///     Performs a simple check of the current operating system version.
     ///     Use this class to determine whether version specific features should
     ///     be enabled.
+    ///     
+    /// DevDiv:1158540
+    /// This is an older version check class that is susceptible to AppCompat version lies.
+    /// For a more complete (and updated) class, please see OSVersionHelper.cs
     /// </summary>
     internal static class OperatingSystemVersionCheck
     {

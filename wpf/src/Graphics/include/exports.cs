@@ -2507,6 +2507,20 @@ namespace System.Windows.Media.Composition
                     command.flags |= (UInt32)MILRTInitializationFlags.MIL_RT_SOFTWARE_ONLY;
                 }
 
+                bool? enableMultiMonitorDisplayClipping = 
+                    System.Windows.CoreCompatibilityPreferences.EnableMultiMonitorDisplayClipping;
+
+                if (enableMultiMonitorDisplayClipping != null)
+                {
+                    // The flag is explicitly set by the user in application manifest
+                    command.flags |= (UInt32)MILRTInitializationFlags.MIL_RT_IS_DISABLE_MULTIMON_DISPLAY_CLIPPING_VALID;
+
+                    if (!enableMultiMonitorDisplayClipping.Value)
+                    {
+                        command.flags |= (UInt32) MILRTInitializationFlags.MIL_RT_DISABLE_MULTIMON_DISPLAY_CLIPPING;
+                    }
+                }
+
                 command.hBitmap = DUCE.ResourceHandle.Null;
                 command.stride = 0;
                 command.ePixelFormat = 0;

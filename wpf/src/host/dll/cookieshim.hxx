@@ -13,8 +13,8 @@
 //          - When hosted in a Mozilla browser, using its cookie store, not WinInet
 //
 //  History:
-//     2007/03/30   [....]     Created
-//     2007/09/20   [....]     Ported Windows->DevDiv. See SourcesHistory.txt.
+//     2007/03/30   Microsoft     Created
+//     2007/09/20   Microsoft     Ported Windows->DevDiv. See SourcesHistory.txt.
 //
 //------------------------------------------------------------------------
 

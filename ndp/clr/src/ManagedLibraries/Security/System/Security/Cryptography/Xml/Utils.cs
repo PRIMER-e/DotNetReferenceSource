@@ -3,7 +3,7 @@
 //   Copyright (c) Microsoft Corporation.  All rights reserved.
 // 
 // ==--==
-// <OWNER>[....]</OWNER>
+// <OWNER>Microsoft</OWNER>
 // 
 
 //
@@ -17,10 +17,12 @@ namespace System.Security.Cryptography.Xml
     using Microsoft.Win32;
     using System.Collections;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Security.Cryptography.X509Certificates;
     using System.Security.Permissions;
     using System.Text;
+    using System.Threading;
     using System.Xml;
 
     [Serializable]
@@ -162,7 +164,29 @@ namespace System.Security.Cryptography.Xml
             settings.XmlResolver = xmlResolver;
             settings.DtdProcessing = DtdProcessing.Parse;
             settings.MaxCharactersFromEntities = GetMaxCharactersFromEntities();
+            settings.MaxCharactersInDocument = GetMaxCharactersInDocument();
             return settings;
+        }
+
+        private static int? xmlDsigSearchDepth = null;
+        /// <summary>
+        /// Function get the XML Dsig recursion limit. This function defines the
+        /// default limit in case, limit is not defined by developer or admin then
+        /// it returns the default value.
+        /// </summary>
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static int GetXmlDsigSearchDepth() {
+            if (xmlDsigSearchDepth.HasValue) {
+                return xmlDsigSearchDepth.Value;
+            }
+            //Keeping the default recursion limit to 20. It should be
+            //within limits of real world scenarios. Keeping this number low
+            //will preserve some stack space
+            long maxXmlDsigSearchDepth = GetNetFxSecurityRegistryValue("SignedDigitalSignatureXmlMaxDepth", 20);
+
+            xmlDsigSearchDepth = (int)maxXmlDsigSearchDepth;
+            return xmlDsigSearchDepth.Value;
         }
 
         private static long? maxCharactersFromEntities = null;
@@ -171,36 +195,122 @@ namespace System.Security.Cryptography.Xml
         // Falls back to a default if none is specified.
         [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
         [SecuritySafeCritical]
-        internal static long GetMaxCharactersFromEntities()
-        {
-            if (maxCharactersFromEntities.HasValue)
-            {
+        internal static long GetMaxCharactersFromEntities() {
+            if (maxCharactersFromEntities.HasValue) {
                 return maxCharactersFromEntities.Value;
             }
 
-            long maxCharacters = (long)1e7;
-            const string regValueName = "SignedXmlMaxCharactersFromEntities";
-            try
+            long maxCharacters = GetNetFxSecurityRegistryValue("SignedXmlMaxCharactersFromEntities", (long)1e7);
+
+            maxCharactersFromEntities = maxCharacters;
+            return maxCharactersFromEntities.Value;
+        }
+
+        private static bool s_readMaxCharactersInDocument = false;
+        private static long s_maxCharactersInDocument = 0;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static long GetMaxCharactersInDocument()
+        {
+            // Allow machine administrators to specify a maximum document load size for SignedXml.
+            if (s_readMaxCharactersInDocument)
             {
-                using (RegistryKey securityRegKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\Security", false))
-                {
-                    if (securityRegKey != null)
-                    {
+                return s_maxCharactersInDocument;
+            }
+
+            // The default value, 0, is "no limit"
+            long maxCharacters = GetNetFxSecurityRegistryValue("SignedXmlMaxCharactersInDocument", 0);
+
+            s_maxCharactersInDocument = maxCharacters;
+            Thread.MemoryBarrier();
+            s_readMaxCharactersInDocument = true;
+
+            return s_maxCharactersInDocument;
+        }
+
+        private static bool? s_allowAmbiguousReferenceTarget = null;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static bool AllowAmbiguousReferenceTargets()
+        {
+            // Allow machine administrators to specify that the legacy behavior of matching the first element
+            // in an ambiguous reference situation should be persisted. The default behavior is to throw in that
+            // situation, but a REG_DWORD or REG_QWORD value of 1 will revert.
+            if (s_allowAmbiguousReferenceTarget.HasValue)
+            {
+                return s_allowAmbiguousReferenceTarget.Value;
+            }
+
+            long numericValue = GetNetFxSecurityRegistryValue("SignedXmlAllowAmbiguousReferenceTargets", 0);
+            bool allowAmbiguousReferenceTarget = numericValue != 0;
+
+            s_allowAmbiguousReferenceTarget = allowAmbiguousReferenceTarget;
+            return s_allowAmbiguousReferenceTarget.Value;
+        }
+
+        private static bool? s_allowDetachedSignature = null;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static bool AllowDetachedSignature()
+        {
+            // Allow machine administrators to specify that detached signatures can be processed.
+            // The default behavior is to throw when processing a detached signature,
+            // but a REG_DWORD or REG_QWORD value of 1 will revert.
+            if (s_allowDetachedSignature.HasValue)
+            {
+                return s_allowDetachedSignature.Value;
+            }
+
+            long numericValue = GetNetFxSecurityRegistryValue("SignedXmlAllowDetachedSignature", 0);
+            bool allowDetachedSignature = numericValue != 0;
+
+            s_allowDetachedSignature = allowDetachedSignature;
+            return s_allowDetachedSignature.Value;
+        }
+
+        private static bool s_readRequireNCNameIdentifier = false;
+        private static bool s_requireNCNameIdentifier = true;
+
+        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
+        [SecuritySafeCritical]
+        internal static bool RequireNCNameIdentifier()
+        {
+            if (s_readRequireNCNameIdentifier)
+            {
+                return s_requireNCNameIdentifier;
+            }
+
+            long numericValue = GetNetFxSecurityRegistryValue("SignedXmlRequireNCNameIdentifier", 1);
+            bool requireNCName = numericValue != 0;
+
+            s_requireNCNameIdentifier = requireNCName;
+            Thread.MemoryBarrier();
+            s_readRequireNCNameIdentifier = true;
+
+            return s_requireNCNameIdentifier;
+        }
+
+        private static long GetNetFxSecurityRegistryValue(string regValueName, long defaultValue)
+        {
+            try {
+                using (RegistryKey securityRegKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\Security", false)) {
+                    if (securityRegKey != null) {
                         object regValue = securityRegKey.GetValue(regValueName);
-                        if (regValue != null)
-                        {
+                        if (regValue != null) {
                             RegistryValueKind valueKind = securityRegKey.GetValueKind(regValueName);
-                            if (valueKind == RegistryValueKind.DWord || valueKind == RegistryValueKind.QWord)
-                            {
-                                maxCharacters = Convert.ToInt64(regValue);
+                            if (valueKind == RegistryValueKind.DWord || valueKind == RegistryValueKind.QWord) {
+                                return Convert.ToInt64(regValue, CultureInfo.InvariantCulture);
                             }
                         }
                     }
                 }
             }
-            catch (SecurityException) { /* we could not open the key - that's fine, we can proceed with the default character limit */ }
-            maxCharactersFromEntities = maxCharacters;
-            return maxCharactersFromEntities.Value;
+            catch (SecurityException) { /* we could not open the key - that's fine, we can proceed with the default value */ }
+
+            return defaultValue;
         }
 
         internal static XmlDocument PreProcessDocumentInput (XmlDocument document, XmlResolver xmlResolver, string baseUri) {
@@ -216,6 +326,7 @@ namespace System.Security.Cryptography.Xml
                 settings.XmlResolver = xmlResolver;
                 settings.DtdProcessing = DtdProcessing.Parse;
                 settings.MaxCharactersFromEntities = GetMaxCharactersFromEntities();
+                settings.MaxCharactersInDocument = GetMaxCharactersInDocument();
                 XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
@@ -234,6 +345,7 @@ namespace System.Security.Cryptography.Xml
                 settings.XmlResolver = xmlResolver;
                 settings.DtdProcessing = DtdProcessing.Parse;
                 settings.MaxCharactersFromEntities = GetMaxCharactersFromEntities();
+                settings.MaxCharactersInDocument = GetMaxCharactersInDocument();
                 XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }

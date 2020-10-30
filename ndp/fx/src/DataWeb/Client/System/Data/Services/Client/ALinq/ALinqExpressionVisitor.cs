@@ -6,7 +6,7 @@
 //      Expression Visitor
 // </summary>
 //
-// @owner  [....]
+// @owner  Microsoft
 //---------------------------------------------------------------------
 
 #if ASTORIA_SERVER
@@ -25,9 +25,9 @@ namespace System.Data.Services.Client
     using System.Security.Permissions;
 
     /// <summary>
-    /// This class introduced because of a bug in SL3 which prevents using non-public (e.g anonymous) types as return types for lambdas
-    /// We should be able to remove this for SL4.
-    /// </summary>
+    /// This class introduced because of a 
+
+
     internal static class ExpressionHelpers
     {
         private static MethodInfo lambdaFunc;

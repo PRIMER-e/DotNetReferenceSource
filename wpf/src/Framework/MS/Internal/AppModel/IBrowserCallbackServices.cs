@@ -30,7 +30,7 @@
 // History:
 //  07/08/2001: mwatt:       Created
 //  06/04/2003: kusumav:     Ported to WCP tree
-//  04/25/2009: [....]      Imported IHostBrowser to managed code; removed overlapping methods from IBCS.
+//  04/25/2009: ChangoV      Imported IHostBrowser to managed code; removed overlapping methods from IBCS.
 // 
 //---------------------------------------------------------------------------
 

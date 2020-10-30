@@ -8,7 +8,7 @@
 
 #pragma once
 
-// Biltree namespace temporarily included as code cleanup item - [....]
+// Biltree namespace temporarily included as code cleanup item - Microsoft
 
 #if DEBUG
 

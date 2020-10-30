@@ -7,7 +7,7 @@
 //
 //  Contents:  This class is the entry point to itemization and shaping
 //
-//  Created:   5-27-2009 Samer El Baghdady ([....])
+//  Created:   5-27-2009 Samer El Baghdady (Microsoft)
 //
 //------------------------------------------------------------------------
 

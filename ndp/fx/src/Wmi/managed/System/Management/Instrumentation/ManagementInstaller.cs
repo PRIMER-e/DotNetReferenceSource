@@ -132,7 +132,7 @@ namespace System.Management.Instrumentation
             {
                 string mofFile = Context.Parameters["mof"];
 
-                // bug#62252 - Pick a default MOF file name
+                // 
                 if(mofFile == null || mofFile.Length == 0)
                 {
                     mofFile = Context.Parameters["assemblypath"];

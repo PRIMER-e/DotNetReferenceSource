@@ -234,6 +234,7 @@ namespace System.Windows.Forms {
         private class StatusDialog : Form {
             internal Label label1;
             private Button button1;
+            private TableLayoutPanel tableLayoutPanel1;
             private BackgroundThread backgroundThread;
 
             internal StatusDialog(BackgroundThread backgroundThread, string dialogTitle) {
@@ -259,35 +260,53 @@ namespace System.Windows.Forms {
                 {
                     this.RightToLeft = RightToLeft.Yes;
                 }
-                
+
+                this.tableLayoutPanel1 = new TableLayoutPanel();
                 this.label1 = new Label();
                 this.button1 = new Button();
-                
+
+                label1.AutoSize = true;
                 label1.Location = new Point(8, 16);
                 label1.TextAlign = ContentAlignment.MiddleCenter;
                 label1.Size = new Size(240, 64);
                 label1.TabIndex = 1;
-                label1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-               
+                label1.Anchor = AnchorStyles.None;
+                                
+                button1.AutoSize = true;
                 button1.Size = new Size(75, 23);
                 button1.TabIndex = 0;
                 button1.Text = SR.GetString(SR.PrintControllerWithStatusDialog_Cancel);
                 button1.Location = new Point(88, 88);
-                button1.Anchor = AnchorStyles.Bottom;
+                button1.Anchor = AnchorStyles.None;
                 button1.Click += new EventHandler(button1_Click);
+
+                tableLayoutPanel1.AutoSize = true;
+                tableLayoutPanel1.ColumnCount = 1;
+                tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(SizeType.Percent, 100F));
+                tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+                tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+                tableLayoutPanel1.RowCount = 2;
+                tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(SizeType.Percent, 50F));
+                tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(SizeType.Percent, 50F));
+                tableLayoutPanel1.TabIndex = 0;
+                tableLayoutPanel1.Controls.Add(label1, 0, 0);
+                tableLayoutPanel1.Controls.Add(button1, 0, 1);
                 
                 this.AutoScaleDimensions = new Size(6, 13);
                 this.AutoScaleMode = AutoScaleMode.Font;
                 this.MaximizeBox = false;
                 this.ControlBox = false;
                 this.MinimizeBox = false;
-                this.ClientSize = new Size(256, 122);
+                Size clientSize = new Size(256, 122);
+                if (DpiHelper.IsScalingRequired) {
+                    this.ClientSize = DpiHelper.LogicalToDeviceUnits(clientSize);
+                }
+                else {
+                    this.ClientSize = clientSize;
+                }
                 this.CancelButton = button1;
-                this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
-
-                this.Controls.Add(label1);
-                this.Controls.Add(button1);
-
+                this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;                
+                this.Controls.Add(tableLayoutPanel1);
             }
             private void button1_Click(object sender, System.EventArgs e) {
                 button1.Enabled = false;

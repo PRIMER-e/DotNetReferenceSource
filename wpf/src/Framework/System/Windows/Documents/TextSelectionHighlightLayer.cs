@@ -7,7 +7,7 @@
 // Description: Highlight rendering for the TextSelection.
 //
 // History:  
-//  07/01/2004 : [....] - Created
+//  07/01/2004 : Microsoft - Created
 //
 //---------------------------------------------------------------------------
 

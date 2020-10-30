@@ -7,7 +7,7 @@
 //
 // File:    WsdlParser.cs
 //<EMAIL>
-// Author:  Peter de Jong ([....])
+// Author:  Peter de Jong (Microsoft)
 //</EMAIL>
 // Purpose: Defines WsdlParser that parses a given WSDL document
 //          and generates types defined in it.
@@ -784,7 +784,7 @@ namespace System.Runtime.Remoting.MetadataServices
             do
             {
                 // Initialize the parser
-                _XMLReader = new XmlTextReader(input.InputStream, _primedNametable);
+                _XMLReader = new XmlTextReader(input.InputStream, _primedNametable) { DtdProcessing = DtdProcessing.Ignore };
                 _XMLReader.WhitespaceHandling = WhitespaceHandling.None;
                 _XMLReader.XmlResolver = null;
                 ParseInput(input);
@@ -1020,7 +1020,7 @@ namespace System.Runtime.Remoting.MetadataServices
             do
             {
                 // Initialize the parser
-                _XMLReader = new XmlTextReader(input.InputStream, _primedNametable);
+                _XMLReader = new XmlTextReader(input.InputStream, _primedNametable) { DtdProcessing = DtdProcessing.Ignore };
                 _XMLReader.WhitespaceHandling = WhitespaceHandling.None;
                 _XMLReader.XmlResolver = null;
                 _parsingInput = input;
@@ -5761,7 +5761,7 @@ namespace System.Runtime.Remoting.MetadataServices
                         if (_baseTypeName == null || _baseType is SystemType)
                         {
                             _baseTypeName = "RemotingClientProxy";
-                            //<STRIP>_baseTypeXmlNS = "http://schemas.microsoft.com/urt/NSAssem/System.Runtime.Remoting/System.Runtime.Remoting";</STRIP>
+                            //<
                             _baseTypeXmlNS = SoapServices.CodeXmlNamespaceForClrTypeNamespace("System.Runtime.Remoting","System.Runtime.Remoting");
                             baseTypeNS = "System.Runtime.Remoting.Services";
                             baseTypeAssemName = "System.Runtime.Remoting";
@@ -5771,7 +5771,7 @@ namespace System.Runtime.Remoting.MetadataServices
                     else if (_baseTypeName == null)
                     {                       
                         _baseTypeName = "MarshalByRefObject";
-                        //<STRIP>_baseTypeXmlNS = "http://schemas.microsoft.com/urt/NS/System";</STRIP>
+                        //<
                         _baseTypeXmlNS = SoapServices.CodeXmlNamespaceForClrTypeNamespace("System", null);
                         baseTypeNS = "System";
                         baseTypeAssemName = null;

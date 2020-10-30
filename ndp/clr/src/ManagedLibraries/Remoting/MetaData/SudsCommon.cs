@@ -7,7 +7,7 @@
 //
 // File:    SudsCommon.cs
 //<EMAIL>
-// Author:  Peter de Jong ([....])
+// Author:  Peter de Jong (Microsoft)
 //</EMAIL>
 // Purpose: Classes common to the SudsWriter and SudsParser
 //

@@ -184,7 +184,7 @@ private:
 
 
         template <class VALUETYPE>
-            void *AddWithSize(_In_ void *pkey, size_t cbSize, _In_ VALUETYPE &value) // [....]: now allows duplicates, i.e. doesn't assert any longer if you try
+            void *AddWithSize(_In_ void *pkey, size_t cbSize, _In_ VALUETYPE &value) // Microsoft: now allows duplicates, i.e. doesn't assert any longer if you try
         {
             cbSize = _GetAlignedSize(cbSize);
 
@@ -2032,7 +2032,7 @@ InsertSortedNoDuplicate2
     int (*pfnCompare) (Type, Type)     // [in]  Comparison function, cannot be NULL
 )
 {
-    // [....]: The element index can be 0.
+    // Microsoft: The element index can be 0.
     // VSASSERT(pElement, "Argument pElement cannot be NULL!");
     VSASSERT(pdaArray, "Argument pdaArray cannot be NULL!");
     VSASSERT(pfnCompare, "Argument pfnCompare cannot be NULL!");

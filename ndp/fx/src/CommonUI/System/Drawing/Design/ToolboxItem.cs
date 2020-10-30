@@ -26,6 +26,8 @@ namespace System.Drawing.Design {
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Versioning;
 
+    using DpiHelper = System.Windows.Forms.DpiHelper;
+
     /// <include file='doc\ToolboxItem.uex' path='docs/doc[@for="ToolboxItem"]/*' />
     /// <devdoc>
     ///    <para> Provides a base implementation of a toolbox item.</para>
@@ -39,7 +41,12 @@ namespace System.Drawing.Design {
         
         private static object EventComponentsCreated = new object();
         private static object EventComponentsCreating = new object();
-        
+
+        private static bool isScalingInitialized = false;
+        private const int ICON_DIMENSION = 16;
+        private static int iconWidth = ICON_DIMENSION;
+        private static int iconHeight = ICON_DIMENSION;
+
         private bool locked;
         private LockableDictionary properties;
         private ToolboxComponentsCreatedEventHandler  componentsCreatedEvent;
@@ -50,6 +57,13 @@ namespace System.Drawing.Design {
         ///    Initializes a new instance of the ToolboxItem class.
         /// </devdoc>
         public ToolboxItem() {
+            if (!isScalingInitialized) {
+                if (DpiHelper.IsScalingRequired) {
+                    iconWidth = DpiHelper.LogicalToDeviceUnitsX(ICON_DIMENSION);
+                    iconHeight = DpiHelper.LogicalToDeviceUnitsY(ICON_DIMENSION);
+                }
+                isScalingInitialized = true;
+            }
         }
         
         /// <include file='doc\ToolboxItem.uex' path='docs/doc[@for="ToolboxItem.ToolboxItem1"]/*' />
@@ -58,7 +72,7 @@ namespace System.Drawing.Design {
         /// </devdoc>
         [ResourceExposure(ResourceScope.Process)]
         [ResourceConsumption(ResourceScope.Process)]
-        public ToolboxItem(Type toolType) {
+        public ToolboxItem(Type toolType) : this() {
             Initialize(toolType);
         }
         
@@ -67,7 +81,7 @@ namespace System.Drawing.Design {
         ///     Initializes a new instance of the <see cref='System.Drawing.Design.ToolboxItem'/>
         ///     class using the specified serialization information.
         /// </devdoc>
-        private ToolboxItem(SerializationInfo info, StreamingContext context) {
+        private ToolboxItem(SerializationInfo info, StreamingContext context) : this() {
             Deserialize(info, context);
         }
 
@@ -107,7 +121,8 @@ namespace System.Drawing.Design {
         
         /// <include file='doc\ToolboxItem.uex' path='docs/doc[@for="ToolboxItem.Bitmap"]/*' />
         /// <devdoc>
-        ///     Gets or sets the bitmap that will be used on the toolbox for this item.
+        ///     Gets or sets the bitmap that will be used on the toolbox for this item. 
+        ///     Use this property on the design surface as this bitmap is scaled according to the current the DPI setting.
         /// </devdoc>
         public Bitmap Bitmap {
             get {
@@ -115,6 +130,20 @@ namespace System.Drawing.Design {
             }
             set {
                 Properties["Bitmap"] = value;
+            }
+        }
+
+        /// <include file='doc\ToolboxItem.uex' path='docs/doc[@for="ToolboxItem.OriginalBitmap"]/*' />
+        /// <devdoc>
+        ///     Gets or sets the original bitmap that will be used on the toolbox for this item.
+        ///     This bitmap should be 16x16 pixel and should be used in the Visual Studio toolbox, not on the design surface.
+        /// </devdoc>
+        public Bitmap OriginalBitmap {
+            get {
+                return (Bitmap)Properties["OriginalBitmap"];
+            }
+            set {
+                Properties["OriginalBitmap"] = value;
             }
         }
 
@@ -181,7 +210,7 @@ namespace System.Drawing.Design {
             set {
                 Properties["Filter"] = value;
             }
-        } 
+        }
                 
         /// <include file='doc\ToolboxItem.uex' path='docs/doc[@for="ToolboxItem.IsTransient"]/*' />
         /// <devdoc>
@@ -440,7 +469,15 @@ namespace System.Drawing.Design {
                 Lock();
             }
         }
-        
+
+        /// <devdoc>
+        /// Check if two AssemblyName instances are equivalent
+        /// </devdoc>
+        private static bool AreAssemblyNamesEqual(AssemblyName name1, AssemblyName name2) {
+            return name1 == name2 ||
+                   (name1 != null && name2 != null && name1.FullName == name2.FullName);
+        }
+
         /// <include file='doc\ToolboxItem.uex' path='docs/doc[@for="ToolboxItem.Equals"]/*' />
         /// <internalonly/>
         public override bool Equals(object obj) {
@@ -457,50 +494,18 @@ namespace System.Drawing.Design {
             }
 
             ToolboxItem otherItem = (ToolboxItem)obj;
-            
-            if (TypeName != otherItem.TypeName) {
-                if (TypeName == null || otherItem.TypeName == null) {
-                    return false;
-                }
-                
-                if (!TypeName.Equals(otherItem.TypeName)) {
-                    return false;
-                }
-            }
-            
-            if (AssemblyName != otherItem.AssemblyName) {
-                if (AssemblyName == null || otherItem.AssemblyName == null) {
-                    return false;
-                }
-                
-                if (!AssemblyName.FullName.Equals(otherItem.AssemblyName.FullName)) {
-                    return false;
-                }
-            }
-            
-            if (DisplayName != otherItem.DisplayName) {
-                if (DisplayName == null ||otherItem.DisplayName == null) {
-                    return false;
-                }
-                
-                if (!DisplayName.Equals(otherItem.DisplayName)) {
-                    return false;
-                }
-            }
-            
-            return true;
+
+            return TypeName == otherItem.TypeName &&
+                   AreAssemblyNamesEqual(AssemblyName, otherItem.AssemblyName) &&
+                   DisplayName == otherItem.DisplayName;
         }
 
         /// <include file='doc\ToolboxItem.uex' path='docs/doc[@for="ToolboxItem.GetHashCode"]/*' />
         /// <internalonly/>
         public override int GetHashCode() {
-            int hash = 0;
-            
-            if (TypeName != null) {
-                unchecked {
-                    hash ^= TypeName.GetHashCode();
-                }
-            }
+
+            string typeName = TypeName;
+            int hash = (typeName != null) ? typeName.GetHashCode() : 0;
             
             return unchecked(hash ^ DisplayName.GetHashCode());
         }
@@ -746,11 +751,14 @@ namespace System.Drawing.Design {
                     ToolboxBitmapAttribute attr = (ToolboxBitmapAttribute)TypeDescriptor.GetAttributes(type)[typeof(ToolboxBitmapAttribute)];
                     if (attr != null) {
                         Bitmap itemBitmap = attr.GetImage(type, false) as Bitmap;
-                        // make sure this thing is 16x16
-                        if (itemBitmap != null && (itemBitmap.Width != 16 || itemBitmap.Height != 16)) {
-                            itemBitmap = new Bitmap(itemBitmap, new Size(16, 16));
+                        if (itemBitmap != null) {
+                            // Original bitmap is used when adding the item to the Visual Studio toolbox 
+                            // if running on a machine with HDPI scaling enabled.
+                            OriginalBitmap = attr.GetOriginalBitmap();
+                            if ((itemBitmap.Width != iconWidth || itemBitmap.Height != iconHeight)) {
+                                itemBitmap = new Bitmap(itemBitmap, new Size(iconWidth, iconHeight));
+                            }
                         }
-
                         Bitmap = itemBitmap;
                     }
 
@@ -869,6 +877,10 @@ namespace System.Drawing.Design {
                     break;
 
                 case "Bitmap":
+                    ValidatePropertyType(propertyName, value, typeof(Bitmap), true);
+                    break;
+
+                case "OriginalBitmap":
                     ValidatePropertyType(propertyName, value, typeof(Bitmap), true);
                     break;
 

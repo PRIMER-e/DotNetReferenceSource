@@ -1011,7 +1011,7 @@ namespace System.Windows.Forms {
                                 (currentToolStripPanelRow.ToolStripPanel != this) : true;
 #endif
 
-            // Dev10 bug 477755 - in design mode toolstrip location jump back after being set.
+            // Dev10 
             bool pointInCurrentRow = false;
             if (currentToolStripPanelRow != null && currentToolStripPanelRow.Visible && currentToolStripPanelRow.ToolStripPanel == this) {
                 if (toolStripToDrag.IsCurrentlyDragging) {

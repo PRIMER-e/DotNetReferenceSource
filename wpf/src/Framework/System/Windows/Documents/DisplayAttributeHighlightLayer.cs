@@ -8,7 +8,7 @@
 // Description: Highlight rendering for IME compositions.
 //
 // History:  
-//  07/01/2004 : [....] - Created
+//  07/01/2004 : benwest - Created
 //
 //---------------------------------------------------------------------------
 

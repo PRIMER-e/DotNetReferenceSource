@@ -8,7 +8,7 @@
 // Description: Windows Container Proxy
 //
 // History:
-//  07/20/2004 : [....]         Created
+//  07/20/2004 : Microsoft         Created
 //---------------------------------------------------------------------------
 
 using System;

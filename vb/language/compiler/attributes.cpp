@@ -2268,7 +2268,7 @@ const AttrIdentity *FindAttributeBySignature
                 {
                     if (pAttribute->m_sig[iTableIndex] == pSignature[iSignatureIndex])
                     {
-                        // HACK [....] 9/4/2002:
+                        // HACK Microsoft 9/4/2002:
                         // Since we are not going to look up the tokens that follow
                         // ELEMENT_TYPE_CLASS and ELEMENT_TYPE_SIGNATURE,
                         // we just ignore the value following these constants.
@@ -2467,7 +2467,7 @@ double Attribute::----R8
 // Int64/UInt64/double should always be aligned at the 64-bit boundary for certain
 // ARM instructions
 #if _WIN64 || ARM
-    // VSWhidbey#58053, [....]: We cannot expect the CLR to give us a blob
+    // VSWhidbey#58053, Microsoft: We cannot expect the CLR to give us a blob
     // that is correctly byte-aligned.  So, we have to protect ourselves.
     // Detect if we are mis-aligned and if we are then do the appropriate
     // thing.
@@ -2707,7 +2707,7 @@ void Attribute::_----AllAttributesOnToken
                     (StrCmp(strName, NONSERIALIZEDATTRIBUTE) == 0 ||
                     StrCmp(strName, COMSOURCEINTERFACES) == 0)))
                 {
-                // NetCF Bug: 18559
+                // NetCF 
                     if (m_pcompilerhost->IsStarliteHost() && StrCmp(strName, COMSOURCEINTERFACES) == 0)
                     {
                     }
@@ -3028,7 +3028,7 @@ void Attribute::----ArgBlob
         // This also indicates 0 number of arguments for the constructors.
         // So if expected number of arguments for the constructor of this
         // well known attribute type is non-zero, don't treat the attribute
-        // as a well known attribute.  VS Everett Security Bug #
+        // as a well known attribute.  VS Everett Security 
         if (((BYTE *)pAttribute->m_sig)[1] != 0)
         {
             goto Error;
@@ -3366,7 +3366,7 @@ void Attribute::----ArgBlob
                     &pValue,
                     NULL);
 
-                // [....]: Generate a warning if the user is using this attrbute.
+                // Microsoft: Generate a warning if the user is using this attrbute.
 
                 if( pValue != NULL && ::wcslen( pValue ) > 0 )
                 {
@@ -3394,7 +3394,7 @@ void Attribute::----ArgBlob
                     &pValue,
                     NULL);
 
-                // [....]: Generate a warning if the user is using this attrbute.
+                // Microsoft: Generate a warning if the user is using this attrbute.
 
                 if( pValue != NULL && ::wcslen( pValue ) > 0 )
                 {
@@ -4529,7 +4529,7 @@ void Attribute::----ArgBlob
                                    &defaultValue.String.Spelling,
                                NULL);
 
-            //WARNING: [....] 9/23/2002: encoded string might contain NULL characters,
+            //WARNING: Microsoft 9/23/2002: encoded string might contain NULL characters,
             //in which case all string handling for attributes won't work.
             //This shouldn't be a common scenario so no special handling will be done
             // at this time in ----AttributeData to store strings with their lengths in
@@ -7132,7 +7132,7 @@ void Attribute::VerifyNonSerializedAttributeUsage(BCSYM_NamedRoot *ProcField, Er
 
     //Verify that non-serialized attribute can not be applied on custom event or any event in interfaces
     // The assumption is that if the backing field does not exist then the event is either a custom event or in an interface.
-    // Bug 674331
+    // 
     if (ProcField->IsEventDecl() && ProcField->PEventDecl()->GetDelegateVariable() == NULL)
     { 
         pErrorTable->CreateError(

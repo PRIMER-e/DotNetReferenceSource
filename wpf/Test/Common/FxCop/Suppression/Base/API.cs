@@ -33,7 +33,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1048326
-// Developer: [....]/Chandras
+// Developer: BChapman/Chandras
 // Reason: This is Win32 Interop Code and need to be that way.
 //***************************************************************************************************************************
 
@@ -41,14 +41,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1048326
-// Developer: [....]/Chandras
+// Developer: BChapman/Chandras
 // Reason: This is Win32 Interop Code and need to be that way.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", Scope="member", Target="System.Windows.Input.IKeyboardInputSink.TranslateAccelerator(Microsoft.Win32.MSG&,System.Windows.Input.ModifierKeys):System.Boolean")]
 
 //**************************************************************************************************************************
 // Bug ID: 1075314
-// Developer: [....]/Chandras
+// Developer: BChapman/Chandras
 // Reason: This is Win32 Interop Code and need to be that way.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", Scope="member", Target="System.Windows.Input.IKeyboardInputSink.TranslateChar(Microsoft.Win32.MSG&,System.Windows.Input.ModifierKeys):System.Boolean")]
@@ -56,7 +56,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1061850
-// Developer: [....]/Chandras
+// Developer: BChapman/Chandras
 // Reason: This is Win32 Interop Code and need to be that way for better readability.
 //         There is a bug in FxCop SuppressMessage Copy code. When SuppressMessage strings are copied for these violations
 //         it copied them without mentioning parameter name or number as below. This way we cannot distinguish the parameters.
@@ -90,7 +90,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1038642
-// Developer: Chandras/[....]/YutakaS
+// Developer: Chandras/DwayneN/YutakaS
 // Reason: see bug for details
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope="member", Target="System.Windows.Input.Key.NumLock")]
@@ -128,12 +128,12 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1048300
 // Developer: a-shsolk
-// Reason: Resolved as Duplicate of Bug 938461(wont fix) by actdata ([....])
+// Reason: Resolved as Duplicate of Bug 938461(wont fix) by actdata (sambent)
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Scope="type", Target="System.ComponentModel.ICollectionView")]
 
 //**************************************************************************************************************************
-// Developer: [....]
+// Developer: rrelyea
 // Reason: Bulk exclude of this rule.  We'll let dev leads know about them...so in case they are worried...
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope="member", Target="System.Windows.Markup.XmlCompatibilityReader.Read():System.Boolean")]
@@ -162,15 +162,15 @@ using System.Diagnostics.CodeAnalysis;
 //**************************************************************************************************************************
 // Bug ID: 1843710
 // Developer: KenLai
-// Reason: these only appear on 
-
+// Reason: these only appear on CHK builds
+//**************************************************************************************************************************
 #if DEBUG
 [module: SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Scope="member", Target="System.Windows.DependencyObject.OnPropertyChanged(System.Windows.DependencyPropertyChangedEventArgs):System.Void")]
 #endif
 
 //**************************************************************************************************************************
 // Bug ID: 1010939
-// Developer: Chandras/[....]/YutakaS
+// Developer: Chandras/DwayneN/YutakaS
 // Reason: see bug for details
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", Scope="member", Target="System.Windows.Input.Key.LineFeed")]
@@ -223,7 +223,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1218565
-// Developer: [....]
+// Developer: davidjen
 // Reason: the 2 flagged members are events, but the [NonSerialized] attibute can only be applied to fields
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage", "CA2235:MarkAllNonSerializableFields", Scope = "member", Target = "System.Collections.ObjectModel.ObservableCollection'1.CollectionChanged")]
@@ -231,7 +231,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1233100
-// Developer: [....]
+// Developer: dwaynen
 // Reason: The decision was made to make DependencyPropertyChangedEventArgs a struct for perf reasons.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1003:UseGenericEventHandlerInstances", Scope="type", Target="System.Windows.DependencyPropertyChangedEventHandler")]
@@ -239,14 +239,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1340943
-// Developer: [....]
+// Developer: dwaynen
 // Reason: We have not moved to SafeHandles, so we still need this.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive", Scope="member", Target="MS.Win32.HwndWrapper..ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.String,System.IntPtr,MS.Win32.HwndWrapperHook[])")]
 
 //**************************************************************************************************************************
 // Bug ID: 1319515
-// Developer: [....]
+// Developer: jordanpa
 // Reason: CloneCore(Freezable) is called by Clone() so that subclasses of Freezable can override it to clone their data.
 //         CloneCore(DependencyObject) would work but it's not correct.
 //**************************************************************************************************************************
@@ -328,21 +328,21 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1365558
-// Developer: [....]
+// Developer: SamBent
 // Reason: This method is not an event handler.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", Scope = "member", Target = "System.Windows.WeakEventManager.DeliverEvent(System.Object,System.EventArgs):System.Void")]
 
 //**************************************************************************************************************************
 // Bug ID: 1365561
-// Developer: [....]
+// Developer: SamBent
 // Reason: This type is designed for use only by classes derived from WeakEventManager.  Hence it is protected.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Scope = "type", Target = "System.Windows.WeakEventManager+ListenerList")]
 
 //**************************************************************************************************************************
 // Bug ID: 1365564
-// Developer: [....]
+// Developer: SamBent
 // Reason: The cure is worse than the disease.  Resulting code would be less readable.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", Scope="member", Target="System.Windows.WeakEventManager+ListenerList.PrepareForWriting(System.Windows.WeakEventManager+ListenerList&):System.Boolean", MessageId="0#")]
@@ -355,7 +355,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: 1386318
-// Developer: [....]
+// Developer: jordanpa
 // Reason: Technically this could take DOs instead of Freezables, but it's only supposed to be called with Freezables...
 //         hence the name.
 //**************************************************************************************************************************
@@ -419,14 +419,14 @@ using System.Diagnostics.CodeAnalysis;
 
 //***************************************************************************************************************************
 // Bug ID: 202854
-// Developer: [....] 
+// Developer: bchapman 
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId="Uid", Scope="type", Target="System.Windows.Markup.UidPropertyAttribute")]
 
 
 //***************************************************************************************************************************
 // Bug ID: 731489
-// Developer: [....]
+// Developer: pantal
 // Dev 10 - Bulk Suppressions of legacy breaking change issues
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Design","CA1045:DoNotPassTypesByReference", MessageId="0#", Scope="member", Target="System.Windows.Interop.IKeyboardInputSink.#OnMnemonic(System.Windows.Interop.MSG&,System.Windows.Input.ModifierKeys)")]
@@ -463,7 +463,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //***************************************************************************************************************************
 // Bug ID: No Bug
-// Developer: [....]
+// Developer: pantal
 // Ignoring the return is intentional in all of the cases below.  Successful ETW registration isn’t critical for the app to continue running since it’s just for diagnostic purposes.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA1806:DoNotIgnoreMethodResults", MessageId="MS.Win32.ClassicEtw.UnregisterTraceGuids(System.UInt64)", Scope="member", Target="MS.Utility.ClassicTraceProvider.#Finalize()")]
@@ -474,7 +474,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //***************************************************************************************************************************
 // Bug ID: No Bug
-// Developer: [....]
+// Developer: pantal
 // PackagingUtilities employs branching GC logic out of Dispose() which confuses FxCop. 
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA1816:CallGCSuppressFinalizeCorrectly", Scope="member", Target="MS.Internal.IO.Packaging.PackagingUtilities+SafeIsolatedStorageFileStream.#Dispose(System.Boolean)")]
@@ -484,7 +484,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //***************************************************************************************************************************
 // Bug ID: No Bug
-// Developer: [....]
+// Developer: pantal
 // Irregular GC.SuppressFinalize() calls in existing implementation.
 //***************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA1816:CallGCSuppressFinalizeCorrectly", Scope="member", Target="MS.Win32.NativeMethods+VARIANT.#SuppressFinalize()")]
@@ -494,7 +494,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: No Bug
-// Developer: [....]
+// Developer: pantal
 // Reason: Won't fix legacy items, clearing up FxCop scans.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Usage","CA1806:DoNotIgnoreMethodResults", MessageId="MS.Internal.Interop.PROPVARIANT+NativeMethods.PropVariantClear(MS.Internal.Interop.PROPVARIANT)", Scope="member", Target="MS.Internal.Interop.PROPVARIANT.#Clear()")]
@@ -512,7 +512,7 @@ using System.Diagnostics.CodeAnalysis;
 
 //**************************************************************************************************************************
 // Bug ID: No Bug
-// Developer: [....]
+// Developer: dwaynen
 // Reason: Name for GetAwaiter is required by the compiler.
 //**************************************************************************************************************************
 [module: SuppressMessage("Microsoft.Naming","CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId="Awaiter", Scope="member", Target="System.Windows.Threading.DispatcherOperation.#GetAwaiter()")]

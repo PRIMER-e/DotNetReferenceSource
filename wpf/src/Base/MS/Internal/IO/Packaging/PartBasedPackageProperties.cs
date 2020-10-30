@@ -58,7 +58,9 @@ namespace MS.Internal.IO.Packaging
             _package = package;
 
             // Initialize literals as Xml Atomic strings.
-            _nameTable = PackageXmlStringTable.NameTable;
+            // We use a clone of the name table so that different threads don't
+            // change the same table concurrently (Dev11 880952)
+            _nameTable = PackageXmlStringTable.CloneNameTable();
 
             ReadPropertyValuesFromPackage();
 
@@ -79,7 +81,7 @@ namespace MS.Internal.IO.Packaging
         //  Public Properties
         //
         //------------------------------------------------------
-        
+
         #region Public Properties
 
         /// <value>
@@ -182,7 +184,7 @@ namespace MS.Internal.IO.Packaging
         /// The type of content represented, generally defined by a specific
         /// use and intended audience. Example values include "Whitepaper",
         /// "Security Bulletin", and "Exam". (This property is distinct from
-        /// MIME content types as defined in RFC 2616.) 
+        /// MIME content types as defined in RFC 2616.)
         /// </value>
         public override string ContentType
         {
@@ -360,11 +362,11 @@ namespace MS.Internal.IO.Packaging
 
             // Make sure there is a part to write to and that it contains
             // the expected start markup.
-            EnsureXmlWriter(); 
+            EnsureXmlWriter();
 
             // Write the property elements and clear _dirty.
             // The whole property table gets cleared in streaming production.
-            SerializeDirtyProperties(); 
+            SerializeDirtyProperties();
 
             // In streaming mode, keep the writer around until we close.
             // Do a simple flush on the writer to make sure the content is written to a piece.
@@ -378,14 +380,14 @@ namespace MS.Internal.IO.Packaging
                 CloseXmlWriter();
             }
         }
-        
+
         // Invoked from Package.Close.
         // Carries out the same operations as Flush, except that, in streaming mode,
         // the writer has to be closed.
         internal void Close()
         {
             Flush();
-            
+
             // The following has to be done even if all properties have been saved (_dirty == false).
             if (_package.InStreamingCreation && _xmlWriter != null)
                 CloseXmlWriter();
@@ -518,7 +520,7 @@ namespace MS.Internal.IO.Packaging
             PackageRelationship corePropertiesRelationship = GetCorePropertiesRelationship();
             if (corePropertiesRelationship == null)
                 return null;
-            
+
             // Retrieve the part referenced by its target URI.
             if (corePropertiesRelationship.TargetMode != TargetMode.Internal)
                 throw new FileFormatException(SR.Get(SRID.NoExternalTargetForMetadataRelationship));
@@ -538,13 +540,13 @@ namespace MS.Internal.IO.Packaging
             }
 
             return propertiesPart;
-        }        
+        }
 
         // Find a package-wide relationship of type CoreDocumentPropertiesRelationshipType.
         private PackageRelationship GetCorePropertiesRelationship()
         {
             PackageRelationship propertiesPartRelationship = null;
-            foreach (PackageRelationship rel 
+            foreach (PackageRelationship rel
                 in _package.GetRelationshipsByType(_coreDocumentPropertiesRelationshipType))
             {
                 if (propertiesPartRelationship != null)
@@ -708,7 +710,7 @@ namespace MS.Internal.IO.Packaging
                     null, reader.LineNumber, reader.LinePosition);
             }
 
-            
+
 
         }
 
@@ -745,7 +747,7 @@ namespace MS.Internal.IO.Packaging
             }
             catch (FormatException exc)
             {
-                throw new XmlException(SR.Get(SRID.XsdDateTimeExpected), 
+                throw new XmlException(SR.Get(SRID.XsdDateTimeExpected),
                     exc, reader.LineNumber, reader.LinePosition);
             }
             return dateTime;
@@ -847,7 +849,7 @@ namespace MS.Internal.IO.Packaging
         }
 
         // Write the property elements and clear _dirty.
-        private void SerializeDirtyProperties() 
+        private void SerializeDirtyProperties()
         {
             // In streaming mode, nullify dictionary values.
             // As no property can be set to null through the API, this makes it possible to keep
@@ -924,7 +926,7 @@ namespace MS.Internal.IO.Packaging
         {
             // Close the root element.
             _xmlWriter.WriteEndElement();
-            
+
             // Close the writer itself.
             _xmlWriter.Close();
 
@@ -963,7 +965,7 @@ namespace MS.Internal.IO.Packaging
         private const string _coreDocumentPropertiesRelationshipType
             = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
 
-        private const string _defaultPropertyPartNamePrefix = 
+        private const string _defaultPropertyPartNamePrefix =
             "/package/services/metadata/core-properties/";
         private const string _w3cdtf = "W3CDTF";
         private const string _defaultPropertyPartNameExtension = ".psmdcp";
@@ -991,7 +993,7 @@ namespace MS.Internal.IO.Packaging
         // Array of formats to supply to XmlConvert.ToDateTime or DateTime.ParseExact.
         // xsd:DateTime requires full date time in sortable (ISO 8601) format.
         // It can be expressed in local time, universal time (Z), or relative to universal time (zzz).
-        // Negative years are accepted. 
+        // Negative years are accepted.
         // IMPORTANT: Second fractions are recognized only down to 1 tenth of a microsecond because this is the resolution
         // of the DateTime type. The Xml standard, however, allows any number of decimals; but XmlConvert only offers
         // this very awkward API with an explicit pattern enumeration.

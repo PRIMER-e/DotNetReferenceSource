@@ -53,6 +53,7 @@ namespace MS.Internal.TextFormatting
             TextRun       textSymbols,
             bool          rightToLeft,
             double        scalingFactor,
+            float pixelsPerDip,
             TextFormattingMode textFormattingMode,
             bool isSideways
             )
@@ -134,8 +135,8 @@ namespace MS.Internal.TextFormatting
                             uint[] fontFeatureRanges;
                             uint unsignedCch = checked((uint)cch);
                             LSRun.CompileFeatureSet(current.Properties.TypographyProperties, unsignedCch, out fontFeatures, out fontFeatureRanges);
-
                        
+
                             textAnalyzer.GetGlyphsAndTheirPlacements(
                                 (ushort*)fixedCharArray,
                                 unsignedCch,
@@ -151,7 +152,7 @@ namespace MS.Internal.TextFormatting
                                 fontFeatureRanges,
                                 current.Properties.FontRenderingEmSize,
                                 scalingFactor,
-                                Util.PixelsPerDip,
+                                pixelsPerDip,
                                 _textFormattingMode,
                                 current.ItemProps,
                                 out clusterMap,

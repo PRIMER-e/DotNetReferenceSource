@@ -807,35 +807,39 @@ namespace System.Windows.Controls
         {
             bool desiredWidthChanged = false; // whether the shared minimum width has been changed since last layout
 
-            foreach (GridViewColumn column in Columns)
+            GridViewColumnCollection columns = Columns;
+            if (columns != null)
             {
-                if ((column.State != ColumnMeasureState.SpecificWidth))
+                foreach (GridViewColumn column in columns)
                 {
-                    if (column.State == ColumnMeasureState.Init)
+                    if ((column.State != ColumnMeasureState.SpecificWidth))
                     {
-                        column.State = ColumnMeasureState.Headered;
-                    }
+                        if (column.State == ColumnMeasureState.Init)
+                        {
+                            column.State = ColumnMeasureState.Headered;
+                        }
 
-                    if (DesiredWidthList == null || column.ActualIndex >= DesiredWidthList.Count)
-                    {
-                        // How can this happen?
-                        // Between the last measure was called and this update is called, there can be a
-                        // change done to the ColumnCollection and result in DesiredWidthList out of [....]
-                        // with the columnn collection. What can we do is end this call asap and the next
-                        // measure will fix it.
-                        desiredWidthChanged = true;
-                        break;
-                    }
+                        if (DesiredWidthList == null || column.ActualIndex >= DesiredWidthList.Count)
+                        {
+                            // How can this happen?
+                            // Between the last measure was called and this update is called, there can be a
+                            // change done to the ColumnCollection and result in DesiredWidthList out of sync
+                            // with the columnn collection. What can we do is end this call asap and the next
+                            // measure will fix it.
+                            desiredWidthChanged = true;
+                            break;
+                        }
 
-                    if (!DoubleUtil.AreClose(column.DesiredWidth, DesiredWidthList[column.ActualIndex]))
-                    {
-                        // Update the record because collection operation latter on might
-                        // need to verified this list again, e.g. insert an 'auto'
-                        // column, so that we won't trigger unnecessary update due to
-                        // inconsistency of this column.
-                        DesiredWidthList[column.ActualIndex] = column.DesiredWidth;
+                        if (!DoubleUtil.AreClose(column.DesiredWidth, DesiredWidthList[column.ActualIndex]))
+                        {
+                            // Update the record because collection operation latter on might
+                            // need to verified this list again, e.g. insert an 'auto'
+                            // column, so that we won't trigger unnecessary update due to
+                            // inconsistency of this column.
+                            DesiredWidthList[column.ActualIndex] = column.DesiredWidth;
 
-                        desiredWidthChanged = true;
+                            desiredWidthChanged = true;
+                        }
                     }
                 }
             }

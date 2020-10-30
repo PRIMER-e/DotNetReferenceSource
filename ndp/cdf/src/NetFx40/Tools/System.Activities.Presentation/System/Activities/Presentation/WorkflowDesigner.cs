@@ -423,6 +423,11 @@ namespace System.Activities.Presentation
             {
                 this.Context.Items.SetValue(new ErrorItem() { Message = string.Empty, Details = string.Empty });
             }
+            if (this.IsInErrorState())
+            {
+                // Clear workflow symbol in case ErrorState changes during validation
+                this.lastWorkflowSymbol = null;
+            }
             this.perfEventProvider.WorkflowDesignerLoadComplete();
         }
 
@@ -473,7 +478,6 @@ namespace System.Activities.Presentation
             }
             if (!this.IsInErrorState())
             {
-                this.lastWorkflowSymbol = GetAttachedWorkflowSymbol();
                 if (this.debuggerService != null)
                 {
                     this.debuggerService.InvalidateSourceLocationMapping(fileName);
@@ -539,6 +543,10 @@ namespace System.Activities.Presentation
                 wfViewStateService.UndoableViewStateChanged += new ViewStateChangedEventHandler(OnViewStateChanged);
             }
             this.isModelChanged = false;
+            if (!this.IsInErrorState())
+            {
+                this.lastWorkflowSymbol = GetAttachedWorkflowSymbol();
+            }
         }
 
         public void Save(string fileName)

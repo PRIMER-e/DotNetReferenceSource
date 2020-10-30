@@ -127,7 +127,7 @@ namespace System.Windows.Forms {
                 if (addedShim != null) {
                     if (!(addedShim is HtmlWindow.HtmlWindowShim)) {
                         // we need to add a window shim here for documents and elements
-                        // so we can [....] Window.Unload.  The window shim itself will trap
+                        // so we can sync Window.Unload.  The window shim itself will trap
                         // the unload event and call back on us on OnWindowUnloaded.  When
                         // that happens we know we can free all our ptrs to COM.
                         AddWindowShim(new HtmlWindow(this, addedShim.AssociatedWindow));

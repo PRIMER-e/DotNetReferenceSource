@@ -7,7 +7,7 @@
 //
 //  Contents:  API for iterating a tree of objects for serialization
 //
-//  Created:   04/28/2005 [....]
+//  Created:   04/28/2005 Microsoft
 //
 //------------------------------------------------------------------------
 

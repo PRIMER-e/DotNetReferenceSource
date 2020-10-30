@@ -73,7 +73,7 @@ namespace System.Windows.Automation.Peers
         /// </summary>
         /// <param name="val">Value to set the UI to, as an object</param>
         /// <returns>true if the UI element was successfully set to the specified value</returns>
-        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking Bug: 29647
+        //[CodeAnalysis("AptcaMethodsShouldOnlyCallAptcaMethods")] //Tracking 
         void IRangeValueProvider.SetValue(double val)
         {
             if (!IsEnabled())
